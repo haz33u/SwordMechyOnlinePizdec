@@ -17,6 +17,7 @@ local ProfileService = require(script.Parent.ProfileService)
 local QuestService = require(script.Parent.QuestService)
 local LootService = require(script.Parent.LootService)
 local MobVisualService = require(script.Parent.MobVisualService)
+local MobSpawnMarkerService = require(script.Parent.MobSpawnMarkerService)
 
 local CombatService = {}
 CombatService._mobs = {} :: { [string]: any }
@@ -304,13 +305,36 @@ function CombatService.SpawnLocationMobs(locationId: number)
 		return
 	end
 
-	-- despawn old
+	-- despawn old live combat models
 	for uid, m in CombatService._mobs do
 		if m.locationId == locationId then
 			MobVisualService.Despawn(uid)
 			CombatService._mobs[uid] = nil
 		end
 	end
+
+	-- Prefer EDIT-MODE markers you placed under LocXX.MobSpawns
+	local markers = MobSpawnMarkerService.Collect(locationId)
+	if #markers > 0 then
+		for _, pt in markers do
+			CombatService.SpawnMob(pt.mobId, pt.position, {
+				locationId = locationId,
+				zone = pt.zone,
+			})
+		end
+		print(string.format(
+			"[Combat] Loc%d: %d mobs from Studio markers (MobSpawns)",
+			locationId,
+			#markers
+		))
+		return
+	end
+
+	-- Fallback: math rings from LocationConfig (no markers in Place yet)
+	warn(string.format(
+		"[Combat] Loc%d: no MobSpawns markers — using config fallback. Place markers in Edit for control.",
+		locationId
+	))
 
 	local function spawnEntry(spawn: any)
 		for i = 1, spawn.count do
@@ -346,7 +370,7 @@ function CombatService.SpawnLocationMobs(locationId: number)
 			count += 1
 		end
 	end
-	print(string.format("[Combat] Loc%d: %d mobs with placeholders in Workspace.Mobs", locationId, count))
+	print(string.format("[Combat] Loc%d: %d mobs (fallback math)", locationId, count))
 end
 
 function CombatService.DebugSpawnDummy(player: Player)
