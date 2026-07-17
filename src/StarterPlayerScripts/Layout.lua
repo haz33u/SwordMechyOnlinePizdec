@@ -1,13 +1,13 @@
 --!strict
 --[[
-	Compact layout: rail packs to N buttons (no full-height stretch).
-	Slight global upscale for readability.
+	Responsive scale: UIScale = clamp(viewportY / 1080, 0.7, 2.0)
+	Rail packs to N buttons (height = content, not full stretch).
+	Base design units at 1080p; UIScale handles resolution.
 ]]
 
 local Layout = {}
 
 export type Metrics = {
-	scale: number,
 	uiScale: number,
 	vpX: number,
 	vpY: number,
@@ -38,57 +38,68 @@ export type Metrics = {
 	fontXl: number,
 }
 
+local BASE_Y = 1080
+local MIN_SCALE = 0.7
+local MAX_SCALE = 2.0
+
 local function snap(n: number, g: number?): number
 	local grid = g or 2
 	return math.floor(n / grid + 0.5) * grid
 end
 
+function Layout.UiScaleFromViewport(vp: Vector2?): number
+	local y = (vp and vp.Y) or BASE_Y
+	return math.clamp(y / BASE_Y, MIN_SCALE, MAX_SCALE)
+end
+
+--- Design-space metrics (pre-UIScale). UIScale multiplies the whole ScreenGui.
 function Layout.Compute(vp: Vector2?, railCount: number?): Metrics
 	local n = math.max(1, railCount or 8)
-	local x = (vp and vp.X) or 1366
-	local y = (vp and vp.Y) or 768
-	-- base scale + intentional upscale (~12%)
-	local s = math.clamp(math.min(x / 1366, y / 720), 0.82, 1.25) * 1.12
+	local x = (vp and vp.X) or 1920
+	local y = (vp and vp.Y) or 1080
+	local uiScale = Layout.UiScaleFromViewport(vp)
 
-	local pad = snap(12 * s, 2)
-	local gap = snap(10 * s, 2)
+	-- design units at 1080p (UIScale does the rest)
+	local pad = 14
+	local gap = 10
 
-	-- Bottom action cluster (juicy)
-	local btnH = snap(56 * s, 2)
-	local actionH = btnH + pad * 2 + 4
-	local actionW = snap(math.clamp(x * 0.42, 380 * s, 500 * s), 2)
+	local btnH = 56
+	local actionH = btnH + pad * 2
+	-- action width as fraction of viewport, converted to design px
+	local actionW = snap(math.clamp((x / uiScale) * 0.4, 380, 520), 2)
 	local actionGap = gap
 	local inner = actionW - pad * 2 - actionGap * 2
-	local unit = inner / (1 + 1.4 + 1)
+	local unit = inner / (1 + 1.45 + 1)
 	local btnAutoW = snap(unit, 2)
-	local btnClickW = snap(unit * 1.4, 2)
-	local btnRebW = math.max(snap(80 * s, 2), inner - btnAutoW - btnClickW)
+	local btnClickW = snap(unit * 1.45, 2)
+	local btnRebW = math.max(88, inner - btnAutoW - btnClickW)
 
-	local chipH = snap(48 * s, 2)
-	local statsH = chipH + 6
+	local chipH = 52
+	local statsH = chipH + 8
 
-	-- Rail: FIXED button size, height = N*btn + gaps (compact pack, NOT stretched)
-	local railPad = snap(10 * s, 2)
-	local railGap = snap(8 * s, 2)
-	local railBtn = snap(math.clamp(52 * s, 44, 60), 2)
+	-- Rail: pack to N — equal button size, height = content
+	local railPad = 10
+	local railGap = 8
+	local railBtn = 52
 	local railH = railPad * 2 + n * railBtn + (n - 1) * railGap
 	local railW = railBtn + railPad * 2
 
-	-- If rail taller than free space, shrink buttons to fit (still equal)
-	local bottomBlock = actionH + statsH + pad * 3 + 16
-	local maxRailH = math.max(200, y - pad * 2 - bottomBlock)
+	-- Fit rail into available design height if needed
+	local designH = y / uiScale
+	local bottomBlock = actionH + statsH + pad * 3 + 20
+	local maxRailH = math.max(220, designH - pad * 2 - bottomBlock)
 	if railH > maxRailH then
 		railBtn = math.floor((maxRailH - railPad * 2 - railGap * (n - 1)) / n)
-		railBtn = math.clamp(snap(railBtn, 2), 36, 60)
+		railBtn = math.clamp(snap(railBtn, 2), 36, 56)
 		railH = railPad * 2 + n * railBtn + (n - 1) * railGap
 		railW = railBtn + railPad * 2
 	end
 
-	local chipW = snap(math.clamp((x - railW - pad * 4) / 7.0, 100 * s, 130 * s), 2)
+	local designW = x / uiScale
+	local chipW = snap(math.clamp((designW - railW - pad * 4) / 7.0, 104, 136), 2)
 
 	return {
-		scale = s,
-		uiScale = s,
+		uiScale = uiScale,
 		vpX = x,
 		vpY = y,
 		pad = pad,
@@ -110,12 +121,12 @@ function Layout.Compute(vp: Vector2?, railCount: number?): Metrics
 		chipH = chipH,
 		chipW = chipW,
 		chipGap = gap,
-		windowW = 0.52,
-		windowH = 0.64,
-		fontSm = math.max(12, math.floor(12 * s + 0.5)),
-		fontMd = math.max(14, math.floor(15 * s + 0.5)),
-		fontLg = math.max(16, math.floor(18 * s + 0.5)),
-		fontXl = math.max(20, math.floor(22 * s + 0.5)),
+		windowW = 0.5,
+		windowH = 0.62,
+		fontSm = 12,
+		fontMd = 15,
+		fontLg = 18,
+		fontXl = 24,
 	}
 end
 

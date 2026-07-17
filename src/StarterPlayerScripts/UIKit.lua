@@ -1,7 +1,6 @@
 --!strict
 --[[
-	Polished primitives using Mixmaxed GUI kit ideas:
-	UICorner · UIStroke · UIGradient · UIPadding · UIScale · UIList/Grid
+	UI primitives: glass panels, CTAs, metric chips with hierarchy + constraints.
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -9,8 +8,8 @@ local T = require(script.Parent.Theme)
 
 local UIKit = {}
 
-local function tween(inst: Instance, props: { [string]: any }, t: number?, style: Enum.EasingStyle?)
-	TweenService:Create(inst, TweenInfo.new(t or 0.14, style or Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
+local function tween(inst: Instance, props: { [string]: any }, dur: number?)
+	TweenService:Create(inst, TweenInfo.new(dur or 0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
 end
 
 function UIKit.Corner(parent: Instance, r: number?)
@@ -23,7 +22,7 @@ end
 function UIKit.Stroke(parent: Instance, color: Color3?, thickness: number?, transparency: number?)
 	local s = Instance.new("UIStroke")
 	s.Color = color or T.Stroke
-	s.Thickness = thickness or 1
+	s.Thickness = thickness or 1.5
 	s.Transparency = transparency ~= nil and transparency or T.StrokeA
 	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 	s.LineJoinMode = Enum.LineJoinMode.Round
@@ -70,15 +69,6 @@ function UIKit.List(parent: Instance, gap: number?, horizontal: boolean?, align:
 	return l
 end
 
-function UIKit.Grid(parent: Instance, cell: UDim2?, pad: number?)
-	local g = Instance.new("UIGridLayout")
-	g.CellSize = cell or UDim2.fromOffset(120, 120)
-	g.CellPadding = UDim2.fromOffset(pad or 8, pad or 8)
-	g.SortOrder = Enum.SortOrder.LayoutOrder
-	g.Parent = parent
-	return g
-end
-
 function UIKit.Scale(parent: Instance, s: number?): UIScale
 	local sc = Instance.new("UIScale")
 	sc.Scale = s or 1
@@ -86,11 +76,31 @@ function UIKit.Scale(parent: Instance, s: number?): UIScale
 	return sc
 end
 
+function UIKit.SizeConstraint(parent: Instance, min: Vector2?, max: Vector2?)
+	local c = Instance.new("UISizeConstraint")
+	if min then
+		c.MinSize = min
+	end
+	if max then
+		c.MaxSize = max
+	end
+	c.Parent = parent
+	return c
+end
+
 function UIKit.Aspect(parent: Instance, ratio: number?)
 	local a = Instance.new("UIAspectRatioConstraint")
 	a.AspectRatio = ratio or 1
 	a.Parent = parent
 	return a
+end
+
+function UIKit.TextConstraint(parent: Instance, minPx: number?, maxPx: number?)
+	local c = Instance.new("UITextSizeConstraint")
+	c.MinTextSize = minPx or 10
+	c.MaxTextSize = maxPx or 28
+	c.Parent = parent
+	return c
 end
 
 function UIKit.Glass(props: {
@@ -107,9 +117,8 @@ function UIKit.Glass(props: {
 	local f = Instance.new("Frame")
 	f.Name = props.Name or "Glass"
 	f.BackgroundColor3 = Color3.new(1, 1, 1)
-	f.BackgroundTransparency = 0
 	f.BorderSizePixel = 0
-	f.Size = props.Size or UDim2.fromOffset(100, 40)
+	f.Size = props.Size or UDim2.fromScale(0.2, 0.1)
 	if props.Position then
 		f.Position = props.Position
 	end
@@ -123,24 +132,22 @@ function UIKit.Glass(props: {
 	end
 
 	UIKit.Corner(f, props.Radius or T.R.md)
-	UIKit.Stroke(f, T.Stroke, 1.4, T.StrokeA)
-	-- Soft warm panels (not cold steel)
+	UIKit.Stroke(f, T.Stroke, 1.5, T.StrokeA)
 	if props.Deep then
-		UIKit.Gradient(f, T.Glass2, T.Bg, 100)
+		UIKit.Gradient(f, T.Surface2, T.Bg, 100)
 	else
-		UIKit.Gradient(f, T.Glass3, T.Glass2, 105)
+		UIKit.Gradient(f, T.Surface3, T.Surface2, 105)
 	end
 
 	if props.AccentBar then
 		local bar = Instance.new("Frame")
 		bar.Name = "AccentBar"
 		bar.BorderSizePixel = 0
-		bar.BackgroundColor3 = T.Accent
-		bar.Size = UDim2.new(1, 0, 0, 2)
-		bar.Position = UDim2.fromOffset(0, 0)
+		bar.BackgroundColor3 = T.Gold
+		bar.Size = UDim2.new(1, 0, 0, 3)
 		bar.ZIndex = (props.Z or 1) + 1
 		bar.Parent = f
-		UIKit.Gradient(bar, T.AccentGlow, T.AccentDeep, 0)
+		UIKit.Gradient(bar, T.GoldGlow, T.GoldDeep, 0)
 	end
 
 	return f
@@ -161,6 +168,9 @@ function UIKit.Label(props: {
 	Z: number?,
 	Wrap: boolean?,
 	Order: number?,
+	Scaled: boolean?,
+	MinText: number?,
+	MaxText: number?,
 }): TextLabel
 	local l = Instance.new("TextLabel")
 	l.Name = props.Name or "Label"
@@ -183,9 +193,12 @@ function UIKit.Label(props: {
 	l.TextWrapped = props.Wrap == true
 	l.TextTruncate = Enum.TextTruncate.AtEnd
 	l.LayoutOrder = props.Order or 0
-	-- Strong stroke = readable over world + panels
 	l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	l.TextStrokeTransparency = 0.35
+	l.TextStrokeTransparency = 0.3
+	if props.Scaled then
+		l.TextScaled = true
+		UIKit.TextConstraint(l, props.MinText or 10, props.MaxText or 28)
+	end
 	if props.Parent then
 		l.Parent = props.Parent
 	end
@@ -206,13 +219,14 @@ function UIKit.Button(props: {
 	Radius: number?,
 	Z: number?,
 	Order: number?,
+	Primary: boolean?,
 	OnClick: (() -> ())?,
 }): TextButton
 	local b = Instance.new("TextButton")
 	b.Name = props.Name or "Btn"
 	b.AutoButtonColor = false
 	b.Text = props.Text or ""
-	b.Size = props.Size or UDim2.new(1, 0, 0, 40)
+	b.Size = props.Size or UDim2.fromOffset(120, 48)
 	if props.Position then
 		b.Position = props.Position
 	end
@@ -220,36 +234,37 @@ function UIKit.Button(props: {
 		b.AnchorPoint = props.Anchor
 	end
 	b.BackgroundColor3 = Color3.new(1, 1, 1)
-	-- Default: bright white text — never dark ink on dark fill
 	b.TextColor3 = props.TextColor or T.Text
-	b.TextSize = props.SizePx or 14
+	b.TextSize = props.SizePx or 15
 	b.Font = T.Font.Title
 	b.BorderSizePixel = 0
 	b.ZIndex = props.Z or 3
 	b.LayoutOrder = props.Order or 0
-	b.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	b.TextStrokeTransparency = 0.3
+	b.TextStrokeColor3 = Color3.new(0, 0, 0)
+	b.TextStrokeTransparency = 0.25
 	if props.Parent then
 		b.Parent = props.Parent
 	end
 
+	local c0 = props.Color or T.Surface3
+	local c1 = props.Color2 or T.Surface2
 	UIKit.Corner(b, props.Radius or T.R.md)
-	UIKit.Stroke(b, T.Stroke, 1.4, 0.4)
-	-- Brighter button bodies by default
-	UIKit.Gradient(b, props.Color or T.Glass3, props.Color2 or T.Glass2, 100)
-	local sc = UIKit.Scale(b, 1)
+	UIKit.Stroke(b, props.Primary and T.Gold or T.Stroke, props.Primary and 2 or 1.4, props.Primary and 0.25 or 0.4)
+	UIKit.Gradient(b, c0, c1, 100)
+	UIKit.SizeConstraint(b, Vector2.new(64, 36), Vector2.new(400, 96))
 
+	local sc = UIKit.Scale(b, 1)
 	b.MouseEnter:Connect(function()
-		tween(sc, { Scale = 1.05 }, 0.12)
+		tween(sc, { Scale = 1.06 }, 0.1)
 	end)
 	b.MouseLeave:Connect(function()
-		tween(sc, { Scale = 1 }, 0.12)
+		tween(sc, { Scale = 1 }, 0.1)
 	end)
 	b.MouseButton1Down:Connect(function()
-		tween(sc, { Scale = 0.97 }, 0.06)
+		tween(sc, { Scale = 0.96 }, 0.06)
 	end)
 	b.MouseButton1Up:Connect(function()
-		tween(sc, { Scale = 1.05 }, 0.08)
+		tween(sc, { Scale = 1.06 }, 0.08)
 	end)
 	if props.OnClick then
 		b.MouseButton1Click:Connect(props.OnClick)
@@ -261,7 +276,6 @@ function UIKit.IconBtn(props: {
 	Name: string?,
 	Parent: Instance?,
 	Glyph: string?,
-	Tip: string?,
 	Size: UDim2?,
 	Active: boolean?,
 	Order: number?,
@@ -272,17 +286,114 @@ function UIKit.IconBtn(props: {
 		Name = props.Name,
 		Parent = props.Parent,
 		Text = props.Glyph or "·",
-		Size = props.Size or UDim2.fromOffset(48, 48),
-		Color = props.Active and T.AccentDeep or T.Glass3,
-		Color2 = props.Active and Color3.fromRGB(150, 110, 35) or T.Glass2,
+		Size = props.Size or UDim2.fromOffset(52, 52),
+		Color = props.Active and T.GoldDeep or T.Surface3,
+		Color2 = props.Active and Color3.fromRGB(180, 110, 30) or T.Surface2,
 		TextColor = T.Text,
-		SizePx = 14,
+		SizePx = 15,
 		Radius = T.R.md,
 		Order = props.Order,
 		Z = props.Z or 5,
 		OnClick = props.OnClick,
 	})
+	UIKit.Aspect(b, 1)
 	return b
+end
+
+--- Metric chip: unique color, icon, muted title, bold value
+function UIKit.MetricChip(props: {
+	Parent: Instance?,
+	Key: string, -- Power | Cps | ...
+	Title: string?,
+	Value: string?,
+	Order: number?,
+	W: number?,
+	H: number?,
+}): Frame
+	local meta = T.Metric[props.Key] or T.Metric.Power
+	local w = props.W or 120
+	local h = props.H or 52
+
+	local chip = Instance.new("Frame")
+	chip.Name = props.Key
+	chip.BackgroundColor3 = Color3.new(1, 1, 1)
+	chip.BorderSizePixel = 0
+	chip.Size = UDim2.fromOffset(w, h)
+	chip.LayoutOrder = props.Order or 0
+	chip.ZIndex = 5
+	chip.ClipsDescendants = true
+	if props.Parent then
+		chip.Parent = props.Parent
+	end
+
+	UIKit.Corner(chip, T.R.md)
+	UIKit.Stroke(chip, meta.accent, 1.8, 0.25)
+	UIKit.Gradient(chip, meta.fill0, meta.fill1, 110)
+	UIKit.SizeConstraint(chip, Vector2.new(88, 40), Vector2.new(220, 72))
+	UIKit.Pad(chip, nil, 10, 6, 8, 6)
+
+	-- accent strip
+	local strip = Instance.new("Frame")
+	strip.Name = "Strip"
+	strip.BorderSizePixel = 0
+	strip.BackgroundColor3 = meta.accent
+	strip.Size = UDim2.new(0, 4, 1, -8)
+	strip.Position = UDim2.fromOffset(0, 4)
+	strip.ZIndex = 6
+	strip.Parent = chip
+	UIKit.Corner(strip, 2)
+
+	local icon = UIKit.Label({
+		Name = "Icon",
+		Parent = chip,
+		Text = meta.icon,
+		Size = UDim2.fromOffset(22, 22),
+		Position = UDim2.new(1, -26, 0, 4),
+		SizePx = 14,
+		X = Enum.TextXAlignment.Center,
+		Z = 7,
+	})
+
+	UIKit.Label({
+		Name = "Title",
+		Parent = chip,
+		Text = props.Title or props.Key,
+		Size = UDim2.new(1, -30, 0, 14),
+		Position = UDim2.fromOffset(10, 4),
+		Color = T.TextMuted,
+		SizePx = 11,
+		Font = T.Font.Title,
+		Z = 6,
+	})
+
+	local value = UIKit.Label({
+		Name = "Value",
+		Parent = chip,
+		Text = props.Value or "—",
+		Size = UDim2.new(1, -12, 0, 24),
+		Position = UDim2.fromOffset(10, 20),
+		Color = meta.accent,
+		SizePx = 18,
+		Font = T.Font.Num,
+		Scaled = true,
+		MinText = 12,
+		MaxText = 22,
+		Z = 6,
+	})
+
+	local sc = UIKit.Scale(chip, 1)
+	chip.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			tween(sc, { Scale = 1.04 }, 0.1)
+		end
+	end)
+	chip.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			tween(sc, { Scale = 1 }, 0.1)
+		end
+	end)
+
+	return chip
 end
 
 function UIKit.Chip(props: {
@@ -293,52 +404,25 @@ function UIKit.Chip(props: {
 	Order: number?,
 	W: number?,
 }): Frame
-	local chip = UIKit.Glass({
-		Name = props.Title or "Chip",
+	-- legacy wrapper → map title to Metric key if possible
+	local keyMap = {
+		["СИЛА"] = "Power",
+		["CPS"] = "Cps",
+		["DPS"] = "Dps",
+		["МОНЕТЫ"] = "Coins",
+		["КЛИКИ"] = "Clicks",
+		["ЛОКАЦИЯ"] = "Loc",
+		["REBIRTH"] = "Rebirth",
+	}
+	local key = keyMap[props.Title or ""] or "Power"
+	return UIKit.MetricChip({
 		Parent = props.Parent,
-		Size = UDim2.fromOffset(props.W or 110, 42),
-		Radius = T.R.sm,
-		Z = 5,
-		Deep = false,
+		Key = key,
+		Title = props.Title,
+		Value = props.Value,
+		Order = props.Order,
+		W = props.W,
 	})
-	chip.LayoutOrder = props.Order or 0
-	UIKit.Pad(chip, nil, 12, 4, 10, 4)
-
-	local accent = props.Accent or T.Accent
-	-- Title: soft white (readable), Value: bright accent
-	UIKit.Label({
-		Parent = chip,
-		Text = props.Title or "",
-		Size = UDim2.new(1, -6, 0, 12),
-		Position = UDim2.fromOffset(6, 3),
-		Color = T.TextSoft,
-		SizePx = 11,
-		Font = T.Font.Title,
-		Z = 6,
-	})
-	UIKit.Label({
-		Name = "Value",
-		Parent = chip,
-		Text = props.Value or "0",
-		Size = UDim2.new(1, -6, 0, 20),
-		Position = UDim2.fromOffset(6, 16),
-		Color = accent,
-		SizePx = 16,
-		Font = T.Font.Num,
-		Z = 6,
-	})
-	local strip = Instance.new("Frame")
-	strip.Name = "Strip"
-	strip.BorderSizePixel = 0
-	strip.BackgroundColor3 = accent
-	strip.BackgroundTransparency = 0
-	strip.Size = UDim2.new(0, 3, 1, -8)
-	strip.Position = UDim2.fromOffset(0, 4)
-	strip.ZIndex = 6
-	strip.Parent = chip
-	UIKit.Corner(strip, 2)
-
-	return chip
 end
 
 function UIKit.SetChipValue(chip: Frame, text: string)
@@ -353,13 +437,12 @@ function UIKit.Scroll(parent: Instance, size: UDim2?, pos: UDim2?): ScrollingFra
 	s.Name = "Scroll"
 	s.BackgroundTransparency = 1
 	s.BorderSizePixel = 0
-	s.Size = size or UDim2.new(1, 0, 1, 0)
+	s.Size = size or UDim2.fromScale(1, 1)
 	if pos then
 		s.Position = pos
 	end
-	s.ScrollBarThickness = 3
-	s.ScrollBarImageColor3 = T.Accent
-	s.ScrollBarImageTransparency = 0.35
+	s.ScrollBarThickness = 4
+	s.ScrollBarImageColor3 = T.Gold
 	s.CanvasSize = UDim2.new(0, 0, 0, 0)
 	s.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	s.ScrollingDirection = Enum.ScrollingDirection.Y
@@ -372,12 +455,12 @@ end
 function UIKit.Bar(parent: Instance, fill: number, color: Color3?, h: number?): (Frame, Frame)
 	local track = Instance.new("Frame")
 	track.Name = "BarTrack"
-	track.BackgroundColor3 = T.Glass3
+	track.BackgroundColor3 = T.Surface3
 	track.BorderSizePixel = 0
 	track.Size = UDim2.new(1, 0, 0, h or 8)
 	track.Parent = parent
 	UIKit.Corner(track, 99)
-	UIKit.Stroke(track, T.Stroke, 1, 0.9)
+	UIKit.Stroke(track, T.Stroke, 1, 0.7)
 
 	local bar = Instance.new("Frame")
 	bar.Name = "Fill"
@@ -386,7 +469,7 @@ function UIKit.Bar(parent: Instance, fill: number, color: Color3?, h: number?): 
 	bar.Size = UDim2.new(math.clamp(fill, 0, 1), 0, 1, 0)
 	bar.Parent = track
 	UIKit.Corner(bar, 99)
-	UIKit.Gradient(bar, color or T.AccentGlow, color or T.AccentDeep, 0)
+	UIKit.Gradient(bar, color or T.GoldGlow, color or T.GoldDeep, 0)
 	return track, bar
 end
 
@@ -403,7 +486,8 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> ()): (Frame, 
 		AccentBar = true,
 	})
 	root.Visible = false
-	UIKit.Stroke(root, T.Stroke, 1, 0.7)
+	UIKit.Stroke(root, T.Gold, 1.5, 0.45)
+	UIKit.SizeConstraint(root, Vector2.new(320, 280), Vector2.new(900, 800))
 
 	local header = Instance.new("Frame")
 	header.Name = "Header"
@@ -429,8 +513,8 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> ()): (Frame, 
 		Size = UDim2.fromOffset(36, 32),
 		Position = UDim2.new(1, -44, 0.5, 0),
 		Anchor = Vector2.new(0, 0.5),
-		Color = T.Glass3,
-		Color2 = T.Glass2,
+		Color = T.Surface3,
+		Color2 = T.Surface2,
 		TextColor = T.Text,
 		SizePx = 20,
 		Radius = T.R.sm,

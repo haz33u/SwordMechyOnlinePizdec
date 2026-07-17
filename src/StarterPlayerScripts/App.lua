@@ -127,6 +127,16 @@ function App.Start()
 	gui:SetAttribute("SwordMastersUI", true)
 	gui.Parent = playerGui
 
+	-- Root responsive scale: clamp(viewportY / 1080, 0.7, 2.0)
+	local Layout = require(script.Parent.Layout)
+	local rootScale = Instance.new("UIScale")
+	rootScale.Name = "RootUIScale"
+	rootScale.Scale = 1
+	rootScale.Parent = gui
+	Layout.Bind(function(m)
+		rootScale.Scale = m.uiScale
+	end)
+
 	playerGui.ChildAdded:Connect(function(child)
 		if child:IsA("ScreenGui") and child ~= gui and isDuplicateHud(child, gui) then
 			task.defer(function()

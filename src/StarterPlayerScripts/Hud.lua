@@ -1,9 +1,6 @@
 --!strict
 --[[
-	Bright idle HUD:
-	- Left rail packs to N buttons (height = N×btn, not stretched full screen)
-	- Stats above bottom dock
-	- Juicy action bar (АВТО / КЛИК / R↑)
+	Responsive HUD with root UIScale + packed rail + metric chips.
 ]]
 
 local T = require(script.Parent.Theme)
@@ -32,32 +29,44 @@ local LOC = {
 	[4] = "Полярная тундра",
 }
 
-export type HudApi = {
-	Refresh: (self: any) -> (),
-	GetClickButton: (self: any) -> TextButton,
+local METRICS = {
+	{ key = "Power", title = "СИЛА" },
+	{ key = "Cps", title = "CPS" },
+	{ key = "Dps", title = "DPS" },
+	{ key = "Coins", title = "МОНЕТЫ" },
+	{ key = "Clicks", title = "КЛИКИ" },
+	{ key = "Loc", title = "ЛОКАЦИЯ" },
+	{ key = "Rebirth", title = "REBIRTH" },
 }
 
-function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), onManualClick: (() -> ())?): HudApi
+function Hud.Mount(
+	gui: ScreenGui,
+	store: any,
+	openModal: (string, any?) -> (),
+	onManualClick: (() -> ())?
+)
 	local root = Instance.new("Folder")
 	root.Name = "HUD"
 	root.Parent = gui
 
 	local nRail = #RAIL
 
-	---------------------------------------------------------------- RAIL (compact pack)
+	-- Root scale driver (applies to whole ScreenGui via App, but we also bind here if needed)
+	-- Hud only positions; App owns UIScale on gui.
+
+	---------------------------------------------------------------- RAIL — height packs to N
 	local rail = UIKit.Glass({
 		Name = "Rail",
 		Parent = root,
-		Size = UDim2.fromOffset(68, 400),
-		Position = UDim2.fromOffset(12, 12),
+		Size = UDim2.fromOffset(72, 420),
+		Position = UDim2.fromScale(0, 0) + UDim2.fromOffset(12, 12),
 		Radius = T.R.lg,
 		Z = 10,
-		Deep = false,
 	})
-	rail.ClipsDescendants = false
 	local railPad = UIKit.Pad(rail, 10)
 	local railList = UIKit.List(rail, 8, false, Enum.HorizontalAlignment.Center)
 	railList.VerticalAlignment = Enum.VerticalAlignment.Top
+	UIKit.SizeConstraint(rail, Vector2.new(56, 200), Vector2.new(120, 900))
 
 	local railBtns: { [string]: TextButton } = {}
 	for i, item in ipairs(RAIL) do
@@ -70,48 +79,53 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 				store:OpenPanel(item.id)
 			end,
 		})
-		b.TextColor3 = T.Text
 		railBtns[item.id] = b
 	end
 
-	---------------------------------------------------------------- STATS
+	---------------------------------------------------------------- STATS strip (above bottom CTA)
 	local stats = Instance.new("Frame")
 	stats.Name = "StatsStrip"
 	stats.BackgroundTransparency = 1
-	stats.Size = UDim2.new(1, -100, 0, 52)
-	stats.Position = UDim2.new(0.5, 10, 1, -110)
+	stats.Size = UDim2.new(0.85, 0, 0, 56)
+	stats.Position = UDim2.new(0.5, 0, 1, -120)
 	stats.AnchorPoint = Vector2.new(0.5, 1)
 	stats.ZIndex = 11
 	stats.Parent = root
-	local statsList = UIKit.List(stats, 8, true, Enum.HorizontalAlignment.Center)
+	local statsList = UIKit.List(stats, 10, true, Enum.HorizontalAlignment.Center)
 	statsList.VerticalAlignment = Enum.VerticalAlignment.Center
 
-	local chipPower = UIKit.Chip({ Parent = stats, Title = "СИЛА", Value = "—", Accent = T.Chip.Power, Order = 1 })
-	local chipCps = UIKit.Chip({ Parent = stats, Title = "CPS", Value = "—", Accent = T.Chip.Cps, Order = 2 })
-	local chipDps = UIKit.Chip({ Parent = stats, Title = "DPS", Value = "—", Accent = T.Chip.Dps, Order = 3 })
-	local chipCoins = UIKit.Chip({ Parent = stats, Title = "МОНЕТЫ", Value = "—", Accent = T.Chip.Coins, Order = 4 })
-	local chipClicks = UIKit.Chip({ Parent = stats, Title = "КЛИКИ", Value = "—", Accent = T.Chip.Clicks, Order = 5 })
-	local chipLoc = UIKit.Chip({ Parent = stats, Title = "ЛОКАЦИЯ", Value = "—", Accent = T.Chip.Loc, Order = 6 })
-	local chipR = UIKit.Chip({ Parent = stats, Title = "REBIRTH", Value = "—", Accent = T.Chip.Rebirth, Order = 7 })
-	local chips = { chipPower, chipCps, chipDps, chipCoins, chipClicks, chipLoc, chipR }
+	local chips: { [string]: Frame } = {}
+	for i, m in ipairs(METRICS) do
+		local chip = UIKit.MetricChip({
+			Parent = stats,
+			Key = m.key,
+			Title = m.title,
+			Value = "—",
+			Order = i,
+			W = 120,
+			H = 52,
+		})
+		chips[m.key] = chip
+	end
 
-	---------------------------------------------------------------- ACTIONS (juicy)
+	---------------------------------------------------------------- ACTIONS (primary CTAs)
 	local actions = UIKit.Glass({
 		Name = "Actions",
 		Parent = root,
-		Size = UDim2.fromOffset(420, 80),
+		Size = UDim2.new(0.38, 0, 0, 84),
 		Position = UDim2.new(0.5, 0, 1, -14),
 		Anchor = Vector2.new(0.5, 1),
 		Radius = T.R.xl,
 		Z = 12,
-		Deep = false,
 		AccentBar = true,
 	})
+	UIKit.SizeConstraint(actions, Vector2.new(340, 64), Vector2.new(560, 120))
 	local actPad = UIKit.Pad(actions, 12)
+
 	local row = Instance.new("Frame")
 	row.Name = "Row"
 	row.BackgroundTransparency = 1
-	row.Size = UDim2.new(1, 0, 1, 0)
+	row.Size = UDim2.fromScale(1, 1)
 	row.ZIndex = 13
 	row.Parent = actions
 	local rowList = UIKit.List(row, 12, true, Enum.HorizontalAlignment.Center)
@@ -121,7 +135,7 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 		Name = "Auto",
 		Parent = row,
 		Text = "АВТО",
-		Size = UDim2.fromOffset(110, 54),
+		Size = UDim2.new(0.26, 0, 0, 56),
 		Color = T.AutoOff,
 		Color2 = T.AutoOffDeep,
 		TextColor = T.Text,
@@ -138,12 +152,13 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 		Name = "Click",
 		Parent = row,
 		Text = "КЛИК",
-		Size = UDim2.fromOffset(160, 54),
+		Size = UDim2.new(0.4, 0, 0, 56),
 		Color = T.Click,
 		Color2 = T.ClickDeep,
 		TextColor = T.Text,
-		SizePx = 24,
+		SizePx = 26,
 		Radius = T.R.lg,
+		Primary = true,
 		Order = 2,
 		Z = 14,
 		OnClick = function()
@@ -159,12 +174,13 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 		Name = "Rebirth",
 		Parent = row,
 		Text = "R↑",
-		Size = UDim2.fromOffset(100, 54),
-		Color = T.AccentDeep,
-		Color2 = Color3.fromRGB(200, 120, 30),
+		Size = UDim2.new(0.24, 0, 0, 56),
+		Color = T.GoldDeep,
+		Color2 = Color3.fromRGB(200, 120, 20),
 		TextColor = T.Text,
 		SizePx = 20,
 		Radius = T.R.lg,
+		Primary = true,
 		Order = 3,
 		Z = 14,
 		OnClick = function()
@@ -175,12 +191,12 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 	local rbHost = Instance.new("Frame")
 	rbHost.Name = "RebirthProg"
 	rbHost.BackgroundTransparency = 1
-	rbHost.Size = UDim2.fromOffset(420, 8)
-	rbHost.Position = UDim2.new(0.5, 0, 1, -150)
+	rbHost.Size = UDim2.new(0.38, 0, 0, 8)
+	rbHost.Position = UDim2.new(0.5, 0, 1, -160)
 	rbHost.AnchorPoint = Vector2.new(0.5, 1)
 	rbHost.ZIndex = 11
 	rbHost.Parent = root
-	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, 8)
+	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Gold, 8)
 
 	local questBadge = UIKit.Label({
 		Name = "QuestBadge",
@@ -195,14 +211,13 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 		X = Enum.TextXAlignment.Center,
 		Z = 20,
 	})
-	questBadge.BackgroundColor3 = T.Bad
+	questBadge.BackgroundColor3 = T.Danger
 	questBadge.BackgroundTransparency = 0
-	questBadge.TextColor3 = Color3.new(1, 1, 1)
 	questBadge.Visible = false
 	UIKit.Corner(questBadge, 99)
 
 	local function applyMetrics(m: Layout.Metrics)
-		-- Compact rail: fixed height for N buttons, top-left (not full stretch)
+		-- compact rail pack
 		rail.Size = UDim2.fromOffset(m.railW, m.railH)
 		rail.Position = UDim2.fromOffset(m.pad, m.pad)
 		railPad.PaddingTop = UDim.new(0, m.railPad)
@@ -217,9 +232,9 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 			b.TextColor3 = T.Text
 		end
 
-		actions.Size = UDim2.fromOffset(m.actionW, m.actionH)
+		-- scale-based action bar width
+		actions.Size = UDim2.new(0, m.actionW, 0, m.actionH)
 		actions.Position = UDim2.new(0.5, 0, 1, -m.pad)
-		actions.AnchorPoint = Vector2.new(0.5, 1)
 		actPad.PaddingTop = UDim.new(0, m.pad)
 		actPad.PaddingBottom = UDim.new(0, m.pad)
 		actPad.PaddingLeft = UDim.new(0, m.pad)
@@ -228,40 +243,25 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 
 		autoBtn.Size = UDim2.fromOffset(m.btnAutoW, m.btnH)
 		autoBtn.TextSize = m.fontMd + 1
-		autoBtn.TextColor3 = T.Text
 		clickBtn.Size = UDim2.fromOffset(m.btnClickW, m.btnH)
 		clickBtn.TextSize = m.fontXl + 2
-		clickBtn.TextColor3 = T.Text
 		rebBtn.Size = UDim2.fromOffset(m.btnRebW, m.btnH)
 		rebBtn.TextSize = m.fontLg + 1
-		rebBtn.TextColor3 = T.Text
 
 		stats.Size = UDim2.new(1, -(m.railW + m.pad * 3), 0, m.statsH)
-		stats.Position = UDim2.new(0.5, m.railW * 0.15, 1, -(m.actionH + m.pad + 8))
-		stats.AnchorPoint = Vector2.new(0.5, 1)
+		stats.Position = UDim2.new(0.5, m.railW * 0.12, 1, -(m.actionH + m.pad + 8))
 		statsList.Padding = UDim.new(0, m.chipGap)
 
-		for i, chip in ipairs(chips) do
+		for key, chip in chips do
 			local w = m.chipW
-			if i == 6 then
+			if key == "Loc" then
 				w = math.floor(m.chipW * 1.2)
 			end
 			chip.Size = UDim2.fromOffset(w, m.chipH)
-			local val = chip:FindFirstChild("Value")
-			if val and val:IsA("TextLabel") then
-				val.TextSize = m.fontMd + 1
-			end
-			for _, d in chip:GetChildren() do
-				if d:IsA("TextLabel") and d.Name ~= "Value" then
-					d.TextColor3 = T.TextSoft
-					d.TextSize = m.fontSm
-				end
-			end
 		end
 
 		rbHost.Size = UDim2.fromOffset(m.actionW, 8)
-		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.actionH + m.statsH + m.pad + 12))
-		rbHost.AnchorPoint = Vector2.new(0.5, 1)
+		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.actionH + m.statsH + m.pad + 14))
 		rbTrack.Size = UDim2.new(1, 0, 0, 8)
 	end
 
@@ -269,7 +269,7 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 		Layout.Bind(applyMetrics, nRail)
 	end)
 
-	local api = {} :: any
+	local api: any = {}
 
 	function api.Refresh()
 		local st = store:PeekStats()
@@ -278,34 +278,34 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 			return
 		end
 
-		UIKit.SetChipValue(chipPower, Format.Num(st.damagePerClick or st.totalPower))
-		UIKit.SetChipValue(chipCps, string.format("%.1f", st.cps or 0))
-		UIKit.SetChipValue(chipDps, Format.Num(st.dps))
-		UIKit.SetChipValue(chipCoins, Format.Num(st.coins))
-		UIKit.SetChipValue(chipClicks, Format.Num(st.totalClicks))
-		UIKit.SetChipValue(chipLoc, LOC[st.location or 1] or ("#" .. tostring(st.location)))
-		UIKit.SetChipValue(chipR, string.format("R%d %s", st.rebirthLevel or 0, Format.Mult(st.rebirthMult)))
+		UIKit.SetChipValue(chips.Power, Format.Num(st.damagePerClick or st.totalPower))
+		UIKit.SetChipValue(chips.Cps, string.format("%.1f", st.cps or 0))
+		UIKit.SetChipValue(chips.Dps, Format.Num(st.dps))
+		UIKit.SetChipValue(chips.Coins, Format.Num(st.coins))
+		UIKit.SetChipValue(chips.Clicks, Format.Num(st.totalClicks))
+		UIKit.SetChipValue(chips.Loc, LOC[st.location or 1] or ("#" .. tostring(st.location)))
+		UIKit.SetChipValue(chips.Rebirth, string.format("R%d %s", st.rebirthLevel or 0, Format.Mult(st.rebirthMult)))
 
 		local cost = st.nextRebirthCost or 1
 		local dmg = st.lifetimeDamage or 0
-		local pct = cost > 0 and math.clamp(dmg / cost, 0, 1) or 0
-		rbFill.Size = UDim2.new(pct, 0, 1, 0)
+		rbFill.Size = UDim2.new(cost > 0 and math.clamp(dmg / cost, 0, 1) or 0, 0, 1, 0)
 
 		if st.autoClicker then
 			autoBtn.Text = "АВТО ON"
-			autoBtn.TextColor3 = T.Text
 			local g = autoBtn:FindFirstChildOfClass("UIGradient")
 			if g then
 				g.Color = ColorSequence.new(T.AutoOn, T.AutoOnDeep)
 			end
 		else
 			autoBtn.Text = "АВТО"
-			autoBtn.TextColor3 = T.Text
 			local g = autoBtn:FindFirstChildOfClass("UIGradient")
 			if g then
 				g.Color = ColorSequence.new(T.AutoOff, T.AutoOffDeep)
 			end
 		end
+		autoBtn.TextColor3 = T.Text
+		clickBtn.TextColor3 = T.Text
+		rebBtn.TextColor3 = T.Text
 
 		local ready = 0
 		if profile and profile.quests then
@@ -326,9 +326,9 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> (), 
 			local g = b:FindFirstChildOfClass("UIGradient")
 			if g then
 				if active then
-					g.Color = ColorSequence.new(T.AccentDeep, Color3.fromRGB(200, 120, 30))
+					g.Color = ColorSequence.new(T.GoldDeep, Color3.fromRGB(200, 120, 20))
 				else
-					g.Color = ColorSequence.new(T.Glass3, T.Glass2)
+					g.Color = ColorSequence.new(T.Surface3, T.Surface2)
 				end
 			end
 			b.TextColor3 = T.Text
