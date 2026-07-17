@@ -226,9 +226,9 @@ function UIKit.Button(props: {
 		b.Parent = props.Parent
 	end
 
-	UIKit.Corner(b, props.Radius or T.R.sm)
-	UIKit.Stroke(b, T.Stroke, 1, 0.82)
-	UIKit.Gradient(b, props.Color or T.Glass3, props.Color2 or T.Glass2, 90)
+	UIKit.Corner(b, props.Radius or T.R.md)
+	UIKit.Stroke(b, T.Stroke, 1, T.StrokeA)
+	UIKit.Gradient(b, props.Color or T.Glass3, props.Color2 or T.Glass2, 105)
 	local sc = UIKit.Scale(b, 1)
 
 	b.MouseEnter:Connect(function()
@@ -264,11 +264,11 @@ function UIKit.IconBtn(props: {
 		Name = props.Name,
 		Parent = props.Parent,
 		Text = props.Glyph or "·",
-		Size = props.Size or UDim2.fromOffset(44, 44),
+		Size = props.Size or UDim2.fromOffset(56, 56),
 		Color = props.Active and T.AccentDeep or T.Glass3,
-		Color2 = props.Active and Color3.fromRGB(70, 52, 18) or T.Glass,
+		Color2 = props.Active and Color3.fromRGB(58, 44, 22) or T.Glass,
 		TextColor = props.Active and T.Accent or T.TextSoft,
-		SizePx = 16,
+		SizePx = 15,
 		Radius = T.R.md,
 		Order = props.Order,
 		Z = props.Z or 5,
@@ -288,42 +288,42 @@ function UIKit.Chip(props: {
 	local chip = UIKit.Glass({
 		Name = props.Title or "Chip",
 		Parent = props.Parent,
-		Size = UDim2.fromOffset(props.W or 118, 40),
+		Size = UDim2.fromOffset(props.W or 118, 44),
 		Radius = T.R.sm,
 		Z = 5,
 	})
 	chip.LayoutOrder = props.Order or 0
-	UIKit.Pad(chip, nil, 10, 4, 10, 4)
+	UIKit.Pad(chip, nil, 12, 5, 10, 5)
 
 	local accent = props.Accent or T.Accent
-	local title = UIKit.Label({
+	UIKit.Label({
 		Parent = chip,
 		Text = props.Title or "",
-		Size = UDim2.new(1, 0, 0, 12),
-		Position = UDim2.fromOffset(0, 2),
+		Size = UDim2.new(1, -4, 0, 12),
+		Position = UDim2.fromOffset(4, 2),
 		Color = T.TextDim,
 		SizePx = 10,
 		Font = T.Font.Ui,
 		Z = 6,
 	})
-	local value = UIKit.Label({
+	UIKit.Label({
 		Name = "Value",
 		Parent = chip,
 		Text = props.Value or "0",
-		Size = UDim2.new(1, 0, 0, 18),
-		Position = UDim2.fromOffset(0, 16),
+		Size = UDim2.new(1, -4, 0, 20),
+		Position = UDim2.fromOffset(4, 16),
 		Color = accent,
 		SizePx = 15,
 		Font = T.Font.Num,
 		Z = 6,
 	})
-	-- left accent strip
 	local strip = Instance.new("Frame")
 	strip.Name = "Strip"
 	strip.BorderSizePixel = 0
 	strip.BackgroundColor3 = accent
-	strip.Size = UDim2.new(0, 3, 1, -8)
-	strip.Position = UDim2.fromOffset(0, 4)
+	strip.BackgroundTransparency = 0.15
+	strip.Size = UDim2.new(0, 3, 1, -10)
+	strip.Position = UDim2.fromOffset(0, 5)
 	strip.ZIndex = 6
 	strip.Parent = chip
 	UIKit.Corner(strip, 2)
@@ -384,7 +384,7 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> ()): (Frame, 
 	local root = UIKit.Glass({
 		Name = "Window",
 		Parent = gui,
-		Size = UDim2.fromScale(0.46, 0.58),
+		Size = UDim2.fromScale(0.48, 0.6),
 		Position = UDim2.fromScale(0.5, 0.52),
 		Anchor = Vector2.new(0.5, 0.5),
 		Radius = T.R.lg,
@@ -393,7 +393,7 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> ()): (Frame, 
 		AccentBar = true,
 	})
 	root.Visible = false
-	UIKit.Stroke(root, T.Accent, 1, 0.72)
+	UIKit.Stroke(root, T.Stroke, 1, 0.75)
 
 	local header = Instance.new("Frame")
 	header.Name = "Header"

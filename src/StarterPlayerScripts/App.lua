@@ -39,22 +39,15 @@ function App.Start()
 	gui.DisplayOrder = 20
 	gui.Parent = playerGui
 
-	-- Mixmaxed: UIScale for resolution
+	-- Global soft scale (HUD also resizes itself via Layout metrics)
+	local Layout = require(script.Parent.Layout)
 	local scaler = Instance.new("UIScale")
 	scaler.Name = "UIScale"
 	scaler.Parent = gui
-	local function updateScale()
-		local cam = workspace.CurrentCamera
-		if not cam then
-			return
-		end
-		local vp = cam.ViewportSize
-		scaler.Scale = math.clamp(math.min(vp.X / 1366, vp.Y / 768), 0.78, 1.12)
-	end
-	if workspace.CurrentCamera then
-		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(updateScale)
-	end
-	updateScale()
+	Layout.Bind(function(m)
+		-- Keep global scale gentle; pixel metrics do the heavy lifting
+		scaler.Scale = math.clamp(0.92 + (m.scale - 1) * 0.35, 0.88, 1.08)
+	end)
 
 	local toastApi
 	local windowsApi

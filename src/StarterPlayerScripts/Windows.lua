@@ -8,6 +8,7 @@ local UIKit = require(script.Parent.UIKit)
 local Format = require(script.Parent.Format)
 local Net = require(script.Parent.Net)
 local Rarity = require(script.Parent.Rarity)
+local Layout = require(script.Parent.Layout)
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UpgradeConfig = require(Shared.Config.UpgradeConfig)
@@ -56,6 +57,12 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		frames[id] = root
 		bodies[id] = body
 	end
+
+	Layout.Bind(function(m)
+		for _, root in frames do
+			root.Size = UDim2.fromScale(m.windowW, m.windowH)
+		end
+	end)
 
 	local function showOnly(active: string)
 		for id, f in frames do
