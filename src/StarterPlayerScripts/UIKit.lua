@@ -220,12 +220,13 @@ function UIKit.Button(props: {
 	Z: number?,
 	Order: number?,
 	Primary: boolean?,
+	Disabled: boolean?,
 	OnClick: (() -> ())?,
 }): TextButton
 	local b = Instance.new("TextButton")
 	b.Name = props.Name or "Btn"
 	b.AutoButtonColor = false
-	b.Text = props.Text or ""
+	b.Text = "" -- text lives in child label for stroke control
 	b.Size = props.Size or UDim2.fromOffset(120, 48)
 	if props.Position then
 		b.Position = props.Position
@@ -234,41 +235,72 @@ function UIKit.Button(props: {
 		b.AnchorPoint = props.Anchor
 	end
 	b.BackgroundColor3 = Color3.new(1, 1, 1)
-	b.TextColor3 = props.TextColor or T.Text
-	b.TextSize = props.SizePx or 15
-	b.Font = T.Font.Title
 	b.BorderSizePixel = 0
 	b.ZIndex = props.Z or 3
 	b.LayoutOrder = props.Order or 0
-	b.TextStrokeColor3 = Color3.new(0, 0, 0)
-	b.TextStrokeTransparency = 0.25
+	b.ClipsDescendants = true
 	if props.Parent then
 		b.Parent = props.Parent
 	end
 
-	local c0 = props.Color or T.Surface3
-	local c1 = props.Color2 or T.Surface2
+	local disabled = props.Disabled == true
+	local c0 = disabled and (T.Colors and T.Colors.Disabled or Color3.fromRGB(90, 85, 105)) or (props.Color or T.Surface3)
+	local c1 = disabled and (T.Colors and T.Colors.DisabledDeep or Color3.fromRGB(60, 56, 72)) or (props.Color2 or T.Surface2)
+
 	UIKit.Corner(b, props.Radius or T.R.md)
-	UIKit.Stroke(b, props.Primary and T.Gold or T.Stroke, props.Primary and 2 or 1.4, props.Primary and 0.25 or 0.4)
+	UIKit.Stroke(b, props.Primary and T.Gold or T.Stroke, props.Primary and 2 or 1.4, props.Primary and 0.3 or 0.42)
 	UIKit.Gradient(b, c0, c1, 100)
 	UIKit.SizeConstraint(b, Vector2.new(64, 36), Vector2.new(400, 96))
+	UIKit.Pad(b, 10)
+
+	-- Always pure white readable label
+	local label = Instance.new("TextLabel")
+	label.Name = "Label"
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.fromScale(1, 1)
+	label.Font = T.Font.Title
+	label.Text = props.Text or ""
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+	label.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	label.TextStrokeTransparency = 0.45
+	label.TextScaled = true
+	label.ZIndex = (props.Z or 3) + 1
+	label.Parent = b
+	UIKit.TextConstraint(label, math.max(11, (props.SizePx or 15) - 6), props.SizePx or 22)
 
 	local sc = UIKit.Scale(b, 1)
-	b.MouseEnter:Connect(function()
-		tween(sc, { Scale = 1.06 }, 0.1)
-	end)
-	b.MouseLeave:Connect(function()
-		tween(sc, { Scale = 1 }, 0.1)
-	end)
-	b.MouseButton1Down:Connect(function()
-		tween(sc, { Scale = 0.96 }, 0.06)
-	end)
-	b.MouseButton1Up:Connect(function()
-		tween(sc, { Scale = 1.06 }, 0.08)
-	end)
-	if props.OnClick then
-		b.MouseButton1Click:Connect(props.OnClick)
+	if not disabled then
+		b.MouseEnter:Connect(function()
+			tween(sc, { Scale = 1.05 }, 0.1)
+		end)
+		b.MouseLeave:Connect(function()
+			tween(sc, { Scale = 1 }, 0.1)
+		end)
+		b.MouseButton1Down:Connect(function()
+			tween(sc, { Scale = 0.96 }, 0.06)
+		end)
+		b.MouseButton1Up:Connect(function()
+			tween(sc, { Scale = 1.05 }, 0.08)
+		end)
+		if props.OnClick then
+			b.MouseButton1Click:Connect(props.OnClick)
+		end
+	else
+		b.Active = false
+		label.TextTransparency = 0.15
 	end
+
+	-- keep .Text API working for external updates
+	b:GetPropertyChangedSignal("Text"):Connect(function()
+		if b.Text ~= "" then
+			label.Text = b.Text
+			b.Text = ""
+		end
+	end)
+	-- allow TextColor3 sets on button to affect label if pure white forced:
+	-- we always force white for readability per design task
+	label.TextColor3 = Color3.fromRGB(255, 255, 255)
+
 	return b
 end
 
@@ -473,11 +505,11 @@ function UIKit.Bar(parent: Instance, fill: number, color: Color3?, h: number?): 
 	return track, bar
 end
 
-function UIKit.Window(gui: Instance, title: string, onClose: () -> ()): (Frame, Frame)
+function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: string?): (Frame, Frame)
 	local root = UIKit.Glass({
 		Name = "Window",
 		Parent = gui,
-		Size = UDim2.fromScale(0.5, 0.62),
+		Size = UDim2.fromScale(0.5, 0.64),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Anchor = Vector2.new(0.5, 0.5),
 		Radius = T.R.lg,
@@ -486,37 +518,40 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> ()): (Frame, 
 		AccentBar = true,
 	})
 	root.Visible = false
-	UIKit.Stroke(root, T.Gold, 1.5, 0.45)
-	UIKit.SizeConstraint(root, Vector2.new(320, 280), Vector2.new(900, 800))
+	UIKit.Stroke(root, T.Gold, 1.6, 0.4)
+	UIKit.SizeConstraint(root, Vector2.new(340, 300), Vector2.new(920, 820))
 
 	local header = Instance.new("Frame")
 	header.Name = "Header"
-	header.BackgroundTransparency = 1
-	header.Size = UDim2.new(1, 0, 0, 48)
+	header.BackgroundColor3 = Color3.new(1, 1, 1)
+	header.BorderSizePixel = 0
+	header.Size = UDim2.new(1, 0, 0, 52)
 	header.ZIndex = 31
 	header.Parent = root
+	UIKit.Gradient(header, T.Surface3, T.Surface2, 90)
 
+	local iconTxt = icon or "◆"
 	UIKit.Label({
 		Parent = header,
-		Text = title,
+		Text = iconTxt .. "  " .. title,
 		Size = UDim2.new(1, -56, 1, 0),
 		Position = UDim2.fromOffset(16, 0),
 		SizePx = 18,
 		Font = T.Font.Title,
+		Color = T.Text,
 		Z = 32,
 	})
 
 	UIKit.Button({
 		Name = "Close",
 		Parent = header,
-		Text = "×",
-		Size = UDim2.fromOffset(36, 32),
-		Position = UDim2.new(1, -44, 0.5, 0),
+		Text = "✕",
+		Size = UDim2.fromOffset(40, 36),
+		Position = UDim2.new(1, -48, 0.5, 0),
 		Anchor = Vector2.new(0, 0.5),
-		Color = T.Surface3,
-		Color2 = T.Surface2,
-		TextColor = T.Text,
-		SizePx = 20,
+		Color = T.Danger,
+		Color2 = T.Colors and T.Colors.DangerDeep or Color3.fromRGB(160, 40, 50),
+		SizePx = 18,
 		Radius = T.R.sm,
 		Z = 32,
 		OnClick = onClose,
@@ -525,8 +560,8 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> ()): (Frame, 
 	local body = Instance.new("Frame")
 	body.Name = "Body"
 	body.BackgroundTransparency = 1
-	body.Size = UDim2.new(1, -24, 1, -60)
-	body.Position = UDim2.fromOffset(12, 52)
+	body.Size = UDim2.new(1, -24, 1, -64)
+	body.Position = UDim2.fromOffset(12, 56)
 	body.ZIndex = 31
 	body.ClipsDescendants = true
 	body.Parent = root

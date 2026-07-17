@@ -109,18 +109,21 @@ function Hud.Mount(
 	end
 
 	---------------------------------------------------------------- ACTIONS (primary CTAs)
+	-- Clean container — NO AccentBar (was the thin gold strip under CTAs)
 	local actions = UIKit.Glass({
 		Name = "Actions",
 		Parent = root,
-		Size = UDim2.new(0.38, 0, 0, 84),
+		Size = UDim2.new(0.38, 0, 0, 88),
 		Position = UDim2.new(0.5, 0, 1, -14),
 		Anchor = Vector2.new(0.5, 1),
 		Radius = T.R.xl,
 		Z = 12,
-		AccentBar = true,
+		AccentBar = false,
+		Deep = false,
 	})
-	UIKit.SizeConstraint(actions, Vector2.new(340, 64), Vector2.new(560, 120))
-	local actPad = UIKit.Pad(actions, 12)
+	UIKit.SizeConstraint(actions, Vector2.new(340, 72), Vector2.new(560, 120))
+	UIKit.Stroke(actions, T.Stroke, 1.5, 0.5)
+	local actPad = UIKit.Pad(actions, 14)
 
 	local row = Instance.new("Frame")
 	row.Name = "Row"
@@ -135,11 +138,10 @@ function Hud.Mount(
 		Name = "Auto",
 		Parent = row,
 		Text = "АВТО",
-		Size = UDim2.new(0.26, 0, 0, 56),
+		Size = UDim2.new(0.26, 0, 0, 58),
 		Color = T.AutoOff,
 		Color2 = T.AutoOffDeep,
-		TextColor = T.Text,
-		SizePx = 16,
+		SizePx = 18,
 		Radius = T.R.lg,
 		Order = 1,
 		Z = 14,
@@ -152,10 +154,9 @@ function Hud.Mount(
 		Name = "Click",
 		Parent = row,
 		Text = "КЛИК",
-		Size = UDim2.new(0.4, 0, 0, 56),
+		Size = UDim2.new(0.4, 0, 0, 58),
 		Color = T.Click,
 		Color2 = T.ClickDeep,
-		TextColor = T.Text,
 		SizePx = 26,
 		Radius = T.R.lg,
 		Primary = true,
@@ -168,17 +169,15 @@ function Hud.Mount(
 			end
 		end,
 	})
-	clickBtn.Font = T.Font.Num
 
 	local rebBtn = UIKit.Button({
 		Name = "Rebirth",
 		Parent = row,
 		Text = "R↑",
-		Size = UDim2.new(0.24, 0, 0, 56),
+		Size = UDim2.new(0.24, 0, 0, 58),
 		Color = T.GoldDeep,
 		Color2 = Color3.fromRGB(200, 120, 20),
-		TextColor = T.Text,
-		SizePx = 20,
+		SizePx = 22,
 		Radius = T.R.lg,
 		Primary = true,
 		Order = 3,
@@ -188,11 +187,12 @@ function Hud.Mount(
 		end,
 	})
 
+	-- Rebirth progress sits ABOVE the action panel (not under buttons)
 	local rbHost = Instance.new("Frame")
 	rbHost.Name = "RebirthProg"
 	rbHost.BackgroundTransparency = 1
 	rbHost.Size = UDim2.new(0.38, 0, 0, 8)
-	rbHost.Position = UDim2.new(0.5, 0, 1, -160)
+	rbHost.Position = UDim2.new(0.5, 0, 1, -170)
 	rbHost.AnchorPoint = Vector2.new(0.5, 1)
 	rbHost.ZIndex = 11
 	rbHost.Parent = root
@@ -303,9 +303,14 @@ function Hud.Mount(
 				g.Color = ColorSequence.new(T.AutoOff, T.AutoOffDeep)
 			end
 		end
-		autoBtn.TextColor3 = T.Text
-		clickBtn.TextColor3 = T.Text
-		rebBtn.TextColor3 = T.Text
+		-- force white labels (child Label from UIKit.Button)
+		for _, btn in { autoBtn, clickBtn, rebBtn } do
+			local lab = btn:FindFirstChild("Label")
+			if lab and lab:IsA("TextLabel") then
+				lab.TextColor3 = Color3.fromRGB(255, 255, 255)
+				lab.TextStrokeTransparency = 0.45
+			end
+		end
 
 		local ready = 0
 		if profile and profile.quests then

@@ -29,7 +29,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 	local card = UIKit.Glass({
 		Name = "ModalCard",
 		Parent = layer,
-		Size = UDim2.fromOffset(360, 210),
+		Size = UDim2.fromOffset(380, 220),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Anchor = Vector2.new(0.5, 0.5),
 		Radius = T.R.lg,
@@ -38,7 +38,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 		AccentBar = true,
 	})
 	card.Visible = false
-	UIKit.Stroke(card, T.Accent, 1, 0.65)
+	UIKit.Stroke(card, T.Gold, 1.6, 0.4)
 	UIKit.Pad(card, 18)
 
 	local title = UIKit.Label({
@@ -84,19 +84,19 @@ function Modals.Mount(gui: ScreenGui, store: any)
 		Parent = row,
 		Text = "OK",
 		Size = UDim2.new(0.48, 0, 1, 0),
-		Color = T.AccentDeep,
-		Color2 = Color3.fromRGB(120, 88, 30),
-		TextColor = T.Text,
-		SizePx = 14,
+		Color = T.Success,
+		Color2 = T.Colors and T.Colors.SuccessDeep or Color3.fromRGB(28, 140, 80),
+		Primary = true,
+		SizePx = 16,
 		Z = 53,
 	})
 	local cancel = UIKit.Button({
 		Parent = row,
 		Text = "Отмена",
 		Size = UDim2.new(0.48, 0, 1, 0),
-		Color = T.Glass3,
-		Color2 = T.Glass2,
-		SizePx = 14,
+		Color = T.Surface3,
+		Color2 = T.Surface2,
+		SizePx = 16,
 		Z = 53,
 	})
 	cancel.MouseButton1Click:Connect(function()
