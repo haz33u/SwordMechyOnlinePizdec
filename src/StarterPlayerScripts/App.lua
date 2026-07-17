@@ -1,7 +1,7 @@
 --!strict
 --[[
-	SINGLE source of truth for UI: this repo (Rojo → StarterPlayerScripts).
-	Do NOT put GameUI in StarterGui — it stacks with this and doubles the HUD.
+	SINGLE source of truth for UI: this repo (Rojo).
+	Do NOT put GameUI in StarterGui.
 ]]
 
 local Players = game:GetService("Players")
@@ -9,8 +9,12 @@ local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Packages = ReplicatedStorage:WaitForChild("Packages")
-local Fusion = require(Packages.Fusion)
+local Packages = ReplicatedStorage:WaitForChild("Packages", 30)
+if not Packages then
+	error("[GameUI] ReplicatedStorage.Packages missing — run wally install + rojo")
+end
+
+local Fusion = require(Packages:WaitForChild("Fusion"))
 
 local Store = require(script.Parent.Store)
 local Net = require(script.Parent.Net)
@@ -24,22 +28,24 @@ local T = require(script.Parent.Theme)
 local App = {}
 local started = false
 
-local function isOurGui(sg: ScreenGui): boolean
+local function isDuplicateHud(sg: ScreenGui, keep: ScreenGui?): boolean
+	if keep and sg == keep then
+		return false
+	end
 	if sg:GetAttribute("IsPreview") == true then
 		return true
 	end
 	local n = sg.Name
-	return n == "GameUI"
-		or n == "GameUI_EditPreview"
+	-- only wipe known dupes / previews — NOT CombatFx or random CoreGui clones
+	return n == "GameUI_EditPreview"
 		or n == "SwordMastersHUD"
-		or n == "CombatFxGui"
+		or n == "GameUI" and (not keep or sg ~= keep)
 		or string.find(n, "EditPreview", 1, true) ~= nil
-		or string.find(n, "GameUI", 1, true) ~= nil
 end
 
-local function wipeForeignHud(playerGui: PlayerGui)
+local function wipeDupes(playerGui: PlayerGui, keep: ScreenGui?)
 	for _, child in playerGui:GetChildren() do
-		if child:IsA("ScreenGui") and isOurGui(child) then
+		if child:IsA("ScreenGui") and isDuplicateHud(child, keep) then
 			child:Destroy()
 		end
 	end
@@ -48,12 +54,19 @@ end
 local function mockSnapshot()
 	return {
 		profile = {
-			coins = 0,
+			coins = 100,
 			totalClicks = 0,
 			rebirthLevel = 0,
 			rebirthMult = 1,
 			autoClicker = false,
-			upgradeLevels = {},
+			upgradeLevels = {
+				RunSpeed = 0,
+				Backpack = 0,
+				Power = 0,
+				ClickSpeed = 0,
+				CritChance = 0,
+				Luck = 0,
+			},
 			weapons = {},
 			equippedMain = nil,
 			equippedOffhand = nil,
@@ -69,13 +82,13 @@ local function mockSnapshot()
 			dungeonStage = { easy = 0, medium = 0, hard = 0 },
 		},
 		stats = {
-			totalPower = 1,
-			damagePerClick = 1,
+			totalPower = 10,
+			damagePerClick = 10,
 			cps = 1,
-			dps = 1,
-			coins = 0,
+			dps = 10,
+			coins = 100,
 			totalClicks = 0,
-			crit = 0,
+			crit = 0.05,
 			luck = 0,
 			rebirthLevel = 0,
 			rebirthMult = 1,
@@ -90,7 +103,7 @@ end
 
 function App.Start()
 	if started then
-		warn("[GameUI] App.Start already ran — skip (prevent double mount)")
+		warn("[GameUI] already started — skip")
 		return
 	end
 	started = true
@@ -98,8 +111,7 @@ function App.Start()
 	local player = Players.LocalPlayer
 	local playerGui = player:WaitForChild("PlayerGui")
 
-	-- ONE UI only: nuke every leftover / StarterGui clone of our HUD
-	wipeForeignHud(playerGui)
+	wipeDupes(playerGui, nil)
 
 	local scope = Fusion.scoped(Fusion)
 	local store = Store.Create(scope)
@@ -109,13 +121,13 @@ function App.Start()
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.DisplayOrder = 25
+	gui.DisplayOrder = 50
+	gui.Enabled = true
 	gui:SetAttribute("SwordMastersUI", true)
 	gui.Parent = playerGui
 
-	-- if something re-injects preview mid-session, kill it
 	playerGui.ChildAdded:Connect(function(child)
-		if child:IsA("ScreenGui") and child ~= gui and isOurGui(child) then
+		if child:IsA("ScreenGui") and child ~= gui and isDuplicateHud(child, gui) then
 			task.defer(function()
 				if child.Parent and child ~= gui then
 					child:Destroy()
@@ -124,10 +136,7 @@ function App.Start()
 		end
 	end)
 
-	local toastApi
-	local windowsApi
-	local modalsApi
-	local hudApi
+	local toastApi, windowsApi, modalsApi, hudApi
 
 	local function openModal(kind: string, payload: any?)
 		store:OpenModal(kind, payload)
@@ -135,12 +144,6 @@ function App.Start()
 			modalsApi.Refresh()
 		end
 	end
-
-	toastApi = Toast.Mount(gui)
-	hudApi = Hud.Mount(gui, store, openModal)
-	windowsApi = Windows.Mount(gui, store, openModal)
-	modalsApi = Modals.Mount(gui, store)
-	local onCombatFx = FloatingDamage.Mount()
 
 	local function refreshAll()
 		if hudApi then
@@ -154,11 +157,37 @@ function App.Start()
 		end
 	end
 
-	-- show mock immediately so layout is visible even before remotes
-	do
-		local m = mockSnapshot()
-		store:SetData(m.profile, m.stats)
-		refreshAll()
+	-- Mount UI (each step pcall so one fail doesn't kill all)
+	local function step(name: string, fn: () -> ())
+		local ok, err = pcall(fn)
+		if not ok then
+			warn("[GameUI] step failed:", name, err)
+		end
+		return ok
+	end
+
+	step("Toast", function()
+		toastApi = Toast.Mount(gui)
+	end)
+	step("Hud", function()
+		hudApi = Hud.Mount(gui, store, openModal)
+	end)
+	step("Windows", function()
+		windowsApi = Windows.Mount(gui, store, openModal)
+	end)
+	step("Modals", function()
+		modalsApi = Modals.Mount(gui, store)
+	end)
+	step("CombatFx", function()
+		FloatingDamage.Mount()
+	end)
+
+	local m = mockSnapshot()
+	store:SetData(m.profile, m.stats)
+	refreshAll()
+
+	if toastApi then
+		toastApi.Show("HUD online", "green")
 	end
 
 	task.spawn(function()
@@ -168,28 +197,37 @@ function App.Start()
 		if ok and typeof(data) == "table" and data.stats then
 			store:SetData(data.profile, data.stats)
 			refreshAll()
-		else
-			toastApi.Show("Сервер не ответил — mock HUD", "red")
+		elseif toastApi then
+			toastApi.Show("Mock HUD (no server profile)", "gold")
 		end
 	end)
 
-	Net.Event("ProfileUpdate").OnClientEvent:Connect(function(payload)
-		if typeof(payload) == "table" then
-			store:SetData(payload.profile, payload.stats)
-			refreshAll()
-		end
+	pcall(function()
+		Net.Event("ProfileUpdate").OnClientEvent:Connect(function(payload)
+			if typeof(payload) == "table" then
+				store:SetData(payload.profile, payload.stats)
+				refreshAll()
+			end
+		end)
 	end)
 
-	Net.Event("Notify").OnClientEvent:Connect(function(payload)
-		if typeof(payload) == "table" then
-			toastApi.Show(tostring(payload.text or ""), payload.color)
-		elseif typeof(payload) == "string" then
-			toastApi.Show(payload)
-		end
+	pcall(function()
+		Net.Event("Notify").OnClientEvent:Connect(function(payload)
+			if not toastApi then
+				return
+			end
+			if typeof(payload) == "table" then
+				toastApi.Show(tostring(payload.text or ""), payload.color)
+			elseif typeof(payload) == "string" then
+				toastApi.Show(payload)
+			end
+		end)
 	end)
 
-	Net.Event("CombatFx").OnClientEvent:Connect(function(payload)
-		onCombatFx(payload)
+	pcall(function()
+		Net.Event("CombatFx").OnClientEvent:Connect(function(_payload)
+			-- FloatingDamage handles if mounted
+		end)
 	end)
 
 	local lastPanel = "none"
@@ -200,9 +238,9 @@ function App.Start()
 			lastPanel = p
 			refreshAll()
 		end
-		local m = store:PeekModal()
-		if m ~= lastModal then
-			lastModal = m
+		local md = store:PeekModal()
+		if md ~= lastModal then
+			lastModal = md
 			if modalsApi then
 				modalsApi.Refresh()
 			end
@@ -215,11 +253,13 @@ function App.Start()
 		if not stats or not stats.autoClicker then
 			return
 		end
-		local cd = stats.swingCd or (1 / math.max(stats.cps or 1, 0.1))
+		local cd = stats.swingCd or 1
 		accum += dt
 		if accum >= cd then
 			accum = 0
-			Net.Swing("auto")
+			pcall(function()
+				Net.Swing("auto")
+			end)
 		end
 	end)
 
@@ -228,9 +268,13 @@ function App.Start()
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.E then
-			Net.Swing("manual")
+			pcall(function()
+				Net.Swing("manual")
+			end)
 		elseif input.KeyCode == Enum.KeyCode.T then
-			Net.ToggleAuto()
+			pcall(function()
+				Net.ToggleAuto()
+			end)
 		elseif input.KeyCode == Enum.KeyCode.R then
 			openModal("rebirth", nil)
 		elseif input.KeyCode == Enum.KeyCode.I then
@@ -251,7 +295,7 @@ function App.Start()
 		end
 	end)
 
-	print("[GameUI] single-source HUD from REPO only (no StarterGui UI)")
+	print("[GameUI] mounted ScreenGui.GameUI | children=", #gui:GetChildren())
 end
 
 return App

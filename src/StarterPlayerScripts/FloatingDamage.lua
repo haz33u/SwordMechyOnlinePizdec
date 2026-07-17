@@ -10,7 +10,7 @@ local FloatingDamage = {}
 function FloatingDamage.Mount()
 	local player = Players.LocalPlayer
 	local gui = Instance.new("ScreenGui")
-	gui.Name = "CombatFxGui"
+	gui.Name = "SM_CombatFx" -- not wiped by App dupe filter
 	gui.ResetOnSpawn = false
 	gui.IgnoreGuiInset = true
 	gui.DisplayOrder = 50

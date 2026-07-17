@@ -1,9 +1,10 @@
 --!strict
 --[[
 	Idle-RPG HUD (repo only):
-	- LEFT rail: N buttons, equal height flex (all visible)
-	- BOTTOM: stats strip ABOVE action bar (clear of Roblox topbar)
+	- LEFT rail: N buttons, equal pixel height (all visible)
+	- BOTTOM: stats strip ABOVE action bar
 	- BOTTOM: АВТО | КЛИК | R↑
+	No UIFlexItem (breaks some Studio builds).
 ]]
 
 local T = require(script.Parent.Theme)
@@ -39,18 +40,20 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 
 	local nRail = #RAIL
 
-	---------------------------------------------------------------- LEFT RAIL (full side, flex buttons)
+	---------------------------------------------------------------- LEFT RAIL
 	local rail = UIKit.Glass({
 		Name = "Rail",
 		Parent = root,
+		Size = UDim2.new(0, 64, 1, -160),
+		Position = UDim2.fromOffset(10, 10),
 		Radius = T.R.lg,
 		Z = 10,
-		Deep = false, -- lighter solid-ish
+		Deep = false,
 	})
 	rail.ClipsDescendants = false
 	local railPad = UIKit.Pad(rail, 8)
 	local railList = UIKit.List(rail, 6, false, Enum.HorizontalAlignment.Center)
-	railList.VerticalAlignment = Enum.VerticalAlignment.Center
+	railList.VerticalAlignment = Enum.VerticalAlignment.Top
 
 	local railBtns: { [string]: TextButton } = {}
 	for i, item in ipairs(RAIL) do
@@ -63,17 +66,17 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 				store:OpenPanel(item.id)
 			end,
 		})
-		-- equal flex share of rail height
-		local flex = Instance.new("UIFlexItem")
-		flex.FlexMode = Enum.UIFlexMode.Fill
-		flex.Parent = b
+		b.Size = UDim2.fromOffset(48, 48)
+		b.TextColor3 = T.Text
 		railBtns[item.id] = b
 	end
 
-	---------------------------------------------------------------- STATS strip (above bottom actions — NOT under Roblox topbar)
+	---------------------------------------------------------------- STATS (above bottom bar)
 	local stats = Instance.new("Frame")
 	stats.Name = "StatsStrip"
 	stats.BackgroundTransparency = 1
+	stats.Size = UDim2.new(1, -90, 0, 48)
+	stats.Position = UDim2.new(0.5, 20, 1, -100)
 	stats.AnchorPoint = Vector2.new(0.5, 1)
 	stats.ZIndex = 11
 	stats.Parent = root
@@ -89,17 +92,19 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 	local chipR = UIKit.Chip({ Parent = stats, Title = "REBIRTH", Value = "—", Accent = T.Chip.Rebirth, Order = 7 })
 	local chips = { chipPower, chipCps, chipDps, chipCoins, chipClicks, chipLoc, chipR }
 
-	---------------------------------------------------------------- BOTTOM ACTIONS
+	---------------------------------------------------------------- ACTIONS
 	local actions = UIKit.Glass({
 		Name = "Actions",
 		Parent = root,
+		Size = UDim2.fromOffset(400, 72),
+		Position = UDim2.new(0.5, 0, 1, -12),
 		Anchor = Vector2.new(0.5, 1),
 		Radius = T.R.lg,
 		Z = 12,
 		Deep = false,
 		AccentBar = true,
 	})
-	local actPad = UIKit.Pad(actions, 12)
+	local actPad = UIKit.Pad(actions, 10)
 	local row = Instance.new("Frame")
 	row.Name = "Row"
 	row.BackgroundTransparency = 1
@@ -113,6 +118,7 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		Name = "Auto",
 		Parent = row,
 		Text = "АВТО",
+		Size = UDim2.fromOffset(100, 48),
 		Color = T.AutoOff,
 		Color2 = T.AutoOffDeep,
 		TextColor = T.Text,
@@ -129,6 +135,7 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		Name = "Click",
 		Parent = row,
 		Text = "КЛИК",
+		Size = UDim2.fromOffset(140, 48),
 		Color = T.Click,
 		Color2 = T.ClickDeep,
 		TextColor = T.Text,
@@ -146,6 +153,7 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		Name = "Rebirth",
 		Parent = row,
 		Text = "R↑",
+		Size = UDim2.fromOffset(90, 48),
 		Color = T.AccentDeep,
 		Color2 = Color3.fromRGB(140, 100, 30),
 		TextColor = T.Text,
@@ -161,6 +169,8 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 	local rbHost = Instance.new("Frame")
 	rbHost.Name = "RebirthProg"
 	rbHost.BackgroundTransparency = 1
+	rbHost.Size = UDim2.fromOffset(400, 8)
+	rbHost.Position = UDim2.new(0.5, 0, 1, -130)
 	rbHost.AnchorPoint = Vector2.new(0.5, 1)
 	rbHost.ZIndex = 11
 	rbHost.Parent = root
@@ -186,7 +196,6 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 	UIKit.Corner(questBadge, 99)
 
 	local function applyMetrics(m: Layout.Metrics)
-		-- Rail: left full column above bottom block
 		local bottomBlock = m.actionH + m.statsH + m.pad * 2 + 12
 		rail.Size = UDim2.new(0, m.railW, 1, -(m.pad + bottomBlock))
 		rail.Position = UDim2.fromOffset(m.pad, m.pad)
@@ -197,13 +206,11 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		railList.Padding = UDim.new(0, m.railGap)
 
 		for _, b in railBtns do
-			-- width fixed, height filled by UIFlexItem
-			b.Size = UDim2.new(1, 0, 0, m.railBtn)
+			b.Size = UDim2.fromOffset(m.railBtn, m.railBtn)
 			b.TextSize = math.clamp(math.floor(m.railBtn * 0.32), 11, 16)
 			b.TextColor3 = T.Text
 		end
 
-		-- Actions bottom center
 		actions.Size = UDim2.fromOffset(m.actionW, m.actionH)
 		actions.Position = UDim2.new(0.5, 0, 1, -m.pad)
 		actions.AnchorPoint = Vector2.new(0.5, 1)
@@ -223,9 +230,8 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		rebBtn.TextSize = m.fontLg
 		rebBtn.TextColor3 = T.Text
 
-		-- Stats strip directly above actions
 		stats.Size = UDim2.new(1, -(m.railW + m.pad * 3), 0, m.statsH)
-		stats.Position = UDim2.new(0.5, m.railW * 0.25, 1, -(m.actionH + m.pad + 6))
+		stats.Position = UDim2.new(0.5, m.railW * 0.2, 1, -(m.actionH + m.pad + 6))
 		stats.AnchorPoint = Vector2.new(0.5, 1)
 		statsList.Padding = UDim.new(0, m.chipGap)
 
@@ -238,7 +244,6 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 			local val = chip:FindFirstChild("Value")
 			if val and val:IsA("TextLabel") then
 				val.TextSize = m.fontMd
-				val.TextColor3 = val.TextColor3 -- keep accent
 			end
 			for _, d in chip:GetChildren() do
 				if d:IsA("TextLabel") and d.Name ~= "Value" then
@@ -254,7 +259,14 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		rbTrack.Size = UDim2.new(1, 0, 0, 8)
 	end
 
-	Layout.Bind(applyMetrics, nRail)
+	-- safe bind
+	local okBind, bindErr = pcall(function()
+		Layout.Bind(applyMetrics, nRail)
+	end)
+	if not okBind then
+		warn("[GameUI] Layout.Bind failed:", bindErr)
+		-- fallback sizes already set on create
+	end
 
 	local api = {}
 	function api.Refresh()
