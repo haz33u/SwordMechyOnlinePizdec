@@ -8,12 +8,8 @@ Desktop.ini
 .vscode/*
 !.vscode/extensions.json
 
-# Large places (use Git LFS if you track them)
-# places/*.rbxl
-# places/*.rbxlx
-
-# Node temp (transcript tools etc.)
+# Node temp
 node_modules/
 
-# Local research dumps (not game code)
+# Local research dumps
 subs/

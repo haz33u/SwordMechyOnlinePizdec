@@ -1,30 +1,39 @@
-# SwordMechy / Sword Masters — **Backend only**
+# SwordMechy / Sword Masters
 
 Репозиторий: https://github.com/haz33u/SwordMechyOnlinePizdec
 
 ## Зона ответственности
 
-| Мы (этот repo / я) | Вы + Studio Agent |
-|--------------------|-------------------|
-| Server services | Карта, terrain, модели |
-| Config / Formulas | Весь UI (ScreenGui) |
-| Remotes API | VFX, звук, анимации |
-| Профиль, клики, rebirth… | Team Create коллаб |
+| Repo / код | Studio (Place) |
+|------------|----------------|
+| Server + Shared + remotes | Карта, terrain, модели |
+| **Client UI** (GameUI) | Art, VFX, Team Create |
+| Packages: Fusion + OnyxUI | PlayerSpawn на локациях |
 
-**Никакого** клиентского HUD и **никакой** генерации построек в Workspace.
+## UI stack (утверждён)
+
+- **Fusion** 0.3 — стейт  
+- **OnyxUI** — тема / компоненты (Themer gold RPG)  
+- **Fluency-style Icons** — `Client/Icons.lua` (подмени ID после импорта Fluency)  
+- **Brief:** `docs/UI_BRIEF_FOR_STUDIO_AGENT.md`
 
 ## Rojo
 
 ```bash
+# deps (если Packages пустой)
+wally install
+
 rojo serve
 ```
 
-Синкается только:
+Синкается:
 
 - `ReplicatedStorage.Shared`
+- `ReplicatedStorage.Packages`
 - `ServerScriptService.Server`
+- `StarterPlayer.StarterPlayerScripts.Client` → GameUI
 
-`Workspace` / `StarterGui` — **ваши**, Rojo не трогает.
+`Workspace` Rojo **не** трогает.
 
 ## Документы
 

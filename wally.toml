@@ -1,0 +1,9 @@
+[package]
+name = "haz33u/sword-masters"
+version = "0.3.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+Fusion = "elttob/fusion@0.3.0"
+OnyxUI = "imavafe/onyx-ui@1.0.4"
