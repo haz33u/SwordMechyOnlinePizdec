@@ -13,15 +13,6 @@
       "Server": {
         "$path": "src/ServerScriptService"
       }
-    },
-    "StarterPlayer": {
-      "$className": "StarterPlayer",
-      "StarterPlayerScripts": {
-        "$className": "StarterPlayerScripts",
-        "Client": {
-          "$path": "src/StarterPlayerScripts"
-        }
-      }
     }
   }
 }

@@ -80,19 +80,11 @@ local WorldConfig = {
 		Boss = Color3.fromRGB(220, 60, 60),
 	},
 
-	-- ─── Scaffold / art safety ───
-	-- Build grey guides only if Loc folder has NO Art content
-	AUTO_BUILD_SCAFFOLD = true,
-	-- If true, wipe Scaffold folder and rebuild (DEV only — keep false while decorating)
-	REBUILD_SCAFFOLD = false,
-	-- Never touch instances under this name
-	ART_FOLDER = "Art",
-	SCAFFOLD_FOLDER = "Scaffold",
-
+	-- Backend does NOT build anything. These names are for YOUR Studio map convention:
+	-- Workspace.World.Locations.Loc01.PlayerSpawn (BasePart)
 	ROOT_FOLDER = "World",
 	LOCATIONS_FOLDER = "Locations",
-	LOBBY_FOLDER = "Lobby",
-	DUNGEONS_FOLDER = "Dungeons",
+	ART_FOLDER = "Art", -- optional; you own it
 
 	--[[
 		4 territories for Phase 1.

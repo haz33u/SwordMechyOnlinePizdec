@@ -1,6 +1,7 @@
 --!strict
 --[[
-	Sword Masters — server bootstrap (skeleton)
+	Sword Masters — BACKEND ONLY
+	No UI, no world building. Studio / Studio Agent owns client + map.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -9,6 +10,7 @@ local Players = game:GetService("Players")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
 local GameConfig = require(Shared.Config.GameConfig)
+local Formulas = require(Shared.Formulas)
 
 local Services = script.Parent:WaitForChild("Services")
 local ProfileService = require(Services.ProfileService)
@@ -23,13 +25,10 @@ local DungeonService = require(Services.DungeonService)
 local LocationService = require(Services.LocationService)
 local WorldService = require(Services.WorldService)
 
-print("[SwordMasters]", GameConfig.VERSION, "booting...")
+print("[SwordMasters]", GameConfig.VERSION, "backend boot...")
 
 Remotes.InitAll()
-
--- World first (islands 1–18 placeholders)
 WorldService.Init()
-
 ProfileService.Init()
 CombatService.Init()
 RebirthService.Init()
@@ -41,6 +40,7 @@ QuestService.Init()
 DungeonService.Init()
 LocationService.Init()
 
+-- Logical mobs for location 1 (no 3D models — your map/agent can visualize later)
 CombatService.BootstrapLocation1()
 
 Remotes.Function("GetProfile").OnServerInvoke = function(player)
@@ -48,7 +48,6 @@ Remotes.Function("GetProfile").OnServerInvoke = function(player)
 	if not profile then
 		return nil
 	end
-	local Formulas = require(Shared.Formulas)
 	return {
 		profile = profile,
 		stats = Formulas.Snapshot(profile),
@@ -64,4 +63,4 @@ Players.PlayerAdded:Connect(function(player)
 	end)
 end)
 
-print("[SwordMasters] ready. World 18 islands + Loc1 mobs. See docs/WORLD_SETUP.md")
+print("[SwordMasters] backend ready. Remotes under ReplicatedStorage.Remotes")
