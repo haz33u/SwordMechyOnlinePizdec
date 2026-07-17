@@ -1,7 +1,8 @@
 --!strict
 --[[
-	Gameplay data per location (mobs, quests).
-	Positions / bounds live in WorldConfig (18 islands).
+	Gameplay data per location (spawn tables).
+	Mob stats live in MobConfig.
+	World positions: WorldConfig (math) + Studio map (PlayerSpawn).
 ]]
 
 local WorldConfig = require(script.Parent.WorldConfig)
@@ -9,7 +10,7 @@ local WorldConfig = require(script.Parent.WorldConfig)
 export type MobSpawn = {
 	mobId: string,
 	count: number,
-	zone: string,
+	zone: string, -- A | B | C | Boss | Debug
 }
 
 export type LocationDef = {
@@ -22,29 +23,64 @@ export type LocationDef = {
 	status: string,
 	mobs: { MobSpawn },
 	bossId: string?,
+	debugMobs: { MobSpawn }?, -- always available for tests
 	questIds: { string },
 	caseId: string?,
 }
 
--- Detailed mobs only for early locs; rest get generic stubs until filled
-local MOB_OVERRIDES: { [number]: { mobs: { MobSpawn }, bossId: string?, questIds: { string }, caseId: string? } } = {
+local MOB_OVERRIDES: {
+	[number]: {
+		mobs: { MobSpawn },
+		bossId: string?,
+		debugMobs: { MobSpawn }?,
+		questIds: { string },
+		caseId: string?,
+	},
+} = {
+	----------------------------------------------------------------------
+	-- LOC 1 — Тёмный лес (full roster)
+	----------------------------------------------------------------------
 	[1] = {
 		mobs = {
-			{ mobId = "L1_Slime", count = 12, zone = "A" },
+			-- Zone A: trash
+			{ mobId = "L1_Slime", count = 10, zone = "A" },
+			{ mobId = "L1_GoblinScout", count = 8, zone = "A" },
+			-- Zone B: normal
 			{ mobId = "L1_Skeleton", count = 8, zone = "B" },
 			{ mobId = "L1_Wolf", count = 6, zone = "B" },
+			{ mobId = "L1_GoblinWarrior", count = 4, zone = "B" },
+			-- Zone C: elite
 			{ mobId = "L1_Knight", count = 3, zone = "C" },
 		},
 		bossId = "L1_Boss",
-		questIds = { "Q1_Slimes", "Q2_Wolves", "Q3_Boss", "Q4_Power", "Q5_Rebirth" },
+		-- Debug dummy always near spawn area for DPS tests
+		debugMobs = {
+			{ mobId = "DEBUG_Dummy", count = 1, zone = "Debug" },
+		},
+		questIds = {
+			"Q1_Slimes",
+			"Q1_GoblinScouts",
+			"Q2_Wolves",
+			"Q2_GoblinWarriors",
+			"Q3_Boss",
+			"Q4_Power",
+			"Q5_Rebirth",
+		},
 		caseId = "Case_Loc1",
 	},
+
+	----------------------------------------------------------------------
+	-- LOC 2–3 stubs
+	----------------------------------------------------------------------
 	[2] = {
 		mobs = {
 			{ mobId = "L2_Sailor", count = 10, zone = "A" },
 			{ mobId = "L2_Captain", count = 4, zone = "B" },
 		},
 		bossId = "L2_Admiral",
+		debugMobs = {
+			{ mobId = "DEBUG_Dummy", count = 1, zone = "Debug" },
+		},
 		questIds = { "Q_L2_Intro" },
 		caseId = "Case_Loc2",
 	},
@@ -53,6 +89,9 @@ local MOB_OVERRIDES: { [number]: { mobs: { MobSpawn }, bossId: string?, questIds
 			{ mobId = "L3_Samurai", count = 10, zone = "A" },
 		},
 		bossId = nil,
+		debugMobs = {
+			{ mobId = "DEBUG_Dummy", count = 1, zone = "Debug" },
+		},
 		questIds = {},
 		caseId = "Case_Loc3",
 	},
@@ -75,6 +114,7 @@ for _, meta in WorldConfig.Locations do
 		status = meta.status,
 		mobs = ov and ov.mobs or {},
 		bossId = ov and ov.bossId or nil,
+		debugMobs = ov and ov.debugMobs or { { mobId = "DEBUG_Dummy", count = 1, zone = "Debug" } },
 		questIds = ov and ov.questIds or {},
 		caseId = ov and ov.caseId or ("Case_Loc" .. meta.id),
 	}

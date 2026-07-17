@@ -62,13 +62,16 @@ function Remotes.InitAll()
 	Remotes.Event("StartDungeon")
 	Remotes.Event("BanDrop")
 	Remotes.Event("FeedPet")
+	Remotes.Event("DebugSpawnDummy") -- debug: spawn training dummy
 
 	-- server -> client
 	Remotes.Event("ProfileUpdate")
 	Remotes.Event("CombatFx")
 	Remotes.Event("Notify")
+	Remotes.Event("MobsUpdate") -- full/partial mob list for client visual sync
 
 	Remotes.Function("GetProfile")
+	Remotes.Function("GetMobCatalog") -- static mob definitions for UI/Studio
 end
 
 return Remotes

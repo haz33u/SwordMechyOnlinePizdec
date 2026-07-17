@@ -19,6 +19,7 @@ export type QuestDef = {
 
 local QuestConfig = {
 	Quests = {
+		-- Loc1 chain
 		Q1_Slimes = {
 			id = "Q1_Slimes",
 			name = "Слизни",
@@ -29,6 +30,16 @@ local QuestConfig = {
 			rewards = { coins = 100, power = 20 },
 			location = 1,
 		},
+		Q1_GoblinScouts = {
+			id = "Q1_GoblinScouts",
+			name = "Разведчики",
+			description = "Убей 15 гоблинов-разведчиков",
+			type = "kill",
+			targetId = "L1_GoblinScout",
+			amount = 15,
+			rewards = { coins = 120, power = 25 },
+			location = 1,
+		},
 		Q2_Wolves = {
 			id = "Q2_Wolves",
 			name = "Волки",
@@ -37,6 +48,16 @@ local QuestConfig = {
 			targetId = "L1_Wolf",
 			amount = 15,
 			rewards = { coins = 250, weaponId = "W1_U1" },
+			location = 1,
+		},
+		Q2_GoblinWarriors = {
+			id = "Q2_GoblinWarriors",
+			name = "Воины",
+			description = "Убей 10 гоблинов-воинов",
+			type = "kill",
+			targetId = "L1_GoblinWarrior",
+			amount = 10,
+			rewards = { coins = 300, power = 40 },
 			location = 1,
 		},
 		Q3_Boss = {
@@ -69,6 +90,7 @@ local QuestConfig = {
 			rewards = { coins = 500, unlockLocation = 2, petSlot = 1 },
 			location = 1,
 		},
+
 		Q_L2_Intro = {
 			id = "Q_L2_Intro",
 			name = "Матросы",

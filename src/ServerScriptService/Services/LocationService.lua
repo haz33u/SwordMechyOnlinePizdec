@@ -58,6 +58,12 @@ function LocationService.Set(player: Player, locId: number)
 
 	profile.currentLocation = locId
 	WorldService.TeleportToLocation(player, locId)
+
+	-- ensure logical mobs for this location (+ debug dummy)
+	local CombatService = require(script.Parent.CombatService)
+	CombatService.SpawnLocationMobs(locId)
+	Remotes.Event("MobsUpdate"):FireClient(player, CombatService.GetMobsForClient(locId))
+
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format("Локация %d: %s", locId, loc.name),
 		color = "cyan",

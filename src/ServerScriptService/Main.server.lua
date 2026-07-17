@@ -48,11 +48,17 @@ Remotes.Function("GetProfile").OnServerInvoke = function(player)
 	if not profile then
 		return nil
 	end
+	local locId = profile.currentLocation or 1
 	return {
 		profile = profile,
 		stats = Formulas.Snapshot(profile),
-		mobs = CombatService.GetMobsForClient(),
+		mobs = CombatService.GetMobsForClient(locId),
 	}
+end
+
+Remotes.Function("GetMobCatalog").OnServerInvoke = function(_player)
+	local MobConfig = require(Shared.Config.MobConfig)
+	return MobConfig.GetPublicCatalog()
 end
 
 Players.PlayerAdded:Connect(function(player)

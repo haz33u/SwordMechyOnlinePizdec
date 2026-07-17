@@ -36,6 +36,7 @@ rojo serve
 | [docs/COLLAB.md](docs/COLLAB.md) | Git + друг |
 | [docs/CORE_SYSTEMS.md](docs/CORE_SYSTEMS.md) | Игровые системы |
 | [docs/WORLD_SETUP.md](docs/WORLD_SETUP.md) | Масштабы локаций (числа) |
+| [docs/MOBS_LOC1.md](docs/MOBS_LOC1.md) | Мобы Loc1 + Debug Dummy |
 
 ## Карта (ваша)
 

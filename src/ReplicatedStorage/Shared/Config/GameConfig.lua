@@ -6,7 +6,7 @@
 
 local GameConfig = {
 	DISPLAY_NAME = "Sword Masters",
-	VERSION = "0.3.0-backend-only",
+	VERSION = "0.3.1-mobs-loc1",
 
 	-- combat
 	BASE_POWER = 10,

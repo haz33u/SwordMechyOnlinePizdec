@@ -184,8 +184,17 @@ function WorldConfig.GetZonePoint(locationId: number, zone: string, index: numbe
 		local b = WorldConfig.GetBossCFrame(locationId).Position
 		return Vector3.new(b.X, WorldConfig.FLOOR_Y + 4, b.Z)
 	end
+	-- Debug dummy: near spawn, slightly offset so it doesn't sit on the player
+	if zone == "Debug" then
+		local c = WorldConfig.GetIslandCenter(locationId)
+		local offset = 18 + (index - 1) * 6
+		return Vector3.new(c.X + offset, WorldConfig.FLOOR_Y + 4, c.Z + 8)
+	end
 	local c = WorldConfig.GetIslandCenter(locationId)
 	local rMin, rMax = WorldConfig.GetZoneRadii(zone)
+	if zone == "Spawn" then
+		rMin, rMax = 0, WorldConfig.GetHalfSize() * 0.12
+	end
 	local r = (rMin + rMax) / 2
 	local angle = (index / math.max(total, 1)) * math.pi * 2
 	return Vector3.new(c.X + math.cos(angle) * r, WorldConfig.FLOOR_Y + 4, c.Z + math.sin(angle) * r)

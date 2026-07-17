@@ -29,6 +29,7 @@ All under `ReplicatedStorage.Remotes` (created at runtime).
 | `SetLocation` | `locId` 1–4 | Teleports **only if** `PlayerSpawn` exists on map |
 | `StartDungeon` | `"easy"`/`"medium"`/`"hard"` | |
 | `BanDrop` | `kind, id, banned` | weapon/pet/aura |
+| `DebugSpawnDummy` | — | Spawn training dummy on current location |
 
 ### Server → Client
 
@@ -43,6 +44,13 @@ All under `ReplicatedStorage.Remotes` (created at runtime).
 | Name | Returns |
 |------|---------|
 | `GetProfile` | `{ profile, stats, mobs }` |
+| `GetMobCatalog` | static mob defs (name, tier, hp, visual hints) |
+
+### Server → Client (mobs)
+
+| Name | Payload |
+|------|---------|
+| `MobsUpdate` | array of live mob instances for current loc |
 
 ### Stats snapshot (useful for HUD)
 
