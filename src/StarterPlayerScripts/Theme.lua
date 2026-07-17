@@ -1,58 +1,55 @@
 --!strict
 --[[
-	Harmonized cool-slate palette + one warm accent.
-	No rainbow chips, no muddy red/green clash with gold.
+	High-contrast dark UI: bright text always, mid-tone panels, clear CTAs.
 ]]
 
 local Theme = {}
 
--- Base: neutral cool slate (slightly blue-gray, not purple-black)
-Theme.Bg = Color3.fromRGB(12, 14, 18)
-Theme.Glass = Color3.fromRGB(20, 23, 30)
-Theme.Glass2 = Color3.fromRGB(26, 30, 38)
-Theme.Glass3 = Color3.fromRGB(34, 39, 50)
-Theme.GlassHover = Color3.fromRGB(44, 50, 64)
+-- Panels slightly lifted so white text pops
+Theme.Bg = Color3.fromRGB(14, 16, 22)
+Theme.Glass = Color3.fromRGB(28, 32, 42)
+Theme.Glass2 = Color3.fromRGB(36, 40, 54)
+Theme.Glass3 = Color3.fromRGB(48, 54, 70)
+Theme.GlassHover = Color3.fromRGB(60, 68, 88)
 
--- Soft white stroke (not pure white neon)
-Theme.Stroke = Color3.fromRGB(200, 210, 230)
-Theme.StrokeA = 0.82
+Theme.Stroke = Color3.fromRGB(220, 228, 245)
+Theme.StrokeA = 0.72
 
-Theme.Text = Color3.fromRGB(242, 244, 248)
-Theme.TextSoft = Color3.fromRGB(168, 176, 192)
-Theme.TextDim = Color3.fromRGB(112, 120, 136)
+-- TEXT: never dark-on-dark
+Theme.Text = Color3.fromRGB(250, 252, 255) -- primary labels / buttons
+Theme.TextSoft = Color3.fromRGB(210, 218, 232) -- secondary (still bright)
+Theme.TextDim = Color3.fromRGB(168, 178, 196) -- captions only (readable)
+Theme.TextOnAccent = Color3.fromRGB(18, 16, 12) -- rare: text on gold fill
 
--- Brand: soft gold (numbers / primary CTAs only)
-Theme.Accent = Color3.fromRGB(220, 178, 88)
-Theme.AccentDeep = Color3.fromRGB(92, 70, 32)
-Theme.AccentGlow = Color3.fromRGB(236, 200, 120)
-Theme.AccentMute = Color3.fromRGB(160, 140, 96)
+-- Brand gold
+Theme.Accent = Color3.fromRGB(240, 196, 96)
+Theme.AccentDeep = Color3.fromRGB(160, 118, 40) -- lighter deep for gold buttons
+Theme.AccentGlow = Color3.fromRGB(255, 220, 130)
+Theme.AccentMute = Color3.fromRGB(200, 170, 110)
 
--- Semantic — desaturated so they don't fight gold
-Theme.Good = Color3.fromRGB(96, 176, 132)
-Theme.GoodDeep = Color3.fromRGB(36, 88, 58)
-Theme.Bad = Color3.fromRGB(196, 88, 88)
-Theme.BadDeep = Color3.fromRGB(96, 36, 36)
-Theme.Info = Color3.fromRGB(120, 160, 196)
-Theme.InfoDeep = Color3.fromRGB(40, 60, 88)
+Theme.Good = Color3.fromRGB(110, 210, 150)
+Theme.GoodDeep = Color3.fromRGB(48, 120, 78)
+Theme.Bad = Color3.fromRGB(240, 110, 110)
+Theme.BadDeep = Color3.fromRGB(140, 48, 48)
+Theme.Info = Color3.fromRGB(140, 190, 240)
+Theme.InfoDeep = Color3.fromRGB(50, 90, 140)
 
--- Click = warm brick that sits next to gold without screaming
-Theme.Click = Color3.fromRGB(188, 78, 68)
-Theme.ClickDeep = Color3.fromRGB(112, 42, 38)
+Theme.Click = Color3.fromRGB(230, 90, 78)
+Theme.ClickDeep = Color3.fromRGB(160, 48, 42)
 
-Theme.AutoOn = Color3.fromRGB(72, 148, 108)
-Theme.AutoOnDeep = Color3.fromRGB(32, 78, 52)
-Theme.AutoOff = Color3.fromRGB(52, 48, 54)
-Theme.AutoOffDeep = Color3.fromRGB(32, 30, 36)
+Theme.AutoOn = Color3.fromRGB(70, 180, 120)
+Theme.AutoOnDeep = Color3.fromRGB(40, 110, 70)
+Theme.AutoOff = Color3.fromRGB(70, 74, 90) -- mid slate, NOT near-black
+Theme.AutoOffDeep = Color3.fromRGB(48, 52, 64)
 
--- Chip accents: all within slate family + soft tints (no rainbow)
 Theme.Chip = {
-	Power = Color3.fromRGB(220, 178, 88),
-	Cps = Color3.fromRGB(140, 170, 200),
-	Dps = Color3.fromRGB(190, 170, 140),
-	Coins = Color3.fromRGB(228, 196, 110),
-	Clicks = Color3.fromRGB(168, 176, 192),
-	Loc = Color3.fromRGB(120, 170, 150),
-	Rebirth = Color3.fromRGB(170, 160, 200),
+	Power = Color3.fromRGB(255, 214, 110),
+	Cps = Color3.fromRGB(170, 210, 255),
+	Dps = Color3.fromRGB(230, 210, 170),
+	Coins = Color3.fromRGB(255, 220, 120),
+	Clicks = Color3.fromRGB(220, 228, 240),
+	Loc = Color3.fromRGB(160, 230, 190),
+	Rebirth = Color3.fromRGB(210, 190, 255),
 }
 
 Theme.R = {
@@ -65,7 +62,6 @@ Theme.R = {
 
 Theme.Pad = { xs = 4, sm = 8, md = 12, lg = 16, xl = 20 }
 
--- Base design sizes (scaled at runtime via Layout metrics)
 Theme.TopH = 56
 Theme.RailW = 72
 Theme.ActionH = 88

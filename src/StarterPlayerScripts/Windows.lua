@@ -131,8 +131,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 					Size = UDim2.fromOffset(84, 32),
 					Position = UDim2.new(1, -84, 0.5, -16),
 					Color = T.AccentDeep,
-					Color2 = Color3.fromRGB(70, 50, 16),
-					TextColor = T.Accent,
+					Color2 = Color3.fromRGB(120, 88, 30),
+					TextColor = T.Text,
 					SizePx = 13,
 					Z = 34,
 					OnClick = function()
@@ -250,8 +250,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			Size = UDim2.fromOffset(100, 30),
 			Position = UDim2.new(1, -100, 0.5, -15),
 			Color = T.AccentDeep,
-			Color2 = Color3.fromRGB(70, 50, 16),
-			TextColor = T.Accent,
+			Color2 = Color3.fromRGB(120, 88, 30),
+			TextColor = T.Text,
 			SizePx = 12,
 			Z = 34,
 			OnClick = function()
@@ -528,12 +528,12 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = c,
-				Text = unlocked and "Идти" or "🔒",
+				Text = unlocked and "Идти" or "Закрыто",
 				Size = UDim2.fromOffset(100, 32),
 				Position = UDim2.new(1, -100, 0.5, -16),
 				Color = unlocked and T.AccentDeep or T.Glass3,
-				Color2 = unlocked and Color3.fromRGB(70, 50, 16) or T.Glass2,
-				TextColor = unlocked and T.Accent or T.TextDim,
+				Color2 = unlocked and Color3.fromRGB(120, 88, 30) or T.Glass2,
+				TextColor = T.Text,
 				SizePx = 12,
 				Z = 34,
 				OnClick = function()

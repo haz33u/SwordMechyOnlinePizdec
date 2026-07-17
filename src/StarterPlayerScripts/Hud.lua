@@ -135,8 +135,8 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		Parent = row,
 		Text = "R↑",
 		Color = T.AccentDeep,
-		Color2 = Color3.fromRGB(58, 44, 22),
-		TextColor = T.Accent,
+		Color2 = Color3.fromRGB(120, 88, 30),
+		TextColor = T.Text, -- bright on gold, not dark gold-on-brown
 		SizePx = 18,
 		Radius = T.R.md,
 		Order = 3,
@@ -261,7 +261,7 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 			end
 		else
 			autoBtn.Text = "АВТО"
-			autoBtn.TextColor3 = T.TextSoft
+			autoBtn.TextColor3 = T.Text -- always bright
 			local g = autoBtn:FindFirstChildOfClass("UIGradient")
 			if g then
 				g.Color = ColorSequence.new(T.AutoOff, T.AutoOffDeep)
@@ -287,11 +287,11 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 			local g = b:FindFirstChildOfClass("UIGradient")
 			if g then
 				if active then
-					g.Color = ColorSequence.new(T.AccentDeep, Color3.fromRGB(58, 44, 22))
-					b.TextColor3 = T.Accent
+					g.Color = ColorSequence.new(T.AccentDeep, Color3.fromRGB(120, 88, 30))
+					b.TextColor3 = T.Text
 				else
-					g.Color = ColorSequence.new(T.Glass3, T.Glass)
-					b.TextColor3 = T.TextSoft
+					g.Color = ColorSequence.new(T.Glass3, T.Glass2)
+					b.TextColor3 = T.Text
 				end
 			end
 		end

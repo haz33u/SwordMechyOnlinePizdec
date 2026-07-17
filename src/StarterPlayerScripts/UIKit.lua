@@ -182,6 +182,9 @@ function UIKit.Label(props: {
 	l.TextWrapped = props.Wrap == true
 	l.TextTruncate = Enum.TextTruncate.AtEnd
 	l.LayoutOrder = props.Order or 0
+	-- Always readable over dark panels / world
+	l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	l.TextStrokeTransparency = 0.55
 	if props.Parent then
 		l.Parent = props.Parent
 	end
@@ -216,23 +219,27 @@ function UIKit.Button(props: {
 		b.AnchorPoint = props.Anchor
 	end
 	b.BackgroundColor3 = Color3.new(1, 1, 1)
+	-- Default: bright white text — never dark ink on dark fill
 	b.TextColor3 = props.TextColor or T.Text
-	b.TextSize = props.SizePx or 13
+	b.TextSize = props.SizePx or 14
 	b.Font = T.Font.Title
 	b.BorderSizePixel = 0
 	b.ZIndex = props.Z or 3
 	b.LayoutOrder = props.Order or 0
+	b.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+	b.TextStrokeTransparency = 0.5
 	if props.Parent then
 		b.Parent = props.Parent
 	end
 
 	UIKit.Corner(b, props.Radius or T.R.md)
-	UIKit.Stroke(b, T.Stroke, 1, T.StrokeA)
+	UIKit.Stroke(b, T.Stroke, 1.2, 0.55)
+	-- Lifted mid-tone defaults so labels stay bright
 	UIKit.Gradient(b, props.Color or T.Glass3, props.Color2 or T.Glass2, 105)
 	local sc = UIKit.Scale(b, 1)
 
 	b.MouseEnter:Connect(function()
-		tween(sc, { Scale = 1.04 }, 0.12)
+		tween(sc, { Scale = 1.05 }, 0.12)
 	end)
 	b.MouseLeave:Connect(function()
 		tween(sc, { Scale = 1 }, 0.12)
@@ -241,7 +248,7 @@ function UIKit.Button(props: {
 		tween(sc, { Scale = 0.97 }, 0.06)
 	end)
 	b.MouseButton1Up:Connect(function()
-		tween(sc, { Scale = 1.04 }, 0.08)
+		tween(sc, { Scale = 1.05 }, 0.08)
 	end)
 	if props.OnClick then
 		b.MouseButton1Click:Connect(props.OnClick)
@@ -266,8 +273,9 @@ function UIKit.IconBtn(props: {
 		Text = props.Glyph or "·",
 		Size = props.Size or UDim2.fromOffset(56, 56),
 		Color = props.Active and T.AccentDeep or T.Glass3,
-		Color2 = props.Active and Color3.fromRGB(58, 44, 22) or T.Glass,
-		TextColor = props.Active and T.Accent or T.TextSoft,
+		Color2 = props.Active and Color3.fromRGB(110, 82, 28) or T.Glass2,
+		-- ALWAYS bright glyph
+		TextColor = props.Active and T.Text or T.Text,
 		SizePx = 15,
 		Radius = T.R.md,
 		Order = props.Order,

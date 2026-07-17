@@ -85,8 +85,8 @@ function Modals.Mount(gui: ScreenGui, store: any)
 		Text = "OK",
 		Size = UDim2.new(0.48, 0, 1, 0),
 		Color = T.AccentDeep,
-		Color2 = Color3.fromRGB(70, 50, 16),
-		TextColor = T.Accent,
+		Color2 = Color3.fromRGB(120, 88, 30),
+		TextColor = T.Text,
 		SizePx = 14,
 		Z = 53,
 	})
