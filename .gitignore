@@ -1,0 +1,19 @@
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Rojo / IDE
+*.rbxl.lock
+.vscode/*
+!.vscode/extensions.json
+
+# Large places (use Git LFS if you track them)
+# places/*.rbxl
+# places/*.rbxlx
+
+# Node temp (transcript tools etc.)
+node_modules/
+
+# Local research dumps (not game code)
+subs/
