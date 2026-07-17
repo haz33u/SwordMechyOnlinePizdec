@@ -1,7 +1,9 @@
 --!strict
 --[[
-	Responsive HUD — chips top, icon rail left, action bar bottom.
-	Sizes from Layout metrics (viewport-aware).
+	Idle-RPG HUD (repo only):
+	- LEFT rail: N buttons, equal height flex (all visible)
+	- BOTTOM: stats strip ABOVE action bar (clear of Roblox topbar)
+	- BOTTOM: АВТО | КЛИК | R↑
 ]]
 
 local T = require(script.Parent.Theme)
@@ -35,35 +37,20 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 	root.Name = "HUD"
 	root.Parent = gui
 
-	---------------------------------------------------------------- top chips
-	local top = Instance.new("Frame")
-	top.Name = "TopChips"
-	top.BackgroundTransparency = 1
-	top.ZIndex = 10
-	top.Parent = root
-	local topList = UIKit.List(top, 8, true, Enum.HorizontalAlignment.Left)
-	topList.VerticalAlignment = Enum.VerticalAlignment.Center
+	local nRail = #RAIL
 
-	local chipPower = UIKit.Chip({ Parent = top, Title = "СИЛА", Value = "—", Accent = T.Chip.Power, Order = 1 })
-	local chipCps = UIKit.Chip({ Parent = top, Title = "CPS", Value = "—", Accent = T.Chip.Cps, Order = 2 })
-	local chipDps = UIKit.Chip({ Parent = top, Title = "DPS", Value = "—", Accent = T.Chip.Dps, Order = 3 })
-	local chipCoins = UIKit.Chip({ Parent = top, Title = "МОНЕТЫ", Value = "—", Accent = T.Chip.Coins, Order = 4 })
-	local chipClicks = UIKit.Chip({ Parent = top, Title = "КЛИКИ", Value = "—", Accent = T.Chip.Clicks, Order = 5 })
-	local chipLoc = UIKit.Chip({ Parent = top, Title = "ЛОКАЦИЯ", Value = "—", Accent = T.Chip.Loc, Order = 6 })
-	local chipR = UIKit.Chip({ Parent = top, Title = "REBIRTH", Value = "—", Accent = T.Chip.Rebirth, Order = 7 })
-	local chips = { chipPower, chipCps, chipDps, chipCoins, chipClicks, chipLoc, chipR }
-
-	---------------------------------------------------------------- left rail
+	---------------------------------------------------------------- LEFT RAIL (full side, flex buttons)
 	local rail = UIKit.Glass({
 		Name = "Rail",
 		Parent = root,
 		Radius = T.R.lg,
 		Z = 10,
-		Deep = true,
+		Deep = false, -- lighter solid-ish
 	})
+	rail.ClipsDescendants = false
 	local railPad = UIKit.Pad(rail, 8)
-	local railList = UIKit.List(rail, 8, false, Enum.HorizontalAlignment.Center)
-	railList.VerticalAlignment = Enum.VerticalAlignment.Top
+	local railList = UIKit.List(rail, 6, false, Enum.HorizontalAlignment.Center)
+	railList.VerticalAlignment = Enum.VerticalAlignment.Center
 
 	local railBtns: { [string]: TextButton } = {}
 	for i, item in ipairs(RAIL) do
@@ -76,17 +63,40 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 				store:OpenPanel(item.id)
 			end,
 		})
+		-- equal flex share of rail height
+		local flex = Instance.new("UIFlexItem")
+		flex.FlexMode = Enum.UIFlexMode.Fill
+		flex.Parent = b
 		railBtns[item.id] = b
 	end
 
-	---------------------------------------------------------------- bottom actions
+	---------------------------------------------------------------- STATS strip (above bottom actions — NOT under Roblox topbar)
+	local stats = Instance.new("Frame")
+	stats.Name = "StatsStrip"
+	stats.BackgroundTransparency = 1
+	stats.AnchorPoint = Vector2.new(0.5, 1)
+	stats.ZIndex = 11
+	stats.Parent = root
+	local statsList = UIKit.List(stats, 8, true, Enum.HorizontalAlignment.Center)
+	statsList.VerticalAlignment = Enum.VerticalAlignment.Center
+
+	local chipPower = UIKit.Chip({ Parent = stats, Title = "СИЛА", Value = "—", Accent = T.Chip.Power, Order = 1 })
+	local chipCps = UIKit.Chip({ Parent = stats, Title = "CPS", Value = "—", Accent = T.Chip.Cps, Order = 2 })
+	local chipDps = UIKit.Chip({ Parent = stats, Title = "DPS", Value = "—", Accent = T.Chip.Dps, Order = 3 })
+	local chipCoins = UIKit.Chip({ Parent = stats, Title = "МОНЕТЫ", Value = "—", Accent = T.Chip.Coins, Order = 4 })
+	local chipClicks = UIKit.Chip({ Parent = stats, Title = "КЛИКИ", Value = "—", Accent = T.Chip.Clicks, Order = 5 })
+	local chipLoc = UIKit.Chip({ Parent = stats, Title = "ЛОКАЦИЯ", Value = "—", Accent = T.Chip.Loc, Order = 6 })
+	local chipR = UIKit.Chip({ Parent = stats, Title = "REBIRTH", Value = "—", Accent = T.Chip.Rebirth, Order = 7 })
+	local chips = { chipPower, chipCps, chipDps, chipCoins, chipClicks, chipLoc, chipR }
+
+	---------------------------------------------------------------- BOTTOM ACTIONS
 	local actions = UIKit.Glass({
 		Name = "Actions",
 		Parent = root,
 		Anchor = Vector2.new(0.5, 1),
 		Radius = T.R.lg,
 		Z = 12,
-		Deep = true,
+		Deep = false,
 		AccentBar = true,
 	})
 	local actPad = UIKit.Pad(actions, 12)
@@ -96,7 +106,7 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 	row.Size = UDim2.new(1, 0, 1, 0)
 	row.ZIndex = 13
 	row.Parent = actions
-	local rowList = UIKit.List(row, 12, true, Enum.HorizontalAlignment.Center)
+	local rowList = UIKit.List(row, 10, true, Enum.HorizontalAlignment.Center)
 	rowList.VerticalAlignment = Enum.VerticalAlignment.Center
 
 	local autoBtn = UIKit.Button({
@@ -105,6 +115,7 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		Text = "АВТО",
 		Color = T.AutoOff,
 		Color2 = T.AutoOffDeep,
+		TextColor = T.Text,
 		SizePx = 15,
 		Radius = T.R.md,
 		Order = 1,
@@ -120,6 +131,7 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		Text = "КЛИК",
 		Color = T.Click,
 		Color2 = T.ClickDeep,
+		TextColor = T.Text,
 		SizePx = 22,
 		Radius = T.R.md,
 		Order = 2,
@@ -135,8 +147,8 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		Parent = row,
 		Text = "R↑",
 		Color = T.AccentDeep,
-		Color2 = Color3.fromRGB(120, 88, 30),
-		TextColor = T.Text, -- bright on gold, not dark gold-on-brown
+		Color2 = Color3.fromRGB(140, 100, 30),
+		TextColor = T.Text,
 		SizePx = 18,
 		Radius = T.R.md,
 		Order = 3,
@@ -152,17 +164,17 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 	rbHost.AnchorPoint = Vector2.new(0.5, 1)
 	rbHost.ZIndex = 11
 	rbHost.Parent = root
-	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, 7)
+	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, 8)
 
 	local questBadge = UIKit.Label({
 		Name = "QuestBadge",
 		Parent = railBtns.quests,
 		Text = "",
-		Size = UDim2.fromOffset(18, 18),
-		Position = UDim2.new(1, -4, 0, -4),
+		Size = UDim2.fromOffset(16, 16),
+		Position = UDim2.new(1, -2, 0, -2),
 		Anchor = Vector2.new(1, 0),
 		Color = T.Text,
-		SizePx = 11,
+		SizePx = 10,
 		Font = T.Font.Num,
 		X = Enum.TextXAlignment.Center,
 		Z = 20,
@@ -173,50 +185,25 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 	questBadge.Visible = false
 	UIKit.Corner(questBadge, 99)
 
-	local function snapLocal(n: number): number
-		return math.floor(n / 2 + 0.5) * 2
-	end
-
 	local function applyMetrics(m: Layout.Metrics)
-		-- Top chips: right of rail, never under CoreGui (IgnoreGuiInset=false)
-		top.Size = UDim2.new(1, -(m.railW + m.pad * 2), 0, m.topH)
-		top.Position = UDim2.fromOffset(m.railW + m.pad, m.pad)
-		topList.Padding = UDim.new(0, m.chipGap)
-		topList.HorizontalAlignment = Enum.HorizontalAlignment.Left
-		topList.VerticalAlignment = Enum.VerticalAlignment.Center
-
-		for i, chip in ipairs(chips) do
-			local w = m.chipW
-			if i == 6 then
-				w = snapLocal(m.chipW * 1.2)
-			end
-			chip.Size = UDim2.fromOffset(w, m.chipH)
-			local val = chip:FindFirstChild("Value")
-			if val and val:IsA("TextLabel") then
-				val.TextSize = m.fontMd
-			end
-		end
-
-		-- Rail: sized so all 8 buttons fit (btn size from Layout)
-		local railTop = m.pad + m.topH + m.gap
-		local railBottom = m.actionH + m.pad * 2 + 12
-		rail.Size = UDim2.new(0, m.railW, 1, -(railTop + railBottom))
-		rail.Position = UDim2.fromOffset(m.pad, railTop)
-		rail.ClipsDescendants = false
-		railPad.PaddingTop = UDim.new(0, m.pad)
-		railPad.PaddingBottom = UDim.new(0, m.pad)
-		railPad.PaddingLeft = UDim.new(0, m.pad)
-		railPad.PaddingRight = UDim.new(0, m.pad)
+		-- Rail: left full column above bottom block
+		local bottomBlock = m.actionH + m.statsH + m.pad * 2 + 12
+		rail.Size = UDim2.new(0, m.railW, 1, -(m.pad + bottomBlock))
+		rail.Position = UDim2.fromOffset(m.pad, m.pad)
+		railPad.PaddingTop = UDim.new(0, m.railPad)
+		railPad.PaddingBottom = UDim.new(0, m.railPad)
+		railPad.PaddingLeft = UDim.new(0, m.railPad)
+		railPad.PaddingRight = UDim.new(0, m.railPad)
 		railList.Padding = UDim.new(0, m.railGap)
-		railList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		railList.VerticalAlignment = Enum.VerticalAlignment.Top
 
 		for _, b in railBtns do
-			b.Size = UDim2.fromOffset(m.railBtn, m.railBtn)
-			b.TextSize = math.max(11, m.fontSm + 1)
+			-- width fixed, height filled by UIFlexItem
+			b.Size = UDim2.new(1, 0, 0, m.railBtn)
+			b.TextSize = math.clamp(math.floor(m.railBtn * 0.32), 11, 16)
+			b.TextColor3 = T.Text
 		end
 
-		-- Bottom actions: single bar, centered
+		-- Actions bottom center
 		actions.Size = UDim2.fromOffset(m.actionW, m.actionH)
 		actions.Position = UDim2.new(0.5, 0, 1, -m.pad)
 		actions.AnchorPoint = Vector2.new(0.5, 1)
@@ -225,46 +212,72 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 		actPad.PaddingLeft = UDim.new(0, m.pad)
 		actPad.PaddingRight = UDim.new(0, m.pad)
 		rowList.Padding = UDim.new(0, m.actionGap)
-		rowList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-		rowList.VerticalAlignment = Enum.VerticalAlignment.Center
 
 		autoBtn.Size = UDim2.fromOffset(m.btnAutoW, m.btnH)
 		autoBtn.TextSize = m.fontMd
-		clickBtn.Size = UDim2.fromOffset(m.btnClickW, m.clickH)
+		autoBtn.TextColor3 = T.Text
+		clickBtn.Size = UDim2.fromOffset(m.btnClickW, m.btnH)
 		clickBtn.TextSize = m.fontXl
+		clickBtn.TextColor3 = T.Text
 		rebBtn.Size = UDim2.fromOffset(m.btnRebW, m.btnH)
 		rebBtn.TextSize = m.fontLg
+		rebBtn.TextColor3 = T.Text
+
+		-- Stats strip directly above actions
+		stats.Size = UDim2.new(1, -(m.railW + m.pad * 3), 0, m.statsH)
+		stats.Position = UDim2.new(0.5, m.railW * 0.25, 1, -(m.actionH + m.pad + 6))
+		stats.AnchorPoint = Vector2.new(0.5, 1)
+		statsList.Padding = UDim.new(0, m.chipGap)
+
+		for i, chip in ipairs(chips) do
+			local w = m.chipW
+			if i == 6 then
+				w = math.floor(m.chipW * 1.2)
+			end
+			chip.Size = UDim2.fromOffset(w, m.chipH)
+			local val = chip:FindFirstChild("Value")
+			if val and val:IsA("TextLabel") then
+				val.TextSize = m.fontMd
+				val.TextColor3 = val.TextColor3 -- keep accent
+			end
+			for _, d in chip:GetChildren() do
+				if d:IsA("TextLabel") and d.Name ~= "Value" then
+					d.TextColor3 = T.TextSoft
+					d.TextSize = m.fontSm
+				end
+			end
+		end
 
 		rbHost.Size = UDim2.fromOffset(m.actionW, 8)
-		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.actionH + m.pad + m.gap))
+		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.actionH + m.statsH + m.pad + 10))
 		rbHost.AnchorPoint = Vector2.new(0.5, 1)
 		rbTrack.Size = UDim2.new(1, 0, 0, 8)
 	end
 
-	Layout.Bind(applyMetrics)
+	Layout.Bind(applyMetrics, nRail)
 
 	local api = {}
 	function api.Refresh()
-		local stats = store:PeekStats()
+		local st = store:PeekStats()
 		local profile = store:PeekProfile()
-		if not stats then
+		if not st then
 			return
 		end
 
-		UIKit.SetChipValue(chipPower, Format.Num(stats.damagePerClick or stats.totalPower))
-		UIKit.SetChipValue(chipCps, string.format("%.1f", stats.cps or 0))
-		UIKit.SetChipValue(chipDps, Format.Num(stats.dps))
-		UIKit.SetChipValue(chipCoins, Format.Num(stats.coins))
-		UIKit.SetChipValue(chipClicks, Format.Num(stats.totalClicks))
-		UIKit.SetChipValue(chipLoc, LOC[stats.location or 1] or ("#" .. tostring(stats.location)))
-		UIKit.SetChipValue(chipR, string.format("R%d %s", stats.rebirthLevel or 0, Format.Mult(stats.rebirthMult)))
+		UIKit.SetChipValue(chipPower, Format.Num(st.damagePerClick or st.totalPower))
+		UIKit.SetChipValue(chipCps, string.format("%.1f", st.cps or 0))
+		UIKit.SetChipValue(chipDps, Format.Num(st.dps))
+		UIKit.SetChipValue(chipCoins, Format.Num(st.coins))
+		UIKit.SetChipValue(chipClicks, Format.Num(st.totalClicks))
+		UIKit.SetChipValue(chipLoc, LOC[st.location or 1] or ("#" .. tostring(st.location)))
+		UIKit.SetChipValue(chipR, string.format("R%d %s", st.rebirthLevel or 0, Format.Mult(st.rebirthMult)))
 
-		local cost = stats.nextRebirthCost or 1
-		local dmg = stats.lifetimeDamage or 0
+		local cost = st.nextRebirthCost or 1
+		local dmg = st.lifetimeDamage or 0
 		local pct = cost > 0 and math.clamp(dmg / cost, 0, 1) or 0
 		rbFill.Size = UDim2.new(pct, 0, 1, 0)
 
-		if stats.autoClicker then
+		if st.autoClicker then
 			autoBtn.Text = "АВТО ON"
 			autoBtn.TextColor3 = T.Text
 			local g = autoBtn:FindFirstChildOfClass("UIGradient")
@@ -273,7 +286,7 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 			end
 		else
 			autoBtn.Text = "АВТО"
-			autoBtn.TextColor3 = T.Text -- always bright
+			autoBtn.TextColor3 = T.Text
 			local g = autoBtn:FindFirstChildOfClass("UIGradient")
 			if g then
 				g.Color = ColorSequence.new(T.AutoOff, T.AutoOffDeep)
@@ -299,13 +312,12 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 			local g = b:FindFirstChildOfClass("UIGradient")
 			if g then
 				if active then
-					g.Color = ColorSequence.new(T.AccentDeep, Color3.fromRGB(120, 88, 30))
-					b.TextColor3 = T.Text
+					g.Color = ColorSequence.new(T.AccentDeep, Color3.fromRGB(140, 100, 30))
 				else
 					g.Color = ColorSequence.new(T.Glass3, T.Glass2)
-					b.TextColor3 = T.Text
 				end
 			end
+			b.TextColor3 = T.Text
 		end
 	end
 

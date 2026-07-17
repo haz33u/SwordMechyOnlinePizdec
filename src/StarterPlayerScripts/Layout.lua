@@ -1,6 +1,7 @@
 --!strict
 --[[
-	8px grid. Rail buttons size to FIT viewport so all 8 stay visible.
+	Layout metrics — rail flexes to N buttons, stats sit ABOVE bottom dock
+	(never under Roblox topbar).
 ]]
 
 local Layout = {}
@@ -11,10 +12,11 @@ export type Metrics = {
 	vpY: number,
 	pad: number,
 	gap: number,
-	topH: number,
+	railCount: number,
 	railW: number,
 	railBtn: number,
 	railGap: number,
+	railPad: number,
 	actionH: number,
 	actionW: number,
 	actionGap: number,
@@ -22,7 +24,7 @@ export type Metrics = {
 	btnClickW: number,
 	btnRebW: number,
 	btnH: number,
-	clickH: number,
+	statsH: number,
 	chipH: number,
 	chipW: number,
 	chipGap: number,
@@ -34,42 +36,46 @@ export type Metrics = {
 	fontXl: number,
 }
 
-local function snap(n: number, grid: number?): number
-	local g = grid or 2
-	return math.floor(n / g + 0.5) * g
+local function snap(n: number, g: number?): number
+	local grid = g or 2
+	return math.floor(n / grid + 0.5) * grid
 end
 
-function Layout.Compute(vp: Vector2?): Metrics
+--- railCount must match Hud.RAIL length
+function Layout.Compute(vp: Vector2?, railCount: number?): Metrics
+	local n = math.max(1, railCount or 8)
 	local x = (vp and vp.X) or 1366
 	local y = (vp and vp.Y) or 768
-	-- GuiInset already applied when IgnoreGuiInset=false; use safe area height
-	local s = math.clamp(math.min(x / 1366, y / 720), 0.78, 1.25)
+	local s = math.clamp(math.min(x / 1366, y / 720), 0.8, 1.2)
 
-	local pad = snap(10 * s, 2)
+	local pad = snap(12 * s, 2)
 	local gap = snap(8 * s, 2)
-	local chipH = snap(40 * s, 2)
-	local topH = chipH + 4
-	local btnH = snap(48 * s, 2)
+
+	local btnH = snap(50 * s, 2)
 	local actionH = btnH + pad * 2
-	local actionW = snap(math.clamp(x * 0.38, 340, 440), 2)
+	local actionW = snap(math.clamp(x * 0.4, 360, 460), 2)
 	local actionGap = gap
 	local inner = actionW - pad * 2 - actionGap * 2
-	local unit = inner / (1 + 1.3 + 1)
+	local unit = inner / (1 + 1.35 + 1)
 	local btnAutoW = snap(unit, 2)
-	local btnClickW = snap(unit * 1.3, 2)
-	local btnRebW = math.max(64, inner - btnAutoW - btnClickW)
+	local btnClickW = snap(unit * 1.35, 2)
+	local btnRebW = math.max(70, inner - btnAutoW - btnClickW)
 
-	-- Rail: fit 8 equal buttons into available height
-	local railTop = pad + topH + gap
-	local railBottom = actionH + pad * 2 + 16
-	local availRail = math.max(200, y - railTop - railBottom)
-	local railGap = 6
-	local railBtn = math.floor((availRail - pad * 2 - railGap * 7) / 8)
-	railBtn = math.clamp(snap(railBtn, 2), 34, 52)
-	local railW = railBtn + pad * 2
+	local chipH = snap(42 * s, 2)
+	local statsH = chipH + pad
+	-- space above action for stats strip
+	local bottomBlock = actionH + statsH + pad * 2 + 10
 
-	-- Chips: fewer px so row fits; location wider
-	local chipW = snap(math.clamp((x - railW - pad * 4) / 7.4, 88, 112), 2)
+	-- Rail: full left column, buttons EQUAL share of height
+	local railPad = snap(8 * s, 2)
+	local railGap = snap(6 * s, 2)
+	local railTop = pad -- small top margin only (safe area already inset)
+	local availH = math.max(240, y - railTop - bottomBlock - pad)
+	local railBtn = math.floor((availH - railPad * 2 - railGap * (n - 1)) / n)
+	railBtn = math.clamp(snap(railBtn, 2), 32, 56)
+	local railW = railBtn + railPad * 2
+
+	local chipW = snap(math.clamp((x - railW - pad * 3) / 7.2, 92, 120), 2)
 
 	return {
 		scale = s,
@@ -77,10 +83,11 @@ function Layout.Compute(vp: Vector2?): Metrics
 		vpY = y,
 		pad = pad,
 		gap = gap,
-		topH = topH,
+		railCount = n,
 		railW = railW,
 		railBtn = railBtn,
 		railGap = railGap,
+		railPad = railPad,
 		actionH = actionH,
 		actionW = actionW,
 		actionGap = actionGap,
@@ -88,23 +95,23 @@ function Layout.Compute(vp: Vector2?): Metrics
 		btnClickW = btnClickW,
 		btnRebW = btnRebW,
 		btnH = btnH,
-		clickH = btnH,
+		statsH = statsH,
 		chipH = chipH,
 		chipW = chipW,
 		chipGap = gap,
 		windowW = 0.5,
 		windowH = 0.62,
 		fontSm = math.max(11, math.floor(11 * s + 0.5)),
-		fontMd = math.max(13, math.floor(13 * s + 0.5)),
+		fontMd = math.max(13, math.floor(14 * s + 0.5)),
 		fontLg = math.max(15, math.floor(16 * s + 0.5)),
-		fontXl = math.max(18, math.floor(19 * s + 0.5)),
+		fontXl = math.max(18, math.floor(20 * s + 0.5)),
 	}
 end
 
-function Layout.Bind(callback: (Metrics) -> ())
+function Layout.Bind(callback: (Metrics) -> (), railCount: number?)
 	local function fire()
 		local c = workspace.CurrentCamera
-		callback(Layout.Compute(c and c.ViewportSize or nil))
+		callback(Layout.Compute(c and c.ViewportSize or nil, railCount))
 	end
 	if workspace.CurrentCamera then
 		workspace.CurrentCamera:GetPropertyChangedSignal("ViewportSize"):Connect(fire)

@@ -123,11 +123,12 @@ function UIKit.Glass(props: {
 	end
 
 	UIKit.Corner(f, props.Radius or T.R.md)
-	UIKit.Stroke(f, T.Stroke, 1, T.StrokeA)
+	UIKit.Stroke(f, T.Stroke, 1.2, T.StrokeA)
+	-- Solid mid panels (no near-black gradient that kills contrast)
 	if props.Deep then
-		UIKit.Gradient(f, T.Glass2, T.Bg, 90)
+		UIKit.Gradient(f, T.Glass2, T.Glass, 95)
 	else
-		UIKit.Gradient(f, T.Glass3, T.Glass, 95)
+		UIKit.Gradient(f, T.Glass3, T.Glass2, 100)
 	end
 
 	if props.AccentBar then
@@ -182,9 +183,9 @@ function UIKit.Label(props: {
 	l.TextWrapped = props.Wrap == true
 	l.TextTruncate = Enum.TextTruncate.AtEnd
 	l.LayoutOrder = props.Order or 0
-	-- Always readable over dark panels / world
+	-- Strong stroke = readable over world + panels
 	l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	l.TextStrokeTransparency = 0.55
+	l.TextStrokeTransparency = 0.35
 	if props.Parent then
 		l.Parent = props.Parent
 	end
@@ -227,15 +228,15 @@ function UIKit.Button(props: {
 	b.ZIndex = props.Z or 3
 	b.LayoutOrder = props.Order or 0
 	b.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	b.TextStrokeTransparency = 0.5
+	b.TextStrokeTransparency = 0.3
 	if props.Parent then
 		b.Parent = props.Parent
 	end
 
 	UIKit.Corner(b, props.Radius or T.R.md)
-	UIKit.Stroke(b, T.Stroke, 1.2, 0.55)
-	-- Lifted mid-tone defaults so labels stay bright
-	UIKit.Gradient(b, props.Color or T.Glass3, props.Color2 or T.Glass2, 105)
+	UIKit.Stroke(b, T.Stroke, 1.4, 0.4)
+	-- Brighter button bodies by default
+	UIKit.Gradient(b, props.Color or T.Glass3, props.Color2 or T.Glass2, 100)
 	local sc = UIKit.Scale(b, 1)
 
 	b.MouseEnter:Connect(function()
@@ -271,12 +272,11 @@ function UIKit.IconBtn(props: {
 		Name = props.Name,
 		Parent = props.Parent,
 		Text = props.Glyph or "·",
-		Size = props.Size or UDim2.fromOffset(56, 56),
+		Size = props.Size or UDim2.fromOffset(48, 48),
 		Color = props.Active and T.AccentDeep or T.Glass3,
-		Color2 = props.Active and Color3.fromRGB(110, 82, 28) or T.Glass2,
-		-- ALWAYS bright glyph
-		TextColor = props.Active and T.Text or T.Text,
-		SizePx = 15,
+		Color2 = props.Active and Color3.fromRGB(150, 110, 35) or T.Glass2,
+		TextColor = T.Text,
+		SizePx = 14,
 		Radius = T.R.md,
 		Order = props.Order,
 		Z = props.Z or 5,
@@ -296,32 +296,34 @@ function UIKit.Chip(props: {
 	local chip = UIKit.Glass({
 		Name = props.Title or "Chip",
 		Parent = props.Parent,
-		Size = UDim2.fromOffset(props.W or 118, 44),
+		Size = UDim2.fromOffset(props.W or 110, 42),
 		Radius = T.R.sm,
 		Z = 5,
+		Deep = false,
 	})
 	chip.LayoutOrder = props.Order or 0
-	UIKit.Pad(chip, nil, 12, 5, 10, 5)
+	UIKit.Pad(chip, nil, 12, 4, 10, 4)
 
 	local accent = props.Accent or T.Accent
+	-- Title: soft white (readable), Value: bright accent
 	UIKit.Label({
 		Parent = chip,
 		Text = props.Title or "",
-		Size = UDim2.new(1, -4, 0, 12),
-		Position = UDim2.fromOffset(4, 2),
-		Color = T.TextDim,
-		SizePx = 10,
-		Font = T.Font.Ui,
+		Size = UDim2.new(1, -6, 0, 12),
+		Position = UDim2.fromOffset(6, 3),
+		Color = T.TextSoft,
+		SizePx = 11,
+		Font = T.Font.Title,
 		Z = 6,
 	})
 	UIKit.Label({
 		Name = "Value",
 		Parent = chip,
 		Text = props.Value or "0",
-		Size = UDim2.new(1, -4, 0, 20),
-		Position = UDim2.fromOffset(4, 16),
+		Size = UDim2.new(1, -6, 0, 20),
+		Position = UDim2.fromOffset(6, 16),
 		Color = accent,
-		SizePx = 15,
+		SizePx = 16,
 		Font = T.Font.Num,
 		Z = 6,
 	})
@@ -329,9 +331,9 @@ function UIKit.Chip(props: {
 	strip.Name = "Strip"
 	strip.BorderSizePixel = 0
 	strip.BackgroundColor3 = accent
-	strip.BackgroundTransparency = 0.15
-	strip.Size = UDim2.new(0, 3, 1, -10)
-	strip.Position = UDim2.fromOffset(0, 5)
+	strip.BackgroundTransparency = 0
+	strip.Size = UDim2.new(0, 3, 1, -8)
+	strip.Position = UDim2.fromOffset(0, 4)
 	strip.ZIndex = 6
 	strip.Parent = chip
 	UIKit.Corner(strip, 2)
