@@ -23,6 +23,7 @@ local Windows = require(script.Parent.Windows)
 local Modals = require(script.Parent.Modals)
 local Toast = require(script.Parent.Toast)
 local FloatingDamage = require(script.Parent.FloatingDamage)
+local ClickPop = require(script.Parent.ClickPop)
 local T = require(script.Parent.Theme)
 
 local App = {}
@@ -137,6 +138,8 @@ function App.Start()
 	end)
 
 	local toastApi, windowsApi, modalsApi, hudApi
+	local clickPop: any = nil
+	local onCombatFx: any = nil
 
 	local function openModal(kind: string, payload: any?)
 		store:OpenModal(kind, payload)
@@ -157,6 +160,12 @@ function App.Start()
 		end
 	end
 
+	local function burstClick(amount: number?, crit: boolean?, source: string?)
+		if clickPop then
+			clickPop:Burst(amount, crit, source)
+		end
+	end
+
 	-- Mount UI (each step pcall so one fail doesn't kill all)
 	local function step(name: string, fn: () -> ())
 		local ok, err = pcall(fn)
@@ -169,8 +178,18 @@ function App.Start()
 	step("Toast", function()
 		toastApi = Toast.Mount(gui)
 	end)
+	step("ClickPop", function()
+		clickPop = ClickPop.Mount(gui)
+	end)
 	step("Hud", function()
-		hudApi = Hud.Mount(gui, store, openModal)
+		hudApi = Hud.Mount(gui, store, openModal, function()
+			-- optimistic local pop on manual press (server will also send CombatFx)
+			local st = store:PeekStats()
+			burstClick(st and (st.damagePerClick or st.totalPower) or 1, false, "manual")
+		end)
+		if clickPop and hudApi and hudApi.GetClickButton then
+			clickPop:SetAnchor(hudApi.GetClickButton())
+		end
 	end)
 	step("Windows", function()
 		windowsApi = Windows.Mount(gui, store, openModal)
@@ -179,7 +198,7 @@ function App.Start()
 		modalsApi = Modals.Mount(gui, store)
 	end)
 	step("CombatFx", function()
-		FloatingDamage.Mount()
+		onCombatFx = FloatingDamage.Mount()
 	end)
 
 	local m = mockSnapshot()
@@ -225,8 +244,19 @@ function App.Start()
 	end)
 
 	pcall(function()
-		Net.Event("CombatFx").OnClientEvent:Connect(function(_payload)
-			-- FloatingDamage handles if mounted
+		Net.Event("CombatFx").OnClientEvent:Connect(function(payload)
+			if typeof(payload) ~= "table" then
+				return
+			end
+			local amount = payload.damage or payload.amount or payload.n
+			local crit = payload.crit == true
+			local source = payload.source
+			-- pops from click bar
+			burstClick(amount, crit, source)
+			-- world-style float (center) kept as secondary
+			if onCombatFx then
+				onCombatFx(payload)
+			end
 		end)
 	end)
 
@@ -260,6 +290,9 @@ function App.Start()
 			pcall(function()
 				Net.Swing("auto")
 			end)
+			-- local auto pop (server CombatFx may also fire)
+			local dmg = stats.damagePerClick or stats.totalPower or 1
+			burstClick(dmg, false, "auto")
 		end
 	end)
 

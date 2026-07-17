@@ -123,12 +123,12 @@ function UIKit.Glass(props: {
 	end
 
 	UIKit.Corner(f, props.Radius or T.R.md)
-	UIKit.Stroke(f, T.Stroke, 1.2, T.StrokeA)
-	-- Solid mid panels (no near-black gradient that kills contrast)
+	UIKit.Stroke(f, T.Stroke, 1.4, T.StrokeA)
+	-- Soft warm panels (not cold steel)
 	if props.Deep then
-		UIKit.Gradient(f, T.Glass2, T.Glass, 95)
+		UIKit.Gradient(f, T.Glass2, T.Bg, 100)
 	else
-		UIKit.Gradient(f, T.Glass3, T.Glass2, 100)
+		UIKit.Gradient(f, T.Glass3, T.Glass2, 105)
 	end
 
 	if props.AccentBar then
