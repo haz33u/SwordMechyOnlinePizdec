@@ -45,9 +45,12 @@ After building:
 - `Layout.lua` — 8px grid, equal chip widths, equal action heights  
 - `Hud.lua` — rail / chips / actions alignment  
 - Runtime: `GameUI` в Play  
+- **Play:** `App.lua` удаляет `GameUI_EditPreview` / `IsPreview` из PlayerGui, чтобы **не было двойного HUD**  
+- **Edit:** preview живёт в `StarterGui.GameUI_EditPreview` (смотри без Play)
 
 ## Workflow
 
-1. Studio AI → промпт выше → смотришь `GameUI_EditPreview` в Edit  
-2. `rojo serve` + Play → живой UI с remotes  
-3. Если AI поправил preview — перенеси отступы/размеры в `Layout.lua` / `Hud.lua` (источник правды = git)  
+1. В Edit смотри `StarterGui.GameUI_EditPreview` (макет, без remotes)  
+2. `rojo serve` + Play → один живой `GameUI`  
+3. Не дублируй preview вручную в PlayerGui  
+4. Если правишь preview — переноси отступы в `Layout.lua` / `Hud.lua` (источник правды = git)  

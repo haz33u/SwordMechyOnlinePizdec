@@ -1,11 +1,14 @@
 --!strict
---[[ Client entry — GameUI (brief + OnyxUI/Fusion stack). ]]
+--[[
+	Only entry for client UI. Rojo → StarterPlayerScripts.Client
+	Never put ScreenGui GameUI in StarterGui.
+]]
 
-local success, err = pcall(function()
+local ok, err = pcall(function()
 	local App = require(script.Parent.App)
 	App.Start()
 end)
 
-if not success then
+if not ok then
 	warn("[GameUI] bootstrap failed:", err)
 end

@@ -1,8 +1,7 @@
 --!strict
 --[[
-	Sword Masters GameUI
-	Visual: Mixmaxed polish (Corner/Stroke/Gradient/Pad/Scale) + Cristalix compact HUD
-	Stack kept: Fusion packages present; chrome is custom glass UIKit (less "AI kit" look)
+	SINGLE source of truth for UI: this repo (Rojo → StarterPlayerScripts).
+	Do NOT put GameUI in StarterGui — it stacks with this and doubles the HUD.
 ]]
 
 local Players = game:GetService("Players")
@@ -23,24 +22,84 @@ local FloatingDamage = require(script.Parent.FloatingDamage)
 local T = require(script.Parent.Theme)
 
 local App = {}
+local started = false
+
+local function isOurGui(sg: ScreenGui): boolean
+	if sg:GetAttribute("IsPreview") == true then
+		return true
+	end
+	local n = sg.Name
+	return n == "GameUI"
+		or n == "GameUI_EditPreview"
+		or n == "SwordMastersHUD"
+		or n == "CombatFxGui"
+		or string.find(n, "EditPreview", 1, true) ~= nil
+		or string.find(n, "GameUI", 1, true) ~= nil
+end
+
+local function wipeForeignHud(playerGui: PlayerGui)
+	for _, child in playerGui:GetChildren() do
+		if child:IsA("ScreenGui") and isOurGui(child) then
+			child:Destroy()
+		end
+	end
+end
+
+local function mockSnapshot()
+	return {
+		profile = {
+			coins = 0,
+			totalClicks = 0,
+			rebirthLevel = 0,
+			rebirthMult = 1,
+			autoClicker = false,
+			upgradeLevels = {},
+			weapons = {},
+			equippedMain = nil,
+			equippedOffhand = nil,
+			pets = {},
+			petTeam = {},
+			petSlots = 1,
+			auras = {},
+			equippedAura = nil,
+			relics = {},
+			locationsUnlocked = { 1 },
+			currentLocation = 1,
+			quests = {},
+			dungeonStage = { easy = 0, medium = 0, hard = 0 },
+		},
+		stats = {
+			totalPower = 1,
+			damagePerClick = 1,
+			cps = 1,
+			dps = 1,
+			coins = 0,
+			totalClicks = 0,
+			crit = 0,
+			luck = 0,
+			rebirthLevel = 0,
+			rebirthMult = 1,
+			nextRebirthCost = 1000,
+			lifetimeDamage = 0,
+			autoClicker = false,
+			location = 1,
+			swingCd = 1,
+		},
+	}
+end
 
 function App.Start()
+	if started then
+		warn("[GameUI] App.Start already ran — skip (prevent double mount)")
+		return
+	end
+	started = true
+
 	local player = Players.LocalPlayer
 	local playerGui = player:WaitForChild("PlayerGui")
 
-	-- Kill Edit previews cloned from StarterGui (was causing DOUBLE HUD)
-	for _, child in playerGui:GetChildren() do
-		if child:IsA("ScreenGui") then
-			if child:GetAttribute("IsPreview") == true or child.Name == "GameUI_EditPreview" then
-				child:Destroy()
-			end
-		end
-	end
-	-- also strip any leftover duplicate GameUI
-	local old = playerGui:FindFirstChild("GameUI")
-	if old then
-		old:Destroy()
-	end
+	-- ONE UI only: nuke every leftover / StarterGui clone of our HUD
+	wipeForeignHud(playerGui)
 
 	local scope = Fusion.scoped(Fusion)
 	local store = Store.Create(scope)
@@ -48,13 +107,22 @@ function App.Start()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "GameUI"
 	gui.ResetOnSpawn = false
-	-- false = stay clear of Roblox topbar / menu (no overlap with CoreGui)
 	gui.IgnoreGuiInset = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-	gui.DisplayOrder = 20
+	gui.DisplayOrder = 25
+	gui:SetAttribute("SwordMastersUI", true)
 	gui.Parent = playerGui
 
-	-- No extra UIScale — it was fighting Layout metrics and clipping the rail
+	-- if something re-injects preview mid-session, kill it
+	playerGui.ChildAdded:Connect(function(child)
+		if child:IsA("ScreenGui") and child ~= gui and isOurGui(child) then
+			task.defer(function()
+				if child.Parent and child ~= gui then
+					child:Destroy()
+				end
+			end)
+		end
+	end)
 
 	local toastApi
 	local windowsApi
@@ -86,13 +154,22 @@ function App.Start()
 		end
 	end
 
+	-- show mock immediately so layout is visible even before remotes
+	do
+		local m = mockSnapshot()
+		store:SetData(m.profile, m.stats)
+		refreshAll()
+	end
+
 	task.spawn(function()
 		local ok, data = pcall(function()
 			return Net.GetProfile()
 		end)
-		if ok and data then
+		if ok and typeof(data) == "table" and data.stats then
 			store:SetData(data.profile, data.stats)
 			refreshAll()
+		else
+			toastApi.Show("Сервер не ответил — mock HUD", "red")
 		end
 	end)
 
@@ -174,7 +251,7 @@ function App.Start()
 		end
 	end)
 
-	print("[GameUI] polished HUD ready · accent", T.Accent)
+	print("[GameUI] single-source HUD from REPO only (no StarterGui UI)")
 end
 
 return App
