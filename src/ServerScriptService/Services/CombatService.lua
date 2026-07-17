@@ -1,8 +1,10 @@
 --!strict
 --[[
-	Combat + logical mob instances.
-	Visual models are Studio's job; backend only tracks uid/hp/position/mobId.
+	Combat + logical mobs + placeholder visuals.
+	Killable via ClickDetector (no friend UI required) or Swing remote.
 ]]
+
+local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local MobConfig = require(Shared.Config.MobConfig)
@@ -14,6 +16,7 @@ local WorldConfig = require(Shared.Config.WorldConfig)
 local ProfileService = require(script.Parent.ProfileService)
 local QuestService = require(script.Parent.QuestService)
 local LootService = require(script.Parent.LootService)
+local MobVisualService = require(script.Parent.MobVisualService)
 
 local CombatService = {}
 CombatService._mobs = {} :: { [string]: any }
@@ -24,6 +27,10 @@ local function mobUid(): string
 end
 
 function CombatService.Init()
+	MobVisualService.Init(function(player, uid)
+		CombatService.Swing(player, uid, "manual")
+	end)
+
 	Remotes.Event("Swing").OnServerEvent:Connect(function(player, targetMobUid, source)
 		CombatService.Swing(player, targetMobUid, source)
 	end)
@@ -32,9 +39,21 @@ function CombatService.Init()
 		CombatService.ToggleAuto(player)
 	end)
 
-	-- Debug: respawn dummy for current location
 	Remotes.Event("DebugSpawnDummy").OnServerEvent:Connect(function(player)
 		CombatService.DebugSpawnDummy(player)
+	end)
+
+	-- Server-side auto-click loop (works without client UI)
+	task.spawn(function()
+		while true do
+			task.wait(0.05)
+			for _, player in Players:GetPlayers() do
+				local profile = ProfileService.Get(player)
+				if profile and profile.autoClicker and Formulas.IsAutoClickerUnlocked(profile) then
+					CombatService.Swing(player, nil, "auto")
+				end
+			end
+		end
 	end)
 end
 
@@ -81,6 +100,7 @@ function CombatService.SpawnMob(mobId: string, position: Vector3?, extras: any?)
 		visual = def.visual,
 	}
 	CombatService._mobs[id] = entry
+	MobVisualService.Spawn(entry)
 	return id
 end
 
@@ -109,6 +129,43 @@ function CombatService.GetMobsForClient(locationId: number?): { any }
 	return list
 end
 
+local function pickTarget(player: Player, targetMobUid: string?, locId: number): any?
+	local mob = targetMobUid and CombatService._mobs[targetMobUid] or nil
+	if mob and mob.alive then
+		return mob
+	end
+
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local origin = hrp and hrp.Position or nil
+
+	local best = nil
+	local bestDist = math.huge
+	local dummy = nil
+
+	for _, m in CombatService._mobs do
+		if m.alive then
+			local sameLoc = m.locationId == locId or m.isDebug
+			if sameLoc then
+				if m.isDebug then
+					dummy = m
+				end
+				if origin then
+					local d = (m.position - origin).Magnitude
+					if d < 40 and d < bestDist and not m.isDebug then
+						bestDist = d
+						best = m
+					end
+				elseif not best and not m.isDebug then
+					best = m
+				end
+			end
+		end
+	end
+
+	return best or dummy
+end
+
 function CombatService.Swing(player: Player, targetMobUid: string?, source: any?)
 	local profile = ProfileService.Get(player)
 	if not profile then
@@ -131,24 +188,19 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	CombatService._lastSwing[player.UserId] = now
 
 	local locId = profile.currentLocation or 1
-	local mob = targetMobUid and CombatService._mobs[targetMobUid] or nil
-	if not mob or not mob.alive then
-		-- prefer dummy if targeting free-fire, else first alive on location
-		local fallback = nil
-		local dummy = nil
-		for _, m in CombatService._mobs do
-			if m.alive then
-				if m.isDebug and (m.locationId == locId or m.locationId == 0) then
-					dummy = m
-				elseif m.locationId == locId and not fallback then
-					fallback = m
-				end
-			end
-		end
-		mob = fallback or dummy
-	end
+	local mob = pickTarget(player, targetMobUid, locId)
 	if not mob or not mob.alive then
 		return
+	end
+
+	-- range check if player has character
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if hrp then
+		local dist = (mob.position - hrp.Position).Magnitude
+		if dist > 48 then
+			return
+		end
 	end
 
 	local damage, isCrit = Formulas.GetHitDamage(profile)
@@ -163,6 +215,8 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	mob.hp -= damage
 	profile.lifetimeDamage += damage
 	profile.totalClicks = (profile.totalClicks or 0) + 1
+
+	MobVisualService.UpdateHp(mob)
 
 	Remotes.Event("CombatFx"):FireClient(player, {
 		type = "hit",
@@ -195,11 +249,11 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 
 	mob.alive = false
 	mob.respawnAt = os.clock() + def.respawnSeconds
+	MobVisualService.SetAlive(mob, false)
 
-	-- Debug dummy: no power/coins/quests/loot
 	if def.isDebug then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = "Dummy down (debug) — respawn soon",
+			text = "Dummy убит (debug) — респавн",
 			color = "gold",
 		})
 		task.delay(def.respawnSeconds, function()
@@ -207,6 +261,7 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 				mob.hp = def.hp
 				mob.maxHp = def.hp
 				mob.alive = true
+				MobVisualService.SetAlive(mob, true)
 			end
 		end)
 		ProfileService.Push(player)
@@ -223,7 +278,7 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 	LootService.TryPetKey(player, profile)
 
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("%s | +%d power, +%d coins", def.name, def.powerReward, coins),
+		text = string.format("%s ✕  +%d сила  +%d монет", def.name, def.powerReward, coins),
 		color = "green",
 	})
 
@@ -232,8 +287,11 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 			mob.hp = def.hp
 			mob.maxHp = def.hp
 			mob.alive = true
+			MobVisualService.SetAlive(mob, true)
 		end
 	end)
+
+	ProfileService.Push(player)
 end
 
 function CombatService.BootstrapLocation1()
@@ -246,8 +304,10 @@ function CombatService.SpawnLocationMobs(locationId: number)
 		return
 	end
 
+	-- despawn old
 	for uid, m in CombatService._mobs do
 		if m.locationId == locationId then
+			MobVisualService.Despawn(uid)
 			CombatService._mobs[uid] = nil
 		end
 	end
@@ -286,33 +346,39 @@ function CombatService.SpawnLocationMobs(locationId: number)
 			count += 1
 		end
 	end
-	print(string.format("[Combat] Loc%d spawned %d logical mobs (+debug)", locationId, count))
+	print(string.format("[Combat] Loc%d: %d mobs with placeholders in Workspace.Mobs", locationId, count))
 end
 
 function CombatService.DebugSpawnDummy(player: Player)
 	local profile = ProfileService.Get(player)
 	local locId = (profile and profile.currentLocation) or 1
 
-	-- remove old dummies on this loc
 	for uid, m in CombatService._mobs do
 		if m.isDebug and m.locationId == locId then
+			MobVisualService.Despawn(uid)
 			CombatService._mobs[uid] = nil
 		end
 	end
 
 	local pos = WorldConfig.GetZonePoint(locId, "Debug", 1, 1)
+	-- if player has character, spawn dummy in front of them
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if hrp then
+		pos = hrp.Position + hrp.CFrame.LookVector * 10 + Vector3.new(0, 0, 0)
+		pos = Vector3.new(pos.X, WorldConfig.FLOOR_Y + 4, pos.Z)
+	end
+
 	local id = CombatService.SpawnMob("DEBUG_Dummy", pos, {
 		locationId = locId,
 		zone = "Debug",
 	})
 
 	Remotes.Event("Notify"):FireClient(player, {
-		text = "DEBUG Dummy spawned: " .. tostring(id),
+		text = "DEBUG Dummy: " .. tostring(id),
 		color = "gold",
 	})
 	ProfileService.Push(player)
-
-	-- also push mob list via profile update side-channel
 	Remotes.Event("MobsUpdate"):FireClient(player, CombatService.GetMobsForClient(locId))
 end
 

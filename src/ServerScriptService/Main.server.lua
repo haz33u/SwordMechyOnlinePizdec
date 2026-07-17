@@ -1,7 +1,7 @@
 --!strict
 --[[
-	Sword Masters — BACKEND ONLY
-	No UI, no world building. Studio / Studio Agent owns client + map.
+	Sword Masters — gameplay backend + placeholder mobs.
+	Friend owns full UI. We spawn simple "нуб" placeholders in Workspace.Mobs.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -40,7 +40,7 @@ QuestService.Init()
 DungeonService.Init()
 LocationService.Init()
 
--- Logical mobs for location 1 (no 3D models — your map/agent can visualize later)
+-- Loc1 mobs + DEBUG dummy as killable placeholders
 CombatService.BootstrapLocation1()
 
 Remotes.Function("GetProfile").OnServerInvoke = function(player)
@@ -69,4 +69,4 @@ Players.PlayerAdded:Connect(function(player)
 	end)
 end)
 
-print("[SwordMasters] backend ready. Remotes under ReplicatedStorage.Remotes")
+print("[SwordMasters] ready | click mobs in Workspace.Mobs | auto if profile.autoClicker")
