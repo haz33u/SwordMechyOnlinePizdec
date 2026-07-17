@@ -106,11 +106,15 @@ TotalPower =
 
 ## 5. Мечи
 
-- Дроп с мобов
+Полная таблица: **[WEAPONS_LOOT.md](./WEAPONS_LOOT.md)**
+
+- Дроп с мобов: **локация + tier** → rarity weights → меч из каталога этой локации
+- Лестница: Common → Uncommon → Rare → Epic → Legendary → Mythic → **Secret** → **Limited**
+- Limited **не** с мобов (ивент/VFX); Secret — lottery с elite/boss
+- Loc1 лёгкий; Loc2+ дольше (`dropChanceMult` + `highRarityMult` squeeze)
 - Main + Offhand (50% mult)
-- Билд: урон-меч + speed-меч
-- Продажа, ban-list мусора
-- Зачарование-рулетка (%)
+- Продажа, ban-list мусора, зачарование-рулетка (%)
+- `iconKey` / `vfxProfile` — под NN-иконки и эффекты
 
 ---
 

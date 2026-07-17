@@ -6,7 +6,7 @@
 
 local GameConfig = {
 	DISPLAY_NAME = "Sword Masters",
-	VERSION = "0.4.1-hpbar-near-spawn",
+	VERSION = "0.5.0-weapons-all-locs",
 
 	-- combat
 	BASE_POWER = 10,

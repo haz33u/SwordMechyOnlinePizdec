@@ -23,7 +23,16 @@ export type MobDef = {
 	hp: number,
 	powerReward: number,
 	coinReward: number,
+	--[[
+		Loot:
+		  weaponDropChance = 0 → no weapon drop (dummy)
+		  otherwise LootService uses WeaponConfig tier+location tables
+		  weaponDropScale → multiplies template chance (default 1)
+		  weaponPool → optional ALLOWLIST of weapon ids (empty = full loc catalog)
+		Limited swords never drop from mobs.
+	]]
 	weaponDropChance: number,
+	weaponDropScale: number?,
 	weaponPool: { string },
 	respawnSeconds: number,
 	isBoss: boolean?,
@@ -79,8 +88,9 @@ local MobConfig = {
 			hp = 40,
 			powerReward = 1,
 			coinReward = 3,
-			weaponDropChance = 0.03,
-			weaponPool = { "W1_C1", "W1_C2" },
+			weaponDropChance = 1, -- >0 enables template drop (chance from WeaponConfig)
+			weaponDropScale = 1.0,
+			weaponPool = {}, -- empty = full Loc catalog by rarity roll
 			respawnSeconds = 3,
 			visual = {
 				preferredModelName = "L1_Slime",
@@ -100,8 +110,9 @@ local MobConfig = {
 			hp = 70,
 			powerReward = 2,
 			coinReward = 4,
-			weaponDropChance = 0.04,
-			weaponPool = { "W1_C1", "W1_C2" },
+			weaponDropChance = 1,
+			weaponDropScale = 1.05,
+			weaponPool = {},
 			respawnSeconds = 3.2,
 			visual = {
 				preferredModelName = "L1_GoblinScout",
@@ -121,8 +132,9 @@ local MobConfig = {
 			hp = 120,
 			powerReward = 3,
 			coinReward = 6,
-			weaponDropChance = 0.05,
-			weaponPool = { "W1_C2", "W1_U1" },
+			weaponDropChance = 1,
+			weaponDropScale = 1.0,
+			weaponPool = {},
 			respawnSeconds = 3.5,
 			visual = {
 				preferredModelName = "L1_Skeleton",
@@ -142,8 +154,9 @@ local MobConfig = {
 			hp = 350,
 			powerReward = 8,
 			coinReward = 14,
-			weaponDropChance = 0.07,
-			weaponPool = { "W1_U1", "W1_U2", "W1_R1" },
+			weaponDropChance = 1,
+			weaponDropScale = 1.1,
+			weaponPool = {},
 			respawnSeconds = 4,
 			visual = {
 				preferredModelName = "L1_Wolf",
@@ -163,8 +176,9 @@ local MobConfig = {
 			hp = 500,
 			powerReward = 12,
 			coinReward = 18,
-			weaponDropChance = 0.08,
-			weaponPool = { "W1_U2", "W1_R1" },
+			weaponDropChance = 1,
+			weaponDropScale = 1.15,
+			weaponPool = {},
 			respawnSeconds = 5,
 			visual = {
 				preferredModelName = "L1_GoblinWarrior",
@@ -184,8 +198,9 @@ local MobConfig = {
 			hp = 1_200,
 			powerReward = 25,
 			coinReward = 40,
-			weaponDropChance = 0.12,
-			weaponPool = { "W1_R1", "W1_R2" },
+			weaponDropChance = 1,
+			weaponDropScale = 1.2,
+			weaponPool = {},
 			respawnSeconds = 8,
 			armorFlat = 2,
 			visual = {
@@ -206,8 +221,9 @@ local MobConfig = {
 			hp = 8_000,
 			powerReward = 200,
 			coinReward = 300,
-			weaponDropChance = 0.40,
-			weaponPool = { "W1_R2", "W1_E1", "W1_L1" },
+			weaponDropChance = 1,
+			weaponDropScale = 1.0,
+			weaponPool = {}, -- boss rolls Rare→Secret from template
 			respawnSeconds = 45,
 			isBoss = true,
 			armorFlat = 5,
@@ -232,8 +248,9 @@ local MobConfig = {
 			hp = 2_500,
 			powerReward = 40,
 			coinReward = 60,
-			weaponDropChance = 0.08,
-			weaponPool = { "W2_C1", "W2_U1" },
+			weaponDropChance = 1,
+			weaponDropScale = 1.0,
+			weaponPool = {},
 			respawnSeconds = 4,
 			visual = { preferredModelName = "L2_Sailor", color = "#5DADE2", scale = 1.0, shape = "humanoid" },
 		},
@@ -246,8 +263,9 @@ local MobConfig = {
 			hp = 8_000,
 			powerReward = 100,
 			coinReward = 150,
-			weaponDropChance = 0.12,
-			weaponPool = { "W2_R1", "W2_E1" },
+			weaponDropChance = 1,
+			weaponDropScale = 1.15,
+			weaponPool = {},
 			respawnSeconds = 10,
 			visual = { preferredModelName = "L2_Captain", color = "#2874A6", scale = 1.2, shape = "humanoid" },
 		},
@@ -260,8 +278,9 @@ local MobConfig = {
 			hp = 40_000,
 			powerReward = 600,
 			coinReward = 800,
-			weaponDropChance = 0.35,
-			weaponPool = { "W2_E1", "W2_L1" },
+			weaponDropChance = 1,
+			weaponDropScale = 1.0,
+			weaponPool = {},
 			respawnSeconds = 60,
 			isBoss = true,
 			visual = { preferredModelName = "L2_Admiral", color = "#1A5276", scale = 1.8, shape = "humanoid" },
@@ -276,8 +295,9 @@ local MobConfig = {
 			hp = 15_000,
 			powerReward = 180,
 			coinReward = 250,
-			weaponDropChance = 0.10,
-			weaponPool = { "W3_U1", "W3_R1" },
+			weaponDropChance = 1,
+			weaponDropScale = 1.0,
+			weaponPool = {},
 			respawnSeconds = 5,
 			visual = { preferredModelName = "L3_Samurai", color = "#922B21", scale = 1.0, shape = "humanoid" },
 		},

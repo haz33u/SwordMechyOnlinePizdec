@@ -195,7 +195,7 @@
 - Бан дропа этого id → `BanDrop("weapon", id, true)`
 
 **Цвета rarity:**  
-Common серый · Uncommon зелёный · Rare синий · Epic фиолет · Legendary оранж · Mythic красный/розовый · Secret золотой неон.
+Common серый · Uncommon зелёный · Rare синий · Epic фиолет · Legendary оранж · Mythic розовый · **Secret** золотой glow · **Limited** hot pink + анимированный бейдж (VFX).
 
 ---
 
