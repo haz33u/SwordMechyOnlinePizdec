@@ -28,26 +28,33 @@ function App.Start()
 	local player = Players.LocalPlayer
 	local playerGui = player:WaitForChild("PlayerGui")
 
+	-- Kill Edit previews cloned from StarterGui (was causing DOUBLE HUD)
+	for _, child in playerGui:GetChildren() do
+		if child:IsA("ScreenGui") then
+			if child:GetAttribute("IsPreview") == true or child.Name == "GameUI_EditPreview" then
+				child:Destroy()
+			end
+		end
+	end
+	-- also strip any leftover duplicate GameUI
+	local old = playerGui:FindFirstChild("GameUI")
+	if old then
+		old:Destroy()
+	end
+
 	local scope = Fusion.scoped(Fusion)
 	local store = Store.Create(scope)
 
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "GameUI"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = true
+	-- false = stay clear of Roblox topbar / menu (no overlap with CoreGui)
+	gui.IgnoreGuiInset = false
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = 20
 	gui.Parent = playerGui
 
-	-- Global soft scale (HUD also resizes itself via Layout metrics)
-	local Layout = require(script.Parent.Layout)
-	local scaler = Instance.new("UIScale")
-	scaler.Name = "UIScale"
-	scaler.Parent = gui
-	Layout.Bind(function(m)
-		-- Keep global scale gentle; pixel metrics do the heavy lifting
-		scaler.Scale = math.clamp(0.92 + (m.scale - 1) * 0.35, 0.88, 1.08)
-	end)
+	-- No extra UIScale — it was fighting Layout metrics and clipping the rail
 
 	local toastApi
 	local windowsApi

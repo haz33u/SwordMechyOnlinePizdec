@@ -392,8 +392,8 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> ()): (Frame, 
 	local root = UIKit.Glass({
 		Name = "Window",
 		Parent = gui,
-		Size = UDim2.fromScale(0.48, 0.6),
-		Position = UDim2.fromScale(0.5, 0.52),
+		Size = UDim2.fromScale(0.5, 0.62),
+		Position = UDim2.fromScale(0.5, 0.5),
 		Anchor = Vector2.new(0.5, 0.5),
 		Radius = T.R.lg,
 		Z = 30,
@@ -401,35 +401,36 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> ()): (Frame, 
 		AccentBar = true,
 	})
 	root.Visible = false
-	UIKit.Stroke(root, T.Stroke, 1, 0.75)
+	UIKit.Stroke(root, T.Stroke, 1, 0.7)
 
 	local header = Instance.new("Frame")
 	header.Name = "Header"
 	header.BackgroundTransparency = 1
-	header.Size = UDim2.new(1, 0, 0, 46)
+	header.Size = UDim2.new(1, 0, 0, 48)
 	header.ZIndex = 31
 	header.Parent = root
-	UIKit.Pad(header, nil, 16, 10, 12, 0)
 
 	UIKit.Label({
 		Parent = header,
 		Text = title,
-		Size = UDim2.new(1, -48, 1, 0),
-		SizePx = 17,
+		Size = UDim2.new(1, -56, 1, 0),
+		Position = UDim2.fromOffset(16, 0),
+		SizePx = 18,
 		Font = T.Font.Title,
 		Z = 32,
 	})
 
-	local close = UIKit.Button({
+	UIKit.Button({
 		Name = "Close",
 		Parent = header,
 		Text = "×",
-		Size = UDim2.fromOffset(32, 28),
-		Position = UDim2.new(1, -32, 0.5, 0),
+		Size = UDim2.fromOffset(36, 32),
+		Position = UDim2.new(1, -44, 0.5, 0),
 		Anchor = Vector2.new(0, 0.5),
 		Color = T.Glass3,
 		Color2 = T.Glass2,
-		SizePx = 18,
+		TextColor = T.Text,
+		SizePx = 20,
 		Radius = T.R.sm,
 		Z = 32,
 		OnClick = onClose,
@@ -438,8 +439,8 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> ()): (Frame, 
 	local body = Instance.new("Frame")
 	body.Name = "Body"
 	body.BackgroundTransparency = 1
-	body.Size = UDim2.new(1, -24, 1, -58)
-	body.Position = UDim2.fromOffset(12, 50)
+	body.Size = UDim2.new(1, -24, 1, -60)
+	body.Position = UDim2.fromOffset(12, 52)
 	body.ZIndex = 31
 	body.ClipsDescendants = true
 	body.Parent = root

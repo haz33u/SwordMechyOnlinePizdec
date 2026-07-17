@@ -450,41 +450,87 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			local progress = state.progress or 0
 			local done = state.completed == true
 			local claimed = state.claimed == true
-			local c = card(scroll, 78, claimed and (500 + order) or order, done and not claimed and T.Good or nil)
+			local needBtn = done and not claimed
+
+			local c = UIKit.Glass({
+				Parent = scroll,
+				Size = UDim2.new(1, -4, 0, needBtn and 96 or 78),
+				Radius = T.R.md,
+				Z = 32,
+			})
+			c.LayoutOrder = claimed and (500 + order) or order
+			UIKit.Stroke(c, needBtn and T.Good or T.Stroke, 1, needBtn and 0.4 or T.StrokeA)
+			UIKit.Pad(c, 10)
+			UIKit.List(c, 6, false)
+
 			UIKit.Label({
 				Parent = c,
 				Text = name,
-				Size = UDim2.new(1, claimed and 0 or -90, 0, 16),
-				SizePx = 13,
+				Size = UDim2.new(1, 0, 0, 16),
+				SizePx = 14,
 				Font = T.Font.Title,
 				Color = claimed and T.TextDim or T.Text,
+				Order = 1,
 				Z = 33,
 			})
 			UIKit.Label({
 				Parent = c,
 				Text = string.format("%s  ·  %d/%d", desc, progress, amount),
-				Size = UDim2.new(1, claimed and 0 or -90, 0, 14),
-				Position = UDim2.fromOffset(0, 20),
-				SizePx = 11,
-				Color = T.TextDim,
+				Size = UDim2.new(1, 0, 0, 14),
+				SizePx = 12,
+				Color = T.TextSoft,
+				Order = 2,
 				Z = 33,
 			})
-			local track, fill = UIKit.Bar(c, amount > 0 and progress / amount or 0, done and T.Good or T.Accent, 6)
-			track.Position = UDim2.new(0, 0, 1, -10)
-			track.Size = UDim2.new(1, claimed and 0 or -90, 0, 6)
-			if done and not claimed then
+
+			local row = Instance.new("Frame")
+			row.BackgroundTransparency = 1
+			row.Size = UDim2.new(1, 0, 0, 28)
+			row.LayoutOrder = 3
+			row.ZIndex = 33
+			row.Parent = c
+			UIKit.List(row, 8, true, Enum.HorizontalAlignment.Left)
+
+			local track = Instance.new("Frame")
+			track.Name = "BarTrack"
+			track.BackgroundColor3 = T.Glass3
+			track.BorderSizePixel = 0
+			track.Size = UDim2.new(needBtn and 0.68 or 1, 0, 0, 12)
+			track.LayoutOrder = 1
+			track.ZIndex = 33
+			track.Parent = row
+			UIKit.Corner(track, 99)
+			local fill = Instance.new("Frame")
+			fill.BackgroundColor3 = done and T.Good or T.Accent
+			fill.BorderSizePixel = 0
+			fill.Size = UDim2.new(amount > 0 and math.clamp(progress / amount, 0, 1) or 0, 0, 1, 0)
+			fill.Parent = track
+			UIKit.Corner(fill, 99)
+
+			if needBtn then
 				UIKit.Button({
-					Parent = c,
+					Parent = row,
 					Text = "Сдать",
-					Size = UDim2.fromOffset(78, 30),
-					Position = UDim2.new(1, -78, 0.5, -15),
+					Size = UDim2.fromOffset(84, 28),
 					Color = T.Good,
 					Color2 = Color3.fromRGB(30, 100, 60),
+					TextColor = T.Text,
 					SizePx = 12,
+					Order = 2,
 					Z = 34,
 					OnClick = function()
 						Net.ClaimQuest(id)
 					end,
+				})
+			elseif claimed then
+				UIKit.Label({
+					Parent = row,
+					Text = "готово",
+					Size = UDim2.fromOffset(64, 28),
+					Color = T.TextDim,
+					SizePx = 12,
+					Order = 2,
+					Z = 33,
 				})
 			end
 		end
