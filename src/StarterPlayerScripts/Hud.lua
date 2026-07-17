@@ -174,59 +174,64 @@ function Hud.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 	UIKit.Corner(questBadge, 99)
 
 	local function applyMetrics(m: Layout.Metrics)
-		top.Size = UDim2.new(1, -(m.railW + m.pad * 2), 0, m.topH)
-		top.Position = UDim2.fromOffset(m.railW + m.pad, m.pad)
+		-- Top row: aligned to rail right edge, equal chip sizes
+		top.Size = UDim2.new(1, -(m.railW + m.pad * 3), 0, m.topH)
+		top.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad)
 		topList.Padding = UDim.new(0, m.chipGap)
+		topList.HorizontalAlignment = Enum.HorizontalAlignment.Left
+		topList.VerticalAlignment = Enum.VerticalAlignment.Center
 
-		-- chip widths flex a bit by content role
-		local chipWs = {
-			math.floor(118 * m.scale),
-			math.floor(96 * m.scale),
-			math.floor(112 * m.scale),
-			math.floor(118 * m.scale),
-			math.floor(104 * m.scale),
-			math.floor(148 * m.scale),
-			math.floor(112 * m.scale),
-		}
-		for i, chip in ipairs(chips) do
-			chip.Size = UDim2.fromOffset(chipWs[i] or math.floor(110 * m.scale), m.chipH)
+		for _, chip in ipairs(chips) do
+			chip.Size = UDim2.fromOffset(m.chipW, m.chipH)
 			local val = chip:FindFirstChild("Value")
 			if val and val:IsA("TextLabel") then
-				val.TextSize = m.fontMd + 1
+				val.TextSize = m.fontMd
 			end
 		end
+		-- last chip (location) slightly wider for text, still grid-aligned
+		chips[6].Size = UDim2.fromOffset(m.chipW + m.chipW * 0.25, m.chipH)
 
-		rail.Size = UDim2.new(0, m.railW, 1, -(m.topH + m.actionH + m.pad * 3))
-		rail.Position = UDim2.fromOffset(m.pad, m.topH + m.pad * 2)
-		railPad.PaddingTop = UDim.new(0, m.pad * 0.7)
-		railPad.PaddingBottom = UDim.new(0, m.pad * 0.7)
-		railPad.PaddingLeft = UDim.new(0, m.pad * 0.55)
-		railPad.PaddingRight = UDim.new(0, m.pad * 0.55)
+		-- Left rail: full height between top and action, even icon grid
+		local railTop = m.pad + m.topH + m.gap
+		local railBottom = m.actionH + m.pad * 2 + 12
+		rail.Size = UDim2.new(0, m.railW, 1, -(railTop + railBottom))
+		rail.Position = UDim2.fromOffset(m.pad, railTop)
+		railPad.PaddingTop = UDim.new(0, m.pad)
+		railPad.PaddingBottom = UDim.new(0, m.pad)
+		railPad.PaddingLeft = UDim.new(0, m.pad)
+		railPad.PaddingRight = UDim.new(0, m.pad)
 		railList.Padding = UDim.new(0, m.railGap)
+		railList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 
 		for _, b in railBtns do
 			b.Size = UDim2.fromOffset(m.railBtn, m.railBtn)
 			b.TextSize = m.fontMd
 		end
 
+		-- Bottom action bar: centered, equal button heights
 		actions.Size = UDim2.fromOffset(m.actionW, m.actionH)
 		actions.Position = UDim2.new(0.5, 0, 1, -m.pad)
-		actPad.PaddingTop = UDim.new(0, m.pad * 0.75)
-		actPad.PaddingBottom = UDim.new(0, m.pad * 0.75)
+		actions.AnchorPoint = Vector2.new(0.5, 1)
+		actPad.PaddingTop = UDim.new(0, m.pad)
+		actPad.PaddingBottom = UDim.new(0, m.pad)
 		actPad.PaddingLeft = UDim.new(0, m.pad)
 		actPad.PaddingRight = UDim.new(0, m.pad)
 		rowList.Padding = UDim.new(0, m.actionGap)
+		rowList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		rowList.VerticalAlignment = Enum.VerticalAlignment.Center
 
 		autoBtn.Size = UDim2.fromOffset(m.btnAutoW, m.btnH)
-		autoBtn.TextSize = m.fontMd + 1
-		clickBtn.Size = UDim2.fromOffset(m.btnClickW, m.clickH)
+		autoBtn.TextSize = m.fontMd
+		clickBtn.Size = UDim2.fromOffset(m.btnClickW, m.clickH) -- same height as siblings
 		clickBtn.TextSize = m.fontXl
 		rebBtn.Size = UDim2.fromOffset(m.btnRebW, m.btnH)
 		rebBtn.TextSize = m.fontLg
 
-		rbHost.Size = UDim2.fromOffset(m.actionW, 10)
-		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.actionH + m.pad + 8))
-		rbTrack.Size = UDim2.new(1, 0, 0, math.max(6, math.floor(7 * m.scale)))
+		-- Progress bar sits just above action bar, same width
+		rbHost.Size = UDim2.fromOffset(m.actionW, 8)
+		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.actionH + m.pad + m.gap))
+		rbHost.AnchorPoint = Vector2.new(0.5, 1)
+		rbTrack.Size = UDim2.new(1, 0, 0, 8)
 	end
 
 	Layout.Bind(applyMetrics)
