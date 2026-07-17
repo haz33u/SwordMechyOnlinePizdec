@@ -48,21 +48,22 @@ local MobConfig = {
 			location = 0,
 			tier = "debug",
 			defaultZone = "Debug",
-			hp = 1_000_000,
+			-- Easier to see HP bar move; still tanky for long tests
+			hp = 50_000,
 			powerReward = 0,
 			coinReward = 0,
 			weaponDropChance = 0,
 			weaponPool = {},
-			respawnSeconds = 1,
+			respawnSeconds = 1.5,
 			isDebug = true,
 			armorFlat = 0,
 			visual = {
 				preferredModelName = "Dummy",
 				color = "#FFAA00",
-				scale = 1.2,
+				scale = 1.3,
 				shape = "r6",
 			},
-			description = "Debug bag. No loot, no quest progress. Infinite respawn for DPS/CPS tests.",
+			description = "Debug bag near spawn. No loot/quests. HP bar test target.",
 		},
 
 		----------------------------------------------------------------------

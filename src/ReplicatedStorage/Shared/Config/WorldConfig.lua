@@ -61,16 +61,17 @@ local WorldConfig = {
 
 	--[[
 		Zones as FRACTIONS of half-island (half = 600 at size 1200).
-		Computed at runtime in GetZoneRadii().
+		Tight near spawn for playtesting (was too far).
+		A ~ 24–48 studs, B ~ 50–80, C ~ 85–110, Boss ~ 90
 	]]
 	ZONE_FRACTIONS = {
-		Spawn = { 0.00, 0.12 },
-		A = { 0.14, 0.32 }, -- weak farm
-		B = { 0.34, 0.55 }, -- mid
-		C = { 0.57, 0.78 }, -- elite
+		Spawn = { 0.00, 0.04 },
+		A = { 0.04, 0.08 }, -- ~24–48 studs from center
+		B = { 0.09, 0.14 }, -- ~54–84
+		C = { 0.15, 0.19 }, -- ~90–114
 	},
-	-- Boss arena: fraction of half toward corner
-	BOSS_FRACTION = 0.72,
+	-- Boss closer to spawn for tests
+	BOSS_FRACTION = 0.16, -- ~96 studs
 
 	ZONE_COLORS = {
 		Spawn = Color3.fromRGB(80, 200, 120),
@@ -184,11 +185,11 @@ function WorldConfig.GetZonePoint(locationId: number, zone: string, index: numbe
 		local b = WorldConfig.GetBossCFrame(locationId).Position
 		return Vector3.new(b.X, WorldConfig.FLOOR_Y + 4, b.Z)
 	end
-	-- Debug dummy: near spawn, slightly offset so it doesn't sit on the player
+	-- Debug dummy: right next to spawn
 	if zone == "Debug" then
 		local c = WorldConfig.GetIslandCenter(locationId)
-		local offset = 18 + (index - 1) * 6
-		return Vector3.new(c.X + offset, WorldConfig.FLOOR_Y + 4, c.Z + 8)
+		local offset = 10 + (index - 1) * 5
+		return Vector3.new(c.X + offset, WorldConfig.FLOOR_Y + 4, c.Z + 6)
 	end
 	local c = WorldConfig.GetIslandCenter(locationId)
 	local rMin, rMax = WorldConfig.GetZoneRadii(zone)

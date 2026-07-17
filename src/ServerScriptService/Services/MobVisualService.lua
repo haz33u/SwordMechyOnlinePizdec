@@ -1,20 +1,17 @@
 --!strict
 --[[
-	Placeholder mob models in Workspace (no fancy art).
-	- Default "Нуб"-style blocks / simple humanoids
-	- ClickDetector to attack without custom UI
-	- Billboard: name + HP
+	Placeholder mobs + primitive worldspace HP bar.
+	ClickDetector attack. No full game UI.
 ]]
 
 local Workspace = game:GetService("Workspace")
-local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local MobConfig = require(Shared.Config.MobConfig)
 
 local MobVisualService = {}
 MobVisualService._folder = nil :: Folder?
-MobVisualService._models = {} :: { [string]: Model } -- uid -> model
+MobVisualService._models = {} :: { [string]: Model }
 MobVisualService._onClick = nil :: ((Player, string) -> ())?
 
 local TIER_COLOR = {
@@ -38,6 +35,16 @@ local function hexToColor(hex: string?): Color3?
 	return nil
 end
 
+local function formatHp(n: number): string
+	n = math.floor(math.max(0, n))
+	if n >= 1e6 then
+		return string.format("%.1fM", n / 1e6)
+	elseif n >= 1e3 then
+		return string.format("%.1fK", n / 1e3)
+	end
+	return tostring(n)
+end
+
 local function ensureFolder(): Folder
 	if MobVisualService._folder and MobVisualService._folder.Parent then
 		return MobVisualService._folder
@@ -54,42 +61,70 @@ local function ensureFolder(): Folder
 	return f
 end
 
-local function makeBillboard(parent: BasePart, title: string): (BillboardGui, TextLabel, TextLabel)
+--- Primitive HP bar: name + bar fill + numbers
+local function makeHpHud(parent: BasePart, title: string)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "MobHud"
-	bb.Size = UDim2.fromOffset(160, 48)
-	bb.StudsOffset = Vector3.new(0, 3.2, 0)
+	bb.Size = UDim2.fromOffset(140, 40)
+	bb.StudsOffset = Vector3.new(0, 3.4, 0)
 	bb.AlwaysOnTop = true
-	bb.MaxDistance = 120
+	bb.MaxDistance = 80
 	bb.Parent = parent
 
 	local nameLbl = Instance.new("TextLabel")
 	nameLbl.Name = "Name"
 	nameLbl.BackgroundTransparency = 1
-	nameLbl.Size = UDim2.new(1, 0, 0.5, 0)
+	nameLbl.Size = UDim2.new(1, 0, 0, 14)
+	nameLbl.Position = UDim2.new(0, 0, 0, 0)
 	nameLbl.Font = Enum.Font.GothamBold
-	nameLbl.TextSize = 14
+	nameLbl.TextSize = 12
 	nameLbl.TextColor3 = Color3.new(1, 1, 1)
-	nameLbl.TextStrokeTransparency = 0.4
+	nameLbl.TextStrokeTransparency = 0.35
 	nameLbl.Text = title
 	nameLbl.Parent = bb
 
+	-- bar background
+	local barBg = Instance.new("Frame")
+	barBg.Name = "BarBg"
+	barBg.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+	barBg.BorderSizePixel = 0
+	barBg.Size = UDim2.new(1, 0, 0, 12)
+	barBg.Position = UDim2.new(0, 0, 0, 16)
+	barBg.Parent = bb
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 3)
+	corner.Parent = barBg
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 1
+	stroke.Color = Color3.fromRGB(0, 0, 0)
+	stroke.Transparency = 0.3
+	stroke.Parent = barBg
+
+	-- fill
+	local fill = Instance.new("Frame")
+	fill.Name = "BarFill"
+	fill.BackgroundColor3 = Color3.fromRGB(80, 220, 100)
+	fill.BorderSizePixel = 0
+	fill.Size = UDim2.new(1, 0, 1, 0)
+	fill.Parent = barBg
+	local fillCorner = Instance.new("UICorner")
+	fillCorner.CornerRadius = UDim.new(0, 3)
+	fillCorner.Parent = fill
+
+	-- hp text over bar
 	local hpLbl = Instance.new("TextLabel")
 	hpLbl.Name = "HP"
 	hpLbl.BackgroundTransparency = 1
-	hpLbl.Position = UDim2.new(0, 0, 0.5, 0)
-	hpLbl.Size = UDim2.new(1, 0, 0.5, 0)
-	hpLbl.Font = Enum.Font.Gotham
-	hpLbl.TextSize = 12
-	hpLbl.TextColor3 = Color3.fromRGB(120, 255, 140)
+	hpLbl.Size = UDim2.new(1, 0, 1, 0)
+	hpLbl.Font = Enum.Font.GothamBold
+	hpLbl.TextSize = 10
+	hpLbl.TextColor3 = Color3.new(1, 1, 1)
 	hpLbl.TextStrokeTransparency = 0.4
-	hpLbl.Text = "HP"
-	hpLbl.Parent = bb
-
-	return bb, nameLbl, hpLbl
+	hpLbl.ZIndex = 2
+	hpLbl.Text = "0/0"
+	hpLbl.Parent = barBg
 end
 
---- Simple placeholder body: torso + head (n00b style)
 local function buildPlaceholder(def: any, position: Vector3): Model
 	local model = Instance.new("Model")
 	model.Name = def.id
@@ -121,7 +156,6 @@ local function buildPlaceholder(def: any, position: Vector3): Model
 		head.CFrame = CFrame.new(position + Vector3.new(0, 1.4 * scale, 1.2 * scale))
 		head.Parent = model
 	else
-		-- humanoid / r6 / default "нуб"
 		root = Instance.new("Part")
 		root.Size = Vector3.new(2, 2, 1) * scale
 		root.Name = "Root"
@@ -134,11 +168,10 @@ local function buildPlaceholder(def: any, position: Vector3): Model
 		head.CanCollide = false
 		head.CFrame = CFrame.new(position + Vector3.new(0, 1.8 * scale, 0))
 		head.Parent = model
-		-- face label "нуб"
-		local decal = Instance.new("BillboardGui")
-		decal.Size = UDim2.fromOffset(40, 20)
-		decal.StudsOffset = Vector3.new(0, 0, -0.7)
-		decal.Parent = head
+		local faceBb = Instance.new("BillboardGui")
+		faceBb.Size = UDim2.fromOffset(40, 20)
+		faceBb.StudsOffset = Vector3.new(0, 0, -0.7)
+		faceBb.Parent = head
 		local face = Instance.new("TextLabel")
 		face.Size = UDim2.fromScale(1, 1)
 		face.BackgroundTransparency = 1
@@ -146,7 +179,7 @@ local function buildPlaceholder(def: any, position: Vector3): Model
 		face.TextScaled = true
 		face.Font = Enum.Font.GothamBold
 		face.TextColor3 = Color3.new(0, 0, 0)
-		face.Parent = decal
+		face.Parent = faceBb
 	end
 
 	root.Color = color
@@ -157,17 +190,18 @@ local function buildPlaceholder(def: any, position: Vector3): Model
 	root.Parent = model
 	model.PrimaryPart = root
 
-	-- Click to attack (works without friend UI)
 	local click = Instance.new("ClickDetector")
-	click.MaxActivationDistance = 48
+	click.MaxActivationDistance = 64
 	click.Parent = root
 
-	makeBillboard(root, def.name)
+	makeHpHud(root, def.name)
 
 	model:SetAttribute("MobId", def.id)
 	model:SetAttribute("Tier", def.tier)
 	model:SetAttribute("IsDebug", def.isDebug == true)
 	model:SetAttribute("IsBoss", def.isBoss == true)
+	model:SetAttribute("CurrentHp", def.hp)
+	model:SetAttribute("MaxHp", def.hp)
 
 	return model
 end
@@ -175,7 +209,7 @@ end
 function MobVisualService.Init(onClick: (Player, string) -> ())
 	MobVisualService._onClick = onClick
 	ensureFolder()
-	print("[MobVisual] placeholder spawner ready (Workspace.Mobs)")
+	print("[MobVisual] placeholders + HP bar ready")
 end
 
 function MobVisualService.Spawn(entry: any)
@@ -211,6 +245,16 @@ function MobVisualService.UpdateHp(entry: any)
 	if not model then
 		return
 	end
+
+	local hp = math.max(0, entry.hp)
+	local maxHp = math.max(1, entry.maxHp)
+	local pct = math.clamp(hp / maxHp, 0, 1)
+
+	-- attributes for other systems / debug
+	model:SetAttribute("CurrentHp", hp)
+	model:SetAttribute("MaxHp", maxHp)
+	model:SetAttribute("HpPercent", math.floor(pct * 1000) / 10)
+
 	local root = model.PrimaryPart
 	if not root then
 		return
@@ -219,36 +263,31 @@ function MobVisualService.UpdateHp(entry: any)
 	if not bb then
 		return
 	end
-	local hpLbl = bb:FindFirstChild("HP")
-	if hpLbl and hpLbl:IsA("TextLabel") then
-		local pct = 0
-		if entry.maxHp > 0 then
-			pct = math.clamp(entry.hp / entry.maxHp, 0, 1)
+
+	local barBg = bb:FindFirstChild("BarBg")
+	if barBg then
+		local fill = barBg:FindFirstChild("BarFill")
+		if fill and fill:IsA("Frame") then
+			fill.Size = UDim2.new(pct, 0, 1, 0)
+			if pct > 0.5 then
+				fill.BackgroundColor3 = Color3.fromRGB(80, 220, 100)
+			elseif pct > 0.25 then
+				fill.BackgroundColor3 = Color3.fromRGB(255, 200, 60)
+			else
+				fill.BackgroundColor3 = Color3.fromRGB(230, 70, 70)
+			end
 		end
-		hpLbl.Text = string.format("%s / %s (%.0f%%)", formatHp(entry.hp), formatHp(entry.maxHp), pct * 100)
-		if pct > 0.5 then
-			hpLbl.TextColor3 = Color3.fromRGB(120, 255, 140)
-		elseif pct > 0.25 then
-			hpLbl.TextColor3 = Color3.fromRGB(255, 220, 80)
-		else
-			hpLbl.TextColor3 = Color3.fromRGB(255, 90, 90)
+		local hpLbl = barBg:FindFirstChild("HP")
+		if hpLbl and hpLbl:IsA("TextLabel") then
+			hpLbl.Text = string.format("%s / %s", formatHp(hp), formatHp(maxHp))
 		end
 	end
+
 	local nameLbl = bb:FindFirstChild("Name")
 	if nameLbl and nameLbl:IsA("TextLabel") then
-		local prefix = entry.isDebug and "[DEBUG] " or (entry.isBoss and "[BOSS] " or "")
+		local prefix = entry.isDebug and "[DBG] " or (entry.isBoss and "[BOSS] " or "")
 		nameLbl.Text = prefix .. (entry.name or entry.mobId)
 	end
-end
-
-local function formatHp(n: number): string
-	n = math.floor(math.max(0, n))
-	if n >= 1e6 then
-		return string.format("%.1fM", n / 1e6)
-	elseif n >= 1e3 then
-		return string.format("%.1fK", n / 1e3)
-	end
-	return tostring(n)
 end
 
 function MobVisualService.SetAlive(entry: any, alive: boolean)
@@ -275,7 +314,6 @@ function MobVisualService.SetAlive(entry: any, alive: boolean)
 		end
 		MobVisualService.UpdateHp(entry)
 	else
-		-- death flash: hide, keep model for respawn
 		for _, d in model:GetDescendants() do
 			if d:IsA("BasePart") then
 				d.Transparency = 1
@@ -289,6 +327,8 @@ function MobVisualService.SetAlive(entry: any, alive: boolean)
 				bb.Enabled = false
 			end
 		end
+		model:SetAttribute("CurrentHp", 0)
+		model:SetAttribute("HpPercent", 0)
 	end
 end
 
@@ -297,14 +337,6 @@ function MobVisualService.Despawn(uid: string)
 	if model then
 		model:Destroy()
 		MobVisualService._models[uid] = nil
-	end
-end
-
-function MobVisualService.ClearLocation(locationId: number, mobsTable: { [string]: any })
-	for uid, entry in mobsTable do
-		if entry.locationId == locationId then
-			MobVisualService.Despawn(uid)
-		end
 	end
 end
 

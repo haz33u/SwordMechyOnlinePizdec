@@ -42,18 +42,15 @@ local MOB_OVERRIDES: {
 	----------------------------------------------------------------------
 	[1] = {
 		mobs = {
-			-- Zone A: trash
-			{ mobId = "L1_Slime", count = 10, zone = "A" },
-			{ mobId = "L1_GoblinScout", count = 8, zone = "A" },
-			-- Zone B: normal
-			{ mobId = "L1_Skeleton", count = 8, zone = "B" },
-			{ mobId = "L1_Wolf", count = 6, zone = "B" },
-			{ mobId = "L1_GoblinWarrior", count = 4, zone = "B" },
-			-- Zone C: elite
-			{ mobId = "L1_Knight", count = 3, zone = "C" },
+			-- Closer packs near spawn (counts reduced for clarity)
+			{ mobId = "L1_Slime", count = 6, zone = "A" },
+			{ mobId = "L1_GoblinScout", count = 5, zone = "A" },
+			{ mobId = "L1_Skeleton", count = 4, zone = "B" },
+			{ mobId = "L1_Wolf", count = 3, zone = "B" },
+			{ mobId = "L1_GoblinWarrior", count = 3, zone = "B" },
+			{ mobId = "L1_Knight", count = 2, zone = "C" },
 		},
 		bossId = "L1_Boss",
-		-- Debug dummy always near spawn area for DPS tests
 		debugMobs = {
 			{ mobId = "DEBUG_Dummy", count = 1, zone = "Debug" },
 		},
