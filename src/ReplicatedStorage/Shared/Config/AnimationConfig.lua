@@ -16,7 +16,9 @@ local AnimationConfig = {
 	-- Second hit variety — same pack for now; replace if you publish Swing2
 	AttackAlt = "rbxassetid://133642421878218",
 
-	PreferPublishedAttack = true,
+	-- false = prefer Place CombatAnimations / Animations first (more reliable)
+	-- true  = try AttackMain rbxassetid first (may fail if asset not owned / not Animation)
+	PreferPublishedAttack = false,
 
 	-- Place-only folders under ReplicatedStorage (NOT inside Shared — Rojo-safe)
 	CombatAnimsFolder = "CombatAnimations",

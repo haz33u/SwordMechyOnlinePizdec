@@ -1,10 +1,14 @@
 --!strict
 --[[
-	Local player: weld simple sword visuals to hand grips + play attack anim on Swing/CombatFx.
+	Local player: sword visuals on grips + attack animation on Swing.
 
-	Attachments used (default R15):
-	  RightHand.RightGripAttachment  → main
-	  LeftHand.LeftGripAttachment    → offhand
+	Animation resolve order:
+	  1) ReplicatedStorage.CombatAnimations.Swing1 / Swing2 (KeyframeSequence)
+	  2) ReplicatedStorage.Animations.Swing (Animation instance or KFS child)
+	  3) AnimationConfig.AttackMain / AttackAlt (published rbxassetid)
+	  4) Official R15 toolslash / toollunge fallbacks
+
+	Grips: RightHand.RightGripAttachment, LeftHand.LeftGripAttachment
 ]]
 
 local Players = game:GetService("Players")
@@ -23,9 +27,10 @@ local folder: Folder? = nil
 local mainModel: Model? = nil
 local offModel: Model? = nil
 local tracks: { [string]: AnimationTrack } = {}
-local registeredIds: { [string]: string } = {} -- name → content id from KeyframeSequence
+local registeredIds: { [string]: string } = {}
 local swingToggle = false
 local lastPlay = 0
+local warnedOnce: { [string]: boolean } = {}
 
 local RARITY_COLOR = {
 	Common = Color3.fromRGB(170, 175, 185),
@@ -37,6 +42,14 @@ local RARITY_COLOR = {
 	Secret = Color3.fromRGB(255, 230, 120),
 	Limited = Color3.fromRGB(255, 80, 200),
 }
+
+local function warnOnce(key: string, msg: string)
+	if warnedOnce[key] then
+		return
+	end
+	warnedOnce[key] = true
+	warn("[WeaponVisual]", msg)
+end
 
 local function ensureFolder(char: Model): Folder
 	local f = char:FindFirstChild("SM_WeaponVisuals")
@@ -78,7 +91,6 @@ local function makeSword(name: string, def: any?, parent: Folder): Model
 	handle.CastShadow = true
 	handle.Parent = m
 
-	-- simple guard
 	local guard = Instance.new("Part")
 	guard.Name = "Guard"
 	guard.Size = Vector3.new(0.7, 0.12, 0.25)
@@ -94,7 +106,6 @@ local function makeSword(name: string, def: any?, parent: Folder): Model
 	gw.Parent = guard
 	guard.CFrame = handle.CFrame * CFrame.new(0, -AnimationConfig.SwordLength * 0.28, 0)
 
-	-- tip glow for high rarity
 	if rarity == "Legendary" or rarity == "Mythic" or rarity == "Secret" or rarity == "Limited" then
 		local light = Instance.new("PointLight")
 		light.Brightness = 0.8
@@ -105,9 +116,7 @@ local function makeSword(name: string, def: any?, parent: Folder): Model
 
 	local att = Instance.new("Attachment")
 	att.Name = "Grip"
-	-- blade up from grip
 	att.Position = Vector3.new(0, -AnimationConfig.SwordLength * 0.35, 0)
-	att.Orientation = Vector3.new(0, 0, 0)
 	att.Parent = handle
 
 	m.PrimaryPart = handle
@@ -124,7 +133,6 @@ local function attachToGrip(model: Model, grip: Attachment)
 	if not modelGrip then
 		return
 	end
-	-- clear old constraints
 	for _, c in handle:GetChildren() do
 		if c:IsA("RigidConstraint") then
 			c:Destroy()
@@ -179,15 +187,14 @@ function WeaponVisual.Refresh(profile: any?)
 	local rightGrip = findGrip(char, "right")
 	local leftGrip = findGrip(char, "left")
 
-	if mainDef and rightGrip then
-		mainModel = makeSword("MainSword", mainDef, folder)
+	-- Always show main sword if equipped; if no equip data, still show default Common blade
+	if rightGrip then
+		mainModel = makeSword("MainSword", mainDef or { rarity = "Common" }, folder)
 		attachToGrip(mainModel, rightGrip)
 	end
 	if offDef and leftGrip then
 		offModel = makeSword("OffSword", offDef, folder)
 		attachToGrip(offModel, leftGrip)
-	elseif not mainDef and rightGrip then
-		-- always show at least starter visual if somehow empty: skip
 	end
 end
 
@@ -204,117 +211,203 @@ local function getAnimator(char: Model): Animator?
 	return animator
 end
 
---[[
-	Combat Dummy AnimSaves are KeyframeSequences — they have NO rbxassetid until Publish.
-	RegisterKeyframeSequence creates a session content id we can LoadAnimation with.
-	Sequences live in ReplicatedStorage.CombatAnimations (Place, not Rojo).
-]]
-local function getCombatSequence(name: string): KeyframeSequence?
-	local f = ReplicatedStorage:FindFirstChild(AnimationConfig.CombatAnimsFolder)
-	if not f then
+local function registerKfs(seq: KeyframeSequence, cacheKey: string): string?
+	if registeredIds[cacheKey] then
+		return registeredIds[cacheKey]
+	end
+	local ok, contentId = pcall(function()
+		return KeyframeSequenceProvider:RegisterKeyframeSequence(seq)
+	end)
+	if ok and type(contentId) == "string" and contentId ~= "" then
+		registeredIds[cacheKey] = contentId
+		return contentId
+	end
+	warnOnce("kfs_" .. cacheKey, "RegisterKeyframeSequence failed for " .. cacheKey)
+	return nil
+end
+
+local function findKfsIn(folder: Instance?, names: { string }): (KeyframeSequence?, string?)
+	if not folder then
+		return nil, nil
+	end
+	for _, name in names do
+		local inst = folder:FindFirstChild(name, true)
+		if inst and inst:IsA("KeyframeSequence") then
+			return inst, name
+		end
+		-- Animation container with KFS child (e.g. Run.KeyframeSequence)
+		local holder = folder:FindFirstChild(name)
+		if holder then
+			local kfs = holder:FindFirstChildWhichIsA("KeyframeSequence", true)
+			if kfs then
+				return kfs, name
+			end
+		end
+	end
+	return nil, nil
+end
+
+local function findAnimationInstance(folder: Instance?, names: { string }): string?
+	if not folder then
 		return nil
 	end
-	local seq = f:FindFirstChild(name)
-	if seq and seq:IsA("KeyframeSequence") then
-		return seq
+	for _, name in names do
+		local inst = folder:FindFirstChild(name, true)
+		if inst and inst:IsA("Animation") then
+			local id = inst.AnimationId
+			if type(id) == "string" and id ~= "" and id ~= "rbxassetid://0" then
+				return id
+			end
+		end
 	end
 	return nil
 end
 
-local function resolveAnimContentId(preferAlt: boolean): string
-	-- 1) Published rbxassetid (user-provided store anim)
+--- Build ordered list of content ids to try for this swing
+local function collectAnimCandidates(preferAlt: boolean): { string }
+	local list: { string } = {}
+	local seen: { [string]: boolean } = {}
+
+	local function add(id: string?)
+		if type(id) ~= "string" or id == "" or seen[id] then
+			return
+		end
+		seen[id] = true
+		table.insert(list, id)
+	end
+
+	local combatFolder = ReplicatedStorage:FindFirstChild(AnimationConfig.CombatAnimsFolder)
+	local animsFolder = ReplicatedStorage:FindFirstChild(AnimationConfig.ExtraAnimsFolder or "Animations")
+
+	-- 1) CombatAnimations Swing1 / Swing2 (from Combat Dummy)
+	local combatNames = if preferAlt
+		then { AnimationConfig.Swing2Name, "swing2", "Swing2", AnimationConfig.Swing1Name, "Swing" }
+		else { AnimationConfig.Swing1Name, "swing1", "Swing1", "Swing", AnimationConfig.Swing2Name }
+	local kfs, key = findKfsIn(combatFolder, combatNames)
+	if kfs and key then
+		add(registerKfs(kfs, "combat_" .. key))
+	end
+
+	-- 2) ReplicatedStorage.Animations.Swing (Animation id or nested KFS)
+	local swingNames = if preferAlt
+		then { "Swing2", "Swing", "Attack2", "slash", "Attack" }
+		else { "Swing", "Swing1", "Attack", "slash", "Attack1" }
+	add(findAnimationInstance(animsFolder, swingNames))
+	local kfs2, key2 = findKfsIn(animsFolder, swingNames)
+	if kfs2 and key2 then
+		add(registerKfs(kfs2, "anims_" .. key2))
+	end
+
+	-- 3) Published config ids
 	if AnimationConfig.PreferPublishedAttack then
-		local published = AnimationConfig.GetAttackId(preferAlt)
-		if type(published) == "string" and published ~= "" and published:find("rbxassetid://") then
-			return published
-		end
+		add(AnimationConfig.GetAttackId(preferAlt))
 	end
 
-	-- 2) Place KeyframeSequences → register session id
-	local seqName = if preferAlt then AnimationConfig.Swing2Name else AnimationConfig.Swing1Name
-	if registeredIds[seqName] then
-		return registeredIds[seqName]
-	end
-	local seq = getCombatSequence(seqName)
-	if seq then
-		local ok, contentId = pcall(function()
-			return KeyframeSequenceProvider:RegisterKeyframeSequence(seq)
-		end)
-		if ok and type(contentId) == "string" and contentId ~= "" then
-			registeredIds[seqName] = contentId
-			return contentId
-		end
-	end
+	-- 4) Hard fallbacks (always last)
+	add(if preferAlt then AnimationConfig.AttackAltFallback else AnimationConfig.AttackMainFallback)
+	add(AnimationConfig.AttackMainFallback)
+	add("rbxassetid://522635514")
 
-	-- 3) Official R15 tool fallbacks
-	return AnimationConfig.GetAttackId(preferAlt)
+	return list
 end
 
 local function loadTrack(animator: Animator, id: string): AnimationTrack?
-	if tracks[id] and tracks[id].Parent then
-		return tracks[id]
+	local existing = tracks[id]
+	if existing then
+		-- re-use if still valid
+		local okParent = pcall(function()
+			return existing.Parent ~= nil or existing.Length >= 0
+		end)
+		if okParent then
+			return existing
+		end
+		tracks[id] = nil
 	end
+
 	local anim = Instance.new("Animation")
+	anim.Name = "SM_Attack"
 	anim.AnimationId = id
-	local ok, track = pcall(function()
+	local ok, trackOrErr = pcall(function()
 		return animator:LoadAnimation(anim)
 	end)
 	anim:Destroy()
-	if ok and track then
-		track.Priority = Enum.AnimationPriority.Action
-		tracks[id] = track
-		return track
+	if not ok or typeof(trackOrErr) ~= "Instance" then
+		warnOnce("load_" .. id, "LoadAnimation failed for " .. id .. " → " .. tostring(trackOrErr))
+		return nil
 	end
-	return nil
+	local track = trackOrErr :: AnimationTrack
+	track.Priority = Enum.AnimationPriority.Action4
+	track.Looped = false
+	tracks[id] = track
+	return track
 end
 
 function WeaponVisual.PlayAttack(forceAlt: boolean?)
 	local now = os.clock()
-	if now - lastPlay < 0.12 then
+	if now - lastPlay < 0.08 then
 		return
 	end
 	lastPlay = now
 
 	local char = player.Character
 	if not char then
+		warnOnce("nochar", "PlayAttack: no character")
 		return
 	end
 	local animator = getAnimator(char)
 	if not animator then
+		warnOnce("noanim", "PlayAttack: no Animator on Humanoid")
 		return
 	end
 
-	-- Both Swing1 and Swing2 are right-hand attacks; alternate every hit
 	local useAlt = forceAlt
 	if useAlt == nil and AnimationConfig.AlternateDual then
 		swingToggle = not swingToggle
 		useAlt = swingToggle
 	end
 
-	local id = resolveAnimContentId(useAlt == true)
-	local track = loadTrack(animator, id)
-	if track then
-		track:Play(0.05, 1, 1.15)
+	local candidates = collectAnimCandidates(useAlt == true)
+	for _, id in candidates do
+		local track = loadTrack(animator, id)
+		if track then
+			-- stop previous attack tracks lightly
+			pcall(function()
+				for _, t in tracks do
+					if t ~= track and t.IsPlaying and t.Priority == Enum.AnimationPriority.Action4 then
+						t:Stop(0.05)
+					end
+				end
+			end)
+			track:Play(0.05, 1, 1.2)
+			return
+		end
 	end
+	warnOnce("allfail", "PlayAttack: all animation candidates failed. Check Output.")
 end
 
 function WeaponVisual.Init(getProfile: () -> any?)
-	-- Pre-register combat sequences if present
 	task.defer(function()
+		-- warm register
 		pcall(function()
-			resolveAnimContentId(false)
-			resolveAnimContentId(true)
+			collectAnimCandidates(false)
+			collectAnimCandidates(true)
 		end)
+		print("[WeaponVisual] ready | CombatAnims=",
+			ReplicatedStorage:FindFirstChild("CombatAnimations") ~= nil,
+			"Animations=",
+			ReplicatedStorage:FindFirstChild("Animations") ~= nil
+		)
 	end)
 
 	local function onChar(char: Model)
 		tracks = {}
 		registeredIds = {}
+		warnedOnce = {}
 		task.defer(function()
-			task.wait(0.2)
+			task.wait(0.25)
 			pcall(function()
-				resolveAnimContentId(false)
-				resolveAnimContentId(true)
+				collectAnimCandidates(false)
+				collectAnimCandidates(true)
 			end)
 			WeaponVisual.Refresh(getProfile())
 		end)
