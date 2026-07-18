@@ -1248,35 +1248,36 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(52)))
 		scroll.LayoutOrder = 2
 
+		-- Luau: Cyrillic keys must be quoted ["..."], not bare identifiers
 		local stubs = {
-			Наборы = {
-				{ name = "Стартовый набор", price = "99 💎", desc = "Монеты + ключи (заглушка)" },
-				{ name = "Набор воина", price = "199 💎", desc = "Буст силы x2 1ч (заглушка)" },
-				{ name = "VIP пак", price = "499 💎", desc = "Косметика + бонусы (заглушка)" },
+			["Наборы"] = {
+				{ name = "Стартовый набор", price = "99 R$", desc = "Монеты + ключи (заглушка)" },
+				{ name = "Набор воина", price = "199 R$", desc = "Буст силы x2 1ч (заглушка)" },
+				{ name = "VIP пак", price = "499 R$", desc = "Косметика + бонусы (заглушка)" },
 			},
-			Бусты = {
-				{ name = "Локальный бустер силы x2", price = "149 💎", desc = "30 мин · скоро" },
-				{ name = "Глобальный бустер силы x1.5", price = "199 💎", desc = "30 мин · скоро" },
-				{ name = "Локальный бустер урона x2", price = "149 💎", desc = "30 мин · скоро" },
-				{ name = "Глобальный бустер урона x1.5", price = "199 💎", desc = "30 мин · скоро" },
-				{ name = "Локальный бустер денег x1.5", price = "149 💎", desc = "30 мин · скоро" },
-				{ name = "Глобальный бустер денег x1.5", price = "199 💎", desc = "30 мин · скоро" },
-				{ name = "Локальный бустер удачи x1.25", price = "149 💎", desc = "30 мин · скоро" },
-				{ name = "Глобальный бустер удачи x1.25", price = "199 💎", desc = "30 мин · скоро" },
+			["Бусты"] = {
+				{ name = "Локальный бустер силы x2", price = "149 R$", desc = "30 мин · скоро" },
+				{ name = "Глобальный бустер силы x1.5", price = "199 R$", desc = "30 мин · скоро" },
+				{ name = "Локальный бустер урона x2", price = "149 R$", desc = "30 мин · скоро" },
+				{ name = "Глобальный бустер урона x1.5", price = "199 R$", desc = "30 мин · скоро" },
+				{ name = "Локальный бустер денег x1.5", price = "149 R$", desc = "30 мин · скоро" },
+				{ name = "Глобальный бустер денег x1.5", price = "199 R$", desc = "30 мин · скоро" },
+				{ name = "Локальный бустер удачи x1.25", price = "149 R$", desc = "30 мин · скоро" },
+				{ name = "Глобальный бустер удачи x1.25", price = "199 R$", desc = "30 мин · скоро" },
 			},
-			Разное = {
-				{ name = "Скины мечей", price = "—", desc = "Скоро" },
-				{ name = "Эмоции", price = "—", desc = "Скоро" },
-				{ name = "Рамки ника", price = "—", desc = "Скоро" },
+			["Разное"] = {
+				{ name = "Скины мечей", price = "--", desc = "Скоро" },
+				{ name = "Эмоции", price = "--", desc = "Скоро" },
+				{ name = "Рамки ника", price = "--", desc = "Скоро" },
 			},
 			["Игровой баланс"] = {
-				{ name = "5 000 монет", price = "49 💎", desc = "Заглушка" },
-				{ name = "25 000 монет", price = "149 💎", desc = "Заглушка" },
-				{ name = "100 000 монет", price = "399 💎", desc = "Заглушка" },
+				{ name = "5 000 монет", price = "49 R$", desc = "Заглушка" },
+				{ name = "25 000 монет", price = "149 R$", desc = "Заглушка" },
+				{ name = "100 000 монет", price = "399 R$", desc = "Заглушка" },
 			},
 		}
 
-		local list = stubs[activeTab] or stubs.Бусты
+		local list = stubs[activeTab] or stubs["Бусты"]
 		for i, item in ipairs(list) do
 			local c = surfaceCard(scroll, 96, i, T.Stroke)
 			UIKit.Label({
