@@ -6,19 +6,29 @@
       "$className": "ReplicatedStorage",
       "$ignoreUnknownInstances": true,
       "Shared": {
-        "$path": "src/ReplicatedStorage/Shared",
-        "$ignoreUnknownInstances": true
+        "$path": "src/ReplicatedStorage/Shared"
       },
       "Packages": {
         "$path": "Packages"
+      },
+      "Animations": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true
+      },
+      "CombatAnimations": {
+        "$className": "Folder",
+        "$ignoreUnknownInstances": true
       }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "$ignoreUnknownInstances": true
     },
     "ServerScriptService": {
       "$className": "ServerScriptService",
       "$ignoreUnknownInstances": true,
       "Server": {
-        "$path": "src/ServerScriptService",
-        "$ignoreUnknownInstances": true
+        "$path": "src/ServerScriptService"
       }
     },
     "StarterPlayer": {
@@ -28,8 +38,7 @@
         "$className": "StarterPlayerScripts",
         "$ignoreUnknownInstances": true,
         "Client": {
-          "$path": "src/StarterPlayerScripts",
-          "$ignoreUnknownInstances": true
+          "$path": "src/StarterPlayerScripts"
         }
       }
     }

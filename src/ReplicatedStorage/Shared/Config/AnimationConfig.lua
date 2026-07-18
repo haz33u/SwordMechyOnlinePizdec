@@ -18,8 +18,10 @@ local AnimationConfig = {
 
 	PreferPublishedAttack = true,
 
-	-- Optional Place folder with KeyframeSequences (fallback / legacy)
+	-- Place-only folders under ReplicatedStorage (NOT inside Shared — Rojo-safe)
 	CombatAnimsFolder = "CombatAnimations",
+	-- Also supported: ReplicatedStorage.Animations (Idle/Walk/Run/Swing KeyframeSequences)
+	ExtraAnimsFolder = "Animations",
 	Swing1Name = "Swing1",
 	Swing2Name = "Swing2",
 
