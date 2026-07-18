@@ -1,28 +1,28 @@
 --!strict
 --[[
-	Combat / equip animations.
+	Combat animations.
 
-	Default IDs = Roblox R15 built-in Tool animations (same as default Animate script):
-	  toolslash  522635514
-	  toollunge  522638767
-	  toolnone   522696694
+	Preferred: KeyframeSequences in ReplicatedStorage.CombatAnimations
+	  (copied from ServerStorage AnimPack_SwordFightingCombat / Combat Dummy / AnimSaves)
+	  Swing1, Swing2 — both right-hand sword swings (no publish / no rbxassetid needed)
 
-	These work without uploading. Replace with your published Animation IDs
-	when you have custom sword swings (R15/Rthro recommended).
+	Fallback: Roblox default R15 toolslash / toollunge asset ids.
 ]]
 
 local AnimationConfig = {
-	-- Primary attack (right hand / main)
-	AttackMain = "rbxassetid://522635514", -- R15 toolslash
-	-- Secondary / dual variety (left hand cue)
-	AttackAlt = "rbxassetid://522638767", -- R15 toollunge
-	-- Idle hold while weapons equipped (optional soft layer)
-	ToolHold = "rbxassetid://522696694", -- R15 toolnone
+	-- Folder under ReplicatedStorage with KeyframeSequence children
+	CombatAnimsFolder = "CombatAnimations",
+	Swing1Name = "Swing1", -- was AnimSaves.swing1
+	Swing2Name = "Swing2", -- was AnimSaves.swing2
 
-	-- If true, alternate slash/lunge each swing when dual wielding
+	-- Fallback if folder missing (official R15 Tool anims)
+	AttackMainFallback = "rbxassetid://522635514",
+	AttackAltFallback = "rbxassetid://522638767",
+	ToolHold = "rbxassetid://522696694",
+
+	-- Alternate Swing1 / Swing2 every attack (both for right / main hand)
 	AlternateDual = true,
 
-	-- Visual sword parts (placeholder until mesh catalog)
 	SwordLength = 2.4,
 	SwordWidth = 0.22,
 	SwordDepth = 0.08,
@@ -30,9 +30,9 @@ local AnimationConfig = {
 
 function AnimationConfig.GetAttackId(isAlt: boolean?): string
 	if isAlt then
-		return AnimationConfig.AttackAlt
+		return AnimationConfig.AttackAltFallback
 	end
-	return AnimationConfig.AttackMain
+	return AnimationConfig.AttackMainFallback
 end
 
 return AnimationConfig

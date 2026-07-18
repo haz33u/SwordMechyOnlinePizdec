@@ -7,19 +7,36 @@
 | Меч **main** → `RightHand.RightGripAttachment` | `WeaponVisual.lua` |
 | Меч **offhand** → `LeftHand.LeftGripAttachment` | то же |
 | Анимация удара на Swing / CombatFx / Space / КЛИК | `WeaponVisual.PlayAttack` |
-| ID анимаций | `Shared.Config.AnimationConfig` |
+| **Swing1 / Swing2** с Combat Dummy | `ReplicatedStorage.CombatAnimations` (Place) |
 
-## ID по умолчанию (Roblox R15, upload **не** нужен)
+## Откуда Swing1 / Swing2 (без rbxassetid)
 
-Это стандартные анимации из default `Animate` (Tool):
+Цифры в `Keyframe` — это **время кадра** (0, 0.05…), **не** asset id.
 
-| Ключ | Asset | Смысл |
-|------|-------|--------|
-| `AttackMain` | `rbxassetid://522635514` | R15 **toolslash** |
-| `AttackAlt` | `rbxassetid://522638767` | R15 **toollunge** |
-| `ToolHold` | `rbxassetid://522696694` | R15 **toolnone** (пока не крутится постоянно) |
+Источник:
+```
+ServerStorage.AnimPack_SwordFightingCombat["Combat Dummy"].AnimSaves.swing1
+ServerStorage.AnimPack_SwordFightingCombat["Combat Dummy"].AnimSaves.swing2
+```
 
-При dual wield удары **чередуются** slash / lunge.
+Скопировано в Place:
+```
+ReplicatedStorage.CombatAnimations.Swing1   (KeyframeSequence)
+ReplicatedStorage.CombatAnimations.Swing2
+```
+
+Клиент регистрирует их через `KeyframeSequenceProvider:RegisterKeyframeSequence`  
+→ играет **без Publish**. Обе — удары **правой** руки, чередуются.
+
+**Важно:** `CombatAnimations` живёт в **Place** (Team Create). В git/Rojo KeyframeSequence не лежит.  
+Не удаляй папку в Studio. После клона place — если пропала, снова скопируй из AnimSaves.
+
+## Fallback (если папки нет)
+
+| | Asset |
+|--|--------|
+| Swing1 fallback | `rbxassetid://522635514` toolslash |
+| Swing2 fallback | `rbxassetid://522638767` toollunge |
 
 ## Свои анимации
 

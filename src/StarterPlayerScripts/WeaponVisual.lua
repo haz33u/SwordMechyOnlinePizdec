@@ -9,6 +9,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local KeyframeSequenceProvider = game:GetService("KeyframeSequenceProvider")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AnimationConfig = require(Shared.Config.AnimationConfig)
@@ -22,6 +23,7 @@ local folder: Folder? = nil
 local mainModel: Model? = nil
 local offModel: Model? = nil
 local tracks: { [string]: AnimationTrack } = {}
+local registeredIds: { [string]: string } = {} -- name → content id from KeyframeSequence
 local swingToggle = false
 local lastPlay = 0
 
@@ -202,6 +204,42 @@ local function getAnimator(char: Model): Animator?
 	return animator
 end
 
+--[[
+	Combat Dummy AnimSaves are KeyframeSequences — they have NO rbxassetid until Publish.
+	RegisterKeyframeSequence creates a session content id we can LoadAnimation with.
+	Sequences live in ReplicatedStorage.CombatAnimations (Place, not Rojo).
+]]
+local function getCombatSequence(name: string): KeyframeSequence?
+	local f = ReplicatedStorage:FindFirstChild(AnimationConfig.CombatAnimsFolder)
+	if not f then
+		return nil
+	end
+	local seq = f:FindFirstChild(name)
+	if seq and seq:IsA("KeyframeSequence") then
+		return seq
+	end
+	return nil
+end
+
+local function resolveAnimContentId(preferAlt: boolean): string
+	local seqName = if preferAlt then AnimationConfig.Swing2Name else AnimationConfig.Swing1Name
+	if registeredIds[seqName] then
+		return registeredIds[seqName]
+	end
+	local seq = getCombatSequence(seqName)
+	if seq then
+		local ok, contentId = pcall(function()
+			return KeyframeSequenceProvider:RegisterKeyframeSequence(seq)
+		end)
+		if ok and type(contentId) == "string" and contentId ~= "" then
+			registeredIds[seqName] = contentId
+			return contentId
+		end
+	end
+	-- fallback official R15 tool anims
+	return AnimationConfig.GetAttackId(preferAlt)
+end
+
 local function loadTrack(animator: Animator, id: string): AnimationTrack?
 	if tracks[id] and tracks[id].Parent then
 		return tracks[id]
@@ -236,13 +274,14 @@ function WeaponVisual.PlayAttack(forceAlt: boolean?)
 		return
 	end
 
+	-- Both Swing1 and Swing2 are right-hand attacks; alternate every hit
 	local useAlt = forceAlt
 	if useAlt == nil and AnimationConfig.AlternateDual then
 		swingToggle = not swingToggle
-		useAlt = swingToggle and offModel ~= nil
+		useAlt = swingToggle
 	end
 
-	local id = AnimationConfig.GetAttackId(useAlt == true)
+	local id = resolveAnimContentId(useAlt == true)
 	local track = loadTrack(animator, id)
 	if track then
 		track:Play(0.05, 1, 1.15)
@@ -250,10 +289,23 @@ function WeaponVisual.PlayAttack(forceAlt: boolean?)
 end
 
 function WeaponVisual.Init(getProfile: () -> any?)
+	-- Pre-register combat sequences if present
+	task.defer(function()
+		pcall(function()
+			resolveAnimContentId(false)
+			resolveAnimContentId(true)
+		end)
+	end)
+
 	local function onChar(char: Model)
 		tracks = {}
+		registeredIds = {}
 		task.defer(function()
 			task.wait(0.2)
+			pcall(function()
+				resolveAnimContentId(false)
+				resolveAnimContentId(true)
+			end)
 			WeaponVisual.Refresh(getProfile())
 		end)
 		char.Destroying:Connect(function()
@@ -261,6 +313,7 @@ function WeaponVisual.Init(getProfile: () -> any?)
 			offModel = nil
 			folder = nil
 			tracks = {}
+			registeredIds = {}
 		end)
 	end
 
