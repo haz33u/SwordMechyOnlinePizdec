@@ -44,6 +44,7 @@ export type QuestState = {
 export type PlayerProfile = {
 	-- currencies (soft only for skeleton)
 	coins: number,
+	enchantDust: number?, -- boss material for weapon enchant
 
 	-- core progression
 	lifetimePower: number,

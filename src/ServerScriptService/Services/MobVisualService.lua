@@ -15,11 +15,15 @@ MobVisualService._models = {} :: { [string]: Model }
 MobVisualService._onClick = nil :: ((Player, string) -> ())?
 
 local TIER_COLOR = {
+	simple = Color3.fromRGB(110, 190, 120),
+	medium = Color3.fromRGB(100, 155, 230),
+	hard = Color3.fromRGB(180, 110, 255),
+	boss = Color3.fromRGB(230, 70, 70),
+	debug = Color3.fromRGB(255, 185, 50),
+	-- legacy aliases
 	trash = Color3.fromRGB(110, 190, 120),
 	normal = Color3.fromRGB(100, 155, 230),
 	elite = Color3.fromRGB(180, 110, 255),
-	boss = Color3.fromRGB(230, 70, 70),
-	debug = Color3.fromRGB(255, 185, 50),
 }
 
 local function hexToColor(hex: string?): Color3?

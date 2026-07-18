@@ -72,6 +72,7 @@ function Remotes.InitAll()
 
 	Remotes.Function("GetProfile")
 	Remotes.Function("GetMobCatalog") -- static mob definitions for UI/Studio
+	Remotes.Function("GetMobDropInfo") -- Shift+RMB inspect: drop table + stats
 end
 
 return Remotes

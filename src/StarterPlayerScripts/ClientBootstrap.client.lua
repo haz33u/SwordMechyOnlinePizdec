@@ -30,6 +30,8 @@ end
 local ok, err = pcall(function()
 	local App = require(script.Parent.App)
 	App.Start()
+	local MobInspect = require(script.Parent.MobInspect)
+	MobInspect.Init()
 end)
 
 if not ok then

@@ -92,61 +92,78 @@ local WeaponConfig = {
 	},
 
 	--[[
-		How hard / long each location feels for sword progression.
-		Loc1 generous; later locs squeeze high rarities so players push longer.
+		Location squeeze (Cristalix-like tables stay real, but later locs
+		slightly nerf Epic+ then re-normalize to 100%).
 	]]
 	LocationProgression = {
-		[1] = { dropChanceMult = 1.00, highRarityMult = 1.00, timeHint = "easy — 15–45 min to solid Rare/Epic" },
-		[2] = { dropChanceMult = 0.82, highRarityMult = 0.62, timeHint = "medium — longer grind for Legend+" },
-		[3] = { dropChanceMult = 0.68, highRarityMult = 0.40, timeHint = "long — Mythic is a chase" },
-		[4] = { dropChanceMult = 0.55, highRarityMult = 0.26, timeHint = "very long — Secret is flex" },
+		[1] = { dropChanceMult = 1.00, highRarityMult = 1.00, timeHint = "Loc1 = reference Cristalix % tables" },
+		[2] = { dropChanceMult = 1.00, highRarityMult = 0.88, timeHint = "high tiers −12% weight, still drop" },
+		[3] = { dropChanceMult = 1.00, highRarityMult = 0.75, timeHint = "high tiers −25%" },
+		[4] = { dropChanceMult = 1.00, highRarityMult = 0.62, timeHint = "high tiers −38%, Secret still real" },
 	} :: { [number]: LocationProgression },
 
 	--[[
-		Base drop chance BEFORE luck / location mult.
-		Final: chance = base * loc.dropChanceMult * (1 + luck)
+		Cristalix model: ~1 weapon per kill (weights sum ≈ 100).
+		Screenshots: simple / medium / hard mob inspect tables.
+		Aliases: trash=simple, normal=medium, elite=hard
 	]]
 	TierDropChance = {
-		trash = 0.045,
-		normal = 0.075,
-		elite = 0.13,
-		boss = 0.48,
+		-- guaranteed weapon roll (table is the distribution)
+		simple = 1.0,
+		medium = 1.0,
+		hard = 1.0,
+		boss = 1.0, -- boss also always rolls weapon + dust
 		debug = 0,
+		-- legacy aliases
+		trash = 1.0,
+		normal = 1.0,
+		elite = 1.0,
 	},
 
 	--[[
-		Relative weights when a drop happens (re-normalized after highRarityMult).
-		Limited is intentionally absent — never normal loot.
+		Absolute % from Cristalix HUD (Loc1 reference). Limited never here.
+		simple ≈ mob1: 55 / 35 / 8 / 2
+		medium ≈ mob2: 25 / 32 / 22 / 16 / 5
+		hard   ≈ mob3: 15.84 / 29.70 / 33.66 / 16.83 / 2.88 / 0.99 / 0.10
 	]]
 	TierRarityWeights = {
-		trash = {
-			Common = 74,
-			Uncommon = 22,
-			Rare = 4,
+		simple = {
+			Common = 54.998,
+			Uncommon = 34.999,
+			Rare = 8.0,
+			Epic = 2.003,
 		},
-		normal = {
-			Common = 32,
-			Uncommon = 34,
-			Rare = 24,
-			Epic = 8.5,
-			Legendary = 1.5,
+		medium = {
+			Common = 24.998,
+			Uncommon = 31.997,
+			Rare = 21.998,
+			Epic = 15.998,
+			Legendary = 5.009,
 		},
-		elite = {
-			Uncommon = 18,
-			Rare = 36,
-			Epic = 28,
-			Legendary = 13,
-			Mythic = 4,
-			Secret = 1,
+		hard = {
+			Common = 15.84,
+			Uncommon = 29.701,
+			Rare = 33.661,
+			Epic = 16.830,
+			Legendary = 2.877,
+			Mythic = 0.992,
+			Secret = 0.099,
 		},
 		boss = {
-			Rare = 18,
-			Epic = 30,
-			Legendary = 32,
-			Mythic = 14,
-			Secret = 6,
+			-- boss: better mid/high + dust (dust is separate)
+			Rare = 28.0,
+			Epic = 35.0,
+			Legendary = 25.0,
+			Mythic = 10.0,
+			Secret = 2.0,
 		},
+		-- aliases → same tables (filled below after normalize helper)
 	} :: { [string]: DropWeightTable },
+
+	-- Boss enchant dust (material for weapon enchant)
+	BossDustMin = 2,
+	BossDustMax = 5,
+	BossDustAlways = true,
 
 	Weapons = {} :: { [string]: WeaponDef },
 
@@ -364,14 +381,28 @@ function WeaponConfig.GetLocationProgression(locationId: number): LocationProgre
 	}
 end
 
---- Effective rarity weights for a mob tier on a location (after highRarity squeeze).
+--- Normalize tier name (Cristalix 3 types + boss)
+function WeaponConfig.NormalizeTier(tier: string): string
+	if tier == "trash" then
+		return "simple"
+	elseif tier == "normal" then
+		return "medium"
+	elseif tier == "elite" then
+		return "hard"
+	end
+	return tier
+end
+
+--- Effective rarity weights % (sum ≈ 100) after location high-tier squeeze.
 function WeaponConfig.GetEffectiveWeights(tier: string, locationId: number): DropWeightTable
-	local base = WeaponConfig.TierRarityWeights[tier]
+	local key = WeaponConfig.NormalizeTier(tier)
+	local base = WeaponConfig.TierRarityWeights[key]
 	if not base then
-		return { Common = 1 }
+		return { Common = 100 }
 	end
 	local prog = WeaponConfig.GetLocationProgression(locationId)
 	local out: DropWeightTable = {}
+	local total = 0
 	for rarity, w in base do
 		local weight = w
 		if WeaponConfig.HighRarities[rarity] then
@@ -379,15 +410,24 @@ function WeaponConfig.GetEffectiveWeights(tier: string, locationId: number): Dro
 		end
 		if weight > 0 then
 			out[rarity] = weight
+			total += weight
+		end
+	end
+	-- re-normalize to 100 so later locs stay "real" percentages
+	if total > 0 then
+		for rarity, w in out do
+			out[rarity] = (w / total) * 100
 		end
 	end
 	return out
 end
 
+--- Absolute chance 0..1 that a weapon drop attempt succeeds (Cristalix ≈ always).
 function WeaponConfig.GetBaseDropChance(tier: string, locationId: number): number
-	local base = WeaponConfig.TierDropChance[tier] or 0
+	local key = WeaponConfig.NormalizeTier(tier)
+	local base = WeaponConfig.TierDropChance[key] or WeaponConfig.TierDropChance[tier] or 0
 	local prog = WeaponConfig.GetLocationProgression(locationId)
-	return base * prog.dropChanceMult
+	return math.clamp(base * prog.dropChanceMult, 0, 1)
 end
 
 function WeaponConfig.RollRarity(tier: string, locationId: number): string?
@@ -401,7 +441,6 @@ function WeaponConfig.RollRarity(tier: string, locationId: number): string?
 	end
 	local r = math.random() * total
 	local acc = 0
-	-- stable order by RarityOrder
 	for _, rarity in WeaponConfig.RarityOrder do
 		local w = weights[rarity]
 		if w then
@@ -412,6 +451,44 @@ function WeaponConfig.RollRarity(tier: string, locationId: number): string?
 		end
 	end
 	return "Common"
+end
+
+export type DropPreviewEntry = {
+	rarity: string,
+	chancePercent: number,
+	weaponIds: { string },
+	weapons: { { id: string, name: string, powerMult: number } },
+}
+
+--- Full inspect table for UI (Shift+RMB on mob). Chances sum ≈ 100.
+function WeaponConfig.BuildDropPreview(tier: string, locationId: number): { DropPreviewEntry }
+	local weights = WeaponConfig.GetEffectiveWeights(tier, locationId)
+	local list: { DropPreviewEntry } = {}
+	for _, rarity in WeaponConfig.RarityOrder do
+		local w = weights[rarity]
+		if w and w > 0 and rarity ~= "Limited" then
+			local cands = WeaponConfig.GetDropCandidates(locationId, rarity)
+			local weapons = {}
+			local ids = {}
+			for _, def in cands do
+				table.insert(ids, def.id)
+				table.insert(weapons, {
+					id = def.id,
+					name = def.name,
+					powerMult = def.powerMult,
+				})
+			end
+			if #ids > 0 then
+				table.insert(list, {
+					rarity = rarity,
+					chancePercent = math.floor(w * 1000 + 0.5) / 1000, -- 3 decimals like Cristalix
+					weaponIds = ids,
+					weapons = weapons,
+				})
+			end
+		end
+	end
+	return list
 end
 
 --- Public catalog for UI / Studio (icons, names, mults — no drop secrets required)

@@ -15,7 +15,8 @@ export type EnchantDef = {
 }
 
 local EnchantConfig = {
-	ROLL_COST = 200, -- coins (skeleton: was shards/dust)
+	ROLL_COST = 200, -- coins fallback if no dust
+	ROLL_COST_DUST = 1, -- preferred: boss enchant dust
 	TRANSFER_COST = 500,
 	TRANSFER_SUCCESS = 0.35,
 

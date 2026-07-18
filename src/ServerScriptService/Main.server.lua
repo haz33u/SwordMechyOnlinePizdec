@@ -61,6 +61,27 @@ Remotes.Function("GetMobCatalog").OnServerInvoke = function(_player)
 	return MobConfig.GetPublicCatalog()
 end
 
+Remotes.Function("GetMobDropInfo").OnServerInvoke = function(player, mobIdOrUid)
+	local MobConfig = require(Shared.Config.MobConfig)
+	local LootService = require(Services.LootService)
+	local CombatService = require(Services.CombatService)
+	local ProfileService = require(Services.ProfileService)
+
+	local mobId = mobIdOrUid
+	if type(mobIdOrUid) == "string" then
+		-- allow live uid from Workspace.Mobs attribute
+		local live = CombatService._mobs and CombatService._mobs[mobIdOrUid]
+		if live then
+			mobId = live.mobId
+		end
+	end
+	local def = MobConfig.Get(mobId)
+	if not def then
+		return nil
+	end
+	return LootService.BuildMobInspect(def, ProfileService.Get(player))
+end
+
 Players.PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function()
 		task.wait(0.3)

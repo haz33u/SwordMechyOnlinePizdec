@@ -305,6 +305,7 @@ function Formulas.Snapshot(profile: any): { [string]: any }
 		lifetimeDamage = profile.lifetimeDamage,
 		totalClicks = profile.totalClicks or 0,
 		coins = profile.coins,
+		enchantDust = profile.enchantDust or 0,
 		petSlots = profile.petSlots,
 		location = profile.currentLocation,
 		autoClicker = profile.autoClicker == true,

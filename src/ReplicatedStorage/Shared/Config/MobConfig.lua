@@ -18,7 +18,7 @@ export type MobDef = {
 	id: string,
 	name: string,
 	location: number, -- 0 = global/debug, 1+ = location id
-	tier: string, -- trash | normal | elite | boss | debug
+	tier: string, -- simple | medium | hard | boss | debug  (aliases: trash/normal/elite)
 	defaultZone: string, -- A | B | C | Boss | Debug
 	hp: number,
 	powerReward: number,
@@ -45,7 +45,14 @@ export type MobDef = {
 }
 
 local MobConfig = {
-	Tiers = { "trash", "normal", "elite", "boss", "debug" },
+	Tiers = { "simple", "medium", "hard", "boss", "debug" },
+	TierLabels = {
+		simple = "Простой",
+		medium = "Средний",
+		hard = "Сложный",
+		boss = "Босс",
+		debug = "Debug",
+	},
 
 	Mobs = {
 		----------------------------------------------------------------------
@@ -83,14 +90,14 @@ local MobConfig = {
 			id = "L1_Slime",
 			name = "Теневой слизень",
 			location = 1,
-			tier = "trash",
+			tier = "simple",
 			defaultZone = "A",
 			hp = 40,
 			powerReward = 1,
 			coinReward = 3,
-			weaponDropChance = 1, -- >0 enables template drop (chance from WeaponConfig)
+			weaponDropChance = 1,
 			weaponDropScale = 1.0,
-			weaponPool = {}, -- empty = full Loc catalog by rarity roll
+			weaponPool = {},
 			respawnSeconds = 3,
 			visual = {
 				preferredModelName = "L1_Slime",
@@ -98,20 +105,20 @@ local MobConfig = {
 				scale = 0.7,
 				shape = "ball",
 			},
-			description = "Стартовый моб. Зона A.",
+			description = "Простой. Зона A. Таблица как Cristalix «слабый» моб.",
 		},
 
 		L1_GoblinScout = {
 			id = "L1_GoblinScout",
 			name = "Гоблин-разведчик",
 			location = 1,
-			tier = "trash",
+			tier = "simple",
 			defaultZone = "A",
 			hp = 70,
 			powerReward = 2,
 			coinReward = 4,
 			weaponDropChance = 1,
-			weaponDropScale = 1.05,
+			weaponDropScale = 1.0,
 			weaponPool = {},
 			respawnSeconds = 3.2,
 			visual = {
@@ -120,14 +127,14 @@ local MobConfig = {
 				scale = 0.85,
 				shape = "humanoid",
 			},
-			description = "Квестовый trash. Зона A.",
+			description = "Простой. Квест. Зона A.",
 		},
 
 		L1_Skeleton = {
 			id = "L1_Skeleton",
 			name = "Лесной скелет",
 			location = 1,
-			tier = "normal",
+			tier = "medium",
 			defaultZone = "B",
 			hp = 120,
 			powerReward = 3,
@@ -142,20 +149,20 @@ local MobConfig = {
 				scale = 1.0,
 				shape = "humanoid",
 			},
-			description = "Средний моб. Зона B.",
+			description = "Средний. Зона B.",
 		},
 
 		L1_Wolf = {
 			id = "L1_Wolf",
 			name = "Тёмный волк",
 			location = 1,
-			tier = "normal",
+			tier = "medium",
 			defaultZone = "B",
 			hp = 350,
 			powerReward = 8,
 			coinReward = 14,
 			weaponDropChance = 1,
-			weaponDropScale = 1.1,
+			weaponDropScale = 1.0,
 			weaponPool = {},
 			respawnSeconds = 4,
 			visual = {
@@ -164,20 +171,20 @@ local MobConfig = {
 				scale = 1.1,
 				shape = "quad",
 			},
-			description = "Квестовый mid. Зона B.",
+			description = "Средний. Квест. Зона B.",
 		},
 
 		L1_GoblinWarrior = {
 			id = "L1_GoblinWarrior",
 			name = "Гоблин-воин",
 			location = 1,
-			tier = "normal",
-			defaultZone = "B",
+			tier = "hard",
+			defaultZone = "C",
 			hp = 500,
 			powerReward = 12,
 			coinReward = 18,
 			weaponDropChance = 1,
-			weaponDropScale = 1.15,
+			weaponDropScale = 1.0,
 			weaponPool = {},
 			respawnSeconds = 5,
 			visual = {
@@ -186,20 +193,20 @@ local MobConfig = {
 				scale = 1.0,
 				shape = "humanoid",
 			},
-			description = "Финиш стартовой цепочки квестов. Зона B/C.",
+			description = "Сложный (как Cristalix hard table). Зона C.",
 		},
 
 		L1_Knight = {
 			id = "L1_Knight",
 			name = "Проклятый рыцарь",
 			location = 1,
-			tier = "elite",
+			tier = "hard",
 			defaultZone = "C",
 			hp = 1_200,
 			powerReward = 25,
 			coinReward = 40,
 			weaponDropChance = 1,
-			weaponDropScale = 1.2,
+			weaponDropScale = 1.0,
 			weaponPool = {},
 			respawnSeconds = 8,
 			armorFlat = 2,
@@ -209,7 +216,7 @@ local MobConfig = {
 				scale = 1.25,
 				shape = "humanoid",
 			},
-			description = "Элита. Зона C.",
+			description = "Сложный. Зона C.",
 		},
 
 		L1_Boss = {
@@ -223,7 +230,7 @@ local MobConfig = {
 			coinReward = 300,
 			weaponDropChance = 1,
 			weaponDropScale = 1.0,
-			weaponPool = {}, -- boss rolls Rare→Secret from template
+			weaponPool = {},
 			respawnSeconds = 45,
 			isBoss = true,
 			armorFlat = 5,
@@ -233,7 +240,7 @@ local MobConfig = {
 				scale = 2.0,
 				shape = "humanoid",
 			},
-			description = "Босс локации 1. Арена Boss.",
+			description = "Босс у портала → пыль зачарования + сильный меч. Квест на переход.",
 		},
 
 		----------------------------------------------------------------------
@@ -243,7 +250,7 @@ local MobConfig = {
 			id = "L2_Sailor",
 			name = "Матрос",
 			location = 2,
-			tier = "trash",
+			tier = "simple",
 			defaultZone = "A",
 			hp = 2_500,
 			powerReward = 40,
@@ -258,7 +265,7 @@ local MobConfig = {
 			id = "L2_Captain",
 			name = "Капитан",
 			location = 2,
-			tier = "elite",
+			tier = "hard",
 			defaultZone = "B",
 			hp = 8_000,
 			powerReward = 100,
@@ -290,7 +297,7 @@ local MobConfig = {
 			id = "L3_Samurai",
 			name = "Самурай",
 			location = 3,
-			tier = "normal",
+			tier = "medium",
 			defaultZone = "A",
 			hp = 15_000,
 			powerReward = 180,

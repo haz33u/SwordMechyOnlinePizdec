@@ -88,20 +88,35 @@ function WeaponService.Enchant(player: Player, weaponUid: string)
 	if not w then
 		return
 	end
-	if profile.coins < EnchantConfig.ROLL_COST then
-		Remotes.Event("Notify"):FireClient(player, { text = "Нужно " .. EnchantConfig.ROLL_COST .. " монет", color = "red" })
+	local dustCost = EnchantConfig.ROLL_COST_DUST or 1
+	local coinCost = EnchantConfig.ROLL_COST
+	local paidWith = "coins"
+	if (profile.enchantDust or 0) >= dustCost then
+		profile.enchantDust -= dustCost
+		paidWith = "dust"
+	elseif profile.coins >= coinCost then
+		profile.coins -= coinCost
+	else
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Нужна пыль зачарования (%d) или %d монет", dustCost, coinCost),
+			color = "red",
+		})
 		return
 	end
-	profile.coins -= EnchantConfig.ROLL_COST
 	local roll = EnchantConfig.Roll()
 	if #w.enchants >= EnchantConfig.MAX_ENCHANTS_PER_WEAPON then
-		-- replace random
 		w.enchants[math.random(1, #w.enchants)] = roll
 	else
 		table.insert(w.enchants, roll)
 	end
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Чар: %s %+d%% (%s)", roll.id, roll.value, roll.quality),
+		text = string.format(
+			"Чар: %s %+d%% (%s) [%s]",
+			roll.id,
+			roll.value,
+			roll.quality,
+			if paidWith == "dust" then "пыль" else "монеты"
+		),
 		color = "orange",
 	})
 	ProfileService.Push(player)

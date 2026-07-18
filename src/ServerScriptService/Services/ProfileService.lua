@@ -32,6 +32,7 @@ local function defaultProfile()
 
 	return {
 		coins = 0,
+		enchantDust = 0, -- boss drop → weapon enchant
 		lifetimePower = 0,
 		lifetimeDamage = 0,
 		totalClicks = 0, -- CORE metric: every successful attack
