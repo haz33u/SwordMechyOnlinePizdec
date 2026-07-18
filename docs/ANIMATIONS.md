@@ -9,7 +9,17 @@
 | Анимация удара на Swing / CombatFx / Space / КЛИК | `WeaponVisual.PlayAttack` |
 | **Swing1 / Swing2** с Combat Dummy | `ReplicatedStorage.CombatAnimations` (Place) |
 
-## Откуда Swing1 / Swing2 (без rbxassetid)
+## Опубликованная атака (сейчас в игре)
+
+| | |
+|--|--|
+| Store | https://create.roblox.com/store/asset/133642421878218 |
+| Config | `AttackMain` / `AttackAlt` = `rbxassetid://133642421878218` |
+| Рука | правая (main swings) |
+
+Если анимация **не играет** у других игроков: owner place должен иметь право на asset (твой аккаунт / group publish / Allow Copying).
+
+## Откуда Swing1 / Swing2 (Keyframe, без publish)
 
 Цифры в `Keyframe` — это **время кадра** (0, 0.05…), **не** asset id.
 

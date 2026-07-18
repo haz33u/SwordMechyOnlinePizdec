@@ -222,6 +222,15 @@ local function getCombatSequence(name: string): KeyframeSequence?
 end
 
 local function resolveAnimContentId(preferAlt: boolean): string
+	-- 1) Published rbxassetid (user-provided store anim)
+	if AnimationConfig.PreferPublishedAttack then
+		local published = AnimationConfig.GetAttackId(preferAlt)
+		if type(published) == "string" and published ~= "" and published:find("rbxassetid://") then
+			return published
+		end
+	end
+
+	-- 2) Place KeyframeSequences → register session id
 	local seqName = if preferAlt then AnimationConfig.Swing2Name else AnimationConfig.Swing1Name
 	if registeredIds[seqName] then
 		return registeredIds[seqName]
@@ -236,7 +245,8 @@ local function resolveAnimContentId(preferAlt: boolean): string
 			return contentId
 		end
 	end
-	-- fallback official R15 tool anims
+
+	-- 3) Official R15 tool fallbacks
 	return AnimationConfig.GetAttackId(preferAlt)
 end
 

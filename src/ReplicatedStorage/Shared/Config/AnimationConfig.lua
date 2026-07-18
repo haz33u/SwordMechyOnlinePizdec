@@ -2,25 +2,32 @@
 --[[
 	Combat animations.
 
-	Preferred: KeyframeSequences in ReplicatedStorage.CombatAnimations
-	  (copied from ServerStorage AnimPack_SwordFightingCombat / Combat Dummy / AnimSaves)
-	  Swing1, Swing2 — both right-hand sword swings (no publish / no rbxassetid needed)
+	Published attack (user):
+	  https://create.roblox.com/store/asset/133642421878218
 
-	Fallback: Roblox default R15 toolslash / toollunge asset ids.
+	Optional KeyframeSequences in ReplicatedStorage.CombatAnimations (Swing1/Swing2)
+	used only if PreferPublishedAttack = false or published id empty.
 ]]
 
 local AnimationConfig = {
-	-- Folder under ReplicatedStorage with KeyframeSequence children
-	CombatAnimsFolder = "CombatAnimations",
-	Swing1Name = "Swing1", -- was AnimSaves.swing1
-	Swing2Name = "Swing2", -- was AnimSaves.swing2
+	-- Published sword attack (right hand / main swings)
+	-- Store: https://create.roblox.com/store/asset/133642421878218
+	AttackMain = "rbxassetid://133642421878218",
+	-- Second hit variety — same pack for now; replace if you publish Swing2
+	AttackAlt = "rbxassetid://133642421878218",
 
-	-- Fallback if folder missing (official R15 Tool anims)
+	PreferPublishedAttack = true,
+
+	-- Optional Place folder with KeyframeSequences (fallback / legacy)
+	CombatAnimsFolder = "CombatAnimations",
+	Swing1Name = "Swing1",
+	Swing2Name = "Swing2",
+
+	-- Ultimate fallback: official R15 tool anims
 	AttackMainFallback = "rbxassetid://522635514",
 	AttackAltFallback = "rbxassetid://522638767",
 	ToolHold = "rbxassetid://522696694",
 
-	-- Alternate Swing1 / Swing2 every attack (both for right / main hand)
 	AlternateDual = true,
 
 	SwordLength = 2.4,
@@ -29,6 +36,19 @@ local AnimationConfig = {
 }
 
 function AnimationConfig.GetAttackId(isAlt: boolean?): string
+	if AnimationConfig.PreferPublishedAttack then
+		if isAlt then
+			local a = AnimationConfig.AttackAlt
+			if type(a) == "string" and a ~= "" then
+				return a
+			end
+		else
+			local m = AnimationConfig.AttackMain
+			if type(m) == "string" and m ~= "" then
+				return m
+			end
+		end
+	end
 	if isAlt then
 		return AnimationConfig.AttackAltFallback
 	end
