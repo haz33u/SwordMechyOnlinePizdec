@@ -288,25 +288,33 @@ local function collectAnimCandidates(preferAlt: boolean): { string }
 		add(registerKfs(kfs, "combat_" .. key))
 	end
 
-	-- 2) ReplicatedStorage.Animations.Swing (Animation id or nested KFS)
+	-- 2) ReplicatedStorage.Animations.Swing (highest priority after combat KFS)
 	local swingNames = if preferAlt
 		then { "Swing2", "Swing", "Attack2", "slash", "Attack" }
 		else { "Swing", "Swing1", "Attack", "slash", "Attack1" }
+	-- Prefer explicit AnimationId on folder (e.g. Swing = 522635514)
 	add(findAnimationInstance(animsFolder, swingNames))
 	local kfs2, key2 = findKfsIn(animsFolder, swingNames)
 	if kfs2 and key2 then
 		add(registerKfs(kfs2, "anims_" .. key2))
 	end
 
-	-- 3) Published config ids
+	-- 3) Published store id (optional)
 	if AnimationConfig.PreferPublishedAttack then
 		add(AnimationConfig.GetAttackId(preferAlt))
+	else
+		-- still try as mid-priority if set
+		local pub = AnimationConfig.GetAttackId(preferAlt)
+		if pub and pub ~= AnimationConfig.AttackMainFallback then
+			add(pub)
+		end
 	end
 
 	-- 4) Hard fallbacks (always last)
 	add(if preferAlt then AnimationConfig.AttackAltFallback else AnimationConfig.AttackMainFallback)
 	add(AnimationConfig.AttackMainFallback)
 	add("rbxassetid://522635514")
+	add("rbxassetid://522638767")
 
 	return list
 end
@@ -366,11 +374,30 @@ function WeaponVisual.PlayAttack(forceAlt: boolean?)
 		useAlt = swingToggle
 	end
 
+	-- Direct load from Animations.Swing Animation instance (most reliable for place setup)
+	local animsFolder = ReplicatedStorage:FindFirstChild(AnimationConfig.ExtraAnimsFolder or "Animations")
+	if animsFolder then
+		local swingInst = animsFolder:FindFirstChild("Swing")
+		if swingInst and swingInst:IsA("Animation") and swingInst.AnimationId ~= "" then
+			local track = loadTrack(animator, swingInst.AnimationId)
+			if track then
+				pcall(function()
+					for _, t in tracks do
+						if t ~= track and t.IsPlaying and t.Priority == Enum.AnimationPriority.Action4 then
+							t:Stop(0.05)
+						end
+					end
+				end)
+				track:Play(0.05, 1, 1.25)
+				return
+			end
+		end
+	end
+
 	local candidates = collectAnimCandidates(useAlt == true)
 	for _, id in candidates do
 		local track = loadTrack(animator, id)
 		if track then
-			-- stop previous attack tracks lightly
 			pcall(function()
 				for _, t in tracks do
 					if t ~= track and t.IsPlaying and t.Priority == Enum.AnimationPriority.Action4 then
@@ -378,11 +405,11 @@ function WeaponVisual.PlayAttack(forceAlt: boolean?)
 					end
 				end
 			end)
-			track:Play(0.05, 1, 1.2)
+			track:Play(0.05, 1, 1.25)
 			return
 		end
 	end
-	warnOnce("allfail", "PlayAttack: all animation candidates failed. Check Output.")
+	warnOnce("allfail", "PlayAttack: all animation candidates failed. Check F9 Client log.")
 end
 
 function WeaponVisual.Init(getProfile: () -> any?)
