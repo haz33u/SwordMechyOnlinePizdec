@@ -21,6 +21,7 @@ local Net = require(script.Parent.Net)
 local Hud = require(script.Parent.Hud)
 local Windows = require(script.Parent.Windows)
 local Modals = require(script.Parent.Modals)
+local CaseOpening = require(script.Parent.CaseOpening)
 local Toast = require(script.Parent.Toast)
 local FloatingDamage = require(script.Parent.FloatingDamage)
 local ClickPop = require(script.Parent.ClickPop)
@@ -149,11 +150,20 @@ function App.Start()
 		end
 	end)
 
-	local toastApi, windowsApi, modalsApi, hudApi
+	local toastApi, windowsApi, modalsApi, hudApi, caseApi
 	local clickPop: any = nil
 	local onCombatFx: any = nil
 
 	local function openModal(kind: string, payload: any?)
+		if kind == "case" or kind == "caseOpen" then
+			if caseApi then
+				local ok, reason, cost = caseApi.Begin(payload)
+				if ok == false and reason == "need_coins" and toastApi then
+					toastApi.Show("Нужно " .. tostring(cost) .. " монет", "red")
+				end
+			end
+			return
+		end
 		store:OpenModal(kind, payload)
 		if modalsApi then
 			modalsApi.Refresh()
@@ -208,6 +218,9 @@ function App.Start()
 	end)
 	step("Modals", function()
 		modalsApi = Modals.Mount(gui, store)
+	end)
+	step("CaseOpening", function()
+		caseApi = CaseOpening.Mount(gui, store)
 	end)
 	step("CombatFx", function()
 		onCombatFx = FloatingDamage.Mount()
@@ -330,8 +343,12 @@ function App.Start()
 			store:OpenPanel("quests")
 		elseif input.KeyCode == Enum.KeyCode.M then
 			store:OpenPanel("locations")
+		elseif input.KeyCode == Enum.KeyCode.C then
+			store:OpenPanel("cases")
 		elseif input.KeyCode == Enum.KeyCode.Escape then
-			if store:PeekModal() then
+			if caseApi and caseApi.IsOpen() then
+				caseApi.Close()
+			elseif store:PeekModal() then
 				store:CloseModal()
 			else
 				store:ClosePanel()

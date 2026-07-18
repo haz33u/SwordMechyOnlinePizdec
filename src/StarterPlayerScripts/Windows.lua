@@ -18,6 +18,8 @@ local UpgradeConfig = require(Shared.Config.UpgradeConfig)
 local WorldConfig = require(Shared.Config.WorldConfig)
 local QuestConfig = require(Shared.Config.QuestConfig)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
+local PetConfig = require(Shared.Config.PetConfig)
+local AuraConfig = require(Shared.Config.AuraConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 
 local Windows = {}
@@ -71,6 +73,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		weapons = "Оружие",
 		pets = "Питомцы",
 		auras = "Ауры",
+		cases = "Кейсы",
 		relics = "Реликвии",
 		quests = "Задания",
 		locations = "Локации",
@@ -735,11 +738,123 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 	end
 
+	---------------------------------------------------------------- Cases (catalog + open spin)
+	local function refreshCases()
+		local body = bodies.cases
+		UIKit.Clear(body)
+		UIKit.List(body, px(12), false)
+		local profile = store:PeekProfile()
+		local stats = store:PeekStats()
+		local coins = (stats and stats.coins) or (profile and profile.coins) or 0
+		local loc = (profile and profile.currentLocation) or 1
+
+		sectionLabel(body, "CASE OPENING", 1)
+		local head = surfaceCard(body, 64, 2, T.Gold)
+		UIKit.Label({
+			Parent = head,
+			Text = string.format("Баланс  %s  монет  ·  локация  %d", Format.Num(coins), loc),
+			Size = UDim2.new(1, 0, 1, 0),
+			SizePx = px(16),
+			Color = T.Text,
+			Z = 33,
+		})
+
+		sectionLabel(body, "КАТАЛОГ", 3)
+		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(120)))
+		scroll.LayoutOrder = 4
+
+		local catalog = {
+			{
+				kind = "pet",
+				name = "Кейс питомцев",
+				desc = "Пет по текущей локации · редкость по весам",
+				icon = "🐾",
+				cost = PetConfig.OPEN_COST or 0,
+				edge = T.Success,
+				c0 = Color3.fromRGB(40, 120, 80),
+				c1 = Color3.fromRGB(22, 70, 48),
+			},
+			{
+				kind = "aura",
+				name = "Кейс аур",
+				desc = "Случайная аура · сила / урон / монеты",
+				icon = "✨",
+				cost = AuraConfig.OPEN_COST or 0,
+				edge = Color3.fromRGB(150, 90, 220),
+				c0 = Color3.fromRGB(100, 60, 160),
+				c1 = Color3.fromRGB(55, 30, 100),
+			},
+		}
+
+		for i, def in ipairs(catalog) do
+			local can = coins >= (def.cost or 0)
+			local costTxt = (def.cost or 0) <= 0 and "Бесплатно" or (Format.Num(def.cost) .. " монет")
+			local c = surfaceCard(scroll, 148, i, def.edge)
+			-- top accent strip
+			local strip = Instance.new("Frame")
+			strip.BorderSizePixel = 0
+			strip.BackgroundColor3 = def.edge
+			strip.Size = UDim2.new(1, 0, 0, px(6))
+			strip.Position = UDim2.fromOffset(0, -px(8))
+			strip.ZIndex = 34
+			strip.Parent = c
+
+			UIKit.Label({
+				Parent = c,
+				Text = def.icon .. "  " .. def.name,
+				Size = UDim2.new(1, 0, 0, px(28)),
+				SizePx = px(20),
+				Font = T.Font.Title,
+				Color = T.Text,
+				Z = 33,
+			})
+			UIKit.Label({
+				Parent = c,
+				Text = def.desc,
+				Size = UDim2.new(1, 0, 0, px(36)),
+				Position = UDim2.fromOffset(0, px(32)),
+				SizePx = px(14),
+				Color = T.TextMuted,
+				Wrap = true,
+				Z = 33,
+			})
+			UIKit.Label({
+				Parent = c,
+				Text = costTxt,
+				Size = UDim2.new(0.5, 0, 0, px(22)),
+				Position = UDim2.fromOffset(0, px(78)),
+				SizePx = px(15),
+				Color = can and T.Gold or T.Danger,
+				Font = T.Font.Title,
+				Z = 33,
+			})
+			UIKit.Button({
+				Parent = c,
+				Text = can and "Открыть" or "Мало монет",
+				Size = UDim2.fromOffset(px(140), px(42)),
+				Position = UDim2.new(1, -px(140), 1, -px(8)),
+				Anchor = Vector2.new(0, 1),
+				Color = can and def.c0 or T.Disabled,
+				Color2 = can and def.c1 or (T.Colors and T.Colors.DisabledDeep),
+				Primary = can,
+				Disabled = not can,
+				SizePx = px(15),
+				Z = 34,
+				OnClick = function()
+					if can then
+						openModal("case", { kind = def.kind })
+					end
+				end,
+			})
+		end
+	end
+
 	local refreshers = {
 		character = refreshCharacter,
 		weapons = refreshWeapons,
 		pets = refreshPets,
 		auras = refreshAuras,
+		cases = refreshCases,
 		relics = refreshRelics,
 		quests = refreshQuests,
 		locations = refreshLocations,

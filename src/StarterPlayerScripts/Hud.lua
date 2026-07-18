@@ -20,6 +20,7 @@ local RAIL = {
 	{ id = "quests", glyph = "QS" },
 	{ id = "locations", glyph = "MP" },
 	{ id = "dungeons", glyph = "DG" },
+	{ id = "cases", glyph = "CS" }, -- under all left buttons
 }
 
 local LOC = {

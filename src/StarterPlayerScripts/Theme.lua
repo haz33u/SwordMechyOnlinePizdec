@@ -123,6 +123,7 @@ local Theme = {
 		weapons = "⚔",
 		pets = "🐾",
 		auras = "✨",
+		cases = "📦",
 		relics = "💎",
 		quests = "📜",
 		locations = "🗺",

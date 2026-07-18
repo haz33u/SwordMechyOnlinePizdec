@@ -10,6 +10,7 @@ export type PanelId =
 	| "weapons"
 	| "pets"
 	| "auras"
+	| "cases"
 	| "relics"
 	| "quests"
 	| "locations"

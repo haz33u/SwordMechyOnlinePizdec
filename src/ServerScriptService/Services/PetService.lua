@@ -29,6 +29,10 @@ function PetService.OpenCase(player: Player)
 		return
 	end
 	if profile.coins < PetConfig.OPEN_COST then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = "Нужно " .. tostring(PetConfig.OPEN_COST) .. " монет",
+			color = "red",
+		})
 		return
 	end
 	profile.coins -= PetConfig.OPEN_COST
