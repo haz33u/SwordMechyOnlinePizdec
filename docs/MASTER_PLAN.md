@@ -1,8 +1,9 @@
 # Sword Masters — полный план проекта
 
-> Живой документ. Сводка на 2026-07-18.  
+> Живой документ. Сводка на 2026-07-18 (UI sprint + roadmap).  
 > Репо: https://github.com/haz33u/SwordMechyOnlinePizdec  
-> Place: «Искусство меча онлайн» (Team Create + Rojo)
+> Place: «Искусство меча онлайн» (Team Create + Rojo)  
+> Детальный backlog: session plan / `docs/FIGMA_PROMPTS.md` (иконки)
 
 ---
 
@@ -87,10 +88,19 @@ Packages (Fusion, OnyxUI)           Art, VFX, Team Create
 - [x] WorldConfig 4 локации (meta)
 - [x] Квесты Loc1 skeleton
 
-### UI
-- [x] GameUI: HUD, окна, модалки (Fusion)
-- [x] UI brief для Studio Agent
-- [x] Toast / floating damage / click pop (частично баги)
+### UI (SCREEENS pass 2026-07-18)
+- [x] GameUI: HUD, окна, модалки (Fusion) — **repo-only**, без dual StarterGui
+- [x] Theme charcoal + blue CTA + red close (как Cristalix-like SCREEENS)
+- [x] HUD: бусты top-left · coins/power bottom · **Q**=rebirth · **E**=инвентарь · Space=удар
+- [x] CPS/DPS/клики → панель **Профиль** (не на main HUD)
+- [x] Инвентарь оружия: 32 слота + IconConfig Loc1
+- [x] Телепорт: сетка локаций → `SetLocation`
+- [x] Кейсы: spin open + odds 1/rarity; донат-магазин **stubs only**
+- [x] Left rail only (правый text-menu Cristalix — **не** делаем)
+- [x] Toast nil fix (`T.TopH` removed)
+- [ ] Floating damage / click pop polish
+- [ ] Enchant dust counter top-right
+- [ ] Boosts backend `profile.boosts` + timers
 
 ### Анимации / визуал
 - [x] CombatController: Idle/Walk/Run + sprint Shift
@@ -98,8 +108,9 @@ Packages (Fusion, OnyxUI)           Art, VFX, Team Create
 - [x] Attack id `133642421878218` (нужна проверка in-game)
 - [x] Rojo не сносит Place Animations (meta + папки вне Shared)
 
-### Документы (много мелких, не один файл раньше)
-- CORE_SYSTEMS, WEAPONS_LOOT, MOB_DROP_TABLES, ANIMATIONS, ICON_UPLOAD, UI_BRIEF, …
+### Документы
+- CORE_SYSTEMS, WEAPONS_LOOT, MOB_DROP_TABLES, ANIMATIONS, ICON_UPLOAD, UI_BRIEF  
+- **NEW:** `FIGMA_PROMPTS.md` — промпты/очередь иконок для Figma + AI
 
 ---
 
@@ -109,15 +120,15 @@ Packages (Fusion, OnyxUI)           Art, VFX, Team Create
 |------|--------|
 | Loc2–4 мобы/контент | stubs |
 | Реальные 3D модели мечей | placeholder Parts |
-| Иконки Loc2+ | пустые id |
-| Питомцы / ауры / кейсы | skeleton |
-| Данжи Easy/Mid/Hard | skeleton |
-| Сезоны / топы / банды | нет |
-| Донат / R$ | сознательно нет (фаза 2) |
-| Точный Cristalix HP/coins (миллионы) | playtest-скейл |
+| Иконки Loc2+ / UI currency | пустые id → FIGMA_PROMPTS |
+| Питомцы / ауры / кейсы economy | skeleton (free open risk) |
+| CaseResult remote (spin accuracy) | нет — poll profile |
+| Данжи Easy/Mid/Hard | skeleton UI only |
+| Сезоны / топы / банды / BP | нет |
+| Донат R$ wire | UI stubs only |
+| Точный Cristalix HP/coins | playtest-скейл |
 | Босс unlock Loc2 квест «у портала» | частично Q3_Boss |
 | Dual-wield отдельные анимки L/R | один AttackMain |
-| Toast UI bug (nil arithmetic) | open |
 | DataStore prod-ready | skeleton |
 | Оффлайн-фарм | нет |
 
@@ -125,36 +136,37 @@ Packages (Fusion, OnyxUI)           Art, VFX, Team Create
 
 ## 7. Дорожная карта (что делать)
 
-### P0 — playable core (сейчас)
-1. Добить **атаку**: подтвердить `133642421878218` в Play (F9 `PlayAttack`) или R15 re-publish  
-2. Починить **Toast** nil  
-3. Один **CombatController**, путь `RS.Animations`  
-4. Playtest Loc1: килл → дроп → rebirth coins → чар пылью  
-5. Save place + git sync ритуал (`COLLAB.md`)
+### P0 — stabilization (спринт 1) ✅/→
+1. ~~Toast nil~~  
+2. Добить **атаку**: confirm `133642421878218` in Play  
+3. Playtest Loc1: kill → drop → inventory → enchant dust → rebirth  
+4. Save place + git sync (`COLLAB.md`)  
+5. `FIGMA_PROMPTS.md` + первая очередь UI icons  
 
-### P1 — контент Loc1 polish
-1. Модели мечей (mesh) вместо Part  
-2. VFX удара / hit  
-3. Баланс HP/монет «приятные минуты»  
-4. Босс: квест → unlock Loc2 + portal UX  
-5. UI друга: инвентарь с IconConfig
+### P1 — UI polish + Loc1 content (спринты 2–3)
+1. Dust/gems strip top-right; inventory UX; case/rebirth polish  
+2. CaseResult remote + case keys (не free-infinite)  
+3. Boosts data model for top-left pills  
+4. Mesh swords, hit VFX, balance pass  
+5. Boss quest → Loc2 unlock UX  
 
-### P2 — Loc2–4
-1. Мобы + зоны + маркеры  
-2. Мечи/иконки по шаблону WeaponConfig  
+### P2 — Loc2–4 + icons
+1. Мобы + маркеры Place  
+2. Иконки Loc2–4 по FIGMA_PROMPTS → IconConfig  
 3. Drop tables уже есть (squeeze)
 
-### P3 — meta systems
-1. Петы/ауры/кейсы polish  
-2. Данжи  
-3. Сезон / лидерборд  
-4. LIMITED ивенты + VFX
+### P3 — meta
+1. Pets/auras/dungeons real  
+2. Leaderboard / BP (после stable)  
+3. LIMITED events + VFX  
 
 ### P4 — live
-1. DataStore версия + миграции  
-2. Античит Swing  
-3. Донат (если решите)  
-4. Маркетинг / soft launch
+1. DataStore versioning + migrations  
+2. Anti-cheat Swing  
+3. Donat R$ (если решите)  
+4. Soft launch  
+
+**Не сейчас:** правый Cristalix bind-list, gangs, full R$ shop, Loc5+.
 
 ---
 
@@ -171,6 +183,7 @@ Packages (Fusion, OnyxUI)           Art, VFX, Team Create
 | `ANIMATIONS.md` | Атаки / grips |
 | `ROJO_STUDIO.md` | Rojo vs Place |
 | `ICON_UPLOAD.md` | rbxassetid иконок |
+| `FIGMA_PROMPTS.md` | промпты AI/Figma + tracking иконок |
 | `COLLAB.md` | Git + Team Create |
 
 ---

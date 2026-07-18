@@ -16,14 +16,18 @@ local COLORS = {
 local Toast = {}
 
 function Toast.Mount(gui: ScreenGui)
+	-- Top inset: Theme has no TopH (was nil + 18 → arithmetic error)
+	local topPad = 56
+
 	local host = UIKit.Glass({
 		Name = "ToastLayer",
 		Parent = gui,
 		Size = UDim2.fromOffset(320, 0),
-		Position = UDim2.new(0.5, 0, 0, T.TopH + 18),
+		Position = UDim2.new(0.5, 0, 0, topPad),
 		Anchor = Vector2.new(0.5, 0),
-		Radius = T.R.md,
+		Radius = T.R.sm,
 		Z = 90,
+		Deep = true,
 	})
 	host.AutomaticSize = Enum.AutomaticSize.Y
 	host.BackgroundTransparency = 1
@@ -45,9 +49,13 @@ function Toast.Mount(gui: ScreenGui)
 	local token = 0
 	local api = {}
 	function api.Show(text: string, colorKey: string?)
+		if type(text) ~= "string" or text == "" then
+			return
+		end
 		token += 1
 		local my = token
-		local col = COLORS[colorKey or "default"] or COLORS.default
+		local key = if type(colorKey) == "string" then colorKey else "default"
+		local col = COLORS[key] or COLORS.default
 		host.Visible = true
 		host.BackgroundTransparency = 0
 		label.Text = text
