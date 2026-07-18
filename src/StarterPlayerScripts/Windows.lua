@@ -69,7 +69,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 	local bodies: { [string]: Frame } = {}
 
 	local titles = {
-		character = "Персонаж",
+		character = "Профиль",
 		weapons = "Инвентарь с оружием",
 		pets = "Питомцы",
 		auras = "Ауры",
@@ -106,46 +106,72 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 	end
 
-	---------------------------------------------------------------- Character / Upgrades (SCREEENS card grid)
+	---------------------------------------------------------------- Character = profile stats + upgrades
 	local function refreshCharacter()
 		local body = bodies.character
 		UIKit.Clear(body)
-		UIKit.List(body, px(10), false)
+		UIKit.List(body, px(8), false)
 		local stats = store:PeekStats()
 		local profile = store:PeekProfile()
 		if not stats or not profile then
 			return
 		end
 
-		-- top overview row (stats strip style)
-		local ov = surfaceCard(body, 56, 1, T.Stroke)
-		UIKit.Label({
-			Parent = ov,
-			Text = string.format(
-				"Сила %s  ·  CPS %.1f  ·  DPS %s  ·  Крит %s  ·  Удача %s  ·  R%d %s",
-				Format.Num(stats.damagePerClick or stats.totalPower),
-				stats.cps or 0,
-				Format.Num(stats.dps),
-				Format.Pct(stats.crit),
-				Format.Pct(stats.luck),
-				stats.rebirthLevel or 0,
-				Format.Mult(stats.rebirthMult)
-			),
-			Size = UDim2.new(1, 0, 1, 0),
-			SizePx = px(14),
-			Color = T.TextSoft,
-			Font = T.Font.Body,
-			Wrap = true,
-			Z = 33,
-		})
+		-- Full stats list (moved from HUD: CPS/DPS/Clicks + more)
+		sectionLabel(body, "ПРОФИЛЬ / СТАТИСТИКА", 1)
+		local statsScroll = UIKit.Scroll(body, UDim2.new(1, 0, 0, px(200)))
+		statsScroll.LayoutOrder = 2
+		local rows = {
+			{ "Сила (клик)", Format.Num(stats.damagePerClick or stats.totalPower) },
+			{ "CPS", string.format("%.2f", stats.cps or 0) },
+			{ "DPS", Format.Num(stats.dps) },
+			{ "Клики", Format.Num(stats.totalClicks) },
+			{ "Монеты", Format.Num(stats.coins) },
+			{ "Крит шанс", Format.Pct(stats.crit) },
+			{ "Удача", Format.Pct(stats.luck) },
+			{ "Rebirth", string.format("R%d  %s", stats.rebirthLevel or 0, Format.Mult(stats.rebirthMult)) },
+			{ "Урон lifetime", Format.Num(stats.lifetimeDamage or 0) },
+			{ "Локация", tostring(stats.location or profile.currentLocation or 1) },
+			{ "Swing CD", string.format("%.2fs", stats.swingCd or 1) },
+			{ "Авто", stats.autoClicker and "ON" or "OFF" },
+		}
+		for i, r in ipairs(rows) do
+			local line = Instance.new("Frame")
+			line.BackgroundTransparency = 1
+			line.Size = UDim2.new(1, -4, 0, px(22))
+			line.LayoutOrder = i
+			line.ZIndex = 33
+			line.Parent = statsScroll
+			UIKit.Label({
+				Parent = line,
+				Text = r[1],
+				Size = UDim2.new(0.55, 0, 1, 0),
+				SizePx = px(13),
+				Color = T.TextMuted,
+				Z = 34,
+			})
+			UIKit.Label({
+				Parent = line,
+				Text = r[2],
+				Size = UDim2.new(0.45, 0, 1, 0),
+				Position = UDim2.new(0.55, 0, 0, 0),
+				SizePx = px(13),
+				Font = T.Font.Title,
+				Color = T.Text,
+				X = Enum.TextXAlignment.Right,
+				Z = 34,
+			})
+		end
+
+		sectionLabel(body, "УЛУЧШЕНИЯ", 3)
 
 		-- horizontal upgrade cards like UIУлучшений
 		local rowHost = Instance.new("ScrollingFrame")
 		rowHost.Name = "UpgradesRow"
 		rowHost.BackgroundTransparency = 1
 		rowHost.BorderSizePixel = 0
-		rowHost.Size = UDim2.new(1, 0, 0, px(280))
-		rowHost.LayoutOrder = 2
+		rowHost.Size = UDim2.new(1, 0, 0, px(260))
+		rowHost.LayoutOrder = 4
 		rowHost.ScrollBarThickness = 4
 		rowHost.ScrollBarImageColor3 = T.StrokeLight
 		rowHost.CanvasSize = UDim2.new(0, 0, 0, 0)

@@ -341,11 +341,20 @@ function App.Start()
 		if gp then
 			return
 		end
-		if input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.E then
+		-- SCREEENS main HUD binds: Q=rebirth, E=inventory; Space=attack
+		if input.KeyCode == Enum.KeyCode.Space then
 			pcall(function()
 				WeaponVisual.PlayAttack()
 				Net.Swing("manual")
 			end)
+			if clickPop then
+				local st = store:PeekStats()
+				burstClick(st and (st.damagePerClick or st.totalPower) or 1, false, "manual")
+			end
+		elseif input.KeyCode == Enum.KeyCode.Q then
+			openModal("rebirth", nil)
+		elseif input.KeyCode == Enum.KeyCode.E then
+			store:OpenPanel("weapons")
 		elseif input.KeyCode == Enum.KeyCode.T then
 			pcall(function()
 				Net.ToggleAuto()
@@ -364,6 +373,8 @@ function App.Start()
 			store:OpenPanel("cases")
 		elseif input.KeyCode == Enum.KeyCode.B then
 			store:OpenPanel("shop")
+		elseif input.KeyCode == Enum.KeyCode.U then
+			store:OpenPanel("character")
 		elseif input.KeyCode == Enum.KeyCode.Escape then
 			if caseApi and caseApi.IsOpen() then
 				caseApi.Close()

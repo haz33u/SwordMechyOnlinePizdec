@@ -1,6 +1,10 @@
 --!strict
 --[[
-	Responsive HUD with root UIScale + packed rail + metric chips.
+	Main HUD — SCREEENS "главный интерфейс пользователя":
+	- top-left: active boosts
+	- bottom-center: coins + power, Q=rebirth, E=inventory
+	- left rail: menus
+	CPS/DPS/Clicks live in character/profile panel, not here.
 ]]
 
 local T = require(script.Parent.Theme)
@@ -18,10 +22,10 @@ local RAIL = {
 	{ id = "auras", glyph = "AU" },
 	{ id = "relics", glyph = "RL" },
 	{ id = "quests", glyph = "QS" },
-	{ id = "locations", glyph = "TP" }, -- teleport between locs
+	{ id = "locations", glyph = "TP" },
 	{ id = "dungeons", glyph = "DG" },
 	{ id = "cases", glyph = "CS" },
-	{ id = "shop", glyph = "$" }, -- donate shop stubs
+	{ id = "shop", glyph = "$" },
 }
 
 local LOC = {
@@ -31,14 +35,12 @@ local LOC = {
 	[4] = "Полярная тундра",
 }
 
-local METRICS = {
-	{ key = "Power", title = "СИЛА" },
-	{ key = "Cps", title = "CPS" },
-	{ key = "Dps", title = "DPS" },
-	{ key = "Coins", title = "МОНЕТЫ" },
-	{ key = "Clicks", title = "КЛИКИ" },
-	{ key = "Loc", title = "ЛОКАЦИЯ" },
-	{ key = "Rebirth", title = "REBIRTH" },
+-- Boost row style (top-left). Data from profile.boosts when present.
+local BOOST_META = {
+	{ key = "money", icon = "🪙", color = Color3.fromRGB(200, 130, 40), name = "Монеты" },
+	{ key = "power", icon = "💪", color = Color3.fromRGB(200, 55, 70), name = "Сила" },
+	{ key = "damage", icon = "⚡", color = Color3.fromRGB(120, 60, 200), name = "Урон" },
+	{ key = "luck", icon = "🍀", color = Color3.fromRGB(50, 160, 70), name = "Удача" },
 }
 
 function Hud.Mount(
@@ -53,15 +55,12 @@ function Hud.Mount(
 
 	local nRail = #RAIL
 
-	-- Root scale driver (applies to whole ScreenGui via App, but we also bind here if needed)
-	-- Hud only positions; App owns UIScale on gui.
-
-	---------------------------------------------------------------- RAIL — height packs to N
+	---------------------------------------------------------------- RAIL (left menus)
 	local rail = UIKit.Glass({
 		Name = "Rail",
 		Parent = root,
 		Size = UDim2.fromOffset(72, 420),
-		Position = UDim2.fromScale(0, 0) + UDim2.fromOffset(12, 12),
+		Position = UDim2.fromOffset(12, 12),
 		Radius = T.R.sm,
 		Z = 10,
 		Deep = true,
@@ -85,121 +84,6 @@ function Hud.Mount(
 		railBtns[item.id] = b
 	end
 
-	---------------------------------------------------------------- STATS strip (above bottom CTA)
-	local stats = Instance.new("Frame")
-	stats.Name = "StatsStrip"
-	stats.BackgroundTransparency = 1
-	stats.Size = UDim2.new(0.85, 0, 0, 56)
-	stats.Position = UDim2.new(0.5, 0, 1, -120)
-	stats.AnchorPoint = Vector2.new(0.5, 1)
-	stats.ZIndex = 11
-	stats.Parent = root
-	local statsList = UIKit.List(stats, 10, true, Enum.HorizontalAlignment.Center)
-	statsList.VerticalAlignment = Enum.VerticalAlignment.Center
-
-	local chips: { [string]: Frame } = {}
-	for i, m in ipairs(METRICS) do
-		local chip = UIKit.MetricChip({
-			Parent = stats,
-			Key = m.key,
-			Title = m.title,
-			Value = "—",
-			Order = i,
-			W = 120,
-			H = 52,
-		})
-		chips[m.key] = chip
-	end
-
-	---------------------------------------------------------------- ACTIONS (primary CTAs)
-	-- Clean container — NO AccentBar (was the thin gold strip under CTAs)
-	local actions = UIKit.Glass({
-		Name = "Actions",
-		Parent = root,
-		Size = UDim2.new(0.38, 0, 0, 88),
-		Position = UDim2.new(0.5, 0, 1, -14),
-		Anchor = Vector2.new(0.5, 1),
-		Radius = T.R.md,
-		Z = 12,
-		Deep = true,
-	})
-	UIKit.SizeConstraint(actions, Vector2.new(340, 72), Vector2.new(560, 120))
-	UIKit.Stroke(actions, T.Stroke, 1.2, 0.25)
-	local actPad = UIKit.Pad(actions, 14)
-
-	local row = Instance.new("Frame")
-	row.Name = "Row"
-	row.BackgroundTransparency = 1
-	row.Size = UDim2.fromScale(1, 1)
-	row.ZIndex = 13
-	row.Parent = actions
-	local rowList = UIKit.List(row, 12, true, Enum.HorizontalAlignment.Center)
-	rowList.VerticalAlignment = Enum.VerticalAlignment.Center
-
-	local autoBtn = UIKit.Button({
-		Name = "Auto",
-		Parent = row,
-		Text = "АВТО",
-		Size = UDim2.new(0.26, 0, 0, 58),
-		Color = T.AutoOff,
-		Color2 = T.AutoOffDeep,
-		SizePx = 18,
-		Radius = T.R.lg,
-		Order = 1,
-		Z = 14,
-		OnClick = function()
-			Net.ToggleAuto()
-		end,
-	})
-
-	local clickBtn = UIKit.Button({
-		Name = "Click",
-		Parent = row,
-		Text = "КЛИК",
-		Size = UDim2.new(0.4, 0, 0, 58),
-		Color = T.Click,
-		Color2 = T.ClickDeep,
-		SizePx = 26,
-		Radius = T.R.lg,
-		Primary = true,
-		Order = 2,
-		Z = 14,
-		OnClick = function()
-			Net.Swing("manual")
-			if onManualClick then
-				onManualClick()
-			end
-		end,
-	})
-
-	local rebBtn = UIKit.Button({
-		Name = "Rebirth",
-		Parent = row,
-		Text = "R↑",
-		Size = UDim2.new(0.24, 0, 0, 58),
-		Color = T.Accent,
-		Color2 = T.AccentDeep,
-		Primary = true,
-		SizePx = 22,
-		Radius = T.R.sm,
-		Order = 3,
-		Z = 14,
-		OnClick = function()
-			openModal("rebirth", nil)
-		end,
-	})
-
-	-- Rebirth progress sits ABOVE the action panel (not under buttons)
-	local rbHost = Instance.new("Frame")
-	rbHost.Name = "RebirthProg"
-	rbHost.BackgroundTransparency = 1
-	rbHost.Size = UDim2.new(0.38, 0, 0, 8)
-	rbHost.Position = UDim2.new(0.5, 0, 1, -170)
-	rbHost.AnchorPoint = Vector2.new(0.5, 1)
-	rbHost.ZIndex = 11
-	rbHost.Parent = root
-	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, 8)
-
 	local questBadge = UIKit.Label({
 		Name = "QuestBadge",
 		Parent = railBtns.quests,
@@ -218,8 +102,212 @@ function Hud.Mount(
 	questBadge.Visible = false
 	UIKit.Corner(questBadge, 99)
 
+	---------------------------------------------------------------- TOP-LEFT BOOSTS
+	local boosts = Instance.new("Frame")
+	boosts.Name = "Boosts"
+	boosts.BackgroundTransparency = 1
+	boosts.Size = UDim2.fromOffset(220, 160)
+	boosts.Position = UDim2.fromOffset(90, 14)
+	boosts.ZIndex = 11
+	boosts.Parent = root
+	local boostList = UIKit.List(boosts, 6, false)
+	boostList.VerticalAlignment = Enum.VerticalAlignment.Top
+	local boostRows: { Frame } = {}
+
+	local function makeBoostRow(meta: any): Frame
+		local row = Instance.new("Frame")
+		row.Name = meta.key
+		row.BackgroundColor3 = Color3.new(1, 1, 1)
+		row.BorderSizePixel = 0
+		row.Size = UDim2.fromOffset(200, 28)
+		row.ZIndex = 12
+		row.Visible = false
+		row.Parent = boosts
+		UIKit.Corner(row, T.R.sm)
+		UIKit.Stroke(row, meta.color, 1.2, 0.25)
+		UIKit.Gradient(row, meta.color:Lerp(Color3.new(0, 0, 0), 0.45), meta.color:Lerp(Color3.new(0, 0, 0), 0.65), 0)
+
+		UIKit.Label({
+			Name = "Pct",
+			Parent = row,
+			Text = "+0%",
+			Size = UDim2.fromOffset(52, 28),
+			Position = UDim2.fromOffset(6, 0),
+			SizePx = 13,
+			Font = T.Font.Title,
+			Color = Color3.new(1, 1, 1),
+			Z = 13,
+		})
+		UIKit.Label({
+			Name = "Scope",
+			Parent = row,
+			Text = "Локальный",
+			Size = UDim2.new(1, -64, 1, 0),
+			Position = UDim2.fromOffset(58, 0),
+			SizePx = 12,
+			Color = Color3.fromRGB(240, 240, 245),
+			Z = 13,
+		})
+		return row
+	end
+
+	for _, meta in ipairs(BOOST_META) do
+		boostRows[meta.key] = makeBoostRow(meta)
+	end
+
+	---------------------------------------------------------------- BOTTOM-CENTER: Q | coins/power | E
+	local bal = UIKit.Glass({
+		Name = "BalanceBar",
+		Parent = root,
+		Size = UDim2.fromOffset(280, 72),
+		Position = UDim2.new(0.5, 0, 1, -18),
+		Anchor = Vector2.new(0.5, 1),
+		Radius = T.R.md,
+		Z = 12,
+		Deep = true,
+	})
+	UIKit.Stroke(bal, T.Stroke, 1.2, 0.25)
+
+	-- Q = rebirth (left)
+	local qBtn = UIKit.Button({
+		Name = "RebirthQ",
+		Parent = bal,
+		Text = "Q",
+		Size = UDim2.fromOffset(40, 40),
+		Position = UDim2.new(0, 10, 0.5, 0),
+		Anchor = Vector2.new(0, 0.5),
+		Color = Color3.fromRGB(70, 90, 160),
+		Color2 = Color3.fromRGB(40, 55, 110),
+		Primary = true,
+		SizePx = 16,
+		Compact = true,
+		Radius = T.R.sm,
+		Z = 14,
+		OnClick = function()
+			openModal("rebirth", nil)
+		end,
+	})
+	UIKit.Label({
+		Parent = bal,
+		Text = "♻",
+		Size = UDim2.fromOffset(18, 18),
+		Position = UDim2.new(0, 52, 0.5, -16),
+		SizePx = 12,
+		Color = T.Accent,
+		Z = 14,
+	})
+
+	-- center metrics
+	local mid = Instance.new("Frame")
+	mid.Name = "Mid"
+	mid.BackgroundTransparency = 1
+	mid.Size = UDim2.fromOffset(130, 56)
+	mid.Position = UDim2.new(0.5, 0, 0.5, 0)
+	mid.AnchorPoint = Vector2.new(0.5, 0.5)
+	mid.ZIndex = 13
+	mid.Parent = bal
+
+	local coinLab = UIKit.Label({
+		Name = "Coins",
+		Parent = mid,
+		Text = "🪙  0",
+		Size = UDim2.new(1, 0, 0, 24),
+		Position = UDim2.fromOffset(0, 2),
+		SizePx = 16,
+		Font = T.Font.Num,
+		Color = T.Gold,
+		X = Enum.TextXAlignment.Center,
+		Z = 14,
+	})
+	local powerLab = UIKit.Label({
+		Name = "Power",
+		Parent = mid,
+		Text = "⚔  0",
+		Size = UDim2.new(1, 0, 0, 24),
+		Position = UDim2.fromOffset(0, 28),
+		SizePx = 16,
+		Font = T.Font.Num,
+		Color = Color3.fromRGB(255, 120, 90),
+		X = Enum.TextXAlignment.Center,
+		Z = 14,
+	})
+
+	-- E = inventory (right)
+	local eBtn = UIKit.Button({
+		Name = "InvE",
+		Parent = bal,
+		Text = "E",
+		Size = UDim2.fromOffset(40, 40),
+		Position = UDim2.new(1, -10, 0.5, 0),
+		Anchor = Vector2.new(1, 0.5),
+		Color = Color3.fromRGB(70, 90, 160),
+		Color2 = Color3.fromRGB(40, 55, 110),
+		Primary = true,
+		SizePx = 16,
+		Compact = true,
+		Radius = T.R.sm,
+		Z = 14,
+		OnClick = function()
+			store:OpenPanel("weapons")
+		end,
+	})
+	UIKit.Label({
+		Parent = bal,
+		Text = "🎒",
+		Size = UDim2.fromOffset(18, 18),
+		Position = UDim2.new(1, -70, 0.5, -16),
+		SizePx = 12,
+		Color = T.TextSoft,
+		Z = 14,
+	})
+
+	-- rebirth progress thin bar above balance
+	local rbHost = Instance.new("Frame")
+	rbHost.Name = "RebirthProg"
+	rbHost.BackgroundTransparency = 1
+	rbHost.Size = UDim2.fromOffset(280, 6)
+	rbHost.Position = UDim2.new(0.5, 0, 1, -96)
+	rbHost.AnchorPoint = Vector2.new(0.5, 1)
+	rbHost.ZIndex = 11
+	rbHost.Parent = root
+	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, 6)
+
+	-- auto status chip (toggle still T) — small, above balance
+	local autoChip = UIKit.Button({
+		Name = "AutoChip",
+		Parent = root,
+		Text = "АВТО",
+		Size = UDim2.fromOffset(72, 28),
+		Position = UDim2.new(0.5, 0, 1, -108),
+		Anchor = Vector2.new(0.5, 1),
+		Color = T.AutoOff,
+		Color2 = T.AutoOffDeep,
+		SizePx = 12,
+		Compact = true,
+		Z = 12,
+		OnClick = function()
+			Net.ToggleAuto()
+		end,
+	})
+
+	-- invisible click anchor (center) for ClickPop
+	local clickAnchor = Instance.new("TextButton")
+	clickAnchor.Name = "ClickAnchor"
+	clickAnchor.BackgroundTransparency = 1
+	clickAnchor.Text = ""
+	clickAnchor.Size = UDim2.fromOffset(1, 1)
+	clickAnchor.Position = UDim2.new(0.5, 0, 0.55, 0)
+	clickAnchor.AnchorPoint = Vector2.new(0.5, 0.5)
+	clickAnchor.ZIndex = 1
+	clickAnchor.Parent = root
+	clickAnchor.MouseButton1Click:Connect(function()
+		Net.Swing("manual")
+		if onManualClick then
+			onManualClick()
+		end
+	end)
+
 	local function applyMetrics(m: Layout.Metrics)
-		-- compact rail pack
 		rail.Size = UDim2.fromOffset(m.railW, m.railH)
 		rail.Position = UDim2.fromOffset(m.pad, m.pad)
 		railPad.PaddingTop = UDim.new(0, m.railPad)
@@ -234,37 +322,14 @@ function Hud.Mount(
 			b.TextColor3 = T.Text
 		end
 
-		-- scale-based action bar width
-		actions.Size = UDim2.new(0, m.actionW, 0, m.actionH)
-		actions.Position = UDim2.new(0.5, 0, 1, -m.pad)
-		actPad.PaddingTop = UDim.new(0, m.pad)
-		actPad.PaddingBottom = UDim.new(0, m.pad)
-		actPad.PaddingLeft = UDim.new(0, m.pad)
-		actPad.PaddingRight = UDim.new(0, m.pad)
-		rowList.Padding = UDim.new(0, m.actionGap)
+		boosts.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad)
 
-		autoBtn.Size = UDim2.fromOffset(m.btnAutoW, m.btnH)
-		autoBtn.TextSize = m.fontMd + 1
-		clickBtn.Size = UDim2.fromOffset(m.btnClickW, m.btnH)
-		clickBtn.TextSize = m.fontXl + 2
-		rebBtn.Size = UDim2.fromOffset(m.btnRebW, m.btnH)
-		rebBtn.TextSize = m.fontLg + 1
-
-		stats.Size = UDim2.new(1, -(m.railW + m.pad * 3), 0, m.statsH)
-		stats.Position = UDim2.new(0.5, m.railW * 0.12, 1, -(m.actionH + m.pad + 8))
-		statsList.Padding = UDim.new(0, m.chipGap)
-
-		for key, chip in chips do
-			local w = m.chipW
-			if key == "Loc" then
-				w = math.floor(m.chipW * 1.2)
-			end
-			chip.Size = UDim2.fromOffset(w, m.chipH)
-		end
-
-		rbHost.Size = UDim2.fromOffset(m.actionW, 8)
-		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.actionH + m.statsH + m.pad + 14))
-		rbTrack.Size = UDim2.new(1, 0, 0, 8)
+		local balW = math.clamp(m.actionW * 0.72, 240, 320)
+		bal.Size = UDim2.fromOffset(balW, 68)
+		bal.Position = UDim2.new(0.5, 0, 1, -m.pad)
+		rbHost.Size = UDim2.fromOffset(balW, 6)
+		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.pad + 78))
+		autoChip.Position = UDim2.new(0.5, 0, 1, -(m.pad + 90))
 	end
 
 	pcall(function()
@@ -280,15 +345,10 @@ function Hud.Mount(
 			return
 		end
 
-		UIKit.SetChipValue(chips.Power, Format.Num(st.damagePerClick or st.totalPower))
-		UIKit.SetChipValue(chips.Cps, string.format("%.1f", st.cps or 0))
-		UIKit.SetChipValue(chips.Dps, Format.Num(st.dps))
-		UIKit.SetChipValue(chips.Coins, Format.Num(st.coins))
-		UIKit.SetChipValue(chips.Clicks, Format.Num(st.totalClicks))
-		UIKit.SetChipValue(chips.Loc, LOC[st.location or 1] or ("#" .. tostring(st.location)))
-		UIKit.SetChipValue(chips.Rebirth, string.format("R%d %s", st.rebirthLevel or 0, Format.Mult(st.rebirthMult)))
+		coinLab.Text = "🪙  " .. Format.Num(st.coins)
+		powerLab.Text = "⚔  " .. Format.Num(st.damagePerClick or st.totalPower)
 
-		-- Dual-cost rebirth: bar = min(damage progress, coin progress)
+		-- dual-cost rebirth bar
 		local pct = st.rebirthProgress
 		if type(pct) ~= "number" then
 			local cost = st.nextRebirthCost or 1
@@ -302,24 +362,41 @@ function Hud.Mount(
 		rbFill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
 
 		if st.autoClicker then
-			autoBtn.Text = "АВТО ON"
-			local g = autoBtn:FindFirstChildOfClass("UIGradient")
+			autoChip.Text = "АВТО ON"
+			local g = autoChip:FindFirstChildOfClass("UIGradient")
 			if g then
 				g.Color = ColorSequence.new(T.AutoOn, T.AutoOnDeep)
 			end
 		else
-			autoBtn.Text = "АВТО"
-			local g = autoBtn:FindFirstChildOfClass("UIGradient")
+			autoChip.Text = "АВТО"
+			local g = autoChip:FindFirstChildOfClass("UIGradient")
 			if g then
 				g.Color = ColorSequence.new(T.AutoOff, T.AutoOffDeep)
 			end
 		end
-		-- force white labels (child Label from UIKit.Button)
-		for _, btn in { autoBtn, clickBtn, rebBtn } do
-			local lab = btn:FindFirstChild("Label")
-			if lab and lab:IsA("TextLabel") then
-				lab.TextColor3 = Color3.fromRGB(255, 255, 255)
-				lab.TextStrokeTransparency = 0.45
+		local alab = autoChip:FindFirstChild("Label")
+		if alab and alab:IsA("TextLabel") then
+			alab.TextColor3 = Color3.new(1, 1, 1)
+		end
+
+		-- boosts: profile.boosts = { money = {pct=0.5, scope="local"}, ... }
+		local boostsData = (profile and profile.boosts) or {}
+		for _, meta in ipairs(BOOST_META) do
+			local row = boostRows[meta.key]
+			local b = boostsData[meta.key]
+			if type(b) == "table" and type(b.pct) == "number" and b.pct > 0 then
+				row.Visible = true
+				local pctLab = row:FindFirstChild("Pct")
+				local scopeLab = row:FindFirstChild("Scope")
+				if pctLab and pctLab:IsA("TextLabel") then
+					pctLab.Text = string.format("+%d%%", math.floor(b.pct * 100 + 0.5))
+				end
+				if scopeLab and scopeLab:IsA("TextLabel") then
+					local sc = tostring(b.scope or "local")
+					scopeLab.Text = (sc == "global" or sc == "Глобальный") and "Глобальный" or "Локальный"
+				end
+			else
+				row.Visible = false
 			end
 		end
 
@@ -349,10 +426,14 @@ function Hud.Mount(
 			end
 			b.TextColor3 = T.Text
 		end
+
+		-- keep LOC for future top bar if needed
+		local _loc = LOC[st.location or 1]
+		local _ = _loc
 	end
 
 	function api.GetClickButton(): TextButton
-		return clickBtn
+		return clickAnchor
 	end
 
 	return api
