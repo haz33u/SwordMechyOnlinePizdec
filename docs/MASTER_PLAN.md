@@ -221,3 +221,44 @@ git add -A ; git commit ; git pull --rebase ; git push
 6. No Keyframe/Animations inside `Shared`  
 7. **Player-facing language = English** (UI, configs, Notify, new features)  
 8. **Combat click = LMB / touch**, not Space; GUI clicks do not swing
+
+---
+
+## 11. Ideas / could-do later (NOT now)
+
+> Inspiration from public Roblox sword sims (2026-07-18).  
+> Refs opened: [Discover «Sword Masters»](https://www.roblox.com/discover/?Keyword=Sword%20Masters),  
+> [Swordmaster Simulator](https://www.roblox.com/games/15501353806/Swordmaster-Simulator),  
+> [Reborn As Swordsman](https://www.roblox.com/games/16981421605/Reborn-As-Swordsman).  
+> **Do not implement until P0–P1 core is stable.** Parked ideas only.
+
+### What those games lean on
+| Source | Loop highlights |
+|--------|-----------------|
+| Swordmaster Simulator | Kill brutes → legendary swords; pets; gems; loot boxes / wheel / armor (classic sim gacha) |
+| Reborn As Swordsman | Train for strength; fight for swords; **rebirth**; **tower for auras**; wins + pets; premium train boost |
+
+### Ideas we might steal (parked)
+| Idea | Why interesting | Notes for us |
+|------|-----------------|--------------|
+| **Onboarding 0–2 min** | Clear first path without wiki | Toasts + first quest highlight; not full tutorial UI yet |
+| **Train pad vs fight zone** | Soft AFK power near spawn; risk elsewhere | Optional later; we are fight-only now |
+| **Aura tower / floor climb** | Vertical content without full Loc2 map | Strong from Reborn; after cases economy real |
+| **Case / gacha polish** | Odds + spin + multi-open + pity | We have spin + 1/rarity odds; need CaseResult + keys first |
+| **Session goals / “wins”** | Short goals → chest | Overlaps quests; daily-style later |
+| **Power fantasy readability** | Big numbers, equip VFX, limited flex | Mesh/VFX pass; icons via FIGMA_PROMPTS |
+| **Premium train boost** | Gamepass +% | Only after donat R$ decision (P4) |
+
+### Explicitly do **not** copy blindly
+- Wheel-spin / code spam economy  
+- Heavy P2W before Loc1 is fun  
+- Asset theft from those places  
+
+### When to reopen this section
+After: Loc1 playtest clean · case economy not free-infinite · UI SCREEENS polish.  
+Then pick **one** parked idea (recommended first: onboarding **or** aura tower slice).
+
+### Figma / art pipeline (tools)
+- Prompts: `docs/FIGMA_PROMPTS.md`  
+- Upload: `docs/ICON_UPLOAD.md` → IconConfig  
+- Agent can use **Figma MCP** (when connected) + local Imagine; cannot “see” your desktop Figma window as a human unless MCP/API exposes the file.
