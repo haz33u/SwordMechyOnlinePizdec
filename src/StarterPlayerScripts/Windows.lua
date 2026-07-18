@@ -20,6 +20,7 @@ local QuestConfig = require(Shared.Config.QuestConfig)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local PetConfig = require(Shared.Config.PetConfig)
 local AuraConfig = require(Shared.Config.AuraConfig)
+local CaseConfig = require(Shared.Config.CaseConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 
 local Windows = {}
@@ -331,12 +332,15 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 
 		-- header: equipped + count
 		local head = surfaceCard(body, 48, 1, T.Stroke)
+		local stats = store:PeekStats()
+		local offUnlocked = (stats and stats.offhandUnlocked) == true
+			or (profile.unlocks and profile.unlocks.offhand) == true
 		UIKit.Label({
 			Parent = head,
 			Text = string.format(
 				"Main: %s   ·   Off: %s",
 				weaponLabel(profile.equippedMain),
-				weaponLabel(profile.equippedOffhand)
+				if offUnlocked then weaponLabel(profile.equippedOffhand) else "🔒 paid"
 			),
 			Size = UDim2.new(0.72, 0, 1, 0),
 			SizePx = px(14),
@@ -398,11 +402,16 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = row,
-				Text = "Equip off",
+				Text = if offUnlocked then "Equip off" else "Off 🔒",
 				Size = UDim2.fromOffset(px(100), px(34)),
 				SizePx = px(12),
+				Disabled = not offUnlocked,
 				OnClick = function()
-					Net.EquipWeapon(selected.uid, "offhand")
+					if offUnlocked then
+						Net.EquipWeapon(selected.uid, "offhand")
+					else
+						Net.UnlockPaidFeature("offhand")
+					end
 				end,
 			})
 			UIKit.Button({
@@ -552,14 +561,28 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 		local btnW = px(110)
 		local head = surfaceCard(body, 56, 1, T.Gold)
+		local pStats = store:PeekStats()
+		local slots = profile.petSlots or 3
+		local hint = (pStats and pStats.nextPetSlotHint) or ""
 		UIKit.Label({
 			Parent = head,
-			Text = string.format("Team %d / %d", #(profile.petTeam or {}), profile.petSlots or 1),
-			Size = UDim2.new(1, -btnW - 12, 1, 0),
+			Text = string.format("Team %d / %d", #(profile.petTeam or {}), slots),
+			Size = UDim2.new(1, -btnW - 12, 0, px(22)),
 			SizePx = px(16),
 			Color = T.Text,
 			Z = 33,
 		})
+		if hint ~= "" then
+			UIKit.Label({
+				Parent = head,
+				Text = hint,
+				Size = UDim2.new(1, -btnW - 12, 0, px(18)),
+				Position = UDim2.fromOffset(0, px(24)),
+				SizePx = px(11),
+				Color = T.TextMuted,
+				Z = 33,
+			})
+		end
 		UIKit.Button({
 			Parent = head,
 			Text = "Case",
@@ -571,11 +594,36 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			SizePx = px(15),
 			Z = 34,
 			OnClick = function()
-				Net.OpenPetCase()
 				openModal("case", { kind = "pet" })
 			end,
 		})
-		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(72)))
+		-- paid +1 slot (7th)
+		local paidOwned = (pStats and pStats.paidPetSlot) == true
+			or (profile.unlocks and profile.unlocks.paidPetSlot) == true
+		if not paidOwned and slots < 7 then
+			local payRow = surfaceCard(body, 44, 2, T.Stroke)
+			UIKit.Label({
+				Parent = payRow,
+				Text = "Paid: +1 pet slot",
+				Size = UDim2.new(0.6, 0, 1, 0),
+				SizePx = px(13),
+				Color = T.TextSoft,
+				Z = 33,
+			})
+			UIKit.Button({
+				Parent = payRow,
+				Text = "Unlock (debug)",
+				Size = UDim2.fromOffset(px(130), px(32)),
+				Position = UDim2.new(1, -px(130), 0.5, -px(16)),
+				SizePx = px(12),
+				Primary = true,
+				Z = 34,
+				OnClick = function()
+					Net.UnlockPaidFeature("paidPetSlot")
+				end,
+			})
+		end
+		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(120)))
 		scroll.LayoutOrder = 2
 		for i, p in ipairs(profile.pets or {}) do
 			local inTeam = false
@@ -1135,12 +1183,22 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local profile = store:PeekProfile()
 		local stats = store:PeekStats()
 		local coins = (stats and stats.coins) or (profile and profile.coins) or 0
+		local petKeys = (stats and stats.petKeys) or (profile and profile.petKeys) or 0
+		local auraKeys = (stats and stats.auraKeys) or (profile and profile.auraKeys) or 0
 		local loc = (profile and profile.currentLocation) or 1
+		local petKeyCost = CaseConfig.PET_KEY_COST or 1
+		local auraKeyCost = CaseConfig.AURA_KEY_COST or 1
 
 		local head = surfaceCard(body, 48, 1, T.Stroke)
 		UIKit.Label({
 			Parent = head,
-			Text = string.format("Balance  %s 🪙   ·   location  %d", Format.Num(coins), loc),
+			Text = string.format(
+				"Keys  🐾 %d   ✨ %d   ·   🪙 %s   ·   loc %d",
+				petKeys,
+				auraKeys,
+				Format.Num(coins),
+				loc
+			),
 			Size = UDim2.new(1, 0, 1, 0),
 			SizePx = px(15),
 			Color = T.TextSoft,
@@ -1152,9 +1210,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 
 		-- Pet case
 		do
-			local cost = PetConfig.OPEN_COST or 0
-			local can = coins >= cost
-			local costTxt = cost <= 0 and "Free" or (Format.Num(cost) .. " 🪙")
+			local can = petKeys >= petKeyCost
+			local costTxt = string.format("%d key", petKeyCost)
 			local c = surfaceCard(scroll, 110, 1, T.Success)
 			UIKit.Label({
 				Parent = c,
@@ -1167,7 +1224,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Label({
 				Parent = c,
-				Text = "Pet for current location · 1 sample per rarity below",
+				Text = string.format("Keys: %d  ·  pet for current location", petKeys),
 				Size = UDim2.new(1, 0, 0, px(20)),
 				Position = UDim2.fromOffset(0, px(28)),
 				SizePx = px(12),
@@ -1176,7 +1233,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = c,
-				Text = can and ("Open for " .. costTxt) or ("Need " .. costTxt),
+				Text = can and ("Open · " .. costTxt) or ("Need " .. costTxt),
 				Size = UDim2.new(1, 0, 0, px(38)),
 				Position = UDim2.new(0, 0, 1, -px(4)),
 				Anchor = Vector2.new(0, 1),
@@ -1195,9 +1252,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 
 		-- Aura case
 		do
-			local cost = AuraConfig.OPEN_COST or 0
-			local can = coins >= cost
-			local costTxt = cost <= 0 and "Free" or (Format.Num(cost) .. " 🪙")
+			local can = auraKeys >= auraKeyCost
+			local costTxt = string.format("%d key", auraKeyCost)
 			local c = surfaceCard(scroll, 110, 20, Color3.fromRGB(140, 90, 210))
 			UIKit.Label({
 				Parent = c,
@@ -1210,7 +1266,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Label({
 				Parent = c,
-				Text = "Random aura · 1 sample per rarity below",
+				Text = string.format("Keys: %d  ·  random aura", auraKeys),
 				Size = UDim2.new(1, 0, 0, px(20)),
 				Position = UDim2.fromOffset(0, px(28)),
 				SizePx = px(12),
@@ -1219,7 +1275,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = c,
-				Text = can and ("Open for " .. costTxt) or ("Need " .. costTxt),
+				Text = can and ("Open · " .. costTxt) or ("Need " .. costTxt),
 				Size = UDim2.new(1, 0, 0, px(38)),
 				Position = UDim2.new(0, 0, 1, -px(4)),
 				Anchor = Vector2.new(0, 1),

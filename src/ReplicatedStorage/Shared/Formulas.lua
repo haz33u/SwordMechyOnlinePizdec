@@ -12,6 +12,7 @@ local AuraConfig = require(script.Parent.Config.AuraConfig)
 local RelicConfig = require(script.Parent.Config.RelicConfig)
 local EnchantConfig = require(script.Parent.Config.EnchantConfig)
 local ClickConfig = require(script.Parent.Config.ClickConfig)
+local ProgressConfig = require(script.Parent.Config.ProgressConfig)
 
 local Formulas = {}
 
@@ -50,7 +51,6 @@ end
 
 function Formulas.GetWeaponPowerMult(profile: any): number
 	local main = findWeapon(profile, profile.equippedMain)
-	local off = findWeapon(profile, profile.equippedOffhand)
 	local mult = 1
 	if main then
 		local def = WeaponConfig.Get(main.id)
@@ -58,10 +58,14 @@ function Formulas.GetWeaponPowerMult(profile: any): number
 			mult = def.powerMult
 		end
 	end
-	if off then
-		local def = WeaponConfig.Get(off.id)
-		if def then
-			mult += def.powerMult * 0.5 -- offhand 50%
+	-- offhand only if paid unlock
+	if ProgressConfig.IsOffhandUnlocked(profile) then
+		local off = findWeapon(profile, profile.equippedOffhand)
+		if off then
+			local def = WeaponConfig.Get(off.id)
+			if def then
+				mult += def.powerMult * 0.5 -- offhand 50%
+			end
 		end
 	end
 	return mult
@@ -86,7 +90,9 @@ function Formulas.GetEnchantPools(profile: any): { [string]: number }
 		end
 	end
 	addFrom(profile.equippedMain)
-	addFrom(profile.equippedOffhand)
+	if ProgressConfig.IsOffhandUnlocked(profile) then
+		addFrom(profile.equippedOffhand)
+	end
 	return pools
 end
 
@@ -306,7 +312,12 @@ function Formulas.Snapshot(profile: any): { [string]: any }
 		totalClicks = profile.totalClicks or 0,
 		coins = profile.coins,
 		enchantDust = profile.enchantDust or 0,
+		petKeys = profile.petKeys or 0,
+		auraKeys = profile.auraKeys or 0,
 		petSlots = profile.petSlots,
+		offhandUnlocked = ProgressConfig.IsOffhandUnlocked(profile),
+		paidPetSlot = (profile.unlocks and profile.unlocks.paidPetSlot) == true,
+		nextPetSlotHint = ProgressConfig.GetNextPetSlotHint(profile),
 		location = profile.currentLocation,
 		autoClicker = profile.autoClicker == true,
 		autoClickerUnlocked = Formulas.IsAutoClickerUnlocked(profile),

@@ -33,7 +33,9 @@ local PetConfig = {
 		Mythic = 0.1,
 	},
 
-	OPEN_COST = 0, -- free open from kill-drop keys later; skeleton free
+	-- legacy coin cost (unused if CaseConfig.PET_COIN_COST drives economy)
+	OPEN_COST = 0,
+	-- preferred: CaseConfig.PET_KEY_COST (keys from kills)
 	FEED_BASE_COST = 100,
 	FEED_GROWTH = 1.25,
 	MAX_LEVEL = 30,

@@ -17,6 +17,7 @@ local Format = require(script.Parent.Format)
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local PetConfig = require(Shared.Config.PetConfig)
 local AuraConfig = require(Shared.Config.AuraConfig)
+local CaseConfig = require(Shared.Config.CaseConfig)
 
 local CaseOpening = {}
 
@@ -386,47 +387,6 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		return f
 	end
 
-	local function waitResult(kind: string, before: { [string]: boolean }, timeout: number): SpinItem?
-		local t0 = os.clock()
-		while os.clock() - t0 < timeout do
-			local profile = store:PeekProfile()
-			if profile then
-				if kind == "pet" then
-					for _, p in ipairs(profile.pets or {}) do
-						local uid = p.uid
-						if type(uid) == "string" and not before[uid] then
-							local def = PetConfig.Get(p.id)
-							return {
-								id = p.id or uid,
-								name = (def and def.name) or tostring(p.name or p.id),
-								rarity = (def and def.rarity) or tostring(p.rarity or "Common"),
-								icon = "🐾",
-								sub = def and string.format("+%d%% power · +%d%% coins", math.floor(def.powerPct), math.floor(def.coinPct))
-									or nil,
-							}
-						end
-					end
-				else
-					for _, a in ipairs(profile.auras or {}) do
-						local uid = a.uid
-						if type(uid) == "string" and not before[uid] then
-							local def = AuraConfig.Get(a.id)
-							return {
-								id = a.id or uid,
-								name = (def and def.name) or tostring(a.name or a.id),
-								rarity = (def and def.rarity) or tostring(a.rarity or "Common"),
-								icon = "✨",
-								sub = def and string.format("+%d%% power", math.floor(def.powerPct)) or nil,
-							}
-						end
-					end
-				end
-			end
-			task.wait(0.08)
-		end
-		return nil
-	end
-
 	local api = {}
 
 	function api.IsOpen(): boolean
@@ -440,7 +400,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 
 	function api.Begin(payload: any?)
 		if busy then
-			return
+			return false, "busy", 0
 		end
 		local kind = (payload and payload.kind) or "pet"
 		if kind ~= "pet" and kind ~= "aura" then
@@ -449,10 +409,18 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 
 		local profile = store:PeekProfile()
 		local stats = store:PeekStats()
+		local keys = if kind == "aura"
+			then ((stats and stats.auraKeys) or (profile and profile.auraKeys) or 0)
+			else ((stats and stats.petKeys) or (profile and profile.petKeys) or 0)
+		local keyCost = if kind == "aura" then (CaseConfig.AURA_KEY_COST or 1) else (CaseConfig.PET_KEY_COST or 1)
+		local coinCost = if kind == "aura" then (CaseConfig.AURA_COIN_COST or 0) else (CaseConfig.PET_COIN_COST or 0)
 		local coins = (stats and stats.coins) or (profile and profile.coins) or 0
-		local cost = if kind == "aura" then (AuraConfig.OPEN_COST or 0) else (PetConfig.OPEN_COST or 0)
-		if coins < cost then
-			return false, "need_coins", cost
+
+		if keys < keyCost then
+			return false, "need_keys", keyCost
+		end
+		if coinCost > 0 and coins < coinCost then
+			return false, "need_coins", coinCost
 		end
 
 		local loc = (profile and profile.currentLocation) or 1
@@ -483,25 +451,114 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		strip.Size = UDim2.fromOffset(totalW, trackH)
 		strip.Position = UDim2.fromOffset(0, 0)
 
-		-- fire server
-		if kind == "aura" then
-			Net.OpenAuraCase()
-		else
-			Net.OpenPetCase()
-		end
-
+		-- Listen BEFORE FireServer so CaseResult cannot race past us.
 		task.spawn(function()
-			local won = waitResult(kind, before, 4.0)
+			-- arm waiter first frame, then open
+			local pending = { done = false, item = nil :: SpinItem?, err = nil :: string? }
+			local conn = Net.Event("CaseResult").OnClientEvent:Connect(function(payload)
+				if type(payload) ~= "table" or payload.kind ~= kind then
+					return
+				end
+				pending.done = true
+				if payload.success == false then
+					pending.err = payload.reason or "failed"
+					return
+				end
+				local icon = if kind == "aura" then "✨" else "🐾"
+				local sub: string? = nil
+				if kind == "pet" then
+					sub = string.format(
+						"+%d%% power · +%d%% coins",
+						math.floor(payload.powerPct or 0),
+						math.floor(payload.coinPct or 0)
+					)
+				else
+					sub = string.format("+%d%% power", math.floor(payload.powerPct or 0))
+				end
+				pending.item = {
+					id = payload.id or "?",
+					name = payload.name or "???",
+					rarity = payload.rarity or "Common",
+					icon = icon,
+					sub = sub,
+				}
+			end)
+
+			if kind == "aura" then
+				Net.OpenAuraCase()
+			else
+				Net.OpenPetCase()
+			end
+
+			local t0 = os.clock()
+			local won: SpinItem? = nil
+			local failReason: string? = nil
+			while os.clock() - t0 < 4.0 do
+				if pending.done then
+					won = pending.item
+					failReason = pending.err
+					break
+				end
+				-- profile fallback
+				local p = store:PeekProfile()
+				if p then
+					if kind == "pet" then
+						for _, pet in ipairs(p.pets or {}) do
+							local uid = pet.uid
+							if type(uid) == "string" and not before[uid] then
+								local def = PetConfig.Get(pet.id)
+								won = {
+									id = pet.id or uid,
+									name = (def and def.name) or tostring(pet.id),
+									rarity = (def and def.rarity) or "Common",
+									icon = "🐾",
+									sub = def and string.format(
+										"+%d%% power · +%d%% coins",
+										math.floor(def.powerPct),
+										math.floor(def.coinPct)
+									) or nil,
+								}
+								break
+							end
+						end
+					else
+						for _, a in ipairs(p.auras or {}) do
+							local uid = a.uid
+							if type(uid) == "string" and not before[uid] then
+								local def = AuraConfig.Get(a.id)
+								won = {
+									id = a.id or uid,
+									name = (def and def.name) or tostring(a.id),
+									rarity = (def and def.rarity) or "Common",
+									icon = "✨",
+									sub = def and string.format("+%d%% power", math.floor(def.powerPct)) or nil,
+								}
+								break
+							end
+						end
+					end
+					if won then
+						break
+					end
+				end
+				task.wait(0.05)
+			end
+			conn:Disconnect()
+
 			if myGen ~= gen then
 				return
 			end
 			if not won then
-				-- fallback filler result (server may have failed silently)
-				won = pick(pool)
-				subtitle.Text = "Could not confirm drop — check inventory"
-			else
-				subtitle.Text = "Drop received!"
+				busy = false
+				hideAll()
+				return
 			end
+			if failReason then
+				busy = false
+				hideAll()
+				return
+			end
+			subtitle.Text = "Drop received!"
 
 			-- rebuild last stretch with known win at WIN
 			clearStrip()
@@ -516,14 +573,12 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 			end
 			strip.Size = UDim2.fromOffset(totalW, trackH)
 
-			-- center of cell WIN under marker
 			local trackW = track.AbsoluteSize.X
 			if trackW < 10 then
 				trackW = 800
 			end
 			local cellCenter = (WIN - 1) * (cellW + gap) + cellW * 0.5
 			local targetX = -(cellCenter - trackW * 0.5)
-			-- slight jitter so it doesn't look fake-perfect
 			targetX += math.random(-px(12), px(12))
 
 			strip.Position = UDim2.fromOffset(math.floor(trackW * 0.2), 0)
@@ -553,11 +608,14 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 	end
 
 	function api.CostLabel(kind: string): string
-		local cost = if kind == "aura" then (AuraConfig.OPEN_COST or 0) else (PetConfig.OPEN_COST or 0)
-		if cost <= 0 then
-			return "Free"
+		local keyCost = if kind == "aura" then (CaseConfig.AURA_KEY_COST or 1) else (CaseConfig.PET_KEY_COST or 1)
+		local coinCost = if kind == "aura" then (CaseConfig.AURA_COIN_COST or 0) else (CaseConfig.PET_COIN_COST or 0)
+		local keyName = if kind == "aura" then "aura key" else "pet key"
+		local s = string.format("%d %s", keyCost, keyName)
+		if coinCost > 0 then
+			s ..= " + " .. Format.Num(coinCost) .. " coins"
 		end
-		return Format.Num(cost) .. " coins"
+		return s
 	end
 
 	return api

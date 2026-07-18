@@ -14,6 +14,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Formulas = require(Shared.Formulas)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
+local CaseConfig = require(Shared.Config.CaseConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
@@ -155,7 +156,50 @@ function LootService.TryBossDust(player: Player, profile: any, mobDef: any)
 	})
 end
 
-function LootService.TryPetKey(_player: Player, _profile: any) end
+--- Case keys from kills (pet + aura). Chance by mob tier.
+function LootService.TryCaseKeys(player: Player, profile: any, mobDef: any)
+	if not mobDef or mobDef.isDebug then
+		return
+	end
+	local tier = WeaponConfig.NormalizeTier(mobDef.tier or "medium")
+	if mobDef.isBoss then
+		tier = "boss"
+	end
+
+	local granted = false
+
+	local petChance = CaseConfig.PetKeyChance[tier] or 0
+	if petChance > 0 and math.random() < petChance then
+		local amount = CaseConfig.RollAmount(CaseConfig.PetKeyAmount, tier)
+		profile.petKeys = (profile.petKeys or 0) + amount
+		granted = true
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Pet key +%d (total %d)", amount, profile.petKeys),
+			color = "pink",
+		})
+	end
+
+	local auraChance = CaseConfig.AuraKeyChance[tier] or 0
+	if auraChance > 0 and math.random() < auraChance then
+		local amount = CaseConfig.RollAmount(CaseConfig.AuraKeyAmount, tier)
+		profile.auraKeys = (profile.auraKeys or 0) + amount
+		granted = true
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Aura key +%d (total %d)", amount, profile.auraKeys),
+			color = "blue",
+		})
+	end
+
+	return granted
+end
+
+-- back-compat alias (CombatService used to call TryPetKey)
+function LootService.TryPetKey(player: Player, profile: any, mobDef: any?)
+	if mobDef then
+		return LootService.TryCaseKeys(player, profile, mobDef)
+	end
+	return false
+end
 
 --- Inspect payload for Shift+RMB UI
 function LootService.BuildMobInspect(mobDef: any, profile: any?): any?
@@ -192,6 +236,10 @@ function LootService.BuildMobInspect(mobDef: any, profile: any?): any?
 		}
 	end
 
+	local keyTier = if mobDef.isBoss then "boss" else tier
+	local petKeyChance = (CaseConfig.PetKeyChance[keyTier] or 0) * 100
+	local auraKeyChance = (CaseConfig.AuraKeyChance[keyTier] or 0) * 100
+
 	return {
 		mobId = mobDef.id,
 		name = mobDef.name,
@@ -213,6 +261,14 @@ function LootService.BuildMobInspect(mobDef: any, profile: any?): any?
 		description = mobDef.description,
 		drops = rows,
 		enchantDust = dust,
+		petKey = {
+			chancePercent = petKeyChance,
+			note = "Opens Pet Case",
+		},
+		auraKey = {
+			chancePercent = auraKeyChance,
+			note = "Opens Aura Case",
+		},
 		alwaysWeapon = (WeaponConfig.GetBaseDropChance(tier, locationId) >= 0.999),
 	}
 end

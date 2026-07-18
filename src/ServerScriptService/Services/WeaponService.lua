@@ -3,6 +3,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local EnchantConfig = require(Shared.Config.EnchantConfig)
+local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 
@@ -43,6 +44,13 @@ function WeaponService.Equip(player: Player, weaponUid: string, slot: string?)
 	end
 	slot = slot or "main"
 	if slot == "offhand" then
+		if not ProgressConfig.IsOffhandUnlocked(profile) then
+			Remotes.Event("Notify"):FireClient(player, {
+				text = "Offhand (2nd sword) is a paid unlock",
+				color = "red",
+			})
+			return
+		end
 		if profile.equippedMain == weaponUid then
 			return
 		end

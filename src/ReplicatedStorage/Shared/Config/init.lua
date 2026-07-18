@@ -16,6 +16,8 @@ return {
 	Enchant = require(script.EnchantConfig),
 	Pet = require(script.PetConfig),
 	Aura = require(script.AuraConfig),
+	Case = require(script.CaseConfig),
+	Progress = require(script.ProgressConfig),
 	Relic = require(script.RelicConfig),
 	Quest = require(script.QuestConfig),
 	Dungeon = require(script.DungeonConfig),

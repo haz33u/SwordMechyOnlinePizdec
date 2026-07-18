@@ -45,6 +45,8 @@ export type PlayerProfile = {
 	-- currencies (soft only for skeleton)
 	coins: number,
 	enchantDust: number?, -- boss material for weapon enchant
+	petKeys: number?, -- OpenPetCase
+	auraKeys: number?, -- OpenAuraCase
 
 	-- core progression
 	lifetimePower: number,
@@ -62,6 +64,11 @@ export type PlayerProfile = {
 	pets: { PetInstance },
 	petTeam: { string }, -- uids, max slots
 	petSlots: number,
+	-- paid: offhand sword + extra pet slot
+	unlocks: {
+		offhand: boolean?,
+		paidPetSlot: boolean?,
+	}?,
 	auras: { AuraInstance },
 	equippedAura: string?,
 	relics: { RelicInstance },

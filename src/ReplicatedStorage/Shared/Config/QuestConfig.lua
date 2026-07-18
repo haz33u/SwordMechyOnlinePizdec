@@ -4,14 +4,16 @@ export type QuestDef = {
 	id: string,
 	name: string,
 	description: string,
-	type: string, -- kill | power | rebirth | boss
-	targetId: string?, -- mob id or "any"
+	type: string, -- kill | power | rebirth | boss | dungeon
+	targetId: string?, -- mob id, dungeon tier, or "any"
 	amount: number,
 	rewards: {
 		coins: number?,
 		power: number?,
 		weaponId: string?,
-		petSlot: number?,
+		petSlot: number?, -- avoided: slots from ProgressConfig
+		petKeys: number?,
+		auraKeys: number?,
 		unlockLocation: number?,
 	},
 	location: number,
@@ -83,11 +85,33 @@ local QuestConfig = {
 		Q5_Rebirth = {
 			id = "Q5_Rebirth",
 			name = "First Rebirth",
-			description = "Complete 1 rebirth",
+			description = "Complete 1 rebirth (pet slot at R2 via progress, not this reward)",
 			type = "rebirth",
 			targetId = nil,
 			amount = 1,
-			rewards = { coins = 500, unlockLocation = 2, petSlot = 1 },
+			rewards = { coins = 500, unlockLocation = 2 },
+			location = 1,
+		},
+
+		-- Dungeon track (slot at easy×5 via ProgressConfig; quest = coins + keys)
+		Q_D_Easy_Slots = {
+			id = "Q_D_Easy_Slots",
+			name = "Dungeon practice",
+			description = "Clear easy dungeon 5 times → +1 pet slot (6th)",
+			type = "dungeon",
+			targetId = "easy",
+			amount = 5,
+			rewards = { coins = 1_500, petKeys = 2 },
+			location = 1,
+		},
+		Q_D_Medium_Intro = {
+			id = "Q_D_Medium_Intro",
+			name = "Dungeon trial",
+			description = "Clear medium dungeon 3 times",
+			type = "dungeon",
+			targetId = "medium",
+			amount = 3,
+			rewards = { coins = 4_000, auraKeys = 1 },
 			location = 1,
 		},
 

@@ -2,9 +2,11 @@
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local RebirthConfig = require(Shared.Config.RebirthConfig)
+local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 local QuestService = require(script.Parent.QuestService)
+local PetService = require(script.Parent.PetService)
 
 local RebirthService = {}
 
@@ -48,13 +50,25 @@ function RebirthService.Try(player: Player): boolean
 	-- soft: do NOT wipe weapons/pets/locations
 	QuestService.OnRebirth(profile)
 
+	local slotsGrew = PetService.SyncSlots(profile)
+	local slotNote = ""
+	if slotsGrew then
+		slotNote = string.format("  · pet slots %d", profile.petSlots or 0)
+	else
+		local hint = ProgressConfig.GetNextPetSlotHint(profile)
+		if hint and string.find(hint, "rebirth") then
+			slotNote = "  · " .. hint
+		end
+	end
+
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format(
-			"Rebirth %d! Mult x%.2f (+%.0f%%)  −%s coins",
+			"Rebirth %d! Mult x%.2f (+%.0f%%)  −%s coins%s",
 			nextLevel,
 			profile.rebirthMult,
 			bonus * 100,
-			tostring(coinCost)
+			tostring(coinCost),
+			slotNote
 		),
 		color = "purple",
 	})

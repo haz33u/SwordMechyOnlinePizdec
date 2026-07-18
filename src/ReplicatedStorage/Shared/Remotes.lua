@@ -63,12 +63,16 @@ function Remotes.InitAll()
 	Remotes.Event("BanDrop")
 	Remotes.Event("FeedPet")
 	Remotes.Event("DebugSpawnDummy") -- debug: spawn training dummy
+	-- paid unlocks (stub until gamepass): "offhand" | "paidPetSlot"
+	Remotes.Event("UnlockPaidFeature")
 
 	-- server -> client
 	Remotes.Event("ProfileUpdate")
 	Remotes.Event("CombatFx")
 	Remotes.Event("Notify")
 	Remotes.Event("MobsUpdate") -- full/partial mob list for client visual sync
+	-- case open result (spin accuracy — do not poll profile)
+	Remotes.Event("CaseResult")
 
 	Remotes.Function("GetProfile")
 	Remotes.Function("GetMobCatalog") -- static mob definitions for UI/Studio

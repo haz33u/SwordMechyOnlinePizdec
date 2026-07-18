@@ -6,7 +6,7 @@
 
 local GameConfig = {
 	DISPLAY_NAME = "Sword Masters",
-	VERSION = "0.5.3-weapon-visual-attack-anim",
+	VERSION = "0.5.5-pet-slots-offhand",
 
 	-- combat
 	BASE_POWER = 10,
@@ -15,9 +15,9 @@ local GameConfig = {
 	HIT_RANGE = 12,
 	-- auto-clicker defaults live in ClickConfig.lua
 
-	-- inventory
-	START_PET_SLOTS = 1,
-	MAX_PET_SLOTS = 7,
+	-- inventory — pet slots also in ProgressConfig (source of truth)
+	START_PET_SLOTS = 3, -- free start
+	MAX_PET_SLOTS = 7, -- start3 + R2 + R6 + dungeon + paid
 	START_RELIC_SLOTS = 3,
 	MAX_RELIC_SLOTS = 6,
 
@@ -32,6 +32,7 @@ local GameConfig = {
 	DEBUG = true,
 	GIVE_STARTER_KIT = true,
 	STARTER_COINS = 2_000, -- faster first tests
+	-- case keys: see CaseConfig.STARTER_PET_KEYS / STARTER_AURA_KEYS
 }
 
 return GameConfig

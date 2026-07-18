@@ -85,6 +85,11 @@ function Net.BanDrop(kind: string, id: string, banned: boolean)
 	Net.Event("BanDrop"):FireServer(kind, id, banned)
 end
 
+--- featureId: "offhand" | "paidPetSlot" (DEBUG free if ProgressConfig.DEBUG_FREE_PAID)
+function Net.UnlockPaidFeature(featureId: string)
+	Net.Event("UnlockPaidFeature"):FireServer(featureId)
+end
+
 function Net.GetProfile(): any
 	return Net.Fn("GetProfile"):InvokeServer()
 end

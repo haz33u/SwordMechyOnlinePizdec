@@ -7,6 +7,7 @@ local GameConfig = require(Shared.Config.GameConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 local PetService = require(script.Parent.PetService)
+local QuestService = require(script.Parent.QuestService)
 
 local DungeonService = {}
 DungeonService._gates = { easy = 0, medium = 0, hard = 0 }
@@ -66,6 +67,14 @@ function DungeonService.Complete(player: Player, tierId: string)
 	profile.lifetimePower += tier.powerReward
 	profile.dungeonStage[tierId] = (profile.dungeonStage[tierId] or 0) + 1
 
+	-- case keys (small guaranteed drip)
+	local petKeyGrant = if tierId == "hard" then 2 elseif tierId == "medium" then 1 else 1
+	local auraKeyGrant = if tierId == "hard" then 1 else (if tierId == "medium" then 1 else 0)
+	profile.petKeys = (profile.petKeys or 0) + petKeyGrant
+	if auraKeyGrant > 0 then
+		profile.auraKeys = (profile.auraKeys or 0) + auraKeyGrant
+	end
+
 	-- relic
 	local relicId = RelicConfig.Roll(tier.relicSource)
 	local ruid = ProfileService.NewUid()
@@ -74,21 +83,27 @@ function DungeonService.Complete(player: Player, tierId: string)
 		table.insert(profile.equippedRelics, ruid)
 	end
 
-	-- pet slot milestones
-	if tier.petSlotEveryStages then
-		local stage = profile.dungeonStage[tierId]
-		if stage % tier.petSlotEveryStages == 0 then
-			PetService.GrantSlot(profile, 1)
-			Remotes.Event("Notify"):FireClient(player, { text = "+1 pet slot!", color = "pink" })
-		end
+	-- dungeon quests + pet slot thresholds (ProgressConfig, not every-N spam)
+	QuestService.OnDungeon(profile, tierId)
+	local slotsGrew = PetService.SyncSlots(profile)
+	if slotsGrew then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("+1 pet slot! (now %d)", profile.petSlots or 0),
+			color = "pink",
+		})
 	end
 
 	local rdef = RelicConfig.Get(relicId)
+	local extra = ""
+	if petKeyGrant > 0 then
+		extra ..= string.format(" +%d pet key", petKeyGrant)
+	end
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format(
-			"Dungeon ✓ +%d coins, relic: %s",
+			"Dungeon ✓ +%d coins, relic: %s%s",
 			tier.coinReward,
-			rdef and rdef.name or relicId
+			rdef and rdef.name or relicId,
+			extra
 		),
 		color = "gold",
 	})

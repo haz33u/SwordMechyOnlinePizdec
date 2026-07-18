@@ -130,8 +130,8 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Loc2–4 мобы/контент | stubs |
 | Реальные 3D модели мечей | placeholder Parts |
 | Иконки Loc2+ / UI currency | пустые id → FIGMA_PROMPTS |
-| Питомцы / ауры / кейсы economy | skeleton (free open risk) |
-| CaseResult remote (spin accuracy) | нет — poll profile |
+| Питомцы / ауры / кейсы economy | keys + CaseResult (v0.5.4); roster still thin |
+| CaseResult remote (spin accuracy) | ✅ `CaseResult` + profile fallback |
 | Данжи Easy/Mid/Hard | skeleton UI only |
 | Сезоны / топы / банды / BP | нет |
 | Донат R$ wire | UI stubs only |
@@ -155,8 +155,9 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 
 ### P1 — UI polish + Loc1 content (спринты 2–3)
 1. Dust/gems strip top-right; inventory UX; case/rebirth polish  
-2. CaseResult remote + case keys (не free-infinite)  
-3. Boosts data model for top-left pills  
+2. ~~CaseResult remote + case keys (не free-infinite)~~ ✅ `0.5.4-case-keys`  
+2b. ~~Pet slots 3→7 (R2/R6/dungeon/paid) + paid offhand~~ ✅ `0.5.5-pet-slots-offhand`  
+3. Boosts data model for top-left pills  ← **NEXT**  
 4. Mesh swords, hit VFX, balance pass  
 5. Boss quest → Loc2 unlock UX  
 

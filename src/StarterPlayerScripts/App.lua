@@ -75,7 +75,7 @@ local function mockSnapshot()
 			equippedOffhand = nil,
 			pets = {},
 			petTeam = {},
-			petSlots = 1,
+			petSlots = 3,
 			auras = {},
 			equippedAura = nil,
 			relics = {},
@@ -159,8 +159,14 @@ function App.Start()
 		if kind == "case" or kind == "caseOpen" then
 			if caseApi then
 				local ok, reason, cost = caseApi.Begin(payload)
-				if ok == false and reason == "need_coins" and toastApi then
-					toastApi.Show("Need " .. tostring(cost) .. " coins", "red")
+				if ok == false and toastApi then
+					if reason == "need_keys" then
+						toastApi.Show("Need " .. tostring(cost) .. " key(s)", "red")
+					elseif reason == "need_coins" then
+						toastApi.Show("Need " .. tostring(cost) .. " coins", "red")
+					elseif reason == "busy" then
+						toastApi.Show("Case already opening…", "yellow")
+					end
 				end
 			end
 			return

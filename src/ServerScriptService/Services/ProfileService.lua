@@ -9,6 +9,8 @@ local HttpService = game:GetService("HttpService")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local GameConfig = require(Shared.Config.GameConfig)
+local CaseConfig = require(Shared.Config.CaseConfig)
+local ProgressConfig = require(Shared.Config.ProgressConfig)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local LocationConfig = require(Shared.Config.LocationConfig)
 local QuestConfig = require(Shared.Config.QuestConfig)
@@ -33,6 +35,8 @@ local function defaultProfile()
 	return {
 		coins = 0,
 		enchantDust = 0, -- boss drop → weapon enchant
+		petKeys = 0, -- OpenPetCase
+		auraKeys = 0, -- OpenAuraCase
 		lifetimePower = 0,
 		lifetimeDamage = 0,
 		totalClicks = 0, -- CORE metric: every successful attack
@@ -59,7 +63,12 @@ local function defaultProfile()
 		equippedOffhand = nil,
 		pets = {},
 		petTeam = {},
-		petSlots = GameConfig.START_PET_SLOTS,
+		petSlots = ProgressConfig.START_PET_SLOTS,
+		-- paid unlocks (offhand + extra pet slot)
+		unlocks = {
+			offhand = false,
+			paidPetSlot = false,
+		},
 		auras = {},
 		equippedAura = nil,
 		relics = {},
@@ -113,8 +122,55 @@ function ProfileService.Load(player: Player)
 		end
 	end
 
+	-- migrate missing key fields (old DataStore rows)
+	if data.petKeys == nil then
+		data.petKeys = 0
+	end
+	if data.auraKeys == nil then
+		data.auraKeys = 0
+	end
+	if data.enchantDust == nil then
+		data.enchantDust = 0
+	end
+	if type(data.unlocks) ~= "table" then
+		data.unlocks = { offhand = false, paidPetSlot = false }
+	else
+		if data.unlocks.offhand == nil then
+			data.unlocks.offhand = false
+		end
+		if data.unlocks.paidPetSlot == nil then
+			data.unlocks.paidPetSlot = false
+		end
+	end
+	if type(data.dungeonStage) ~= "table" then
+		data.dungeonStage = { easy = 0, medium = 0, hard = 0 }
+	end
+	-- merge new quests into old saves
+	if type(data.quests) ~= "table" then
+		data.quests = {}
+	end
+	for id, _ in QuestConfig.Quests do
+		if data.quests[id] == nil then
+			data.quests[id] = { id = id, progress = 0, completed = false, claimed = false }
+		end
+	end
+	-- strip offhand if not paid-unlocked
+	if not ProgressConfig.IsOffhandUnlocked(data) then
+		data.equippedOffhand = nil
+	end
+	-- pet slots always derived from progress (migration from old START=1)
+	local PetService = require(script.Parent.PetService)
+	PetService.SyncSlots(data)
+
 	if GameConfig.GIVE_STARTER_KIT and data.coins == 0 and data.lifetimePower == 0 then
 		data.coins = GameConfig.STARTER_COINS or 1000
+		-- only brand-new profiles get starter keys
+		if (data.petKeys or 0) == 0 and #(data.pets or {}) == 0 then
+			data.petKeys = CaseConfig.STARTER_PET_KEYS or 5
+		end
+		if (data.auraKeys or 0) == 0 and #(data.auras or {}) == 0 then
+			data.auraKeys = CaseConfig.STARTER_AURA_KEYS or 2
+		end
 	end
 
 	ProfileService._profiles[player.UserId] = data

@@ -277,7 +277,7 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 	QuestService.OnKill(player, profile, mob.mobId, def.isBoss == true)
 	LootService.TryWeaponDrop(player, profile, def)
 	LootService.TryBossDust(player, profile, def)
-	LootService.TryPetKey(player, profile)
+	LootService.TryCaseKeys(player, profile, def)
 
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format("%s ✕  +%d power  +%d coins", def.name, def.powerReward, coins),

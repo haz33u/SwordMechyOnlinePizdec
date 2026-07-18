@@ -2,6 +2,8 @@
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local PetConfig = require(Shared.Config.PetConfig)
+local CaseConfig = require(Shared.Config.CaseConfig)
+local ProgressConfig = require(Shared.Config.ProgressConfig)
 local GameConfig = require(Shared.Config.GameConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
@@ -23,23 +25,51 @@ function PetService.Init()
 	end)
 end
 
+local function fireCaseFail(player: Player, reason: string, needKeys: number?, needCoins: number?)
+	Remotes.Event("CaseResult"):FireClient(player, {
+		kind = "pet",
+		success = false,
+		reason = reason,
+		needKeys = needKeys,
+		needCoins = needCoins,
+	})
+end
+
 function PetService.OpenCase(player: Player)
 	local profile = ProfileService.Get(player)
 	if not profile then
 		return
 	end
-	if profile.coins < PetConfig.OPEN_COST then
+
+	local keyCost = CaseConfig.PET_KEY_COST or 1
+	local coinCost = CaseConfig.PET_COIN_COST or PetConfig.OPEN_COST or 0
+	local keys = profile.petKeys or 0
+	local coins = profile.coins or 0
+
+	if keys < keyCost then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = "Need " .. tostring(PetConfig.OPEN_COST) .. " coins",
+			text = string.format("Need %d pet key(s) (have %d)", keyCost, keys),
 			color = "red",
 		})
+		fireCaseFail(player, "need_keys", keyCost, coinCost)
 		return
 	end
-	profile.coins -= PetConfig.OPEN_COST
+	if coinCost > 0 and coins < coinCost then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = "Need " .. tostring(coinCost) .. " coins",
+			color = "red",
+		})
+		fireCaseFail(player, "need_coins", keyCost, coinCost)
+		return
+	end
+
+	profile.petKeys = keys - keyCost
+	if coinCost > 0 then
+		profile.coins = coins - coinCost
+	end
 
 	local loc = profile.currentLocation or 1
 	local petId = PetConfig.RollForLocation(loc)
-	-- respect ban: reroll up to 5 times
 	for _ = 1, 5 do
 		if not profile.bannedPetIds[petId] then
 			break
@@ -56,8 +86,26 @@ function PetService.OpenCase(player: Player)
 	})
 
 	local def = PetConfig.Get(petId)
+	local name = def and def.name or petId
+	local rarity = def and def.rarity or "Common"
+	local powerPct = def and def.powerPct or 0
+	local coinPct = def and def.coinPct or 0
+
+	Remotes.Event("CaseResult"):FireClient(player, {
+		kind = "pet",
+		success = true,
+		id = petId,
+		uid = puid,
+		name = name,
+		rarity = rarity,
+		powerPct = powerPct,
+		coinPct = coinPct,
+		keysLeft = profile.petKeys,
+		location = loc,
+	})
+
 	Remotes.Event("Notify"):FireClient(player, {
-		text = "Pet: " .. (def and def.name or petId) .. " [" .. (def and def.rarity or "?") .. "]",
+		text = string.format("Pet: %s [%s]  (keys left: %d)", name, rarity, profile.petKeys or 0),
 		color = "pink",
 	})
 
@@ -133,9 +181,38 @@ function PetService.Feed(player: Player, petUid: string)
 	end
 end
 
+--- Recalculate petSlots from rebirth / dungeon / paid (source of truth).
+--- Returns true if slots increased.
+function PetService.SyncSlots(profile: any): boolean
+	local before = profile.petSlots or ProgressConfig.START_PET_SLOTS
+	local after = ProgressConfig.ComputePetSlots(profile)
+	profile.petSlots = after
+
+	-- trim team if over capacity
+	while #profile.petTeam > after do
+		table.remove(profile.petTeam)
+	end
+
+	return after > before
+end
+
+-- legacy: prefer SyncSlots; still clamps if something external adds
 function PetService.GrantSlot(profile: any, amount: number?)
 	amount = amount or 1
-	profile.petSlots = math.min(GameConfig.MAX_PET_SLOTS, profile.petSlots + amount)
+	-- do not permanently inflate beyond formula — re-sync from progress
+	PetService.SyncSlots(profile)
+	-- if caller expected a grant outside formula, only paid path should set unlocks
+	if amount > 0 then
+		-- no-op for free grants; use ProgressConfig + unlocks.paidPetSlot
+	end
+	return profile.petSlots
+end
+
+function PetService.GrantKeys(profile: any, amount: number)
+	if amount <= 0 then
+		return
+	end
+	profile.petKeys = (profile.petKeys or 0) + amount
 end
 
 return PetService

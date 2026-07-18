@@ -20,7 +20,8 @@ local AuraConfig = {
 		A_M1 = { id = "A_M1", name = "Rift", rarity = "Mythic", powerPct = 140, damagePct = 50, coinPct = 15 },
 	} :: { [string]: AuraDef },
 
-	OPEN_COST = 500, -- coins in skeleton (later Robux shop separate)
+	-- legacy; real open cost = CaseConfig.AURA_KEY_COST (+ optional AURA_COIN_COST)
+	OPEN_COST = 0,
 	Weights = {
 		Common = 55,
 		Uncommon = 25,

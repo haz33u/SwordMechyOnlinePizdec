@@ -24,6 +24,7 @@ local QuestService = require(Services.QuestService)
 local DungeonService = require(Services.DungeonService)
 local LocationService = require(Services.LocationService)
 local WorldService = require(Services.WorldService)
+local UnlockService = require(Services.UnlockService)
 
 print("[SwordMasters]", GameConfig.VERSION, "backend boot...")
 
@@ -39,6 +40,7 @@ AuraService.Init()
 QuestService.Init()
 DungeonService.Init()
 LocationService.Init()
+UnlockService.Init()
 
 -- Loc1 mobs + DEBUG dummy as killable placeholders
 CombatService.BootstrapLocation1()

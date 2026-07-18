@@ -2,6 +2,7 @@
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local AuraConfig = require(Shared.Config.AuraConfig)
+local CaseConfig = require(Shared.Config.CaseConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 
@@ -16,16 +17,48 @@ function AuraService.Init()
 	end)
 end
 
+local function fireCaseFail(player: Player, reason: string, needKeys: number?, needCoins: number?)
+	Remotes.Event("CaseResult"):FireClient(player, {
+		kind = "aura",
+		success = false,
+		reason = reason,
+		needKeys = needKeys,
+		needCoins = needCoins,
+	})
+end
+
 function AuraService.Open(player: Player)
 	local profile = ProfileService.Get(player)
 	if not profile then
 		return
 	end
-	if profile.coins < AuraConfig.OPEN_COST then
-		Remotes.Event("Notify"):FireClient(player, { text = "Need " .. AuraConfig.OPEN_COST .. " coins", color = "red" })
+
+	local keyCost = CaseConfig.AURA_KEY_COST or 1
+	local coinCost = CaseConfig.AURA_COIN_COST or AuraConfig.OPEN_COST or 0
+	local keys = profile.auraKeys or 0
+	local coins = profile.coins or 0
+
+	if keys < keyCost then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Need %d aura key(s) (have %d)", keyCost, keys),
+			color = "red",
+		})
+		fireCaseFail(player, "need_keys", keyCost, coinCost)
 		return
 	end
-	profile.coins -= AuraConfig.OPEN_COST
+	if coinCost > 0 and coins < coinCost then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = "Need " .. tostring(coinCost) .. " coins",
+			color = "red",
+		})
+		fireCaseFail(player, "need_coins", keyCost, coinCost)
+		return
+	end
+
+	profile.auraKeys = keys - keyCost
+	if coinCost > 0 then
+		profile.coins = coins - coinCost
+	end
 
 	local auraId = AuraConfig.Roll()
 	for _ = 1, 5 do
@@ -40,7 +73,6 @@ function AuraService.Open(player: Player)
 	if not profile.equippedAura then
 		profile.equippedAura = auid
 	else
-		-- equip if better power
 		local newDef = AuraConfig.Get(auraId)
 		local curPower = 0
 		for _, a in profile.auras do
@@ -57,8 +89,27 @@ function AuraService.Open(player: Player)
 	end
 
 	local def = AuraConfig.Get(auraId)
+	local name = def and def.name or auraId
+	local rarity = def and def.rarity or "Common"
+	local powerPct = def and def.powerPct or 0
+	local damagePct = def and def.damagePct or 0
+	local coinPct = def and def.coinPct or 0
+
+	Remotes.Event("CaseResult"):FireClient(player, {
+		kind = "aura",
+		success = true,
+		id = auraId,
+		uid = auid,
+		name = name,
+		rarity = rarity,
+		powerPct = powerPct,
+		damagePct = damagePct,
+		coinPct = coinPct,
+		keysLeft = profile.auraKeys,
+	})
+
 	Remotes.Event("Notify"):FireClient(player, {
-		text = "Aura: " .. (def and def.name or auraId) .. " +" .. (def and def.powerPct or 0) .. "% power",
+		text = string.format("Aura: %s +%d%% power  (keys left: %d)", name, powerPct, profile.auraKeys or 0),
 		color = "blue",
 	})
 	ProfileService.Push(player)
@@ -76,6 +127,13 @@ function AuraService.Equip(player: Player, auraUid: string)
 			return
 		end
 	end
+end
+
+function AuraService.GrantKeys(profile: any, amount: number)
+	if amount <= 0 then
+		return
+	end
+	profile.auraKeys = (profile.auraKeys or 0) + amount
 end
 
 return AuraService
