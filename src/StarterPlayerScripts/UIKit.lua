@@ -131,23 +131,25 @@ function UIKit.Glass(props: {
 		f.Parent = props.Parent
 	end
 
+	-- Flat charcoal panel (SCREEENS) — subtle depth gradient only
 	UIKit.Corner(f, props.Radius or T.R.md)
-	UIKit.Stroke(f, T.Stroke, 1.5, T.StrokeA)
+	UIKit.Stroke(f, T.Stroke, 1.2, T.StrokeA)
 	if props.Deep then
 		UIKit.Gradient(f, T.Surface2, T.Bg, 100)
 	else
 		UIKit.Gradient(f, T.Surface3, T.Surface2, 105)
 	end
 
+	-- AccentBar off by default in flat style (was gold strip under CTAs)
 	if props.AccentBar then
 		local bar = Instance.new("Frame")
 		bar.Name = "AccentBar"
 		bar.BorderSizePixel = 0
-		bar.BackgroundColor3 = T.Gold
-		bar.Size = UDim2.new(1, 0, 0, 3)
+		bar.BackgroundColor3 = T.Accent
+		bar.Size = UDim2.new(1, 0, 0, 2)
 		bar.ZIndex = (props.Z or 1) + 1
 		bar.Parent = f
-		UIKit.Gradient(bar, T.GoldGlow, T.GoldDeep, 0)
+		UIKit.Gradient(bar, T.Accent, T.AccentDeep, 0)
 	end
 
 	return f
@@ -248,15 +250,22 @@ function UIKit.Button(props: {
 	local c0 = disabled and (T.Colors and T.Colors.Disabled or Color3.fromRGB(90, 85, 105)) or (props.Color or T.Surface3)
 	local c1 = disabled and (T.Colors and T.Colors.DisabledDeep or Color3.fromRGB(60, 56, 72)) or (props.Color2 or T.Surface2)
 
-	UIKit.Corner(b, props.Radius or T.R.md)
-	UIKit.Stroke(b, props.Primary and T.Gold or T.Stroke, props.Primary and 2 or 1.4, props.Primary and 0.3 or 0.42)
+	UIKit.Corner(b, props.Radius or T.R.sm)
+	-- Primary CTAs: blue fill like SCREEENS; no gold border
+	if props.Primary and not disabled then
+		c0 = props.Color or T.Accent
+		c1 = props.Color2 or T.AccentDeep
+		UIKit.Stroke(b, T.Accent, 1, 0.55)
+	else
+		UIKit.Stroke(b, T.Stroke, 1.1, 0.25)
+	end
 	UIKit.Gradient(b, c0, c1, 100)
 	if props.Compact then
 		UIKit.SizeConstraint(b, Vector2.new(28, 28), Vector2.new(96, 96))
 		UIKit.Pad(b, 4)
 	else
-		UIKit.SizeConstraint(b, Vector2.new(64, 36), Vector2.new(400, 96))
-		UIKit.Pad(b, 10)
+		UIKit.SizeConstraint(b, Vector2.new(64, 32), Vector2.new(480, 80))
+		UIKit.Pad(b, 8)
 	end
 
 	-- Always pure white readable label
@@ -325,11 +334,11 @@ function UIKit.IconBtn(props: {
 		Parent = props.Parent,
 		Text = props.Glyph or "·",
 		Size = props.Size or UDim2.fromOffset(52, 52),
-		Color = props.Active and T.GoldDeep or T.Surface3,
-		Color2 = props.Active and Color3.fromRGB(180, 110, 30) or T.Surface2,
+		Color = props.Active and T.Accent or T.Surface3,
+		Color2 = props.Active and T.AccentDeep or T.Surface2,
 		TextColor = T.Text,
 		SizePx = 15,
-		Radius = T.R.md,
+		Radius = T.R.sm,
 		Order = props.Order,
 		Z = props.Z or 5,
 		OnClick = props.OnClick,
@@ -364,8 +373,8 @@ function UIKit.MetricChip(props: {
 		chip.Parent = props.Parent
 	end
 
-	UIKit.Corner(chip, T.R.md)
-	UIKit.Stroke(chip, meta.accent, 1.8, 0.25)
+	UIKit.Corner(chip, T.R.sm)
+	UIKit.Stroke(chip, meta.accent, 1.2, 0.4)
 	UIKit.Gradient(chip, meta.fill0, meta.fill1, 110)
 	UIKit.SizeConstraint(chip, Vector2.new(88, 40), Vector2.new(220, 72))
 	UIKit.Pad(chip, nil, 10, 6, 8, 6)
@@ -512,25 +521,26 @@ function UIKit.Bar(parent: Instance, fill: number, color: Color3?, h: number?): 
 end
 
 function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: string?): (Frame, Frame)
-	local root = UIKit.Glass({
-		Name = "Window",
-		Parent = gui,
-		Size = UDim2.fromScale(0.5, 0.64),
-		Position = UDim2.fromScale(0.5, 0.5),
-		Anchor = Vector2.new(0.5, 0.5),
-		Radius = T.R.lg,
-		Z = 30,
-		Deep = true,
-		AccentBar = true,
-	})
+	-- SCREEENS: flat dark panel, thin border, red square close
+	local root = Instance.new("Frame")
+	root.Name = "Window"
+	root.BackgroundColor3 = Color3.new(1, 1, 1)
+	root.BorderSizePixel = 0
+	root.Size = UDim2.fromScale(0.52, 0.66)
+	root.Position = UDim2.fromScale(0.5, 0.5)
+	root.AnchorPoint = Vector2.new(0.5, 0.5)
 	root.Visible = false
-	UIKit.Stroke(root, T.Gold, 1.6, 0.4)
-	UIKit.SizeConstraint(root, Vector2.new(380, 320), Vector2.new(1100, 920))
+	root.ZIndex = 30
+	root.ClipsDescendants = true
+	root.Parent = gui
+	UIKit.Corner(root, T.R.md)
+	UIKit.Stroke(root, T.StrokeLight, 1.2, 0.35)
+	UIKit.Gradient(root, T.Surface2, T.Bg, 100)
+	UIKit.SizeConstraint(root, Vector2.new(420, 340), Vector2.new(1100, 920))
 
-	-- Chrome for left-rail panels (HUD untouched). Close stays top-right.
-	local headerH = 56
-	local closePad = 10
-	local closeSz = 36
+	local headerH = 44
+	local closeSz = 32
+	local closePad = 8
 	local header = Instance.new("Frame")
 	header.Name = "Header"
 	header.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -538,21 +548,30 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: str
 	header.Size = UDim2.new(1, 0, 0, headerH)
 	header.ZIndex = 31
 	header.Parent = root
-	UIKit.Gradient(header, T.Surface3, T.Surface2, 90)
+	UIKit.Gradient(header, T.Colors and T.Colors.PanelHeader or T.Surface3, T.Surface2, 90)
+	local hLine = Instance.new("Frame")
+	hLine.Name = "HeaderLine"
+	hLine.BackgroundColor3 = T.Stroke
+	hLine.BackgroundTransparency = 0.4
+	hLine.BorderSizePixel = 0
+	hLine.Size = UDim2.new(1, 0, 0, 1)
+	hLine.Position = UDim2.new(0, 0, 1, -1)
+	hLine.ZIndex = 32
+	hLine.Parent = header
 
 	local iconTxt = icon or "◆"
 	UIKit.Label({
 		Parent = header,
 		Text = iconTxt .. "  " .. title,
-		Size = UDim2.new(1, -(closeSz + closePad * 2 + 8), 1, 0),
-		Position = UDim2.fromOffset(16, 0),
-		SizePx = 20,
+		Size = UDim2.new(1, -(closeSz + closePad * 2 + 12), 1, 0),
+		Position = UDim2.fromOffset(14, 0),
+		SizePx = 16,
 		Font = T.Font.Title,
 		Color = T.Text,
-		Z = 32,
+		Z = 33,
 	})
 
-	-- Anchor right edge so close never drifts past the panel corner
+	-- Red square close (reference)
 	UIKit.Button({
 		Name = "Close",
 		Parent = header,
@@ -561,8 +580,8 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: str
 		Position = UDim2.new(1, -closePad, 0.5, 0),
 		Anchor = Vector2.new(1, 0.5),
 		Color = T.Danger,
-		Color2 = T.Colors and T.Colors.DangerDeep or Color3.fromRGB(160, 40, 50),
-		SizePx = 18,
+		Color2 = T.Colors and T.Colors.DangerDeep or Color3.fromRGB(160, 30, 30),
+		SizePx = 16,
 		Radius = T.R.sm,
 		Compact = true,
 		Z = 35,
@@ -572,8 +591,8 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: str
 	local body = Instance.new("Frame")
 	body.Name = "Body"
 	body.BackgroundTransparency = 1
-	body.Size = UDim2.new(1, -28, 1, -(headerH + 16))
-	body.Position = UDim2.fromOffset(14, headerH + 8)
+	body.Size = UDim2.new(1, -24, 1, -(headerH + 14))
+	body.Position = UDim2.fromOffset(12, headerH + 8)
 	body.ZIndex = 31
 	body.ClipsDescendants = true
 	body.Parent = root

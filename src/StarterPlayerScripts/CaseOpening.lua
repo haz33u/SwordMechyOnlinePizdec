@@ -100,8 +100,8 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 	local dim = Instance.new("TextButton")
 	dim.Name = "Dim"
 	dim.Size = UDim2.fromScale(1, 1)
-	dim.BackgroundColor3 = Color3.fromRGB(12, 4, 8)
-	dim.BackgroundTransparency = 0.12
+	dim.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
+	dim.BackgroundTransparency = 0.25
 	dim.Text = ""
 	dim.AutoButtonColor = false
 	dim.Visible = false
@@ -118,13 +118,13 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 
 	local title = UIKit.Label({
 		Parent = root,
-		Text = "CASE OPENING",
-		Size = UDim2.new(0.9, 0, 0, px(40)),
-		Position = UDim2.new(0.5, 0, 0, px(36)),
+		Text = "Кейс",
+		Size = UDim2.new(0.9, 0, 0, px(36)),
+		Position = UDim2.new(0.5, 0, 0, px(28)),
 		Anchor = Vector2.new(0.5, 0),
-		SizePx = px(28),
+		SizePx = px(24),
 		Font = T.Font.Title,
-		Color = T.Gold,
+		Color = T.Text,
 		X = Enum.TextXAlignment.Center,
 		Z = 82,
 	})
@@ -153,9 +153,9 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 	track.ClipsDescendants = true
 	track.ZIndex = 82
 	track.Parent = root
-	UIKit.Corner(track, T.R.lg)
-	UIKit.Stroke(track, T.Gold, 2, 0.35)
-	UIKit.Gradient(track, Color3.fromRGB(40, 18, 28), Color3.fromRGB(12, 8, 16), 90)
+	UIKit.Corner(track, T.R.sm)
+	UIKit.Stroke(track, T.StrokeLight, 1.2, 0.3)
+	UIKit.Gradient(track, T.Surface2, T.Bg, 90)
 
 	local strip = Instance.new("Frame")
 	strip.Name = "Strip"
@@ -175,13 +175,12 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 	-- Center marker
 	local marker = Instance.new("Frame")
 	marker.Name = "Marker"
-	marker.BackgroundColor3 = T.Danger
+	marker.BackgroundColor3 = T.Accent
 	marker.BorderSizePixel = 0
-	marker.Size = UDim2.new(0, 4, 1, 0)
-	marker.Position = UDim2.new(0.5, -2, 0, 0)
+	marker.Size = UDim2.new(0, 3, 1, 0)
+	marker.Position = UDim2.new(0.5, -1, 0, 0)
 	marker.ZIndex = 90
 	marker.Parent = track
-	UIKit.Stroke(marker, Color3.fromRGB(255, 120, 120), 1, 0.2)
 
 	local arrow = Instance.new("Frame")
 	arrow.Name = "Arrow"
@@ -197,35 +196,34 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		Size = UDim2.fromOffset(px(28), px(22)),
 		Position = UDim2.fromOffset(-px(14), -px(22)),
 		SizePx = px(18),
-		Color = T.Danger,
+		Color = T.Accent,
 		X = Enum.TextXAlignment.Center,
 		Z = 91,
 	})
 	arrowLab.TextStrokeTransparency = 0.3
 
-	-- Result card
+	-- Result card (flat panel)
 	local result = UIKit.Glass({
 		Name = "Result",
 		Parent = root,
-		Size = UDim2.fromOffset(px(420), px(280)),
+		Size = UDim2.fromOffset(px(400), px(260)),
 		Position = UDim2.new(0.5, 0, 0.78, 0),
 		Anchor = Vector2.new(0.5, 0.5),
-		Radius = T.R.xl,
+		Radius = T.R.md,
 		Z = 85,
 		Deep = true,
-		AccentBar = true,
 	})
 	result.Visible = false
-	UIKit.Stroke(result, T.Gold, 2, 0.3)
-	UIKit.Pad(result, px(18))
+	UIKit.Stroke(result, T.StrokeLight, 1.2, 0.25)
+	UIKit.Pad(result, px(16))
 
 	local resultTitle = UIKit.Label({
 		Parent = result,
-		Text = "🎉 ПОЗДРАВЛЯЕМ!",
-		Size = UDim2.new(1, 0, 0, px(28)),
-		SizePx = px(20),
+		Text = "Выпало!",
+		Size = UDim2.new(1, 0, 0, px(26)),
+		SizePx = px(18),
 		Font = T.Font.Title,
-		Color = T.Gold,
+		Color = T.Text,
 		X = Enum.TextXAlignment.Center,
 		Z = 86,
 	})
@@ -288,13 +286,11 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 	local okBtn = UIKit.Button({
 		Parent = result,
 		Text = "Забрать",
-		Size = UDim2.new(0.7, 0, 0, px(44)),
+		Size = UDim2.new(0.75, 0, 0, px(40)),
 		Position = UDim2.new(0.5, 0, 1, -px(8)),
 		Anchor = Vector2.new(0.5, 1),
-		Color = T.Success,
-		Color2 = T.Colors and T.Colors.SuccessDeep,
 		Primary = true,
-		SizePx = px(16),
+		SizePx = px(15),
 		Z = 87,
 	})
 
@@ -472,8 +468,8 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		dim.Visible = true
 		root.Visible = true
 		result.Visible = false
-		title.Text = "CASE OPENING"
-		subtitle.Text = "Открываем: " .. caseName
+		title.Text = caseName
+		subtitle.Text = "Открываем…"
 
 		clearStrip()
 		local COUNT = 48

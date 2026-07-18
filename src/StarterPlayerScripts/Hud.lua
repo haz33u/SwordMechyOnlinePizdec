@@ -18,9 +18,10 @@ local RAIL = {
 	{ id = "auras", glyph = "AU" },
 	{ id = "relics", glyph = "RL" },
 	{ id = "quests", glyph = "QS" },
-	{ id = "locations", glyph = "MP" },
+	{ id = "locations", glyph = "TP" }, -- teleport between locs
 	{ id = "dungeons", glyph = "DG" },
-	{ id = "cases", glyph = "CS" }, -- under all left buttons
+	{ id = "cases", glyph = "CS" },
+	{ id = "shop", glyph = "$" }, -- donate shop stubs
 }
 
 local LOC = {
@@ -61,8 +62,9 @@ function Hud.Mount(
 		Parent = root,
 		Size = UDim2.fromOffset(72, 420),
 		Position = UDim2.fromScale(0, 0) + UDim2.fromOffset(12, 12),
-		Radius = T.R.lg,
+		Radius = T.R.sm,
 		Z = 10,
+		Deep = true,
 	})
 	local railPad = UIKit.Pad(rail, 10)
 	local railList = UIKit.List(rail, 8, false, Enum.HorizontalAlignment.Center)
@@ -117,13 +119,12 @@ function Hud.Mount(
 		Size = UDim2.new(0.38, 0, 0, 88),
 		Position = UDim2.new(0.5, 0, 1, -14),
 		Anchor = Vector2.new(0.5, 1),
-		Radius = T.R.xl,
+		Radius = T.R.md,
 		Z = 12,
-		AccentBar = false,
-		Deep = false,
+		Deep = true,
 	})
 	UIKit.SizeConstraint(actions, Vector2.new(340, 72), Vector2.new(560, 120))
-	UIKit.Stroke(actions, T.Stroke, 1.5, 0.5)
+	UIKit.Stroke(actions, T.Stroke, 1.2, 0.25)
 	local actPad = UIKit.Pad(actions, 14)
 
 	local row = Instance.new("Frame")
@@ -176,11 +177,11 @@ function Hud.Mount(
 		Parent = row,
 		Text = "R↑",
 		Size = UDim2.new(0.24, 0, 0, 58),
-		Color = T.GoldDeep,
-		Color2 = Color3.fromRGB(200, 120, 20),
-		SizePx = 22,
-		Radius = T.R.lg,
+		Color = T.Accent,
+		Color2 = T.AccentDeep,
 		Primary = true,
+		SizePx = 22,
+		Radius = T.R.sm,
 		Order = 3,
 		Z = 14,
 		OnClick = function()
@@ -197,7 +198,7 @@ function Hud.Mount(
 	rbHost.AnchorPoint = Vector2.new(0.5, 1)
 	rbHost.ZIndex = 11
 	rbHost.Parent = root
-	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Gold, 8)
+	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, 8)
 
 	local questBadge = UIKit.Label({
 		Name = "QuestBadge",
@@ -341,7 +342,7 @@ function Hud.Mount(
 			local g = b:FindFirstChildOfClass("UIGradient")
 			if g then
 				if active then
-					g.Color = ColorSequence.new(T.GoldDeep, Color3.fromRGB(200, 120, 20))
+					g.Color = ColorSequence.new(T.Accent, T.AccentDeep)
 				else
 					g.Color = ColorSequence.new(T.Surface3, T.Surface2)
 				end

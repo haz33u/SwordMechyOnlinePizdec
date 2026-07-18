@@ -35,17 +35,16 @@ function Modals.Mount(gui: ScreenGui, store: any)
 	local card = UIKit.Glass({
 		Name = "ModalCard",
 		Parent = layer,
-		Size = UDim2.fromOffset(px(440), px(260)),
+		Size = UDim2.fromOffset(px(440), px(280)),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Anchor = Vector2.new(0.5, 0.5),
-		Radius = T.R.lg,
+		Radius = T.R.md,
 		Z = 51,
 		Deep = true,
-		AccentBar = true,
 	})
 	card.Visible = false
-	UIKit.Stroke(card, T.Gold, 1.6, 0.4)
-	UIKit.Pad(card, px(22))
+	UIKit.Stroke(card, T.StrokeLight, 1.2, 0.3)
+	UIKit.Pad(card, px(18))
 
 	local title = UIKit.Label({
 		Parent = card,
@@ -139,18 +138,20 @@ function Modals.Mount(gui: ScreenGui, store: any)
 				local pC = costCoins > 0 and math.clamp(coins / costCoins, 0, 1) or 1
 				pct = math.min(pD, pC)
 			end
+			-- SCREEENS rebirth copy: buff banner + progress + warn
 			title.Text = "Перерождение"
 			body.Text = string.format(
-				"Урон  %s / %s\nМонеты %s / %s\nСейчас R%d %s\nМечи и петы остаются. Монеты списываются.",
+				"Перерождение увеличивает бустер силы.\n\nR%d %s  →  R%d\nУрон %s / %s\nМонеты %s / %s\n\n⚠ После: урон и баланс сбросятся. Мечи и петы остаются.",
+				stats.rebirthLevel or 0,
+				Format.Mult(stats.rebirthMult),
+				(stats.rebirthLevel or 0) + 1,
 				Format.Num(dmg),
 				Format.Num(costDmg),
 				Format.Num(coins),
-				Format.Num(costCoins),
-				stats.rebirthLevel or 0,
-				Format.Mult(stats.rebirthMult)
+				Format.Num(costCoins)
 			)
 			barHost.Visible = true
-			fill.Size = UDim2.new(math.clamp(pct, 0, 1), 0, 1, 0)
+			fill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
 			primary.Text = "Переродиться"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				Net.Rebirth()
@@ -185,6 +186,14 @@ function Modals.Mount(gui: ScreenGui, store: any)
 					body.Text = "Готово — смотри список."
 				end
 			end)
+			primaryConn = primary.MouseButton1Click:Connect(function()
+				store:CloseModal()
+			end)
+		elseif m.kind == "stub" then
+			local p = m.payload or {}
+			title.Text = tostring(p.title or "Скоро")
+			body.Text = tostring(p.text or "Функция в разработке.")
+			primary.Text = "Ок"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				store:CloseModal()
 			end)

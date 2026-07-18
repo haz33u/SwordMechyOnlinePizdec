@@ -358,10 +358,12 @@ function App.Start()
 			store:OpenPanel("pets")
 		elseif input.KeyCode == Enum.KeyCode.J then
 			store:OpenPanel("quests")
-		elseif input.KeyCode == Enum.KeyCode.M then
+		elseif input.KeyCode == Enum.KeyCode.L then
 			store:OpenPanel("locations")
 		elseif input.KeyCode == Enum.KeyCode.C then
 			store:OpenPanel("cases")
+		elseif input.KeyCode == Enum.KeyCode.B then
+			store:OpenPanel("shop")
 		elseif input.KeyCode == Enum.KeyCode.Escape then
 			if caseApi and caseApi.IsOpen() then
 				caseApi.Close()

@@ -39,10 +39,10 @@ local function surfaceCard(parent: Instance, h: number, order: number, edge: Col
 	f.ZIndex = 32
 	f.ClipsDescendants = true
 	f.Parent = parent
-	UIKit.Corner(f, T.R.lg)
-	UIKit.Stroke(f, edge or T.Stroke, edge and 1.8 or 1.4, edge and 0.28 or 0.48)
+	UIKit.Corner(f, T.R.sm)
+	UIKit.Stroke(f, edge or T.Stroke, edge and 1.5 or 1.1, edge and 0.25 or 0.2)
 	UIKit.Gradient(f, T.Surface3, T.Surface2, 105)
-	UIKit.Pad(f, px(16))
+	UIKit.Pad(f, px(12))
 	return f
 end
 
@@ -70,14 +70,15 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 
 	local titles = {
 		character = "Персонаж",
-		weapons = "Оружие",
+		weapons = "Инвентарь с оружием",
 		pets = "Питомцы",
 		auras = "Ауры",
 		cases = "Кейсы",
 		relics = "Реликвии",
 		quests = "Задания",
-		locations = "Локации",
+		locations = "Телепорт",
 		dungeons = "Подземелья",
+		shop = "Донат Магазин",
 	}
 
 	for id, title in titles do
@@ -105,23 +106,23 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 	end
 
-	---------------------------------------------------------------- Character / Upgrades
+	---------------------------------------------------------------- Character / Upgrades (SCREEENS card grid)
 	local function refreshCharacter()
 		local body = bodies.character
 		UIKit.Clear(body)
-		UIKit.List(body, px(12), false)
+		UIKit.List(body, px(10), false)
 		local stats = store:PeekStats()
 		local profile = store:PeekProfile()
 		if not stats or not profile then
 			return
 		end
 
-		sectionLabel(body, "ОБЗОР", 1)
-		local ov = surfaceCard(body, 88, 2, T.Gold)
+		-- top overview row (stats strip style)
+		local ov = surfaceCard(body, 56, 1, T.Stroke)
 		UIKit.Label({
 			Parent = ov,
 			Text = string.format(
-				"Сила %s   CPS %.1f   DPS %s\nКрит %s   Удача %s   R%d %s",
+				"Сила %s  ·  CPS %.1f  ·  DPS %s  ·  Крит %s  ·  Удача %s  ·  R%d %s",
 				Format.Num(stats.damagePerClick or stats.totalPower),
 				stats.cps or 0,
 				Format.Num(stats.dps),
@@ -131,19 +132,33 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				Format.Mult(stats.rebirthMult)
 			),
 			Size = UDim2.new(1, 0, 1, 0),
-			SizePx = px(16),
-			Color = T.Text,
+			SizePx = px(14),
+			Color = T.TextSoft,
 			Font = T.Font.Body,
 			Wrap = true,
 			Z = 33,
 		})
 
-		sectionLabel(body, "УЛУЧШЕНИЯ", 3)
-
-		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(140)))
-		scroll.LayoutOrder = 4
+		-- horizontal upgrade cards like UIУлучшений
+		local rowHost = Instance.new("ScrollingFrame")
+		rowHost.Name = "UpgradesRow"
+		rowHost.BackgroundTransparency = 1
+		rowHost.BorderSizePixel = 0
+		rowHost.Size = UDim2.new(1, 0, 0, px(280))
+		rowHost.LayoutOrder = 2
+		rowHost.ScrollBarThickness = 4
+		rowHost.ScrollBarImageColor3 = T.StrokeLight
+		rowHost.CanvasSize = UDim2.new(0, 0, 0, 0)
+		rowHost.AutomaticCanvasSize = Enum.AutomaticSize.X
+		rowHost.ScrollingDirection = Enum.ScrollingDirection.X
+		rowHost.ZIndex = 32
+		rowHost.Parent = body
+		local rowList = UIKit.List(rowHost, px(10), true)
+		rowList.VerticalAlignment = Enum.VerticalAlignment.Top
+		UIKit.Pad(rowHost, 2)
 
 		local coins = stats.coins or 0
+		local cardW = px(148)
 		for i, upId in UpgradeConfig.Order do
 			local def = UpgradeConfig.Defs[upId]
 			if def then
@@ -151,64 +166,105 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				local cost = UpgradeConfig.GetCost(upId, lvl + 1)
 				local canBuy = lvl < def.maxLevel and coins >= cost
 				local maxed = lvl >= def.maxLevel
-				local pct = def.maxLevel > 0 and (lvl / def.maxLevel) or 0
 				local icon = (T.UpgradeIcon and T.UpgradeIcon[upId]) or "◆"
-				local btnW = px(100)
+				local col = (T.UpgradeColor and T.UpgradeColor[upId]) or T.Accent
 
-				local c = surfaceCard(scroll, 104, i)
+				-- effect preview text
+				local effectLine = ""
+				if def.effectType == "mult_add" then
+					effectLine = string.format("+%s%%", tostring(math.floor((def.effectPerLevel or 0) * 100 * math.max(lvl, 0))))
+				elseif def.statKey == "bagSlots" then
+					effectLine = string.format("%d слотов", math.floor((def.effectPerLevel or 0) * lvl))
+				else
+					effectLine = string.format("+%s", Format.Num((def.effectPerLevel or 0) * lvl))
+				end
+
+				local card = Instance.new("Frame")
+				card.Name = upId
+				card.BackgroundColor3 = Color3.new(1, 1, 1)
+				card.BorderSizePixel = 0
+				card.Size = UDim2.fromOffset(cardW, px(268))
+				card.LayoutOrder = i
+				card.ZIndex = 33
+				card.ClipsDescendants = true
+				card.Parent = rowHost
+				UIKit.Corner(card, T.R.sm)
+				UIKit.Stroke(card, T.Stroke, 1.1, 0.15)
+				UIKit.Gradient(card, T.Surface2, T.Surface, 105)
+
+				-- title
 				UIKit.Label({
-					Parent = c,
-					Text = icon .. "  " .. def.name,
-					Size = UDim2.new(1, -btnW - 8, 0, px(22)),
-					SizePx = px(17),
+					Parent = card,
+					Text = def.name,
+					Size = UDim2.new(1, -8, 0, px(24)),
+					Position = UDim2.fromOffset(4, px(6)),
+					SizePx = px(13),
 					Font = T.Font.Title,
 					Color = T.Text,
-					Z = 33,
-				})
-				UIKit.Label({
-					Parent = c,
-					Text = maxed and "МАКС" or (Format.Num(cost) .. " монет"),
-					Size = UDim2.new(1, -btnW - 8, 0, px(18)),
-					Position = UDim2.fromOffset(0, px(26)),
-					SizePx = px(14),
-					Color = maxed and T.TextMuted or T.Gold,
-					Z = 33,
+					X = Enum.TextXAlignment.Center,
+					Z = 34,
 				})
 
-				local track = Instance.new("Frame")
-				track.BackgroundColor3 = T.Surface
-				track.BorderSizePixel = 0
-				track.Size = UDim2.new(1, -btnW - 8, 0, px(12))
-				track.Position = UDim2.fromOffset(0, px(52))
-				track.ZIndex = 33
-				track.Parent = c
-				UIKit.Corner(track, 99)
-				local fill = Instance.new("Frame")
-				fill.BackgroundColor3 = T.Gold
-				fill.BorderSizePixel = 0
-				fill.Size = UDim2.new(math.clamp(pct, 0, 1), 0, 1, 0)
-				fill.Parent = track
-				UIKit.Corner(fill, 99)
+				-- colored icon block
+				local iconBox = Instance.new("Frame")
+				iconBox.BackgroundColor3 = col
+				iconBox.BorderSizePixel = 0
+				iconBox.Size = UDim2.new(1, -16, 0, px(88))
+				iconBox.Position = UDim2.fromOffset(8, px(34))
+				iconBox.ZIndex = 34
+				iconBox.Parent = card
+				UIKit.Corner(iconBox, T.R.sm)
 				UIKit.Label({
-					Parent = c,
-					Text = string.format("%d / %d", lvl, def.maxLevel),
-					Size = UDim2.new(1, -btnW - 8, 0, px(16)),
-					Position = UDim2.fromOffset(0, px(68)),
-					SizePx = px(13),
+					Parent = iconBox,
+					Text = icon,
+					Size = UDim2.fromScale(1, 1),
+					SizePx = px(40),
+					X = Enum.TextXAlignment.Center,
+					Z = 35,
+				})
+
+				-- level / effect
+				UIKit.Label({
+					Parent = card,
+					Text = string.format("Уровень  %d / %d", lvl, def.maxLevel),
+					Size = UDim2.new(1, -12, 0, px(18)),
+					Position = UDim2.fromOffset(6, px(130)),
+					SizePx = px(12),
 					Color = T.TextMuted,
-					Z = 33,
+					Z = 34,
+				})
+				UIKit.Label({
+					Parent = card,
+					Text = effectLine,
+					Size = UDim2.new(1, -12, 0, px(18)),
+					Position = UDim2.fromOffset(6, px(148)),
+					SizePx = px(13),
+					Color = T.TextSoft,
+					Z = 34,
+				})
+				UIKit.Label({
+					Parent = card,
+					Text = maxed and "МАКС" or ("Цена  " .. Format.Num(cost) .. " 🪙"),
+					Size = UDim2.new(1, -12, 0, px(18)),
+					Position = UDim2.fromOffset(6, px(172)),
+					SizePx = px(13),
+					Color = maxed and T.TextMuted or T.Gold,
+					Font = T.Font.Title,
+					Z = 34,
 				})
 
 				UIKit.Button({
-					Parent = c,
-					Text = maxed and "MAX" or "Купить",
-					Size = UDim2.fromOffset(btnW, px(42)),
-					Position = UDim2.new(1, -btnW, 0.5, -px(21)),
-					Color = maxed and T.Disabled or (canBuy and T.Success or T.Disabled),
-					Color2 = maxed and (T.Colors and T.Colors.DisabledDeep) or (canBuy and (T.Colors and T.Colors.SuccessDeep) or (T.Colors and T.Colors.DisabledDeep)),
-					SizePx = px(16),
+					Parent = card,
+					Text = maxed and "MAX" or "Улучшить",
+					Size = UDim2.new(1, -16, 0, px(36)),
+					Position = UDim2.new(0, 8, 1, -px(44)),
+					Color = maxed and T.Disabled or (canBuy and T.Accent or T.Disabled),
+					Color2 = maxed and (T.Colors and T.Colors.DisabledDeep)
+						or (canBuy and T.AccentDeep or (T.Colors and T.Colors.DisabledDeep)),
+					Primary = canBuy and not maxed,
 					Disabled = maxed or not canBuy,
-					Z = 34,
+					SizePx = px(14),
+					Z = 35,
 					OnClick = function()
 						if canBuy and not maxed then
 							Net.BuyUpgrade(upId)
@@ -219,109 +275,243 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 	end
 
-	---------------------------------------------------------------- Weapons
+	---------------------------------------------------------------- Weapons — slot inventory (no paper doll)
+	local selectedWeaponUid: string? = nil
+	local INV_CAP = 32
+
 	local function refreshWeapons()
 		local body = bodies.weapons
 		UIKit.Clear(body)
-		UIKit.List(body, px(12), false)
+		UIKit.List(body, px(8), false)
 		local profile = store:PeekProfile()
 		if not profile then
 			return
 		end
-		sectionLabel(body, "ЭКИП", 1)
-		local head = surfaceCard(body, 52, 2, T.Gold)
+		local weapons = profile.weapons or {}
+		local count = #weapons
+
+		local function weaponLabel(uid: any): string
+			if type(uid) ~= "string" then
+				return "—"
+			end
+			for _, w in ipairs(weapons) do
+				if w.uid == uid then
+					local def = WeaponConfig.Get(w.id)
+					return ((def and def.name) or w.id):sub(1, 14)
+				end
+			end
+			return "—"
+		end
+
+		-- header: equipped + count
+		local head = surfaceCard(body, 48, 1, T.Stroke)
 		UIKit.Label({
 			Parent = head,
 			Text = string.format(
-				"Осн. %s   ·   Втор. %s",
-				tostring(profile.equippedMain or "—"):sub(1, 14),
-				tostring(profile.equippedOffhand or "—"):sub(1, 14)
+				"Осн: %s   ·   Втор: %s",
+				weaponLabel(profile.equippedMain),
+				weaponLabel(profile.equippedOffhand)
 			),
-			Size = UDim2.new(1, 0, 1, 0),
-			SizePx = px(15),
-			Color = T.Text,
+			Size = UDim2.new(0.72, 0, 1, 0),
+			SizePx = px(14),
+			Color = T.TextSoft,
 			Z = 33,
 		})
-		sectionLabel(body, "ИНВЕНТАРЬ", 3)
-		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(120)))
-		scroll.LayoutOrder = 4
-		for i, w in ipairs(profile.weapons or {}) do
-			local def = WeaponConfig.Get(w.id)
-			local name = (def and def.name) or w.id
-			local rarity = (def and def.rarity) or "Common"
-			local mult = (def and def.powerMult) or 1
-			local c = surfaceCard(scroll, 108, i, Rarity.Of(rarity))
+		UIKit.Label({
+			Parent = head,
+			Text = string.format("%d из %d", count, INV_CAP),
+			Size = UDim2.new(0.28, 0, 1, 0),
+			Position = UDim2.new(0.72, 0, 0, 0),
+			SizePx = px(14),
+			Color = T.TextMuted,
+			X = Enum.TextXAlignment.Right,
+			Z = 33,
+		})
 
-			-- weapon icon (IconConfig after Studio upload; fallback generic sword)
-			local iconPx = px(72)
-			local icon = Instance.new("ImageLabel")
-			icon.Name = "WeaponIcon"
-			icon.BackgroundTransparency = 1
-			icon.Size = UDim2.fromOffset(iconPx, iconPx)
-			icon.Position = UDim2.fromOffset(0, px(28))
-			icon.Image = IconConfig.GetWeaponImage(w.id)
-			icon.ScaleType = Enum.ScaleType.Fit
-			icon.ZIndex = 33
-			icon.Parent = c
-
+		-- action bar for selected
+		local act = surfaceCard(body, 52, 2, T.Stroke)
+		local selected: any = nil
+		for _, w in ipairs(weapons) do
+			if w.uid == selectedWeaponUid then
+				selected = w
+				break
+			end
+		end
+		if not selected and weapons[1] then
+			selected = weapons[1]
+			selectedWeaponUid = selected.uid
+		end
+		if selected then
+			local def = WeaponConfig.Get(selected.id)
+			local name = (def and def.name) or selected.id
 			UIKit.Label({
-				Parent = c,
-				Text = string.format("%s  ·  %s  ·  ×%.2f", name, rarity, mult),
-				Size = UDim2.new(1, -(iconPx + px(10)), 0, px(22)),
-				Position = UDim2.fromOffset(iconPx + px(8), 0),
-				Color = Rarity.Of(rarity),
-				SizePx = px(16),
+				Parent = act,
+				Text = name,
+				Size = UDim2.new(0.28, 0, 1, 0),
+				SizePx = px(13),
 				Font = T.Font.Title,
+				Color = Rarity.Of(def and def.rarity),
 				Z = 33,
 			})
 			local row = Instance.new("Frame")
 			row.BackgroundTransparency = 1
-			row.Size = UDim2.new(1, -(iconPx + px(10)), 0, px(42))
-			row.Position = UDim2.fromOffset(iconPx + px(8), px(48))
+			row.Size = UDim2.new(0.72, 0, 1, 0)
+			row.Position = UDim2.new(0.28, 0, 0, 0)
 			row.ZIndex = 33
-			row.Parent = c
-			UIKit.List(row, px(8), true)
+			row.Parent = act
+			UIKit.List(row, px(6), true, Enum.HorizontalAlignment.Right)
 			UIKit.Button({
 				Parent = row,
-				Text = "Осн",
-				Size = UDim2.fromOffset(px(72), px(38)),
-				SizePx = px(14),
+				Text = "Надеть осн",
+				Size = UDim2.fromOffset(px(100), px(34)),
+				SizePx = px(12),
+				Primary = true,
 				OnClick = function()
-					Net.EquipWeapon(w.uid, "main")
+					Net.EquipWeapon(selected.uid, "main")
 				end,
 			})
 			UIKit.Button({
 				Parent = row,
-				Text = "Втор",
-				Size = UDim2.fromOffset(px(72), px(38)),
-				SizePx = px(14),
+				Text = "Надеть втор",
+				Size = UDim2.fromOffset(px(100), px(34)),
+				SizePx = px(12),
 				OnClick = function()
-					Net.EquipWeapon(w.uid, "offhand")
+					Net.EquipWeapon(selected.uid, "offhand")
 				end,
 			})
 			UIKit.Button({
 				Parent = row,
 				Text = "Чар",
-				Size = UDim2.fromOffset(px(64), px(38)),
+				Size = UDim2.fromOffset(px(56), px(34)),
+				SizePx = px(12),
 				Color = Color3.fromRGB(90, 60, 140),
 				Color2 = Color3.fromRGB(55, 35, 90),
-				SizePx = px(14),
 				OnClick = function()
-					Net.EnchantWeapon(w.uid)
-					openModal("enchant", w)
+					Net.EnchantWeapon(selected.uid)
+					openModal("enchant", selected)
 				end,
 			})
 			UIKit.Button({
 				Parent = row,
-				Text = "Прод",
-				Size = UDim2.fromOffset(px(64), px(38)),
+				Text = "Продать",
+				Size = UDim2.fromOffset(px(72), px(34)),
+				SizePx = px(12),
 				Color = T.Danger,
-				Color2 = T.Colors and T.Colors.DangerDeep or Color3.fromRGB(140, 40, 40),
-				SizePx = px(14),
+				Color2 = T.Colors and T.Colors.DangerDeep,
 				OnClick = function()
-					openModal("sell", w)
+					openModal("sell", selected)
 				end,
 			})
+		else
+			UIKit.Label({
+				Parent = act,
+				Text = "Пусто — добудь оружие с мобов",
+				Size = UDim2.new(1, 0, 1, 0),
+				SizePx = px(14),
+				Color = T.TextMuted,
+				Z = 33,
+			})
+		end
+
+		-- slot grid
+		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(120)))
+		scroll.LayoutOrder = 3
+		-- replace default vertical list with grid
+		for _, ch in scroll:GetChildren() do
+			if ch:IsA("UIListLayout") then
+				ch:Destroy()
+			end
+		end
+		local grid = Instance.new("UIGridLayout")
+		grid.CellSize = UDim2.fromOffset(px(78), px(78))
+		grid.CellPadding = UDim2.fromOffset(px(8), px(8))
+		grid.SortOrder = Enum.SortOrder.LayoutOrder
+		grid.FillDirectionMaxCells = 6
+		grid.Parent = scroll
+		UIKit.Pad(scroll, px(4))
+
+		local function makeSlot(order: number, w: any?)
+			local rarity = "Common"
+			local edge = T.Stroke
+			if w then
+				local def = WeaponConfig.Get(w.id)
+				rarity = (def and def.rarity) or "Common"
+				edge = Rarity.Of(rarity)
+			end
+			local isSel = w and w.uid == selectedWeaponUid
+			local slot = Instance.new("TextButton")
+			slot.Name = w and ("W_" .. tostring(w.uid)) or ("Empty_" .. order)
+			slot.AutoButtonColor = false
+			slot.Text = ""
+			slot.BackgroundColor3 = Color3.new(1, 1, 1)
+			slot.BorderSizePixel = 0
+			slot.LayoutOrder = order
+			slot.ZIndex = 33
+			slot.Parent = scroll
+			UIKit.Corner(slot, T.R.sm)
+			UIKit.Stroke(slot, isSel and T.Accent or edge, isSel and 2 or 1.3, isSel and 0.15 or 0.25)
+			UIKit.Gradient(slot, T.Surface3, T.Surface2, 110)
+
+			if w then
+				local img = Instance.new("ImageLabel")
+				img.BackgroundTransparency = 1
+				img.Size = UDim2.fromScale(0.72, 0.72)
+				img.Position = UDim2.fromScale(0.5, 0.42)
+				img.AnchorPoint = Vector2.new(0.5, 0.5)
+				img.Image = IconConfig.GetWeaponImage(w.id)
+				img.ScaleType = Enum.ScaleType.Fit
+				img.ZIndex = 34
+				img.Parent = slot
+				local def = WeaponConfig.Get(w.id)
+				UIKit.Label({
+					Parent = slot,
+					Text = (def and def.name or w.id):sub(1, 8),
+					Size = UDim2.new(1, -4, 0, px(14)),
+					Position = UDim2.new(0, 2, 1, -px(16)),
+					SizePx = px(10),
+					Color = edge,
+					X = Enum.TextXAlignment.Center,
+					Z = 34,
+				})
+				-- equipped badge (profile stores weapon uid)
+				local eq = ""
+				if profile.equippedMain == w.uid then
+					eq = "О"
+				elseif profile.equippedOffhand == w.uid then
+					eq = "В"
+				end
+				if eq ~= "" then
+					UIKit.Label({
+						Parent = slot,
+						Text = eq,
+						Size = UDim2.fromOffset(px(16), px(16)),
+						Position = UDim2.fromOffset(px(4), px(2)),
+						SizePx = px(11),
+						Color = T.Accent,
+						Font = T.Font.Title,
+						Z = 35,
+					})
+				end
+				slot.MouseButton1Click:Connect(function()
+					selectedWeaponUid = w.uid
+					refreshWeapons()
+				end)
+			else
+				UIKit.Label({
+					Parent = slot,
+					Text = "",
+					Size = UDim2.fromScale(1, 1),
+					Z = 34,
+				})
+				slot.Active = false
+			end
+		end
+
+		for i, w in ipairs(weapons) do
+			makeSlot(i, w)
+		end
+		for i = count + 1, INV_CAP do
+			makeSlot(i, nil)
 		end
 	end
 
@@ -627,17 +817,43 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 	end
 
-	---------------------------------------------------------------- Locations
+	---------------------------------------------------------------- Locations / Teleport (existing SetLocation)
 	local function refreshLocations()
 		local body = bodies.locations
 		UIKit.Clear(body)
-		UIKit.List(body, px(12), false)
+		UIKit.List(body, px(10), false)
 		local profile = store:PeekProfile()
 		if not profile then
 			return
 		end
 		local current = profile.currentLocation or 1
-		local btnW = px(112)
+		local stats = store:PeekStats()
+		local power = (stats and (stats.totalPower or stats.damagePerClick)) or 0
+
+		sectionLabel(body, "ВХОД НА ЛОКАЦИЮ", 1)
+		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(36)))
+		scroll.LayoutOrder = 2
+		-- 2-col grid like SCREEENS teleport
+		for _, ch in scroll:GetChildren() do
+			if ch:IsA("UIListLayout") then
+				ch:Destroy()
+			end
+		end
+		local grid = Instance.new("UIGridLayout")
+		grid.CellSize = UDim2.new(0.5, -px(8), 0, px(200))
+		grid.CellPadding = UDim2.fromOffset(px(10), px(10))
+		grid.SortOrder = Enum.SortOrder.LayoutOrder
+		grid.FillDirectionMaxCells = 2
+		grid.Parent = scroll
+		UIKit.Pad(scroll, px(4))
+
+		local themeTint = {
+			Color3.fromRGB(40, 90, 50),
+			Color3.fromRGB(40, 70, 110),
+			Color3.fromRGB(90, 50, 40),
+			Color3.fromRGB(50, 80, 110),
+		}
+
 		for i, meta in ipairs(WorldConfig.Locations) do
 			local unlocked = false
 			for _, id in ipairs(profile.locationsUnlocked or { 1 }) do
@@ -646,38 +862,84 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 					break
 				end
 			end
+			-- also allow if power enough (display unlock affordability)
+			local canUnlock = power >= (meta.unlockPower or 0)
 			local here = current == meta.id
-			local c = surfaceCard(body, 88, i, here and T.Gold or nil)
+			local tint = themeTint[((i - 1) % #themeTint) + 1]
+
+			local card = Instance.new("Frame")
+			card.BackgroundColor3 = Color3.new(1, 1, 1)
+			card.BorderSizePixel = 0
+			card.LayoutOrder = i
+			card.ZIndex = 33
+			card.ClipsDescendants = true
+			card.Parent = scroll
+			UIKit.Corner(card, T.R.sm)
+			UIKit.Stroke(card, here and T.Accent or T.Stroke, here and 1.8 or 1.1, 0.2)
+			UIKit.Gradient(card, T.Surface2, T.Surface, 105)
+
+			-- preview block
+			local prev = Instance.new("Frame")
+			prev.BackgroundColor3 = tint
+			prev.BorderSizePixel = 0
+			prev.Size = UDim2.new(1, -px(16), 0, px(72))
+			prev.Position = UDim2.fromOffset(px(8), px(8))
+			prev.ZIndex = 34
+			prev.Parent = card
+			UIKit.Corner(prev, T.R.sm)
 			UIKit.Label({
-				Parent = c,
-				Text = meta.name .. (here and "  ·  ВЫ ЗДЕСЬ" or ""),
-				Size = UDim2.new(1, -btnW - 12, 0, px(24)),
-				SizePx = px(17),
+				Parent = prev,
+				Text = (T.WindowIcon and T.WindowIcon.locations) or "🗺",
+				Size = UDim2.fromScale(1, 1),
+				SizePx = px(28),
+				X = Enum.TextXAlignment.Center,
+				Z = 35,
+			})
+
+			UIKit.Label({
+				Parent = card,
+				Text = meta.name .. (here and "  ·  ЗДЕСЬ" or ""),
+				Size = UDim2.new(1, -px(16), 0, px(22)),
+				Position = UDim2.fromOffset(px(8), px(88)),
+				SizePx = px(14),
 				Font = T.Font.Title,
 				Color = T.Text,
-				Z = 33,
+				Z = 34,
 			})
 			UIKit.Label({
-				Parent = c,
-				Text = string.format("%s · сила %s", unlocked and "Открыта" or "Закрыта", Format.Num(meta.unlockPower)),
-				Size = UDim2.new(1, -btnW - 12, 0, px(18)),
-				Position = UDim2.fromOffset(0, px(32)),
-				SizePx = px(13),
+				Parent = card,
+				Text = (meta.blurb or meta.theme or ""):sub(1, 64),
+				Size = UDim2.new(1, -px(16), 0, px(32)),
+				Position = UDim2.fromOffset(px(8), px(110)),
+				SizePx = px(11),
 				Color = T.TextMuted,
-				Z = 33,
-			})
-			UIKit.Button({
-				Parent = c,
-				Text = unlocked and "Идти" or "Закрыто",
-				Size = UDim2.fromOffset(btnW, px(42)),
-				Position = UDim2.new(1, -btnW, 0.5, -px(21)),
-				Color = unlocked and T.Success or T.Disabled,
-				Color2 = unlocked and (T.Colors and T.Colors.SuccessDeep) or (T.Colors and T.Colors.DisabledDeep),
-				Disabled = not unlocked,
-				SizePx = px(14),
+				Wrap = true,
 				Z = 34,
+			})
+
+			local btnText = "Телепортироваться"
+			local canGo = unlocked
+			local disabled = not unlocked
+			if not unlocked then
+				btnText = canUnlock and ("Нужна сила " .. Format.Num(meta.unlockPower)) or ("Сила " .. Format.Num(meta.unlockPower))
+			elseif here then
+				btnText = "Вы здесь"
+				disabled = true
+			end
+
+			UIKit.Button({
+				Parent = card,
+				Text = btnText,
+				Size = UDim2.new(1, -px(16), 0, px(34)),
+				Position = UDim2.new(0, px(8), 1, -px(42)),
+				Primary = canGo and not here,
+				Disabled = disabled,
+				Color = disabled and T.Disabled or nil,
+				Color2 = disabled and (T.Colors and T.Colors.DisabledDeep) or nil,
+				SizePx = px(12),
+				Z = 35,
 				OnClick = function()
-					if unlocked then
+					if unlocked and not here then
 						Net.SetLocation(meta.id)
 					end
 				end,
@@ -738,112 +1000,323 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 	end
 
-	---------------------------------------------------------------- Cases (catalog + open spin)
+	---------------------------------------------------------------- Cases + odds (1 sample per rarity, scroll)
+	local function weightOdds(weights: { [string]: number }): { { rarity: string, pct: number } }
+		local total = 0
+		for _, w in pairs(weights) do
+			total += w
+		end
+		if total <= 0 then
+			total = 1
+		end
+		local out = {}
+		for _, r in ipairs(Rarity.Order) do
+			local w = weights[r]
+			if w and w > 0 then
+				table.insert(out, { rarity = r, pct = (w / total) * 100 })
+			end
+		end
+		return out
+	end
+
+	local function firstOfRarity(kind: string, rarity: string, loc: number): string
+		if kind == "pet" then
+			for _, def in PetConfig.Pets do
+				if def.rarity == rarity and (def.location == loc or loc == 0) then
+					return def.name
+				end
+			end
+			for _, def in PetConfig.Pets do
+				if def.rarity == rarity then
+					return def.name
+				end
+			end
+		else
+			for _, def in AuraConfig.Auras do
+				if def.rarity == rarity then
+					return def.name
+				end
+			end
+		end
+		return rarity
+	end
+
+	local function addOddsSection(parent: Instance, title: string, kind: string, weights: any, loc: number, order: number)
+		sectionLabel(parent, title, order)
+		local odds = weightOdds(weights)
+		local wrap = Instance.new("Frame")
+		wrap.BackgroundTransparency = 1
+		wrap.Size = UDim2.new(1, 0, 0, px(100))
+		wrap.LayoutOrder = order + 1
+		wrap.ZIndex = 32
+		wrap.Parent = parent
+		local g = Instance.new("UIGridLayout")
+		g.CellSize = UDim2.fromOffset(px(92), px(88))
+		g.CellPadding = UDim2.fromOffset(px(8), px(8))
+		g.SortOrder = Enum.SortOrder.LayoutOrder
+		g.FillDirectionMaxCells = 6
+		g.Parent = wrap
+
+		for i, o in ipairs(odds) do
+			local col = Rarity.Of(o.rarity)
+			local cell = Instance.new("Frame")
+			cell.BackgroundColor3 = Color3.new(1, 1, 1)
+			cell.BorderSizePixel = 0
+			cell.LayoutOrder = i
+			cell.ZIndex = 33
+			cell.Parent = wrap
+			UIKit.Corner(cell, T.R.sm)
+			UIKit.Stroke(cell, col, 1.5, 0.2)
+			UIKit.Gradient(cell, T.Surface3, T.Surface2, 110)
+			UIKit.Label({
+				Parent = cell,
+				Text = kind == "pet" and "🐾" or "✨",
+				Size = UDim2.new(1, 0, 0, px(28)),
+				Position = UDim2.fromOffset(0, px(6)),
+				SizePx = px(20),
+				X = Enum.TextXAlignment.Center,
+				Z = 34,
+			})
+			UIKit.Label({
+				Parent = cell,
+				Text = firstOfRarity(kind, o.rarity, loc):sub(1, 10),
+				Size = UDim2.new(1, -4, 0, px(22)),
+				Position = UDim2.fromOffset(2, px(34)),
+				SizePx = px(10),
+				Color = T.TextSoft,
+				X = Enum.TextXAlignment.Center,
+				Wrap = true,
+				Z = 34,
+			})
+			UIKit.Label({
+				Parent = cell,
+				Text = string.format("%.2f%%", o.pct),
+				Size = UDim2.new(1, 0, 0, px(18)),
+				Position = UDim2.fromOffset(0, px(62)),
+				SizePx = px(12),
+				Font = T.Font.Title,
+				Color = col,
+				X = Enum.TextXAlignment.Center,
+				Z = 34,
+			})
+		end
+	end
+
 	local function refreshCases()
 		local body = bodies.cases
 		UIKit.Clear(body)
-		UIKit.List(body, px(12), false)
+		UIKit.List(body, px(10), false)
 		local profile = store:PeekProfile()
 		local stats = store:PeekStats()
 		local coins = (stats and stats.coins) or (profile and profile.coins) or 0
 		local loc = (profile and profile.currentLocation) or 1
 
-		sectionLabel(body, "CASE OPENING", 1)
-		local head = surfaceCard(body, 64, 2, T.Gold)
+		local head = surfaceCard(body, 48, 1, T.Stroke)
 		UIKit.Label({
 			Parent = head,
-			Text = string.format("Баланс  %s  монет  ·  локация  %d", Format.Num(coins), loc),
+			Text = string.format("Баланс  %s 🪙   ·   локация  %d", Format.Num(coins), loc),
 			Size = UDim2.new(1, 0, 1, 0),
-			SizePx = px(16),
-			Color = T.Text,
+			SizePx = px(15),
+			Color = T.TextSoft,
 			Z = 33,
 		})
 
-		sectionLabel(body, "КАТАЛОГ", 3)
-		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(120)))
-		scroll.LayoutOrder = 4
+		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(60)))
+		scroll.LayoutOrder = 2
 
-		local catalog = {
-			{
-				kind = "pet",
-				name = "Кейс питомцев",
-				desc = "Пет по текущей локации · редкость по весам",
-				icon = "🐾",
-				cost = PetConfig.OPEN_COST or 0,
-				edge = T.Success,
-				c0 = Color3.fromRGB(40, 120, 80),
-				c1 = Color3.fromRGB(22, 70, 48),
-			},
-			{
-				kind = "aura",
-				name = "Кейс аур",
-				desc = "Случайная аура · сила / урон / монеты",
-				icon = "✨",
-				cost = AuraConfig.OPEN_COST or 0,
-				edge = Color3.fromRGB(150, 90, 220),
-				c0 = Color3.fromRGB(100, 60, 160),
-				c1 = Color3.fromRGB(55, 30, 100),
-			},
-		}
-
-		for i, def in ipairs(catalog) do
-			local can = coins >= (def.cost or 0)
-			local costTxt = (def.cost or 0) <= 0 and "Бесплатно" or (Format.Num(def.cost) .. " монет")
-			local c = surfaceCard(scroll, 148, i, def.edge)
-			-- top accent strip
-			local strip = Instance.new("Frame")
-			strip.BorderSizePixel = 0
-			strip.BackgroundColor3 = def.edge
-			strip.Size = UDim2.new(1, 0, 0, px(6))
-			strip.Position = UDim2.fromOffset(0, -px(8))
-			strip.ZIndex = 34
-			strip.Parent = c
-
+		-- Pet case
+		do
+			local cost = PetConfig.OPEN_COST or 0
+			local can = coins >= cost
+			local costTxt = cost <= 0 and "Бесплатно" or (Format.Num(cost) .. " 🪙")
+			local c = surfaceCard(scroll, 110, 1, T.Success)
 			UIKit.Label({
 				Parent = c,
-				Text = def.icon .. "  " .. def.name,
-				Size = UDim2.new(1, 0, 0, px(28)),
-				SizePx = px(20),
+				Text = "🐾  Кейс с питомцами",
+				Size = UDim2.new(1, 0, 0, px(24)),
+				SizePx = px(17),
 				Font = T.Font.Title,
 				Color = T.Text,
 				Z = 33,
 			})
 			UIKit.Label({
 				Parent = c,
-				Text = def.desc,
-				Size = UDim2.new(1, 0, 0, px(36)),
-				Position = UDim2.fromOffset(0, px(32)),
-				SizePx = px(14),
+				Text = "Пет текущей локации · 1 образец на редкость ниже",
+				Size = UDim2.new(1, 0, 0, px(20)),
+				Position = UDim2.fromOffset(0, px(28)),
+				SizePx = px(12),
 				Color = T.TextMuted,
-				Wrap = true,
+				Z = 33,
+			})
+			UIKit.Button({
+				Parent = c,
+				Text = can and ("Открыть за " .. costTxt) or ("Нужно " .. costTxt),
+				Size = UDim2.new(1, 0, 0, px(38)),
+				Position = UDim2.new(0, 0, 1, -px(4)),
+				Anchor = Vector2.new(0, 1),
+				Primary = can,
+				Disabled = not can,
+				SizePx = px(14),
+				Z = 34,
+				OnClick = function()
+					if can then
+						openModal("case", { kind = "pet" })
+					end
+				end,
+			})
+		end
+		addOddsSection(scroll, "ВОЗМОЖНЫЕ НАГРАДЫ · ПЕТЫ", "pet", PetConfig.CaseWeights, loc, 10)
+
+		-- Aura case
+		do
+			local cost = AuraConfig.OPEN_COST or 0
+			local can = coins >= cost
+			local costTxt = cost <= 0 and "Бесплатно" or (Format.Num(cost) .. " 🪙")
+			local c = surfaceCard(scroll, 110, 20, Color3.fromRGB(140, 90, 210))
+			UIKit.Label({
+				Parent = c,
+				Text = "✨  Кейс с аурами",
+				Size = UDim2.new(1, 0, 0, px(24)),
+				SizePx = px(17),
+				Font = T.Font.Title,
+				Color = T.Text,
 				Z = 33,
 			})
 			UIKit.Label({
 				Parent = c,
-				Text = costTxt,
-				Size = UDim2.new(0.5, 0, 0, px(22)),
-				Position = UDim2.fromOffset(0, px(78)),
+				Text = "Случайная аура · 1 образец на редкость ниже",
+				Size = UDim2.new(1, 0, 0, px(20)),
+				Position = UDim2.fromOffset(0, px(28)),
+				SizePx = px(12),
+				Color = T.TextMuted,
+				Z = 33,
+			})
+			UIKit.Button({
+				Parent = c,
+				Text = can and ("Открыть за " .. costTxt) or ("Нужно " .. costTxt),
+				Size = UDim2.new(1, 0, 0, px(38)),
+				Position = UDim2.new(0, 0, 1, -px(4)),
+				Anchor = Vector2.new(0, 1),
+				Primary = can,
+				Disabled = not can,
+				SizePx = px(14),
+				Z = 34,
+				OnClick = function()
+					if can then
+						openModal("case", { kind = "aura" })
+					end
+				end,
+			})
+		end
+		addOddsSection(scroll, "ВОЗМОЖНЫЕ НАГРАДЫ · АУРЫ", "aura", AuraConfig.Weights, loc, 30)
+	end
+
+	---------------------------------------------------------------- Donate shop (UI stubs only)
+	local function refreshShop()
+		local body = bodies.shop
+		UIKit.Clear(body)
+		UIKit.List(body, px(10), false)
+
+		local tabs = { "Наборы", "Бусты", "Разное", "Игровой баланс" }
+		local tabRow = Instance.new("Frame")
+		tabRow.BackgroundTransparency = 1
+		tabRow.Size = UDim2.new(1, 0, 0, px(40))
+		tabRow.LayoutOrder = 1
+		tabRow.ZIndex = 32
+		tabRow.Parent = body
+		UIKit.List(tabRow, px(8), true)
+
+		local activeTab = (store :: any)._shopTab or "Бусты"
+		for i, name in ipairs(tabs) do
+			local on = name == activeTab
+			UIKit.Button({
+				Parent = tabRow,
+				Text = name,
+				Size = UDim2.fromOffset(px(120), px(34)),
+				SizePx = px(12),
+				Primary = on,
+				Color = on and nil or T.Surface3,
+				Color2 = on and nil or T.Surface2,
+				Order = i,
+				OnClick = function()
+					(store :: any)._shopTab = name
+					refreshShop()
+				end,
+			})
+		end
+
+		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(52)))
+		scroll.LayoutOrder = 2
+
+		local stubs = {
+			Наборы = {
+				{ name = "Стартовый набор", price = "99 💎", desc = "Монеты + ключи (заглушка)" },
+				{ name = "Набор воина", price = "199 💎", desc = "Буст силы x2 1ч (заглушка)" },
+				{ name = "VIP пак", price = "499 💎", desc = "Косметика + бонусы (заглушка)" },
+			},
+			Бусты = {
+				{ name = "Локальный бустер силы x2", price = "149 💎", desc = "30 мин · скоро" },
+				{ name = "Глобальный бустер силы x1.5", price = "199 💎", desc = "30 мин · скоро" },
+				{ name = "Локальный бустер урона x2", price = "149 💎", desc = "30 мин · скоро" },
+				{ name = "Глобальный бустер урона x1.5", price = "199 💎", desc = "30 мин · скоро" },
+				{ name = "Локальный бустер денег x1.5", price = "149 💎", desc = "30 мин · скоро" },
+				{ name = "Глобальный бустер денег x1.5", price = "199 💎", desc = "30 мин · скоро" },
+				{ name = "Локальный бустер удачи x1.25", price = "149 💎", desc = "30 мин · скоро" },
+				{ name = "Глобальный бустер удачи x1.25", price = "199 💎", desc = "30 мин · скоро" },
+			},
+			Разное = {
+				{ name = "Скины мечей", price = "—", desc = "Скоро" },
+				{ name = "Эмоции", price = "—", desc = "Скоро" },
+				{ name = "Рамки ника", price = "—", desc = "Скоро" },
+			},
+			["Игровой баланс"] = {
+				{ name = "5 000 монет", price = "49 💎", desc = "Заглушка" },
+				{ name = "25 000 монет", price = "149 💎", desc = "Заглушка" },
+				{ name = "100 000 монет", price = "399 💎", desc = "Заглушка" },
+			},
+		}
+
+		local list = stubs[activeTab] or stubs.Бусты
+		for i, item in ipairs(list) do
+			local c = surfaceCard(scroll, 96, i, T.Stroke)
+			UIKit.Label({
+				Parent = c,
+				Text = "🧪  " .. item.name,
+				Size = UDim2.new(1, -px(100), 0, px(24)),
 				SizePx = px(15),
-				Color = can and T.Gold or T.Danger,
+				Font = T.Font.Title,
+				Color = T.Text,
+				Z = 33,
+			})
+			UIKit.Label({
+				Parent = c,
+				Text = item.desc,
+				Size = UDim2.new(1, -px(100), 0, px(20)),
+				Position = UDim2.fromOffset(0, px(28)),
+				SizePx = px(12),
+				Color = T.TextMuted,
+				Z = 33,
+			})
+			UIKit.Label({
+				Parent = c,
+				Text = item.price,
+				Size = UDim2.new(1, -px(100), 0, px(18)),
+				Position = UDim2.fromOffset(0, px(50)),
+				SizePx = px(13),
+				Color = T.Accent,
 				Font = T.Font.Title,
 				Z = 33,
 			})
 			UIKit.Button({
 				Parent = c,
-				Text = can and "Открыть" or "Мало монет",
-				Size = UDim2.fromOffset(px(140), px(42)),
-				Position = UDim2.new(1, -px(140), 1, -px(8)),
-				Anchor = Vector2.new(0, 1),
-				Color = can and def.c0 or T.Disabled,
-				Color2 = can and def.c1 or (T.Colors and T.Colors.DisabledDeep),
-				Primary = can,
-				Disabled = not can,
-				SizePx = px(15),
+				Text = "Скоро",
+				Size = UDim2.fromOffset(px(90), px(36)),
+				Position = UDim2.new(1, -px(90), 0.5, -px(18)),
+				Primary = true,
+				SizePx = px(13),
 				Z = 34,
 				OnClick = function()
-					if can then
-						openModal("case", { kind = def.kind })
-					end
+					openModal("stub", { title = item.name, text = "Покупка ещё не подключена.\nСкоро: " .. item.price })
 				end,
 			})
 		end
@@ -859,6 +1332,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		quests = refreshQuests,
 		locations = refreshLocations,
 		dungeons = refreshDungeons,
+		shop = refreshShop,
 	}
 
 	local api = {}

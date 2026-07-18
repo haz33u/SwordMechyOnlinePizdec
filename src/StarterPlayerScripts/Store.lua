@@ -15,6 +15,7 @@ export type PanelId =
 	| "quests"
 	| "locations"
 	| "dungeons"
+	| "shop"
 	| "none"
 
 local Store = {}
