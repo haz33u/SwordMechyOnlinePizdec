@@ -2,15 +2,15 @@
 
 ## Loc1 — Тёмный лес
 
-| ID | Имя | Tier | Zone | HP | Power | Coins |
-|----|-----|------|------|-----|-------|-------|
-| `L1_Slime` | Теневой слизень | trash | A | 40 | 1 | 3 |
-| `L1_GoblinScout` | Гоблин-разведчик | trash | A | 70 | 2 | 4 |
-| `L1_Skeleton` | Лесной скелет | normal | B | 120 | 3 | 6 |
-| `L1_Wolf` | Тёмный волк | normal | B | 350 | 8 | 14 |
-| `L1_GoblinWarrior` | Гоблин-воин | normal | B | 500 | 12 | 18 |
-| `L1_Knight` | Проклятый рыцарь | elite | C | 1200 | 25 | 40 |
-| `L1_Boss` | Хранитель леса | boss | Boss | 8000 | 200 | 300 | **respawn 600s (10 мин)** |
+| ID | Имя | Tier | Zone | HP | Power | Coins | Respawn |
+|----|-----|------|------|-----|-------|-------|---------|
+| `L1_Slime` | Теневой слизень | simple | A | 40 | 1 | 3 | 3s |
+| `L1_GoblinScout` | Гоблин-разведчик | simple | A | 70 | 2 | 4 | 3.2s |
+| `L1_Skeleton` | Лесной скелет | medium | B | 120 | 3 | 6 | 3.5s |
+| `L1_Wolf` | Тёмный волк | medium | B | 350 | 8 | 14 | 4s |
+| `L1_GoblinWarrior` | Гоблин-воин | hard | C | 500 | 12 | 18 | 5s |
+| `L1_Knight` | Проклятый рыцарь | hard | C | 1200 | 25 | 40 | 8s |
+| `L1_Boss` | Хранитель леса | boss | Boss | 8000 | 200 | 300 | **10 мин** |
 
 ### Debug
 
