@@ -25,6 +25,7 @@ local CaseOpening = require(script.Parent.CaseOpening)
 local Toast = require(script.Parent.Toast)
 local FloatingDamage = require(script.Parent.FloatingDamage)
 local ClickPop = require(script.Parent.ClickPop)
+local WeaponVisual = require(script.Parent.WeaponVisual)
 local T = require(script.Parent.Theme)
 
 local App = {}
@@ -180,6 +181,9 @@ function App.Start()
 		if modalsApi then
 			modalsApi.Refresh()
 		end
+		pcall(function()
+			WeaponVisual.Refresh(store:PeekProfile())
+		end)
 	end
 
 	local function burstClick(amount: number?, crit: boolean?, source: string?)
@@ -205,7 +209,10 @@ function App.Start()
 	end)
 	step("Hud", function()
 		hudApi = Hud.Mount(gui, store, openModal, function()
-			-- optimistic local pop on manual press (server will also send CombatFx)
+			-- optimistic local pop + slash on manual press
+			pcall(function()
+				WeaponVisual.PlayAttack()
+			end)
 			local st = store:PeekStats()
 			burstClick(st and (st.damagePerClick or st.totalPower) or 1, false, "manual")
 		end)
@@ -224,6 +231,11 @@ function App.Start()
 	end)
 	step("CombatFx", function()
 		onCombatFx = FloatingDamage.Mount()
+	end)
+	step("WeaponVisual", function()
+		WeaponVisual.Init(function()
+			return store:PeekProfile()
+		end)
 	end)
 
 	local m = mockSnapshot()
@@ -282,6 +294,10 @@ function App.Start()
 			if onCombatFx then
 				onCombatFx(payload)
 			end
+			-- sword slash on successful hit
+			pcall(function()
+				WeaponVisual.PlayAttack()
+			end)
 		end)
 	end)
 
@@ -327,6 +343,7 @@ function App.Start()
 		end
 		if input.KeyCode == Enum.KeyCode.Space or input.KeyCode == Enum.KeyCode.E then
 			pcall(function()
+				WeaponVisual.PlayAttack()
 				Net.Swing("manual")
 			end)
 		elseif input.KeyCode == Enum.KeyCode.T then

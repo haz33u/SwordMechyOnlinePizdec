@@ -6,7 +6,7 @@
 
 local GameConfig = {
 	DISPLAY_NAME = "Sword Masters",
-	VERSION = "0.5.2-boss-respawn-10m",
+	VERSION = "0.5.3-weapon-visual-attack-anim",
 
 	-- combat
 	BASE_POWER = 10,

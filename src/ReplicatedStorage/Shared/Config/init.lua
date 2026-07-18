@@ -12,6 +12,7 @@ return {
 	Mob = require(script.MobConfig),
 	Weapon = require(script.WeaponConfig),
 	Icon = require(script.IconConfig),
+	Animation = require(script.AnimationConfig),
 	Enchant = require(script.EnchantConfig),
 	Pet = require(script.PetConfig),
 	Aura = require(script.AuraConfig),
