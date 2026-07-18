@@ -22,7 +22,7 @@ local WeaponConfig = require(Shared.Config.WeaponConfig)
 local Windows = {}
 
 -- Interior upscale for left-rail panels only (HUD bottom untouched)
-local S = 1.22
+local S = 1.42
 local function px(n: number): number
 	return math.floor(n * S + 0.5)
 end
@@ -39,7 +39,7 @@ local function surfaceCard(parent: Instance, h: number, order: number, edge: Col
 	UIKit.Corner(f, T.R.lg)
 	UIKit.Stroke(f, edge or T.Stroke, edge and 1.8 or 1.4, edge and 0.28 or 0.48)
 	UIKit.Gradient(f, T.Surface3, T.Surface2, 105)
-	UIKit.Pad(f, px(14))
+	UIKit.Pad(f, px(16))
 	return f
 end
 
@@ -47,14 +47,15 @@ local function sectionLabel(parent: Instance, text: string, order: number)
 	return UIKit.Label({
 		Parent = parent,
 		Text = text,
-		Size = UDim2.new(1, 0, 0, px(26)),
-		SizePx = px(15),
+		Size = UDim2.new(1, 0, 0, px(28)),
+		SizePx = px(16),
 		Font = T.Font.Title,
 		Color = T.TextMuted,
 		Order = order,
 		Z = 33,
 	})
 end
+
 
 function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> ())
 	local folder = Instance.new("Folder")
@@ -85,10 +86,10 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		bodies[id] = body
 	end
 
-	-- Slightly larger modal shells for readability (HUD layout metrics untouched)
+	-- Larger shells so upscaled interiors fit (HUD layout metrics untouched)
 	Layout.Bind(function(m)
-		local ww = math.clamp((m.windowW or 0.5) + 0.06, 0.52, 0.62)
-		local wh = math.clamp((m.windowH or 0.62) + 0.06, 0.62, 0.74)
+		local ww = math.clamp((m.windowW or 0.5) + 0.10, 0.56, 0.68)
+		local wh = math.clamp((m.windowH or 0.62) + 0.10, 0.66, 0.80)
 		for _, root in frames do
 			root.Size = UDim2.fromScale(ww, wh)
 		end

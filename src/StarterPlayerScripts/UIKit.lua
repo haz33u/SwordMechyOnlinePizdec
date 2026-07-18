@@ -221,6 +221,7 @@ function UIKit.Button(props: {
 	Order: number?,
 	Primary: boolean?,
 	Disabled: boolean?,
+	Compact: boolean?, -- skip CTA min-size (close / icon chips)
 	OnClick: (() -> ())?,
 }): TextButton
 	local b = Instance.new("TextButton")
@@ -250,8 +251,13 @@ function UIKit.Button(props: {
 	UIKit.Corner(b, props.Radius or T.R.md)
 	UIKit.Stroke(b, props.Primary and T.Gold or T.Stroke, props.Primary and 2 or 1.4, props.Primary and 0.3 or 0.42)
 	UIKit.Gradient(b, c0, c1, 100)
-	UIKit.SizeConstraint(b, Vector2.new(64, 36), Vector2.new(400, 96))
-	UIKit.Pad(b, 10)
+	if props.Compact then
+		UIKit.SizeConstraint(b, Vector2.new(28, 28), Vector2.new(96, 96))
+		UIKit.Pad(b, 4)
+	else
+		UIKit.SizeConstraint(b, Vector2.new(64, 36), Vector2.new(400, 96))
+		UIKit.Pad(b, 10)
+	end
 
 	-- Always pure white readable label
 	local label = Instance.new("TextLabel")
@@ -519,10 +525,12 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: str
 	})
 	root.Visible = false
 	UIKit.Stroke(root, T.Gold, 1.6, 0.4)
-	UIKit.SizeConstraint(root, Vector2.new(340, 300), Vector2.new(920, 820))
+	UIKit.SizeConstraint(root, Vector2.new(380, 320), Vector2.new(1100, 920))
 
-	-- Slightly larger chrome for left-rail panel interiors (HUD untouched)
-	local headerH = 58
+	-- Chrome for left-rail panels (HUD untouched). Close stays top-right.
+	local headerH = 56
+	local closePad = 10
+	local closeSz = 36
 	local header = Instance.new("Frame")
 	header.Name = "Header"
 	header.BackgroundColor3 = Color3.new(1, 1, 1)
@@ -536,26 +544,28 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: str
 	UIKit.Label({
 		Parent = header,
 		Text = iconTxt .. "  " .. title,
-		Size = UDim2.new(1, -62, 1, 0),
-		Position = UDim2.fromOffset(18, 0),
+		Size = UDim2.new(1, -(closeSz + closePad * 2 + 8), 1, 0),
+		Position = UDim2.fromOffset(16, 0),
 		SizePx = 20,
 		Font = T.Font.Title,
 		Color = T.Text,
 		Z = 32,
 	})
 
+	-- Anchor right edge so close never drifts past the panel corner
 	UIKit.Button({
 		Name = "Close",
 		Parent = header,
 		Text = "✕",
-		Size = UDim2.fromOffset(44, 40),
-		Position = UDim2.new(1, -52, 0.5, 0),
-		Anchor = Vector2.new(0, 0.5),
+		Size = UDim2.fromOffset(closeSz, closeSz),
+		Position = UDim2.new(1, -closePad, 0.5, 0),
+		Anchor = Vector2.new(1, 0.5),
 		Color = T.Danger,
 		Color2 = T.Colors and T.Colors.DangerDeep or Color3.fromRGB(160, 40, 50),
-		SizePx = 20,
+		SizePx = 18,
 		Radius = T.R.sm,
-		Z = 32,
+		Compact = true,
+		Z = 35,
 		OnClick = onClose,
 	})
 

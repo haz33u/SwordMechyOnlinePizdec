@@ -8,7 +8,7 @@ local Net = require(script.Parent.Net)
 local Modals = {}
 
 -- Same interior scale as left-rail windows (HUD bottom/balance untouched)
-local S = 1.22
+local S = 1.42
 local function px(n: number): number
 	return math.floor(n * S + 0.5)
 end
