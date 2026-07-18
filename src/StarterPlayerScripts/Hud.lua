@@ -286,9 +286,18 @@ function Hud.Mount(
 		UIKit.SetChipValue(chips.Loc, LOC[st.location or 1] or ("#" .. tostring(st.location)))
 		UIKit.SetChipValue(chips.Rebirth, string.format("R%d %s", st.rebirthLevel or 0, Format.Mult(st.rebirthMult)))
 
-		local cost = st.nextRebirthCost or 1
-		local dmg = st.lifetimeDamage or 0
-		rbFill.Size = UDim2.new(cost > 0 and math.clamp(dmg / cost, 0, 1) or 0, 0, 1, 0)
+		-- Dual-cost rebirth: bar = min(damage progress, coin progress)
+		local pct = st.rebirthProgress
+		if type(pct) ~= "number" then
+			local cost = st.nextRebirthCost or 1
+			local coinCost = st.nextRebirthCoinCost or 0
+			local dmg = st.lifetimeDamage or 0
+			local coins = st.coins or 0
+			local pD = cost > 0 and math.clamp(dmg / cost, 0, 1) or 1
+			local pC = coinCost > 0 and math.clamp(coins / coinCost, 0, 1) or 1
+			pct = math.min(pD, pC)
+		end
+		rbFill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
 
 		if st.autoClicker then
 			autoBtn.Text = "АВТО ON"

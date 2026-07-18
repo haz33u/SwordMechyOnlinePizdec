@@ -18,6 +18,7 @@ local UpgradeConfig = require(Shared.Config.UpgradeConfig)
 local WorldConfig = require(Shared.Config.WorldConfig)
 local QuestConfig = require(Shared.Config.QuestConfig)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
+local IconConfig = require(Shared.Config.IconConfig)
 
 local Windows = {}
 
@@ -247,10 +248,24 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			local rarity = (def and def.rarity) or "Common"
 			local mult = (def and def.powerMult) or 1
 			local c = surfaceCard(scroll, 108, i, Rarity.Of(rarity))
+
+			-- weapon icon (IconConfig after Studio upload; fallback generic sword)
+			local iconPx = px(72)
+			local icon = Instance.new("ImageLabel")
+			icon.Name = "WeaponIcon"
+			icon.BackgroundTransparency = 1
+			icon.Size = UDim2.fromOffset(iconPx, iconPx)
+			icon.Position = UDim2.fromOffset(0, px(28))
+			icon.Image = IconConfig.GetWeaponImage(w.id)
+			icon.ScaleType = Enum.ScaleType.Fit
+			icon.ZIndex = 33
+			icon.Parent = c
+
 			UIKit.Label({
 				Parent = c,
 				Text = string.format("%s  ·  %s  ·  ×%.2f", name, rarity, mult),
-				Size = UDim2.new(1, 0, 0, px(22)),
+				Size = UDim2.new(1, -(iconPx + px(10)), 0, px(22)),
+				Position = UDim2.fromOffset(iconPx + px(8), 0),
 				Color = Rarity.Of(rarity),
 				SizePx = px(16),
 				Font = T.Font.Title,
@@ -258,8 +273,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			local row = Instance.new("Frame")
 			row.BackgroundTransparency = 1
-			row.Size = UDim2.new(1, 0, 0, px(42))
-			row.Position = UDim2.fromOffset(0, px(48))
+			row.Size = UDim2.new(1, -(iconPx + px(10)), 0, px(42))
+			row.Position = UDim2.fromOffset(iconPx + px(8), px(48))
 			row.ZIndex = 33
 			row.Parent = c
 			UIKit.List(row, px(8), true)

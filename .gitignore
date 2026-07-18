@@ -13,3 +13,8 @@ node_modules/
 
 # Local research dumps
 subs/
+
+# bad neural icon batches
+art/icons/_failed_v1/
+art/icons/weapons/_draw_test.png
+

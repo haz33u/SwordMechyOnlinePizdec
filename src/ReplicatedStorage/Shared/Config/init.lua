@@ -11,6 +11,7 @@ return {
 	Location = require(script.LocationConfig),
 	Mob = require(script.MobConfig),
 	Weapon = require(script.WeaponConfig),
+	Icon = require(script.IconConfig),
 	Enchant = require(script.EnchantConfig),
 	Pet = require(script.PetConfig),
 	Aura = require(script.AuraConfig),

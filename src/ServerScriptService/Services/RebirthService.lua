@@ -26,15 +26,21 @@ function RebirthService.Try(player: Player): boolean
 		return false
 	end
 
-	local cost = RebirthConfig.GetCost(nextLevel)
-	if (profile.lifetimeDamage or 0) < cost then
+	local dmgCost, coinCost = RebirthConfig.GetCosts(nextLevel)
+	local dmg = profile.lifetimeDamage or 0
+	local coins = profile.coins or 0
+
+	local ok, reason = RebirthConfig.CanAfford(dmg, coins, nextLevel)
+	if not ok then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = string.format("Нужно %.0f урона (есть %.0f)", cost, profile.lifetimeDamage or 0),
+			text = reason or "Не хватает ресурсов",
 			color = "red",
 		})
 		return false
 	end
 
+	-- spend coins (damage is lifetime metric — not spent, only threshold)
+	profile.coins = coins - coinCost
 	profile.rebirthLevel = nextLevel
 	local bonus = RebirthConfig.GetBonus(nextLevel)
 	profile.rebirthMult = (profile.rebirthMult or 1) * (1 + bonus)
@@ -43,7 +49,13 @@ function RebirthService.Try(player: Player): boolean
 	QuestService.OnRebirth(profile)
 
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Перерождение %d! Mult x%.2f (+%.0f%%)", nextLevel, profile.rebirthMult, bonus * 100),
+		text = string.format(
+			"Перерождение %d! Mult x%.2f (+%.0f%%)  −%s монет",
+			nextLevel,
+			profile.rebirthMult,
+			bonus * 100,
+			tostring(coinCost)
+		),
 		color = "purple",
 	})
 	ProfileService.Push(player)

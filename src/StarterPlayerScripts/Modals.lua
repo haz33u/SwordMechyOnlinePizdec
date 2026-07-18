@@ -130,18 +130,27 @@ function Modals.Mount(gui: ScreenGui, store: any)
 		if m.kind == "rebirth" then
 			local stats = store:PeekStats() or {}
 			local dmg = stats.lifetimeDamage or 0
-			local cost = stats.nextRebirthCost or 1
-			local pct = cost > 0 and math.clamp(dmg / cost, 0, 1) or 0
+			local coins = stats.coins or 0
+			local costDmg = stats.nextRebirthCost or 1
+			local costCoins = stats.nextRebirthCoinCost or 0
+			local pct = stats.rebirthProgress
+			if type(pct) ~= "number" then
+				local pD = costDmg > 0 and math.clamp(dmg / costDmg, 0, 1) or 1
+				local pC = costCoins > 0 and math.clamp(coins / costCoins, 0, 1) or 1
+				pct = math.min(pD, pC)
+			end
 			title.Text = "Перерождение"
 			body.Text = string.format(
-				"Урон %s / %s\nСейчас R%d %s\nМечи и петы остаются.",
+				"Урон  %s / %s\nМонеты %s / %s\nСейчас R%d %s\nМечи и петы остаются. Монеты списываются.",
 				Format.Num(dmg),
-				Format.Num(cost),
+				Format.Num(costDmg),
+				Format.Num(coins),
+				Format.Num(costCoins),
 				stats.rebirthLevel or 0,
 				Format.Mult(stats.rebirthMult)
 			)
 			barHost.Visible = true
-			fill.Size = UDim2.new(pct, 0, 1, 0)
+			fill.Size = UDim2.new(math.clamp(pct, 0, 1), 0, 1, 0)
 			primary.Text = "Переродиться"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				Net.Rebirth()

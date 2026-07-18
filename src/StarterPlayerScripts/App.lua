@@ -94,6 +94,8 @@ local function mockSnapshot()
 			rebirthLevel = 0,
 			rebirthMult = 1,
 			nextRebirthCost = 1000,
+			nextRebirthCoinCost = 5000,
+			rebirthProgress = 0,
 			lifetimeDamage = 0,
 			autoClicker = false,
 			location = 1,

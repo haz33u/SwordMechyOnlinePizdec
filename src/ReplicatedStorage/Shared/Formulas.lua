@@ -295,7 +295,13 @@ function Formulas.Snapshot(profile: any): { [string]: any }
 		walkSpeed = Formulas.GetWalkSpeed(profile),
 		rebirthLevel = profile.rebirthLevel,
 		rebirthMult = profile.rebirthMult,
-		nextRebirthCost = RebirthConfig.GetCost((profile.rebirthLevel or 0) + 1),
+		nextRebirthCost = RebirthConfig.GetDamageCost((profile.rebirthLevel or 0) + 1),
+		nextRebirthCoinCost = RebirthConfig.GetCoinCost((profile.rebirthLevel or 0) + 1),
+		rebirthProgress = RebirthConfig.GetProgress(
+			profile.lifetimeDamage or 0,
+			profile.coins or 0,
+			(profile.rebirthLevel or 0) + 1
+		),
 		lifetimeDamage = profile.lifetimeDamage,
 		totalClicks = profile.totalClicks or 0,
 		coins = profile.coins,

@@ -15,7 +15,7 @@ All under `ReplicatedStorage.Remotes` (created at runtime).
 |------|------|--------|
 | `Swing` | `targetMobUid?, source?` | Click attack (`"manual"` / `"auto"`) |
 | `ToggleAutoClicker` | — | Toggle auto farm |
-| `RequestRebirth` | — | Rebirth if damage enough |
+| `RequestRebirth` | — | Needs **lifetimeDamage + coins** (RebirthConfig); spends coins |
 | `BuyUpgrade` | `upgradeId` | RunSpeed, Backpack, Power, ClickSpeed, CritChance, Luck |
 | `EquipWeapon` | `weaponUid, slot?` | `"main"` / `"offhand"` |
 | `SellWeapon` | `weaponUid` | |
@@ -57,8 +57,10 @@ All under `ReplicatedStorage.Remotes` (created at runtime).
 ```
 totalPower, cps, dps, damagePerClick, totalClicks,
 swingCd, crit, coins, rebirthLevel, rebirthMult,
-nextRebirthCost, lifetimeDamage, autoClicker, location, ...
+nextRebirthCost (damage), nextRebirthCoinCost, rebirthProgress,
+lifetimeDamage, autoClicker, location, ...
 ```
+
 
 ---
 
