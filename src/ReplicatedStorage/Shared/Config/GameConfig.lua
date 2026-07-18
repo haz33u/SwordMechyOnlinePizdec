@@ -6,7 +6,7 @@
 
 local GameConfig = {
 	DISPLAY_NAME = "Sword Masters",
-	VERSION = "0.5.1-rebirth-coins-icons",
+	VERSION = "0.5.2-boss-respawn-10m",
 
 	-- combat
 	BASE_POWER = 10,

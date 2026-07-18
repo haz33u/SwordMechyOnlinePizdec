@@ -10,7 +10,7 @@
 | `L1_Wolf` | Тёмный волк | normal | B | 350 | 8 | 14 |
 | `L1_GoblinWarrior` | Гоблин-воин | normal | B | 500 | 12 | 18 |
 | `L1_Knight` | Проклятый рыцарь | elite | C | 1200 | 25 | 40 |
-| `L1_Boss` | Хранитель леса | boss | Boss | 8000 | 200 | 300 |
+| `L1_Boss` | Хранитель леса | boss | Boss | 8000 | 200 | 300 | **respawn 600s (10 мин)** |
 
 ### Debug
 

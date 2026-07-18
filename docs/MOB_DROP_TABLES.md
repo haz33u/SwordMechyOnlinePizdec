@@ -85,10 +85,10 @@ Epic+ веса × `highRarityMult`, затем **нормализация к 100
 | L1_Wolf | Тёмный волк | 1 | medium | 350 | 14 | 8 | B quest |
 | L1_GoblinWarrior | Гоблин-воин | 1 | hard | 500 | 18 | 12 | C (как mob3) |
 | L1_Knight | Проклятый рыцарь | 1 | hard | 1200 | 40 | 25 | C |
-| L1_Boss | Хранитель леса | 1 | boss | 8000 | 300 | 200 | dust + gear |
+| L1_Boss | Хранитель леса | 1 | boss | 8000 | 300 | 200 | dust + gear · **respawn 10 мин** |
 | L2_Sailor | Матрос | 2 | simple | 2500 | 60 | 40 | stub |
 | L2_Captain | Капитан | 2 | hard | 8000 | 150 | 100 | stub |
-| L2_Admiral | Адмирал | 2 | boss | 40000 | 800 | 600 | dust |
+| L2_Admiral | Адмирал | 2 | boss | 40000 | 800 | 600 | dust · **respawn 10 мин** |
 | L3_Samurai | Самурай | 3 | medium | 15000 | 250 | 180 | stub |
 
 ---

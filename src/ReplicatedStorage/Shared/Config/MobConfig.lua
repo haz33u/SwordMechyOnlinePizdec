@@ -231,7 +231,8 @@ local MobConfig = {
 			weaponDropChance = 1,
 			weaponDropScale = 1.0,
 			weaponPool = {},
-			respawnSeconds = 45,
+			-- 10 min: enchants (dust) are strong — no rapid boss farm
+			respawnSeconds = 600,
 			isBoss = true,
 			armorFlat = 5,
 			visual = {
@@ -240,7 +241,7 @@ local MobConfig = {
 				scale = 2.0,
 				shape = "humanoid",
 			},
-			description = "Босс у портала → пыль зачарования + сильный меч. Квест на переход.",
+			description = "Босс у портала (респавн 10 мин) → пыль зачарования + сильный меч.",
 		},
 
 		----------------------------------------------------------------------
@@ -288,7 +289,7 @@ local MobConfig = {
 			weaponDropChance = 1,
 			weaponDropScale = 1.0,
 			weaponPool = {},
-			respawnSeconds = 60,
+			respawnSeconds = 600, -- 10 min (same rule as Loc1+)
 			isBoss = true,
 			visual = { preferredModelName = "L2_Admiral", color = "#1A5276", scale = 1.8, shape = "humanoid" },
 		},
