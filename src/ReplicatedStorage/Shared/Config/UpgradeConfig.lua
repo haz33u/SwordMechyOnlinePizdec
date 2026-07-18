@@ -23,7 +23,7 @@ local UpgradeConfig = {
 	Defs = {
 		RunSpeed = {
 			id = "RunSpeed",
-			name = "Скорость бега",
+			name = "Run Speed",
 			maxLevel = 50,
 			baseCost = 50,
 			growth = 1.35,
@@ -33,7 +33,7 @@ local UpgradeConfig = {
 		},
 		Backpack = {
 			id = "Backpack",
-			name = "Рюкзак",
+			name = "Backpack",
 			maxLevel = 30,
 			baseCost = 80,
 			growth = 1.4,
@@ -43,7 +43,7 @@ local UpgradeConfig = {
 		},
 		Power = {
 			id = "Power",
-			name = "Сила",
+			name = "Power",
 			maxLevel = 100,
 			baseCost = 100,
 			growth = 1.28,
@@ -53,7 +53,7 @@ local UpgradeConfig = {
 		},
 		ClickSpeed = {
 			id = "ClickSpeed",
-			name = "Скорость удара",
+			name = "Attack Speed",
 			maxLevel = 40,
 			baseCost = 120,
 			growth = 1.32,
@@ -63,7 +63,7 @@ local UpgradeConfig = {
 		},
 		CritChance = {
 			id = "CritChance",
-			name = "Крит",
+			name = "Crit",
 			maxLevel = 25,
 			baseCost = 200,
 			growth = 1.45,
@@ -73,7 +73,7 @@ local UpgradeConfig = {
 		},
 		Luck = {
 			id = "Luck",
-			name = "Удача",
+			name = "Luck",
 			maxLevel = 30,
 			baseCost = 150,
 			growth = 1.4,

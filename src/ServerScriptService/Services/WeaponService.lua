@@ -66,7 +66,7 @@ function WeaponService.Sell(player: Player, weaponUid: string)
 		return
 	end
 	if profile.equippedMain == weaponUid or profile.equippedOffhand == weaponUid then
-		Remotes.Event("Notify"):FireClient(player, { text = "Снимите меч сначала", color = "red" })
+		Remotes.Event("Notify"):FireClient(player, { text = "Unequip weapon first", color = "red" })
 		return
 	end
 	if #profile.weapons <= 1 then
@@ -98,7 +98,7 @@ function WeaponService.Enchant(player: Player, weaponUid: string)
 		profile.coins -= coinCost
 	else
 		Remotes.Event("Notify"):FireClient(player, {
-			text = string.format("Нужна пыль зачарования (%d) или %d монет", dustCost, coinCost),
+			text = string.format("Need enchant dust (%d) or %d coins", dustCost, coinCost),
 			color = "red",
 		})
 		return
@@ -111,11 +111,11 @@ function WeaponService.Enchant(player: Player, weaponUid: string)
 	end
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format(
-			"Чар: %s %+d%% (%s) [%s]",
+			"Enchant: %s %+d%% (%s) [%s]",
 			roll.id,
 			roll.value,
 			roll.quality,
-			if paidWith == "dust" then "пыль" else "монеты"
+			if paidWith == "dust" then "dust" else "coins"
 		),
 		color = "orange",
 	})

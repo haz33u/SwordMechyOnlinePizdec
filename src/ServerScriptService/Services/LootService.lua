@@ -79,7 +79,7 @@ function LootService.GrantWeapon(player: Player, profile: any, def: any)
 	end
 
 	Remotes.Event("Notify"):FireClient(player, {
-		text = "Дроп: " .. def.name .. " (" .. def.rarity .. ")",
+		text = "Drop: " .. def.name .. " (" .. def.rarity .. ")",
 		color = if def.rarity == "Secret" or def.rarity == "Limited"
 			then "gold"
 			elseif def.rarity == "Mythic" or def.rarity == "Legendary"
@@ -150,7 +150,7 @@ function LootService.TryBossDust(player: Player, profile: any, mobDef: any)
 	local amount = math.random(minD, maxD)
 	profile.enchantDust = (profile.enchantDust or 0) + amount
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Пыль зачарования +%d (всего %d)", amount, profile.enchantDust),
+		text = string.format("Enchant dust +%d (total %d)", amount, profile.enchantDust),
 		color = "purple",
 	})
 end
@@ -184,11 +184,11 @@ function LootService.BuildMobInspect(mobDef: any, profile: any?): any?
 	local dust = nil
 	if mobDef.isBoss then
 		dust = {
-			name = "Пыль зачарования",
+			name = "Enchant Dust",
 			min = WeaponConfig.BossDustMin or 2,
 			max = WeaponConfig.BossDustMax or 5,
 			chancePercent = 100,
-			note = "Для зачарования оружия",
+			note = "Used to enchant weapons",
 		}
 	end
 
@@ -197,13 +197,13 @@ function LootService.BuildMobInspect(mobDef: any, profile: any?): any?
 		name = mobDef.name,
 		tier = tier,
 		tierLabel = if tier == "simple"
-			then "Простой"
+			then "Simple"
 			elseif tier == "medium"
-			then "Средний"
+			then "Medium"
 			elseif tier == "hard"
-			then "Сложный"
+			then "Hard"
 			elseif tier == "boss"
-			then "Босс"
+			then "Boss"
 			else tier,
 		location = locationId,
 		hp = mobDef.hp,

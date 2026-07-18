@@ -30,7 +30,7 @@ function PetService.OpenCase(player: Player)
 	end
 	if profile.coins < PetConfig.OPEN_COST then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = "Нужно " .. tostring(PetConfig.OPEN_COST) .. " монет",
+			text = "Need " .. tostring(PetConfig.OPEN_COST) .. " coins",
 			color = "red",
 		})
 		return
@@ -57,7 +57,7 @@ function PetService.OpenCase(player: Player)
 
 	local def = PetConfig.Get(petId)
 	Remotes.Event("Notify"):FireClient(player, {
-		text = "Питомец: " .. (def and def.name or petId) .. " [" .. (def and def.rarity or "?") .. "]",
+		text = "Pet: " .. (def and def.name or petId) .. " [" .. (def and def.rarity or "?") .. "]",
 		color = "pink",
 	})
 
@@ -79,7 +79,7 @@ function PetService.Equip(player: Player, petUid: string)
 		end
 	end
 	if #profile.petTeam >= profile.petSlots then
-		Remotes.Event("Notify"):FireClient(player, { text = "Нет слотов петов", color = "red" })
+		Remotes.Event("Notify"):FireClient(player, { text = "No pet slots", color = "red" })
 		return
 	end
 	local found = false
@@ -122,7 +122,7 @@ function PetService.Feed(player: Player, petUid: string)
 			end
 			local cost = math.floor(PetConfig.FEED_BASE_COST * (PetConfig.FEED_GROWTH ^ (pet.level - 1)))
 			if profile.coins < cost then
-				Remotes.Event("Notify"):FireClient(player, { text = "Мало монет (" .. cost .. ")", color = "red" })
+				Remotes.Event("Notify"):FireClient(player, { text = "Not enough coins (" .. cost .. ")", color = "red" })
 				return
 			end
 			profile.coins -= cost

@@ -45,7 +45,7 @@ function LocationService.Set(player: Player, locId: number)
 	if not ProfileService.IsLocationUnlocked(profile, locId) then
 		Remotes.Event("Notify"):FireClient(player, {
 			text = string.format(
-				"[%d] %s — нужно силы %s (есть %s)",
+				"[%d] %s — need power %s (have %s)",
 				locId,
 				loc.name,
 				tostring(loc.unlockPower),
@@ -65,7 +65,7 @@ function LocationService.Set(player: Player, locId: number)
 	Remotes.Event("MobsUpdate"):FireClient(player, CombatService.GetMobsForClient(locId))
 
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Локация %d: %s", locId, loc.name),
+		text = string.format("Location %d: %s", locId, loc.name),
 		color = "cyan",
 	})
 	ProfileService.Push(player)

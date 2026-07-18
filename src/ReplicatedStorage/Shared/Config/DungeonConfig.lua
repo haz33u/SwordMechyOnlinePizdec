@@ -20,7 +20,7 @@ local DungeonConfig = {
 	Tiers = {
 		easy = {
 			id = "easy",
-			name = "Лёгкое подземелье",
+			name = "Easy Dungeon",
 			durationSeconds = 45,
 			hpMult = 5,
 			coinReward = 400,
@@ -31,7 +31,7 @@ local DungeonConfig = {
 		},
 		medium = {
 			id = "medium",
-			name = "Среднее подземелье",
+			name = "Medium Dungeon",
 			durationSeconds = 75,
 			hpMult = 25,
 			coinReward = 2_000,
@@ -42,7 +42,7 @@ local DungeonConfig = {
 		},
 		hard = {
 			id = "hard",
-			name = "Сложное подземелье",
+			name = "Hard Dungeon",
 			durationSeconds = 120,
 			hpMult = 100,
 			coinReward = 8_000,

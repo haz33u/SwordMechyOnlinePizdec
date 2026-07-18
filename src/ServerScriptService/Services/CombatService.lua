@@ -65,14 +65,14 @@ function CombatService.ToggleAuto(player: Player)
 	end
 	if not Formulas.IsAutoClickerUnlocked(profile) then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = "Автокликер ещё не открыт",
+			text = "Auto-clicker not unlocked yet",
 			color = "red",
 		})
 		return
 	end
 	profile.autoClicker = not profile.autoClicker
 	Remotes.Event("Notify"):FireClient(player, {
-		text = profile.autoClicker and "Автокликер: ВКЛ" or "Автокликер: ВЫКЛ",
+		text = profile.autoClicker and "Auto-clicker: ON" or "Auto-clicker: OFF",
 		color = profile.autoClicker and "green" or "red",
 	})
 	ProfileService.Push(player)
@@ -254,7 +254,7 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 
 	if def.isDebug then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = "Dummy убит (debug) — респавн",
+			text = "Dummy killed (debug) — respawn",
 			color = "gold",
 		})
 		task.delay(def.respawnSeconds, function()
@@ -280,7 +280,7 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 	LootService.TryPetKey(player, profile)
 
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("%s ✕  +%d сила  +%d монет", def.name, def.powerReward, coins),
+		text = string.format("%s ✕  +%d power  +%d coins", def.name, def.powerReward, coins),
 		color = "green",
 	})
 

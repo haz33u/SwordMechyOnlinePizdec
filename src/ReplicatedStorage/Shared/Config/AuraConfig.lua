@@ -11,13 +11,13 @@ export type AuraDef = {
 
 local AuraConfig = {
 	Auras = {
-		A_C1 = { id = "A_C1", name = "Искра", rarity = "Common", powerPct = 5, damagePct = 0, coinPct = 0 },
-		A_C2 = { id = "A_C2", name = "Листва", rarity = "Common", powerPct = 3, damagePct = 0, coinPct = 5 },
-		A_U1 = { id = "A_U1", name = "Волчья дымка", rarity = "Uncommon", powerPct = 12, damagePct = 5, coinPct = 0 },
-		A_R1 = { id = "A_R1", name = "Теневой круг", rarity = "Rare", powerPct = 25, damagePct = 10, coinPct = 5 },
-		A_E1 = { id = "A_E1", name = "Пламя", rarity = "Epic", powerPct = 45, damagePct = 20, coinPct = 0 },
-		A_L1 = { id = "A_L1", name = "Крылья Хранителя", rarity = "Legendary", powerPct = 80, damagePct = 30, coinPct = 10 },
-		A_M1 = { id = "A_M1", name = "Разлом", rarity = "Mythic", powerPct = 140, damagePct = 50, coinPct = 15 },
+		A_C1 = { id = "A_C1", name = "Spark", rarity = "Common", powerPct = 5, damagePct = 0, coinPct = 0 },
+		A_C2 = { id = "A_C2", name = "Foliage", rarity = "Common", powerPct = 3, damagePct = 0, coinPct = 5 },
+		A_U1 = { id = "A_U1", name = "Wolf Mist", rarity = "Uncommon", powerPct = 12, damagePct = 5, coinPct = 0 },
+		A_R1 = { id = "A_R1", name = "Shadow Ring", rarity = "Rare", powerPct = 25, damagePct = 10, coinPct = 5 },
+		A_E1 = { id = "A_E1", name = "Flame", rarity = "Epic", powerPct = 45, damagePct = 20, coinPct = 0 },
+		A_L1 = { id = "A_L1", name = "Guardian Wings", rarity = "Legendary", powerPct = 80, damagePct = 30, coinPct = 10 },
+		A_M1 = { id = "A_M1", name = "Rift", rarity = "Mythic", powerPct = 140, damagePct = 50, coinPct = 15 },
 	} :: { [string]: AuraDef },
 
 	OPEN_COST = 500, -- coins in skeleton (later Robux shop separate)

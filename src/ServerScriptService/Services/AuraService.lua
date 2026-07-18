@@ -22,7 +22,7 @@ function AuraService.Open(player: Player)
 		return
 	end
 	if profile.coins < AuraConfig.OPEN_COST then
-		Remotes.Event("Notify"):FireClient(player, { text = "Нужно " .. AuraConfig.OPEN_COST .. " монет", color = "red" })
+		Remotes.Event("Notify"):FireClient(player, { text = "Need " .. AuraConfig.OPEN_COST .. " coins", color = "red" })
 		return
 	end
 	profile.coins -= AuraConfig.OPEN_COST
@@ -58,7 +58,7 @@ function AuraService.Open(player: Player)
 
 	local def = AuraConfig.Get(auraId)
 	Remotes.Event("Notify"):FireClient(player, {
-		text = "Аура: " .. (def and def.name or auraId) .. " +" .. (def and def.powerPct or 0) .. "% силы",
+		text = "Aura: " .. (def and def.name or auraId) .. " +" .. (def and def.powerPct or 0) .. "% power",
 		color = "blue",
 	})
 	ProfileService.Push(player)

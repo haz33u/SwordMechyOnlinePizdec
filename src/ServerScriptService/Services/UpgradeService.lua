@@ -25,13 +25,13 @@ function UpgradeService.Buy(player: Player, upgradeId: string)
 
 	local cur = profile.upgradeLevels[upgradeId] or 0
 	if cur >= def.maxLevel then
-		Remotes.Event("Notify"):FireClient(player, { text = "Макс. уровень", color = "red" })
+		Remotes.Event("Notify"):FireClient(player, { text = "Max level", color = "red" })
 		return
 	end
 
 	local cost = UpgradeConfig.GetCost(upgradeId, cur + 1)
 	if profile.coins < cost then
-		Remotes.Event("Notify"):FireClient(player, { text = "Мало монет (" .. cost .. ")", color = "red" })
+		Remotes.Event("Notify"):FireClient(player, { text = "Not enough coins (" .. cost .. ")", color = "red" })
 		return
 	end
 

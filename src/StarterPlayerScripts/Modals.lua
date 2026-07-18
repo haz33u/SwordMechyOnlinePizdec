@@ -97,7 +97,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 	})
 	local cancel = UIKit.Button({
 		Parent = row,
-		Text = "Отмена",
+		Text = "Cancel",
 		Size = UDim2.new(0.48, 0, 1, 0),
 		Color = T.Surface3,
 		Color2 = T.Surface2,
@@ -139,9 +139,9 @@ function Modals.Mount(gui: ScreenGui, store: any)
 				pct = math.min(pD, pC)
 			end
 			-- SCREEENS rebirth copy: buff banner + progress + warn
-			title.Text = "Перерождение"
+			title.Text = "Rebirth"
 			body.Text = string.format(
-				"Перерождение увеличивает бустер силы.\n\nR%d %s  →  R%d\nУрон %s / %s\nМонеты %s / %s\n\n⚠ После: урон и баланс сбросятся. Мечи и петы остаются.",
+				"Rebirth increases your power multiplier.\n\nR%d %s  →  R%d\nDamage %s / %s\nCoins %s / %s\n\n⚠ After: damage progress and balance reset. Swords and pets stay.",
 				stats.rebirthLevel or 0,
 				Format.Mult(stats.rebirthMult),
 				(stats.rebirthLevel or 0) + 1,
@@ -152,16 +152,16 @@ function Modals.Mount(gui: ScreenGui, store: any)
 			)
 			barHost.Visible = true
 			fill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
-			primary.Text = "Переродиться"
+			primary.Text = "Rebirth"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				Net.Rebirth()
 				store:CloseModal()
 			end)
 		elseif m.kind == "sell" then
 			local w = m.payload
-			title.Text = "Продать меч?"
+			title.Text = "Sell weapon?"
 			body.Text = string.format("%s\nUID %s", tostring(w and w.id), tostring(w and w.uid))
-			primary.Text = "Продать"
+			primary.Text = "Sell"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				if w and w.uid then
 					Net.SellWeapon(w.uid)
@@ -169,21 +169,21 @@ function Modals.Mount(gui: ScreenGui, store: any)
 				store:CloseModal()
 			end)
 		elseif m.kind == "enchant" then
-			title.Text = "Зачарование"
-			body.Text = "Ролл ушёл на сервер.\nСмотри toast / инвентарь."
-			primary.Text = "Ок"
+			title.Text = "Enchant"
+			body.Text = "Roll sent to server.\nCheck toast / inventory."
+			primary.Text = "OK"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				store:CloseModal()
 			end)
 		elseif m.kind == "case" then
 			local kind = (m.payload and m.payload.kind) or "pet"
-			title.Text = kind == "aura" and "Кейс ауры" or "Кейс питомца"
-			body.Text = "Открываем…"
-			primary.Text = "Ок"
+			title.Text = kind == "aura" and "Aura Case" or "Pet Case"
+			body.Text = "Opening…"
+			primary.Text = "OK"
 			task.delay(1.0, function()
 				local cur = store:PeekModal()
 				if cur and cur.kind == "case" then
-					body.Text = "Готово — смотри список."
+					body.Text = "Done — check your list."
 				end
 			end)
 			primaryConn = primary.MouseButton1Click:Connect(function()
@@ -191,16 +191,16 @@ function Modals.Mount(gui: ScreenGui, store: any)
 			end)
 		elseif m.kind == "stub" then
 			local p = m.payload or {}
-			title.Text = tostring(p.title or "Скоро")
-			body.Text = tostring(p.text or "Функция в разработке.")
-			primary.Text = "Ок"
+			title.Text = tostring(p.title or "Soon")
+			body.Text = tostring(p.text or "Feature in development.")
+			primary.Text = "OK"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				store:CloseModal()
 			end)
 		else
-			title.Text = "Окно"
+			title.Text = "Window"
 			body.Text = tostring(m.kind)
-			primary.Text = "Ок"
+			primary.Text = "OK"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				store:CloseModal()
 			end)

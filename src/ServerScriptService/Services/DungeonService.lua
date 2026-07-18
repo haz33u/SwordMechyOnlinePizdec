@@ -28,7 +28,7 @@ function DungeonService.Start(player: Player, tierId: string)
 	local now = os.clock()
 	if now < (DungeonService._gates[tierId] or 0) then
 		local left = math.ceil((DungeonService._gates[tierId] :: number) - now)
-		Remotes.Event("Notify"):FireClient(player, { text = "Врата через " .. left .. "с", color = "red" })
+		Remotes.Event("Notify"):FireClient(player, { text = "Gates in " .. left .. "s", color = "red" })
 		return
 	end
 
@@ -42,7 +42,7 @@ function DungeonService.Start(player: Player, tierId: string)
 	}
 
 	Remotes.Event("Notify"):FireClient(player, {
-		text = "Данж: " .. tier.name .. " (" .. tier.durationSeconds .. "с)",
+		text = "Dungeon: " .. tier.name .. " (" .. tier.durationSeconds .. "s)",
 		color = "cyan",
 	})
 
@@ -79,14 +79,14 @@ function DungeonService.Complete(player: Player, tierId: string)
 		local stage = profile.dungeonStage[tierId]
 		if stage % tier.petSlotEveryStages == 0 then
 			PetService.GrantSlot(profile, 1)
-			Remotes.Event("Notify"):FireClient(player, { text = "+1 слот питомца!", color = "pink" })
+			Remotes.Event("Notify"):FireClient(player, { text = "+1 pet slot!", color = "pink" })
 		end
 	end
 
 	local rdef = RelicConfig.Get(relicId)
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format(
-			"Данж ✓ +%d coins, реликвия: %s",
+			"Dungeon ✓ +%d coins, relic: %s",
 			tier.coinReward,
 			rdef and rdef.name or relicId
 		),

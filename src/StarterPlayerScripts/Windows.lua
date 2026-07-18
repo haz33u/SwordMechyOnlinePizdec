@@ -69,16 +69,16 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 	local bodies: { [string]: Frame } = {}
 
 	local titles = {
-		character = "Профиль",
-		weapons = "Инвентарь с оружием",
-		pets = "Питомцы",
-		auras = "Ауры",
-		cases = "Кейсы",
-		relics = "Реликвии",
-		quests = "Задания",
-		locations = "Телепорт",
-		dungeons = "Подземелья",
-		shop = "Донат Магазин",
+		character = "Profile",
+		weapons = "Weapon Inventory",
+		pets = "Pets",
+		auras = "Auras",
+		cases = "Cases",
+		relics = "Relics",
+		quests = "Quests",
+		locations = "Teleport",
+		dungeons = "Dungeons",
+		shop = "Donate Shop",
 	}
 
 	for id, title in titles do
@@ -118,22 +118,22 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 
 		-- Full stats list (moved from HUD: CPS/DPS/Clicks + more)
-		sectionLabel(body, "ПРОФИЛЬ / СТАТИСТИКА", 1)
+		sectionLabel(body, "PROFILE / STATS", 1)
 		local statsScroll = UIKit.Scroll(body, UDim2.new(1, 0, 0, px(200)))
 		statsScroll.LayoutOrder = 2
 		local rows = {
-			{ "Сила (клик)", Format.Num(stats.damagePerClick or stats.totalPower) },
+			{ "Power (click)", Format.Num(stats.damagePerClick or stats.totalPower) },
 			{ "CPS", string.format("%.2f", stats.cps or 0) },
 			{ "DPS", Format.Num(stats.dps) },
-			{ "Клики", Format.Num(stats.totalClicks) },
-			{ "Монеты", Format.Num(stats.coins) },
-			{ "Крит шанс", Format.Pct(stats.crit) },
-			{ "Удача", Format.Pct(stats.luck) },
+			{ "Clicks", Format.Num(stats.totalClicks) },
+			{ "Coins", Format.Num(stats.coins) },
+			{ "Crit chance", Format.Pct(stats.crit) },
+			{ "Luck", Format.Pct(stats.luck) },
 			{ "Rebirth", string.format("R%d  %s", stats.rebirthLevel or 0, Format.Mult(stats.rebirthMult)) },
-			{ "Урон lifetime", Format.Num(stats.lifetimeDamage or 0) },
-			{ "Локация", tostring(stats.location or profile.currentLocation or 1) },
+			{ "Lifetime damage", Format.Num(stats.lifetimeDamage or 0) },
+			{ "Location", tostring(stats.location or profile.currentLocation or 1) },
 			{ "Swing CD", string.format("%.2fs", stats.swingCd or 1) },
-			{ "Авто", stats.autoClicker and "ON" or "OFF" },
+			{ "Auto", stats.autoClicker and "ON" or "OFF" },
 		}
 		for i, r in ipairs(rows) do
 			local line = Instance.new("Frame")
@@ -163,7 +163,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 		end
 
-		sectionLabel(body, "УЛУЧШЕНИЯ", 3)
+		sectionLabel(body, "UPGRADES", 3)
 
 		-- horizontal upgrade cards like UIУлучшений
 		local rowHost = Instance.new("ScrollingFrame")
@@ -200,7 +200,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				if def.effectType == "mult_add" then
 					effectLine = string.format("+%s%%", tostring(math.floor((def.effectPerLevel or 0) * 100 * math.max(lvl, 0))))
 				elseif def.statKey == "bagSlots" then
-					effectLine = string.format("%d слотов", math.floor((def.effectPerLevel or 0) * lvl))
+					effectLine = string.format("%d slots", math.floor((def.effectPerLevel or 0) * lvl))
 				else
 					effectLine = string.format("+%s", Format.Num((def.effectPerLevel or 0) * lvl))
 				end
@@ -252,7 +252,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				-- level / effect
 				UIKit.Label({
 					Parent = card,
-					Text = string.format("Уровень  %d / %d", lvl, def.maxLevel),
+					Text = string.format("Level  %d / %d", lvl, def.maxLevel),
 					Size = UDim2.new(1, -12, 0, px(18)),
 					Position = UDim2.fromOffset(6, px(130)),
 					SizePx = px(12),
@@ -270,7 +270,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				})
 				UIKit.Label({
 					Parent = card,
-					Text = maxed and "МАКС" or ("Цена  " .. Format.Num(cost) .. " 🪙"),
+					Text = maxed and "MAX" or ("Cost  " .. Format.Num(cost) .. " 🪙"),
 					Size = UDim2.new(1, -12, 0, px(18)),
 					Position = UDim2.fromOffset(6, px(172)),
 					SizePx = px(13),
@@ -281,7 +281,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 
 				UIKit.Button({
 					Parent = card,
-					Text = maxed and "MAX" or "Улучшить",
+					Text = maxed and "MAX" or "Upgrade",
 					Size = UDim2.new(1, -16, 0, px(36)),
 					Position = UDim2.new(0, 8, 1, -px(44)),
 					Color = maxed and T.Disabled or (canBuy and T.Accent or T.Disabled),
@@ -334,7 +334,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		UIKit.Label({
 			Parent = head,
 			Text = string.format(
-				"Осн: %s   ·   Втор: %s",
+				"Main: %s   ·   Off: %s",
 				weaponLabel(profile.equippedMain),
 				weaponLabel(profile.equippedOffhand)
 			),
@@ -345,7 +345,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		})
 		UIKit.Label({
 			Parent = head,
-			Text = string.format("%d из %d", count, INV_CAP),
+			Text = string.format("%d of %d", count, INV_CAP),
 			Size = UDim2.new(0.28, 0, 1, 0),
 			Position = UDim2.new(0.72, 0, 0, 0),
 			SizePx = px(14),
@@ -388,7 +388,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			UIKit.List(row, px(6), true, Enum.HorizontalAlignment.Right)
 			UIKit.Button({
 				Parent = row,
-				Text = "Надеть осн",
+				Text = "Equip main",
 				Size = UDim2.fromOffset(px(100), px(34)),
 				SizePx = px(12),
 				Primary = true,
@@ -398,7 +398,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = row,
-				Text = "Надеть втор",
+				Text = "Equip off",
 				Size = UDim2.fromOffset(px(100), px(34)),
 				SizePx = px(12),
 				OnClick = function()
@@ -407,7 +407,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = row,
-				Text = "Чар",
+				Text = "Enchant",
 				Size = UDim2.fromOffset(px(56), px(34)),
 				SizePx = px(12),
 				Color = Color3.fromRGB(90, 60, 140),
@@ -419,7 +419,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = row,
-				Text = "Продать",
+				Text = "Sell",
 				Size = UDim2.fromOffset(px(72), px(34)),
 				SizePx = px(12),
 				Color = T.Danger,
@@ -431,7 +431,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		else
 			UIKit.Label({
 				Parent = act,
-				Text = "Пусто — добудь оружие с мобов",
+				Text = "Empty — loot weapons from mobs",
 				Size = UDim2.new(1, 0, 1, 0),
 				SizePx = px(14),
 				Color = T.TextMuted,
@@ -502,9 +502,9 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				-- equipped badge (profile stores weapon uid)
 				local eq = ""
 				if profile.equippedMain == w.uid then
-					eq = "О"
+					eq = "M"
 				elseif profile.equippedOffhand == w.uid then
-					eq = "В"
+					eq = "O"
 				end
 				if eq ~= "" then
 					UIKit.Label({
@@ -554,7 +554,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local head = surfaceCard(body, 56, 1, T.Gold)
 		UIKit.Label({
 			Parent = head,
-			Text = string.format("Команда %d / %d", #(profile.petTeam or {}), profile.petSlots or 1),
+			Text = string.format("Team %d / %d", #(profile.petTeam or {}), profile.petSlots or 1),
 			Size = UDim2.new(1, -btnW - 12, 1, 0),
 			SizePx = px(16),
 			Color = T.Text,
@@ -562,7 +562,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		})
 		UIKit.Button({
 			Parent = head,
-			Text = "Кейс",
+			Text = "Case",
 			Size = UDim2.fromOffset(btnW, px(40)),
 			Position = UDim2.new(1, -btnW, 0.5, -px(20)),
 			Color = T.GoldDeep,
@@ -594,7 +594,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 					tostring(p.name or p.id),
 					tostring(p.rarity or "Common"),
 					tostring(p.level or 1),
-					inTeam and " · В КОМАНДЕ" or ""
+					inTeam and " · TEAM" or ""
 				),
 				Size = UDim2.new(1, -sideW - 8, 0, px(22)),
 				SizePx = px(15),
@@ -605,7 +605,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			UIKit.Label({
 				Parent = c,
 				Text = string.format(
-					"+%s%% сила   +%s%% монеты",
+					"+%s%% power   +%s%% coins",
 					tostring(math.floor((p.powerPct or 0) * 100)),
 					tostring(math.floor((p.coinPct or 0) * 100))
 				),
@@ -624,7 +624,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			UIKit.List(row, px(8), true)
 			UIKit.Button({
 				Parent = row,
-				Text = inTeam and "Снять" or "Экип",
+				Text = inTeam and "Unequip" or "Equip",
 				Size = UDim2.fromOffset(px(72), px(36)),
 				SizePx = px(13),
 				Color = inTeam and T.Disabled or T.Success,
@@ -650,7 +650,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		if #(profile.pets or {}) == 0 then
 			UIKit.Label({
 				Parent = scroll,
-				Text = "Пусто — открой кейс.",
+				Text = "Empty — open a case.",
 				Size = UDim2.new(1, 0, 0, px(48)),
 				Color = T.TextMuted,
 				SizePx = px(15),
@@ -671,7 +671,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local head = surfaceCard(body, 56, 1, T.Gold)
 		UIKit.Label({
 			Parent = head,
-			Text = "Активная: " .. tostring(profile.equippedAura or "нет"),
+			Text = "Active: " .. tostring(profile.equippedAura or "none"),
 			Size = UDim2.new(1, -btnW - 12, 1, 0),
 			SizePx = px(16),
 			Color = T.Text,
@@ -679,7 +679,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		})
 		UIKit.Button({
 			Parent = head,
-			Text = "Кейс",
+			Text = "Case",
 			Size = UDim2.fromOffset(btnW, px(40)),
 			Position = UDim2.new(1, -btnW, 0.5, -px(20)),
 			Color = Color3.fromRGB(100, 70, 160),
@@ -707,7 +707,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = c,
-				Text = "Экип",
+				Text = "Equip",
 				Size = UDim2.fromOffset(px(96), px(38)),
 				Position = UDim2.new(1, -px(96), 0.5, -px(19)),
 				Color = T.Success,
@@ -730,7 +730,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		if not profile then
 			return
 		end
-		sectionLabel(body, "ИЗ ДАНЖЕЙ (read-only)", 1)
+		sectionLabel(body, "FROM DUNGEONS (read-only)", 1)
 		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(40)))
 		scroll.LayoutOrder = 2
 		for i, r in ipairs(profile.relics or {}) do
@@ -747,7 +747,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		if #(profile.relics or {}) == 0 then
 			UIKit.Label({
 				Parent = scroll,
-				Text = "Пусто — ходи в данжи.",
+				Text = "Empty — clear dungeons.",
 				Size = UDim2.new(1, 0, 0, px(48)),
 				Color = T.TextMuted,
 				SizePx = px(15),
@@ -819,7 +819,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			if needBtn then
 				UIKit.Button({
 					Parent = row,
-					Text = "Сдать",
+					Text = "Claim",
 					Size = UDim2.fromOffset(px(100), px(36)),
 					Color = T.Success,
 					Color2 = T.Colors and T.Colors.SuccessDeep,
@@ -833,7 +833,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			elseif claimed then
 				UIKit.Label({
 					Parent = row,
-					Text = "готово",
+					Text = "done",
 					Size = UDim2.fromOffset(px(72), px(32)),
 					Color = T.Success,
 					SizePx = px(13),
@@ -856,7 +856,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local stats = store:PeekStats()
 		local power = (stats and (stats.totalPower or stats.damagePerClick)) or 0
 
-		sectionLabel(body, "ВХОД НА ЛОКАЦИЮ", 1)
+		sectionLabel(body, "ENTER LOCATION", 1)
 		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(36)))
 		scroll.LayoutOrder = 2
 		-- 2-col grid like SCREEENS teleport
@@ -924,7 +924,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 
 			UIKit.Label({
 				Parent = card,
-				Text = meta.name .. (here and "  ·  ЗДЕСЬ" or ""),
+				Text = meta.name .. (here and "  ·  HERE" or ""),
 				Size = UDim2.new(1, -px(16), 0, px(22)),
 				Position = UDim2.fromOffset(px(8), px(88)),
 				SizePx = px(14),
@@ -943,13 +943,13 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				Z = 34,
 			})
 
-			local btnText = "Телепортироваться"
+			local btnText = "Teleport"
 			local canGo = unlocked
 			local disabled = not unlocked
 			if not unlocked then
-				btnText = canUnlock and ("Нужна сила " .. Format.Num(meta.unlockPower)) or ("Сила " .. Format.Num(meta.unlockPower))
+				btnText = canUnlock and ("Need power " .. Format.Num(meta.unlockPower)) or ("Power " .. Format.Num(meta.unlockPower))
 			elseif here then
-				btnText = "Вы здесь"
+				btnText = "You are here"
 				disabled = true
 			end
 
@@ -983,9 +983,9 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			return
 		end
 		local tiers = {
-			{ id = "easy", name = "Лёгкое", color = T.Success },
-			{ id = "medium", name = "Среднее", color = T.Gold },
-			{ id = "hard", name = "Сложное", color = T.Danger },
+			{ id = "easy", name = "Easy", color = T.Success },
+			{ id = "medium", name = "Medium", color = T.Gold },
+			{ id = "hard", name = "Hard", color = T.Danger },
 		}
 		local btnW = px(112)
 		for i, tier in ipairs(tiers) do
@@ -1002,7 +1002,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Label({
 				Parent = c,
-				Text = "Стадия " .. tostring(stage),
+				Text = "Stage " .. tostring(stage),
 				Size = UDim2.new(1, -btnW - 12, 0, px(18)),
 				Position = UDim2.fromOffset(0, px(34)),
 				SizePx = px(14),
@@ -1011,7 +1011,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = c,
-				Text = "Войти",
+				Text = "Enter",
 				Size = UDim2.fromOffset(btnW, px(42)),
 				Position = UDim2.new(1, -btnW, 0.5, -px(21)),
 				Color = tier.color,
@@ -1140,7 +1140,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local head = surfaceCard(body, 48, 1, T.Stroke)
 		UIKit.Label({
 			Parent = head,
-			Text = string.format("Баланс  %s 🪙   ·   локация  %d", Format.Num(coins), loc),
+			Text = string.format("Balance  %s 🪙   ·   location  %d", Format.Num(coins), loc),
 			Size = UDim2.new(1, 0, 1, 0),
 			SizePx = px(15),
 			Color = T.TextSoft,
@@ -1154,11 +1154,11 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		do
 			local cost = PetConfig.OPEN_COST or 0
 			local can = coins >= cost
-			local costTxt = cost <= 0 and "Бесплатно" or (Format.Num(cost) .. " 🪙")
+			local costTxt = cost <= 0 and "Free" or (Format.Num(cost) .. " 🪙")
 			local c = surfaceCard(scroll, 110, 1, T.Success)
 			UIKit.Label({
 				Parent = c,
-				Text = "🐾  Кейс с питомцами",
+				Text = "🐾  Pet Case",
 				Size = UDim2.new(1, 0, 0, px(24)),
 				SizePx = px(17),
 				Font = T.Font.Title,
@@ -1167,7 +1167,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Label({
 				Parent = c,
-				Text = "Пет текущей локации · 1 образец на редкость ниже",
+				Text = "Pet for current location · 1 sample per rarity below",
 				Size = UDim2.new(1, 0, 0, px(20)),
 				Position = UDim2.fromOffset(0, px(28)),
 				SizePx = px(12),
@@ -1176,7 +1176,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = c,
-				Text = can and ("Открыть за " .. costTxt) or ("Нужно " .. costTxt),
+				Text = can and ("Open for " .. costTxt) or ("Need " .. costTxt),
 				Size = UDim2.new(1, 0, 0, px(38)),
 				Position = UDim2.new(0, 0, 1, -px(4)),
 				Anchor = Vector2.new(0, 1),
@@ -1191,17 +1191,17 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				end,
 			})
 		end
-		addOddsSection(scroll, "ВОЗМОЖНЫЕ НАГРАДЫ · ПЕТЫ", "pet", PetConfig.CaseWeights, loc, 10)
+		addOddsSection(scroll, "POSSIBLE REWARDS · PETS", "pet", PetConfig.CaseWeights, loc, 10)
 
 		-- Aura case
 		do
 			local cost = AuraConfig.OPEN_COST or 0
 			local can = coins >= cost
-			local costTxt = cost <= 0 and "Бесплатно" or (Format.Num(cost) .. " 🪙")
+			local costTxt = cost <= 0 and "Free" or (Format.Num(cost) .. " 🪙")
 			local c = surfaceCard(scroll, 110, 20, Color3.fromRGB(140, 90, 210))
 			UIKit.Label({
 				Parent = c,
-				Text = "✨  Кейс с аурами",
+				Text = "✨  Aura Case",
 				Size = UDim2.new(1, 0, 0, px(24)),
 				SizePx = px(17),
 				Font = T.Font.Title,
@@ -1210,7 +1210,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Label({
 				Parent = c,
-				Text = "Случайная аура · 1 образец на редкость ниже",
+				Text = "Random aura · 1 sample per rarity below",
 				Size = UDim2.new(1, 0, 0, px(20)),
 				Position = UDim2.fromOffset(0, px(28)),
 				SizePx = px(12),
@@ -1219,7 +1219,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = c,
-				Text = can and ("Открыть за " .. costTxt) or ("Нужно " .. costTxt),
+				Text = can and ("Open for " .. costTxt) or ("Need " .. costTxt),
 				Size = UDim2.new(1, 0, 0, px(38)),
 				Position = UDim2.new(0, 0, 1, -px(4)),
 				Anchor = Vector2.new(0, 1),
@@ -1234,7 +1234,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				end,
 			})
 		end
-		addOddsSection(scroll, "ВОЗМОЖНЫЕ НАГРАДЫ · АУРЫ", "aura", AuraConfig.Weights, loc, 30)
+		addOddsSection(scroll, "POSSIBLE REWARDS · AURAS", "aura", AuraConfig.Weights, loc, 30)
 	end
 
 	---------------------------------------------------------------- Donate shop (UI stubs only)
@@ -1243,7 +1243,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		UIKit.Clear(body)
 		UIKit.List(body, px(10), false)
 
-		local tabs = { "Наборы", "Бусты", "Разное", "Игровой баланс" }
+		local tabs = { "Packs", "Boosts", "Misc", "Game currency" }
 		local tabRow = Instance.new("Frame")
 		tabRow.BackgroundTransparency = 1
 		tabRow.Size = UDim2.new(1, 0, 0, px(40))
@@ -1252,7 +1252,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		tabRow.Parent = body
 		UIKit.List(tabRow, px(8), true)
 
-		local activeTab = (store :: any)._shopTab or "Бусты"
+		local activeTab = (store :: any)._shopTab or "Boosts"
 		for i, name in ipairs(tabs) do
 			local on = name == activeTab
 			UIKit.Button({
@@ -1276,34 +1276,34 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 
 		-- Luau: Cyrillic keys must be quoted ["..."], not bare identifiers
 		local stubs = {
-			["Наборы"] = {
-				{ name = "Стартовый набор", price = "99 R$", desc = "Монеты + ключи (заглушка)" },
-				{ name = "Набор воина", price = "199 R$", desc = "Буст силы x2 1ч (заглушка)" },
-				{ name = "VIP пак", price = "499 R$", desc = "Косметика + бонусы (заглушка)" },
+			["Packs"] = {
+				{ name = "Starter pack", price = "99 R$", desc = "Coins + keys (stub)" },
+				{ name = "Warrior pack", price = "199 R$", desc = "Power x2 1h (stub)" },
+				{ name = "VIP pack", price = "499 R$", desc = "Cosmetics + bonuses (stub)" },
 			},
-			["Бусты"] = {
-				{ name = "Локальный бустер силы x2", price = "149 R$", desc = "30 мин · скоро" },
-				{ name = "Глобальный бустер силы x1.5", price = "199 R$", desc = "30 мин · скоро" },
-				{ name = "Локальный бустер урона x2", price = "149 R$", desc = "30 мин · скоро" },
-				{ name = "Глобальный бустер урона x1.5", price = "199 R$", desc = "30 мин · скоро" },
-				{ name = "Локальный бустер денег x1.5", price = "149 R$", desc = "30 мин · скоро" },
-				{ name = "Глобальный бустер денег x1.5", price = "199 R$", desc = "30 мин · скоро" },
-				{ name = "Локальный бустер удачи x1.25", price = "149 R$", desc = "30 мин · скоро" },
-				{ name = "Глобальный бустер удачи x1.25", price = "199 R$", desc = "30 мин · скоро" },
+			["Boosts"] = {
+				{ name = "Local power boost x2", price = "149 R$", desc = "30 min · soon" },
+				{ name = "Global power boost x1.5", price = "199 R$", desc = "30 min · soon" },
+				{ name = "Local damage boost x2", price = "149 R$", desc = "30 min · soon" },
+				{ name = "Global damage boost x1.5", price = "199 R$", desc = "30 min · soon" },
+				{ name = "Local coin boost x1.5", price = "149 R$", desc = "30 min · soon" },
+				{ name = "Global coin boost x1.5", price = "199 R$", desc = "30 min · soon" },
+				{ name = "Local luck boost x1.25", price = "149 R$", desc = "30 min · soon" },
+				{ name = "Global luck boost x1.25", price = "199 R$", desc = "30 min · soon" },
 			},
-			["Разное"] = {
-				{ name = "Скины мечей", price = "--", desc = "Скоро" },
-				{ name = "Эмоции", price = "--", desc = "Скоро" },
-				{ name = "Рамки ника", price = "--", desc = "Скоро" },
+			["Misc"] = {
+				{ name = "Sword skins", price = "--", desc = "Soon" },
+				{ name = "Emotes", price = "--", desc = "Soon" },
+				{ name = "Name frames", price = "--", desc = "Soon" },
 			},
-			["Игровой баланс"] = {
-				{ name = "5 000 монет", price = "49 R$", desc = "Заглушка" },
-				{ name = "25 000 монет", price = "149 R$", desc = "Заглушка" },
-				{ name = "100 000 монет", price = "399 R$", desc = "Заглушка" },
+			["Game currency"] = {
+				{ name = "5,000 coins", price = "49 R$", desc = "Stub" },
+				{ name = "25,000 coins", price = "149 R$", desc = "Stub" },
+				{ name = "100,000 coins", price = "399 R$", desc = "Stub" },
 			},
 		}
 
-		local list = stubs[activeTab] or stubs["Бусты"]
+		local list = stubs[activeTab] or stubs["Boosts"]
 		for i, item in ipairs(list) do
 			local c = surfaceCard(scroll, 96, i, T.Stroke)
 			UIKit.Label({
@@ -1336,14 +1336,14 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Button({
 				Parent = c,
-				Text = "Скоро",
+				Text = "Soon",
 				Size = UDim2.fromOffset(px(90), px(36)),
 				Position = UDim2.new(1, -px(90), 0.5, -px(18)),
 				Primary = true,
 				SizePx = px(13),
 				Z = 34,
 				OnClick = function()
-					openModal("stub", { title = item.name, text = "Покупка ещё не подключена.\nСкоро: " .. item.price })
+					openModal("stub", { title = item.name, text = "Purchase not wired yet.\nSoon: " .. item.price })
 				end,
 			})
 		end

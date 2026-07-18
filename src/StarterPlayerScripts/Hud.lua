@@ -29,18 +29,18 @@ local RAIL = {
 }
 
 local LOC = {
-	[1] = "Тёмный лес",
-	[2] = "Пиратский берег",
-	[3] = "Земли шиноби",
-	[4] = "Полярная тундра",
+	[1] = "Dark Forest",
+	[2] = "Pirate Shore",
+	[3] = "Shinobi Lands",
+	[4] = "Polar Tundra",
 }
 
 -- Boost row style (top-left). Data from profile.boosts when present.
 local BOOST_META = {
-	{ key = "money", icon = "🪙", color = Color3.fromRGB(200, 130, 40), name = "Монеты" },
-	{ key = "power", icon = "💪", color = Color3.fromRGB(200, 55, 70), name = "Сила" },
-	{ key = "damage", icon = "⚡", color = Color3.fromRGB(120, 60, 200), name = "Урон" },
-	{ key = "luck", icon = "🍀", color = Color3.fromRGB(50, 160, 70), name = "Удача" },
+	{ key = "money", icon = "🪙", color = Color3.fromRGB(200, 130, 40), name = "Coins" },
+	{ key = "power", icon = "💪", color = Color3.fromRGB(200, 55, 70), name = "Power" },
+	{ key = "damage", icon = "⚡", color = Color3.fromRGB(120, 60, 200), name = "Damage" },
+	{ key = "luck", icon = "🍀", color = Color3.fromRGB(50, 160, 70), name = "Luck" },
 }
 
 function Hud.Mount(
@@ -141,7 +141,7 @@ function Hud.Mount(
 		UIKit.Label({
 			Name = "Scope",
 			Parent = row,
-			Text = "Локальный",
+			Text = "Local",
 			Size = UDim2.new(1, -64, 1, 0),
 			Position = UDim2.fromOffset(58, 0),
 			SizePx = 12,
@@ -276,7 +276,7 @@ function Hud.Mount(
 	local autoChip = UIKit.Button({
 		Name = "AutoChip",
 		Parent = root,
-		Text = "АВТО",
+		Text = "AUTO",
 		Size = UDim2.fromOffset(72, 28),
 		Position = UDim2.new(0.5, 0, 1, -108),
 		Anchor = Vector2.new(0.5, 1),
@@ -290,22 +290,16 @@ function Hud.Mount(
 		end,
 	})
 
-	-- invisible click anchor (center) for ClickPop
-	local clickAnchor = Instance.new("TextButton")
+	-- ClickPop anchor (center of screen). Actual swing is App-wide LMB/touch.
+	local clickAnchor = Instance.new("Frame")
 	clickAnchor.Name = "ClickAnchor"
 	clickAnchor.BackgroundTransparency = 1
-	clickAnchor.Text = ""
 	clickAnchor.Size = UDim2.fromOffset(1, 1)
 	clickAnchor.Position = UDim2.new(0.5, 0, 0.55, 0)
 	clickAnchor.AnchorPoint = Vector2.new(0.5, 0.5)
 	clickAnchor.ZIndex = 1
 	clickAnchor.Parent = root
-	clickAnchor.MouseButton1Click:Connect(function()
-		Net.Swing("manual")
-		if onManualClick then
-			onManualClick()
-		end
-	end)
+	local _ = onManualClick
 
 	local function applyMetrics(m: Layout.Metrics)
 		rail.Size = UDim2.fromOffset(m.railW, m.railH)
@@ -362,13 +356,13 @@ function Hud.Mount(
 		rbFill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
 
 		if st.autoClicker then
-			autoChip.Text = "АВТО ON"
+			autoChip.Text = "AUTO ON"
 			local g = autoChip:FindFirstChildOfClass("UIGradient")
 			if g then
 				g.Color = ColorSequence.new(T.AutoOn, T.AutoOnDeep)
 			end
 		else
-			autoChip.Text = "АВТО"
+			autoChip.Text = "AUTO"
 			local g = autoChip:FindFirstChildOfClass("UIGradient")
 			if g then
 				g.Color = ColorSequence.new(T.AutoOff, T.AutoOffDeep)
@@ -393,7 +387,7 @@ function Hud.Mount(
 				end
 				if scopeLab and scopeLab:IsA("TextLabel") then
 					local sc = tostring(b.scope or "local")
-					scopeLab.Text = (sc == "global" or sc == "Глобальный") and "Глобальный" or "Локальный"
+					scopeLab.Text = (sc == "global" or sc == "Global") and "Global" or "Local"
 				end
 			else
 				row.Visible = false
@@ -432,7 +426,7 @@ function Hud.Mount(
 		local _ = _loc
 	end
 
-	function api.GetClickButton(): TextButton
+	function api.GetClickButton(): GuiObject
 		return clickAnchor
 	end
 

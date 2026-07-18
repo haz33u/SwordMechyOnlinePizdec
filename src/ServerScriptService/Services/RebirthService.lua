@@ -22,7 +22,7 @@ function RebirthService.Try(player: Player): boolean
 
 	local nextLevel = (profile.rebirthLevel or 0) + 1
 	if nextLevel > RebirthConfig.MAX_LEVEL then
-		Remotes.Event("Notify"):FireClient(player, { text = "Макс. перерождение", color = "red" })
+		Remotes.Event("Notify"):FireClient(player, { text = "Max rebirth", color = "red" })
 		return false
 	end
 
@@ -33,7 +33,7 @@ function RebirthService.Try(player: Player): boolean
 	local ok, reason = RebirthConfig.CanAfford(dmg, coins, nextLevel)
 	if not ok then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = reason or "Не хватает ресурсов",
+			text = reason or "Not enough resources",
 			color = "red",
 		})
 		return false
@@ -50,7 +50,7 @@ function RebirthService.Try(player: Player): boolean
 
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format(
-			"Перерождение %d! Mult x%.2f (+%.0f%%)  −%s монет",
+			"Rebirth %d! Mult x%.2f (+%.0f%%)  −%s coins",
 			nextLevel,
 			profile.rebirthMult,
 			bonus * 100,

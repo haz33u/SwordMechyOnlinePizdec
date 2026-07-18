@@ -231,88 +231,88 @@ end
 ----------------------------------------------------------------------
 -- LOC 1 — Тёмный лес (easy onboarding)
 ----------------------------------------------------------------------
-add("W1_C1", "Ржавый клинок", "Common", 1, 1)
-add("W1_C2", "Дубовый меч", "Common", 1, 2)
-add("W1_U1", "Клинок разбойника", "Uncommon", 1, 1)
-add("W1_U2", "Серебряный тесак", "Uncommon", 1, 2)
-add("W1_R1", "Меч теней", "Rare", 1, 1)
-add("W1_R2", "Клык волка", "Rare", 1, 2)
-add("W1_E1", "Клинок Хранителя", "Epic", 1, 1)
-add("W1_E2", "Изумрудный страж", "Epic", 1, 2)
-add("W1_L1", "Перворождённый", "Legendary", 1, 1)
-add("W1_L2", "Сердце рощи", "Legendary", 1, 2)
-add("W1_M1", "Тень Прародителя", "Mythic", 1, 1)
-add("W1_M2", "Клык Бездны", "Mythic", 1, 2)
-add("W1_S1", "Эхо Древнего Леса", "Secret", 1, 1)
-add("W1_S2", "Клинок Забытого Короля", "Secret", 1, 2)
-add("W1_X1", "Арк Лесного Рассвета", "Limited", 1, 1, {
-	description = "LIMITED — сезонный/ивент. Красивые VFX, не с мобов.",
+add("W1_C1", "Rusty Blade", "Common", 1, 1)
+add("W1_C2", "Oak Sword", "Common", 1, 2)
+add("W1_U1", "Bandit Blade", "Uncommon", 1, 1)
+add("W1_U2", "Silver Cleaver", "Uncommon", 1, 2)
+add("W1_R1", "Shadow Sword", "Rare", 1, 1)
+add("W1_R2", "Wolf Fang", "Rare", 1, 2)
+add("W1_E1", "Guardian Blade", "Epic", 1, 1)
+add("W1_E2", "Emerald Guard", "Epic", 1, 2)
+add("W1_L1", "Firstborn", "Legendary", 1, 1)
+add("W1_L2", "Grove Heart", "Legendary", 1, 2)
+add("W1_M1", "Ancestor Shadow", "Mythic", 1, 1)
+add("W1_M2", "Abyss Fang", "Mythic", 1, 2)
+add("W1_S1", "Ancient Forest Echo", "Secret", 1, 1)
+add("W1_S2", "Forgotten King Blade", "Secret", 1, 2)
+add("W1_X1", "Forest Dawn Arc", "Limited", 1, 1, {
+	description = "LIMITED — seasonal/event. Fancy VFX, not from mobs.",
 	vfxProfile = "limited_forest_dawn",
 })
 
 ----------------------------------------------------------------------
 -- LOC 2 — Пиратский берег
 ----------------------------------------------------------------------
-add("W2_C1", "Абордажная сабля", "Common", 2, 1)
-add("W2_C2", "Нож трюма", "Common", 2, 2)
-add("W2_U1", "Корсарский клинок", "Uncommon", 2, 1)
-add("W2_U2", "Крюк матроса", "Uncommon", 2, 2)
-add("W2_R1", "Акула-резак", "Rare", 2, 1)
-add("W2_R2", "Сабля шторма", "Rare", 2, 2)
-add("W2_E1", "Сабля адмирала", "Epic", 2, 1)
-add("W2_E2", "Клинок чёрной бухты", "Epic", 2, 2)
-add("W2_L1", "Чёрный флаг", "Legendary", 2, 1)
-add("W2_L2", "Гнев Нептуна", "Legendary", 2, 2)
-add("W2_M1", "Кракен-бич", "Mythic", 2, 1)
-add("W2_M2", "Приливный палач", "Mythic", 2, 2)
-add("W2_S1", "Сердце Маэлстрома", "Secret", 2, 1)
-add("W2_S2", "Клинок Потерянного Флота", "Secret", 2, 2)
-add("W2_X1", "Флагман Заката", "Limited", 2, 1, {
-	description = "LIMITED — пиратский showcase VFX.",
+add("W2_C1", "Boarding Saber", "Common", 2, 1)
+add("W2_C2", "Hold Knife", "Common", 2, 2)
+add("W2_U1", "Corsair Blade", "Uncommon", 2, 1)
+add("W2_U2", "Sailor Hook", "Uncommon", 2, 2)
+add("W2_R1", "Shark Cutter", "Rare", 2, 1)
+add("W2_R2", "Storm Saber", "Rare", 2, 2)
+add("W2_E1", "Admiral Saber", "Epic", 2, 1)
+add("W2_E2", "Black Cove Blade", "Epic", 2, 2)
+add("W2_L1", "Black Flag", "Legendary", 2, 1)
+add("W2_L2", "Neptune Wrath", "Legendary", 2, 2)
+add("W2_M1", "Kraken Scourge", "Mythic", 2, 1)
+add("W2_M2", "Tidal Executioner", "Mythic", 2, 2)
+add("W2_S1", "Maelstrom Heart", "Secret", 2, 1)
+add("W2_S2", "Lost Fleet Blade", "Secret", 2, 2)
+add("W2_X1", "Sunset Flagship", "Limited", 2, 1, {
+	description = "LIMITED — pirate showcase VFX.",
 	vfxProfile = "limited_pirate_sunset",
 })
 
 ----------------------------------------------------------------------
 -- LOC 3 — Земли шиноби
 ----------------------------------------------------------------------
-add("W3_C1", "Учебный вакидзаси", "Common", 3, 1)
-add("W3_C2", "Бамбуковый клинок", "Common", 3, 2)
-add("W3_U1", "Катана ученика", "Uncommon", 3, 1)
-add("W3_U2", "Танто стража", "Uncommon", 3, 2)
-add("W3_R1", "Катана тени", "Rare", 3, 1)
-add("W3_R2", "Лунный разрез", "Rare", 3, 2)
-add("W3_E1", "Клинок клана", "Epic", 3, 1)
-add("W3_E2", "Шиноби-но-яри", "Epic", 3, 2)
-add("W3_L1", "Драконья катана", "Legendary", 3, 1)
-add("W3_L2", "Печать бури", "Legendary", 3, 2)
-add("W3_M1", "Клинок тысячи теней", "Mythic", 3, 1)
-add("W3_M2", "Храм-разрушитель", "Mythic", 3, 2)
-add("W3_S1", "Вечная Цукуёми", "Secret", 3, 1)
-add("W3_S2", "Меч Первого Шиноби", "Secret", 3, 2)
-add("W3_X1", "Сакура Вечности", "Limited", 3, 1, {
-	description = "LIMITED — сакура-партиклы, не с мобов.",
+add("W3_C1", "Training Wakizashi", "Common", 3, 1)
+add("W3_C2", "Bamboo Blade", "Common", 3, 2)
+add("W3_U1", "Apprentice Katana", "Uncommon", 3, 1)
+add("W3_U2", "Guard Tanto", "Uncommon", 3, 2)
+add("W3_R1", "Shadow Katana", "Rare", 3, 1)
+add("W3_R2", "Moon Slash", "Rare", 3, 2)
+add("W3_E1", "Clan Blade", "Epic", 3, 1)
+add("W3_E2", "Shinobi-no-Yari", "Epic", 3, 2)
+add("W3_L1", "Dragon Katana", "Legendary", 3, 1)
+add("W3_L2", "Storm Seal", "Legendary", 3, 2)
+add("W3_M1", "Thousand Shadows Blade", "Mythic", 3, 1)
+add("W3_M2", "Temple Breaker", "Mythic", 3, 2)
+add("W3_S1", "Eternal Tsukuyomi", "Secret", 3, 1)
+add("W3_S2", "First Shinobi Sword", "Secret", 3, 2)
+add("W3_X1", "Eternal Sakura", "Limited", 3, 1, {
+	description = "LIMITED — sakura particles, not from mobs.",
 	vfxProfile = "limited_sakura_eternity",
 })
 
 ----------------------------------------------------------------------
 -- LOC 4 — Полярная тундра
 ----------------------------------------------------------------------
-add("W4_C1", "Ледяной тесак", "Common", 4, 1)
-add("W4_C2", "Костяной нож", "Common", 4, 2)
-add("W4_U1", "Морозный палаш", "Uncommon", 4, 1)
-add("W4_U2", "Клык полярного волка", "Uncommon", 4, 2)
-add("W4_R1", "Северное копьё-меч", "Rare", 4, 1)
-add("W4_R2", "Клинок вьюги", "Rare", 4, 2)
-add("W4_E1", "Ледник-разрушитель", "Epic", 4, 1)
-add("W4_E2", "Руна вечной зимы", "Epic", 4, 2)
-add("W4_L1", "Корона Полярной Ночи", "Legendary", 4, 1)
-add("W4_L2", "Молот Айсберга", "Legendary", 4, 2)
-add("W4_M1", "Сердце Вечной Мерзлоты", "Mythic", 4, 1)
-add("W4_M2", "Клык Белого Ужаса", "Mythic", 4, 2)
-add("W4_S1", "Шёпот Полярной Звезды", "Secret", 4, 1)
-add("W4_S2", "Клинок Конца Зимы", "Secret", 4, 2)
-add("W4_X1", "Аврора Абсолюта", "Limited", 4, 1, {
-	description = "LIMITED — aurora VFX, флекс сезона.",
+add("W4_C1", "Ice Cleaver", "Common", 4, 1)
+add("W4_C2", "Bone Knife", "Common", 4, 2)
+add("W4_U1", "Frost Broadsword", "Uncommon", 4, 1)
+add("W4_U2", "Polar Wolf Fang", "Uncommon", 4, 2)
+add("W4_R1", "Northern Spear-Sword", "Rare", 4, 1)
+add("W4_R2", "Blizzard Blade", "Rare", 4, 2)
+add("W4_E1", "Glacier Breaker", "Epic", 4, 1)
+add("W4_E2", "Eternal Winter Rune", "Epic", 4, 2)
+add("W4_L1", "Polar Night Crown", "Legendary", 4, 1)
+add("W4_L2", "Iceberg Hammer", "Legendary", 4, 2)
+add("W4_M1", "Permafrost Heart", "Mythic", 4, 1)
+add("W4_M2", "White Terror Fang", "Mythic", 4, 2)
+add("W4_S1", "Polar Star Whisper", "Secret", 4, 1)
+add("W4_S2", "End of Winter Blade", "Secret", 4, 2)
+add("W4_X1", "Absolute Aurora", "Limited", 4, 1, {
+	description = "LIMITED — aurora VFX, season flex.",
 	vfxProfile = "limited_aurora_absolute",
 })
 

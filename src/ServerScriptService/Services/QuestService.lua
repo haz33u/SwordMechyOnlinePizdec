@@ -58,7 +58,7 @@ function QuestService.Claim(player: Player, questId: string)
 	end
 
 	Remotes.Event("Notify"):FireClient(player, {
-		text = "Квест: " .. def.name .. " ✓",
+		text = "Quest: " .. def.name .. " ✓",
 		color = "cyan",
 	})
 	ProfileService.Push(player)

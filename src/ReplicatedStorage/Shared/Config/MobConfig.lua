@@ -47,10 +47,10 @@ export type MobDef = {
 local MobConfig = {
 	Tiers = { "simple", "medium", "hard", "boss", "debug" },
 	TierLabels = {
-		simple = "Простой",
-		medium = "Средний",
-		hard = "Сложный",
-		boss = "Босс",
+		simple = "Simple",
+		medium = "Medium",
+		hard = "Hard",
+		boss = "Boss",
 		debug = "Debug",
 	},
 
@@ -60,7 +60,7 @@ local MobConfig = {
 		----------------------------------------------------------------------
 		DEBUG_Dummy = {
 			id = "DEBUG_Dummy",
-			name = "Тренировочный манекен",
+			name = "Training Dummy",
 			location = 0,
 			tier = "debug",
 			defaultZone = "Debug",
@@ -88,7 +88,7 @@ local MobConfig = {
 		----------------------------------------------------------------------
 		L1_Slime = {
 			id = "L1_Slime",
-			name = "Теневой слизень",
+			name = "Shadow Slime",
 			location = 1,
 			tier = "simple",
 			defaultZone = "A",
@@ -105,12 +105,12 @@ local MobConfig = {
 				scale = 0.7,
 				shape = "ball",
 			},
-			description = "Простой. Зона A. Таблица как Cristalix «слабый» моб.",
+			description = "Simple. Zone A. Cristalix-style weak mob table.",
 		},
 
 		L1_GoblinScout = {
 			id = "L1_GoblinScout",
-			name = "Гоблин-разведчик",
+			name = "Goblin Scout",
 			location = 1,
 			tier = "simple",
 			defaultZone = "A",
@@ -127,12 +127,12 @@ local MobConfig = {
 				scale = 0.85,
 				shape = "humanoid",
 			},
-			description = "Простой. Квест. Зона A.",
+			description = "Simple. Quest. Zone A.",
 		},
 
 		L1_Skeleton = {
 			id = "L1_Skeleton",
-			name = "Лесной скелет",
+			name = "Forest Skeleton",
 			location = 1,
 			tier = "medium",
 			defaultZone = "B",
@@ -149,12 +149,12 @@ local MobConfig = {
 				scale = 1.0,
 				shape = "humanoid",
 			},
-			description = "Средний. Зона B.",
+			description = "Medium. Zone B.",
 		},
 
 		L1_Wolf = {
 			id = "L1_Wolf",
-			name = "Тёмный волк",
+			name = "Dark Wolf",
 			location = 1,
 			tier = "medium",
 			defaultZone = "B",
@@ -171,12 +171,12 @@ local MobConfig = {
 				scale = 1.1,
 				shape = "quad",
 			},
-			description = "Средний. Квест. Зона B.",
+			description = "Medium. Quest. Zone B.",
 		},
 
 		L1_GoblinWarrior = {
 			id = "L1_GoblinWarrior",
-			name = "Гоблин-воин",
+			name = "Goblin Warrior",
 			location = 1,
 			tier = "hard",
 			defaultZone = "C",
@@ -193,12 +193,12 @@ local MobConfig = {
 				scale = 1.0,
 				shape = "humanoid",
 			},
-			description = "Сложный (как Cristalix hard table). Зона C.",
+			description = "Hard (Cristalix hard table). Zone C.",
 		},
 
 		L1_Knight = {
 			id = "L1_Knight",
-			name = "Проклятый рыцарь",
+			name = "Cursed Knight",
 			location = 1,
 			tier = "hard",
 			defaultZone = "C",
@@ -216,12 +216,12 @@ local MobConfig = {
 				scale = 1.25,
 				shape = "humanoid",
 			},
-			description = "Сложный. Зона C.",
+			description = "Hard. Zone C.",
 		},
 
 		L1_Boss = {
 			id = "L1_Boss",
-			name = "Хранитель леса",
+			name = "Forest Guardian",
 			location = 1,
 			tier = "boss",
 			defaultZone = "Boss",
@@ -241,7 +241,7 @@ local MobConfig = {
 				scale = 2.0,
 				shape = "humanoid",
 			},
-			description = "Босс у портала (респавн 10 мин) → пыль зачарования + сильный меч.",
+			description = "Boss at portal (10 min respawn) → enchant dust + strong sword.",
 		},
 
 		----------------------------------------------------------------------
@@ -249,7 +249,7 @@ local MobConfig = {
 		----------------------------------------------------------------------
 		L2_Sailor = {
 			id = "L2_Sailor",
-			name = "Матрос",
+			name = "Sailor",
 			location = 2,
 			tier = "simple",
 			defaultZone = "A",
@@ -264,7 +264,7 @@ local MobConfig = {
 		},
 		L2_Captain = {
 			id = "L2_Captain",
-			name = "Капитан",
+			name = "Captain",
 			location = 2,
 			tier = "hard",
 			defaultZone = "B",
@@ -279,7 +279,7 @@ local MobConfig = {
 		},
 		L2_Admiral = {
 			id = "L2_Admiral",
-			name = "Адмирал",
+			name = "Admiral",
 			location = 2,
 			tier = "boss",
 			defaultZone = "Boss",
@@ -296,7 +296,7 @@ local MobConfig = {
 
 		L3_Samurai = {
 			id = "L3_Samurai",
-			name = "Самурай",
+			name = "Samurai",
 			location = 3,
 			tier = "medium",
 			defaultZone = "A",

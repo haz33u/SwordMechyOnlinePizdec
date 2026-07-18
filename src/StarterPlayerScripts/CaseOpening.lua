@@ -42,7 +42,7 @@ local function petPool(locationId: number): { SpinItem }
 				name = def.name,
 				rarity = def.rarity,
 				icon = "🐾",
-				sub = string.format("+%d%% сила", math.floor(def.powerPct or 0)),
+				sub = string.format("+%d%% power", math.floor(def.powerPct or 0)),
 			})
 		end
 	end
@@ -53,7 +53,7 @@ local function petPool(locationId: number): { SpinItem }
 				name = def.name,
 				rarity = def.rarity,
 				icon = "🐾",
-				sub = string.format("+%d%% сила", math.floor(def.powerPct or 0)),
+				sub = string.format("+%d%% power", math.floor(def.powerPct or 0)),
 			})
 		end
 	end
@@ -68,7 +68,7 @@ local function auraPool(): { SpinItem }
 			name = def.name,
 			rarity = def.rarity,
 			icon = "✨",
-			sub = string.format("+%d%% сила", math.floor(def.powerPct or 0)),
+			sub = string.format("+%d%% power", math.floor(def.powerPct or 0)),
 		})
 	end
 	return out
@@ -118,7 +118,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 
 	local title = UIKit.Label({
 		Parent = root,
-		Text = "Кейс",
+		Text = "Case",
 		Size = UDim2.new(0.9, 0, 0, px(36)),
 		Position = UDim2.new(0.5, 0, 0, px(28)),
 		Anchor = Vector2.new(0.5, 0),
@@ -219,7 +219,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 
 	local resultTitle = UIKit.Label({
 		Parent = result,
-		Text = "Выпало!",
+		Text = "You got!",
 		Size = UDim2.new(1, 0, 0, px(26)),
 		SizePx = px(18),
 		Font = T.Font.Title,
@@ -285,7 +285,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 
 	local okBtn = UIKit.Button({
 		Parent = result,
-		Text = "Забрать",
+		Text = "Claim",
 		Size = UDim2.new(0.75, 0, 0, px(40)),
 		Position = UDim2.new(0.5, 0, 1, -px(8)),
 		Anchor = Vector2.new(0.5, 1),
@@ -401,7 +401,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 								name = (def and def.name) or tostring(p.name or p.id),
 								rarity = (def and def.rarity) or tostring(p.rarity or "Common"),
 								icon = "🐾",
-								sub = def and string.format("+%d%% сила · +%d%% монеты", math.floor(def.powerPct), math.floor(def.coinPct))
+								sub = def and string.format("+%d%% power · +%d%% coins", math.floor(def.powerPct), math.floor(def.coinPct))
 									or nil,
 							}
 						end
@@ -416,7 +416,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 								name = (def and def.name) or tostring(a.name or a.id),
 								rarity = (def and def.rarity) or tostring(a.rarity or "Common"),
 								icon = "✨",
-								sub = def and string.format("+%d%% сила", math.floor(def.powerPct)) or nil,
+								sub = def and string.format("+%d%% power", math.floor(def.powerPct)) or nil,
 							}
 						end
 					end
@@ -457,7 +457,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 
 		local loc = (profile and profile.currentLocation) or 1
 		local pool = if kind == "aura" then auraPool() else petPool(loc)
-		local caseName = if kind == "aura" then "Кейс аур" else "Кейс питомцев"
+		local caseName = if kind == "aura" then "Aura Case" else "Pet Case"
 		local before = if kind == "aura"
 			then uidSet(profile and profile.auras, "uid")
 			else uidSet(profile and profile.pets, "uid")
@@ -469,7 +469,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		root.Visible = true
 		result.Visible = false
 		title.Text = caseName
-		subtitle.Text = "Открываем…"
+		subtitle.Text = "Opening…"
 
 		clearStrip()
 		local COUNT = 48
@@ -498,9 +498,9 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 			if not won then
 				-- fallback filler result (server may have failed silently)
 				won = pick(pool)
-				subtitle.Text = "Не удалось подтвердить дроп — смотри инвентарь"
+				subtitle.Text = "Could not confirm drop — check inventory"
 			else
-				subtitle.Text = "Дроп получен!"
+				subtitle.Text = "Drop received!"
 			end
 
 			-- rebuild last stretch with known win at WIN
@@ -555,9 +555,9 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 	function api.CostLabel(kind: string): string
 		local cost = if kind == "aura" then (AuraConfig.OPEN_COST or 0) else (PetConfig.OPEN_COST or 0)
 		if cost <= 0 then
-			return "Бесплатно"
+			return "Free"
 		end
-		return Format.Num(cost) .. " монет"
+		return Format.Num(cost) .. " coins"
 	end
 
 	return api

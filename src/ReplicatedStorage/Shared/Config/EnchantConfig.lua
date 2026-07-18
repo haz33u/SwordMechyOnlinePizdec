@@ -21,22 +21,22 @@ local EnchantConfig = {
 	TRANSFER_SUCCESS = 0.35,
 
 	Qualities = {
-		{ id = "Tiny", name = "Крошечный", mult = 0.55, weight = 40 },
-		{ id = "Normal", name = "Обычный", mult = 0.80, weight = 30 },
-		{ id = "Strong", name = "Мощный", mult = 1.00, weight = 18 },
-		{ id = "Huge", name = "Огромный", mult = 1.25, weight = 9 },
-		{ id = "Mighty", name = "Могущественный", mult = 1.55, weight = 3 },
+		{ id = "Tiny", name = "Tiny", mult = 0.55, weight = 40 },
+		{ id = "Normal", name = "Normal", mult = 0.80, weight = 30 },
+		{ id = "Strong", name = "Strong", mult = 1.00, weight = 18 },
+		{ id = "Huge", name = "Huge", mult = 1.25, weight = 9 },
+		{ id = "Mighty", name = "Mighty", mult = 1.55, weight = 3 },
 	},
 
 	Enchants = {
-		{ id = "PowerBoost", name = "Бустер силы", stat = "power", minValue = 10, maxValue = 120, weight = 25 },
-		{ id = "DamageBoost", name = "Бустер урона", stat = "damage", minValue = 10, maxValue = 100, weight = 25 },
-		{ id = "AttackSpeed", name = "Скорость удара", stat = "attackSpeed", minValue = 10, maxValue = 90, weight = 20 },
-		{ id = "Crit", name = "Шанс крита", stat = "crit", minValue = 5, maxValue = 80, weight = 12 },
-		{ id = "Coins", name = "Бустер денег", stat = "coins", minValue = 5, maxValue = 50, weight = 12 },
-		{ id = "Luck", name = "Удача", stat = "luck", minValue = 2, maxValue = 25, weight = 6 },
+		{ id = "PowerBoost", name = "Power Boost", stat = "power", minValue = 10, maxValue = 120, weight = 25 },
+		{ id = "DamageBoost", name = "Damage Boost", stat = "damage", minValue = 10, maxValue = 100, weight = 25 },
+		{ id = "AttackSpeed", name = "Attack Speed", stat = "attackSpeed", minValue = 10, maxValue = 90, weight = 20 },
+		{ id = "Crit", name = "Crit Chance", stat = "crit", minValue = 5, maxValue = 80, weight = 12 },
+		{ id = "Coins", name = "Coin Boost", stat = "coins", minValue = 5, maxValue = 50, weight = 12 },
+		{ id = "Luck", name = "Luck", stat = "luck", minValue = 2, maxValue = 25, weight = 6 },
 		-- debuff templates applied sometimes as second roll
-		{ id = "Slow", name = "Замедление", stat = "attackSpeed", minValue = -50, maxValue = -15, weight = 8, canDebuff = true },
+		{ id = "Slow", name = "Slow", stat = "attackSpeed", minValue = -50, maxValue = -15, weight = 8, canDebuff = true },
 	} :: { EnchantDef },
 
 	MAX_ENCHANTS_PER_WEAPON = 3,

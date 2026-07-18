@@ -12,15 +12,15 @@ export type PetDef = {
 
 local PetConfig = {
 	Pets = {
-		P1_C1 = { id = "P1_C1", name = "Слизнёнок", rarity = "Common", powerPct = 5, coinPct = 5, speedPct = 0, location = 1 },
-		P1_U1 = { id = "P1_U1", name = "Волчонок", rarity = "Uncommon", powerPct = 12, coinPct = 8, speedPct = 0, location = 1 },
-		P1_R1 = { id = "P1_R1", name = "Теневой кот", rarity = "Rare", powerPct = 25, coinPct = 15, speedPct = 5, location = 1 },
-		P1_E1 = { id = "P1_E1", name = "Дух Хранителя", rarity = "Epic", powerPct = 50, coinPct = 30, speedPct = 8, location = 1 },
-		P1_L1 = { id = "P1_L1", name = "Лесной мифик", rarity = "Legendary", powerPct = 90, coinPct = 50, speedPct = 12, location = 1 },
-		P1_M1 = { id = "P1_M1", name = "Мифик тени", rarity = "Mythic", powerPct = 160, coinPct = 80, speedPct = 18, location = 1 },
+		P1_C1 = { id = "P1_C1", name = "Slimelet", rarity = "Common", powerPct = 5, coinPct = 5, speedPct = 0, location = 1 },
+		P1_U1 = { id = "P1_U1", name = "Wolf Pup", rarity = "Uncommon", powerPct = 12, coinPct = 8, speedPct = 0, location = 1 },
+		P1_R1 = { id = "P1_R1", name = "Shadow Cat", rarity = "Rare", powerPct = 25, coinPct = 15, speedPct = 5, location = 1 },
+		P1_E1 = { id = "P1_E1", name = "Guardian Spirit", rarity = "Epic", powerPct = 50, coinPct = 30, speedPct = 8, location = 1 },
+		P1_L1 = { id = "P1_L1", name = "Forest Mythic", rarity = "Legendary", powerPct = 90, coinPct = 50, speedPct = 12, location = 1 },
+		P1_M1 = { id = "P1_M1", name = "Shadow Mythic", rarity = "Mythic", powerPct = 160, coinPct = 80, speedPct = 18, location = 1 },
 
-		P2_C1 = { id = "P2_C1", name = "Краб", rarity = "Common", powerPct = 10, coinPct = 10, speedPct = 0, location = 2 },
-		P2_L1 = { id = "P2_L1", name = "Попугай капитана", rarity = "Legendary", powerPct = 120, coinPct = 70, speedPct = 15, location = 2 },
+		P2_C1 = { id = "P2_C1", name = "Crab", rarity = "Common", powerPct = 10, coinPct = 10, speedPct = 0, location = 2 },
+		P2_L1 = { id = "P2_L1", name = "Captain Parrot", rarity = "Legendary", powerPct = 120, coinPct = 70, speedPct = 15, location = 2 },
 	} :: { [string]: PetDef },
 
 	-- case drop weights by rarity for loc cases

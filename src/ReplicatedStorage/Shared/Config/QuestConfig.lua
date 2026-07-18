@@ -22,8 +22,8 @@ local QuestConfig = {
 		-- Loc1 chain
 		Q1_Slimes = {
 			id = "Q1_Slimes",
-			name = "Слизни",
-			description = "Убей 25 теневых слизней",
+			name = "Slimes",
+			description = "Kill 25 shadow slimes",
 			type = "kill",
 			targetId = "L1_Slime",
 			amount = 25,
@@ -32,8 +32,8 @@ local QuestConfig = {
 		},
 		Q1_GoblinScouts = {
 			id = "Q1_GoblinScouts",
-			name = "Разведчики",
-			description = "Убей 15 гоблинов-разведчиков",
+			name = "Scouts",
+			description = "Kill 15 goblin scouts",
 			type = "kill",
 			targetId = "L1_GoblinScout",
 			amount = 15,
@@ -42,8 +42,8 @@ local QuestConfig = {
 		},
 		Q2_Wolves = {
 			id = "Q2_Wolves",
-			name = "Волки",
-			description = "Убей 15 тёмных волков",
+			name = "Wolves",
+			description = "Kill 15 dark wolves",
 			type = "kill",
 			targetId = "L1_Wolf",
 			amount = 15,
@@ -52,8 +52,8 @@ local QuestConfig = {
 		},
 		Q2_GoblinWarriors = {
 			id = "Q2_GoblinWarriors",
-			name = "Воины",
-			description = "Убей 10 гоблинов-воинов",
+			name = "Warriors",
+			description = "Kill 10 goblin warriors",
 			type = "kill",
 			targetId = "L1_GoblinWarrior",
 			amount = 10,
@@ -62,8 +62,8 @@ local QuestConfig = {
 		},
 		Q3_Boss = {
 			id = "Q3_Boss",
-			name = "Хранитель",
-			description = "Победи Хранителя леса",
+			name = "Guardian",
+			description = "Defeat the Forest Guardian",
 			type = "boss",
 			targetId = "L1_Boss",
 			amount = 1,
@@ -72,8 +72,8 @@ local QuestConfig = {
 		},
 		Q4_Power = {
 			id = "Q4_Power",
-			name = "Сила новичка",
-			description = "Набери 200 lifetime power",
+			name = "Novice Power",
+			description = "Reach 200 lifetime power",
 			type = "power",
 			targetId = nil,
 			amount = 200,
@@ -82,8 +82,8 @@ local QuestConfig = {
 		},
 		Q5_Rebirth = {
 			id = "Q5_Rebirth",
-			name = "Первое перерождение",
-			description = "Сделай 1 перерождение",
+			name = "First Rebirth",
+			description = "Complete 1 rebirth",
 			type = "rebirth",
 			targetId = nil,
 			amount = 1,
@@ -93,8 +93,8 @@ local QuestConfig = {
 
 		Q_L2_Intro = {
 			id = "Q_L2_Intro",
-			name = "Матросы",
-			description = "Убей 20 матросов",
+			name = "Sailors",
+			description = "Kill 20 sailors",
 			type = "kill",
 			targetId = "L2_Sailor",
 			amount = 20,

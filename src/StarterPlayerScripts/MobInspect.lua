@@ -130,11 +130,11 @@ local function show(data: any)
 	local body = panel:FindFirstChild("Body") :: ScrollingFrame
 	clearChildren(body)
 
-	makeLabel(body, data.name or "Моб", 22, Theme.Text, true)
+	makeLabel(body, data.name or "Mob", 22, Theme.Text, true)
 	makeLabel(
 		body,
 		string.format(
-			"%s  ·  HP %s  ·  +%s монет  ·  +%s сила",
+			"%s  ·  HP %s  ·  +%s coins  ·  +%s power",
 			data.tierLabel or data.tier or "?",
 			tostring(data.hp),
 			tostring(data.coinReward),
@@ -148,7 +148,7 @@ local function show(data: any)
 		makeLabel(body, data.description, 13, Theme.TextMuted, false)
 	end
 
-	makeLabel(body, "Возможная награда:", 16, Theme.Gold or Color3.fromRGB(240, 200, 90), true)
+	makeLabel(body, "Possible loot:", 16, Theme.Gold or Color3.fromRGB(240, 200, 90), true)
 
 	local grid = Instance.new("Frame")
 	grid.Name = "Grid"
@@ -225,7 +225,7 @@ local function show(data: any)
 		)
 	end
 
-	makeLabel(body, "Shift+ПКМ — инспект  ·  клик — удар", 12, Theme.TextMuted, false)
+	makeLabel(body, "Shift+RMB — inspect  ·  click — attack", 12, Theme.TextMuted, false)
 end
 
 local function findMobFromTarget(inst: Instance?): (string?, string?)
@@ -290,7 +290,7 @@ function MobInspect.Init()
 		end
 	end)
 
-	print("[MobInspect] Shift+ПКМ по мобу — таблица дропа")
+	print("[MobInspect] Shift+RMB on mob — drop table")
 end
 
 return MobInspect

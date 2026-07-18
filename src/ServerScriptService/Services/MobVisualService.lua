@@ -239,7 +239,7 @@ local function buildBody(def: any, position: Vector3): Model
 			material = Enum.Material.SmoothPlastic,
 		})
 		local headColor = isDebug and Color3.fromRGB(255, 210, 140) or light
-		if def.tier == "normal" and string.find(string.lower(def.name), "скелет") then
+		if def.tier == "normal" and string.find(string.lower(def.name), "skeleton") then
 			headColor = Color3.fromRGB(230, 230, 220)
 			root.Color = Color3.fromRGB(210, 210, 200)
 		end

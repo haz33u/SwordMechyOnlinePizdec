@@ -160,7 +160,7 @@ function App.Start()
 			if caseApi then
 				local ok, reason, cost = caseApi.Begin(payload)
 				if ok == false and reason == "need_coins" and toastApi then
-					toastApi.Show("Нужно " .. tostring(cost) .. " монет", "red")
+					toastApi.Show("Need " .. tostring(cost) .. " coins", "red")
 				end
 			end
 			return
@@ -337,21 +337,34 @@ function App.Start()
 		end
 	end)
 
+	-- Attack: LMB / touch anywhere that is NOT already a Gui button (gp=false).
+	-- No Space. Windows/modals (gp=true) don't attack.
+	local function tryManualSwing()
+		if store:PeekModal() then
+			return
+		end
+		if caseApi and caseApi.IsOpen() then
+			return
+		end
+		pcall(function()
+			WeaponVisual.PlayAttack()
+			Net.Swing("manual")
+		end)
+		local st = store:PeekStats()
+		burstClick(st and (st.damagePerClick or st.totalPower) or 1, false, "manual")
+	end
+
 	UserInputService.InputBegan:Connect(function(input, gp)
+		local uit = input.UserInputType
+		if not gp and (uit == Enum.UserInputType.MouseButton1 or uit == Enum.UserInputType.Touch) then
+			tryManualSwing()
+			return
+		end
 		if gp then
 			return
 		end
-		-- SCREEENS main HUD binds: Q=rebirth, E=inventory; Space=attack
-		if input.KeyCode == Enum.KeyCode.Space then
-			pcall(function()
-				WeaponVisual.PlayAttack()
-				Net.Swing("manual")
-			end)
-			if clickPop then
-				local st = store:PeekStats()
-				burstClick(st and (st.damagePerClick or st.totalPower) or 1, false, "manual")
-			end
-		elseif input.KeyCode == Enum.KeyCode.Q then
+		-- Binds: Q=rebirth, E=inventory (no Space attack)
+		if input.KeyCode == Enum.KeyCode.Q then
 			openModal("rebirth", nil)
 		elseif input.KeyCode == Enum.KeyCode.E then
 			store:OpenPanel("weapons")

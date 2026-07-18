@@ -85,10 +85,10 @@ end
 function RebirthConfig.CanAfford(lifetimeDamage: number, coins: number, level: number): (boolean, string?)
 	local dmgCost, coinCost = RebirthConfig.GetCosts(level)
 	if lifetimeDamage < dmgCost then
-		return false, string.format("Нужно %s урона (есть %s)", tostring(dmgCost), tostring(math.floor(lifetimeDamage)))
+		return false, string.format("Need %s damage (have %s)", tostring(dmgCost), tostring(math.floor(lifetimeDamage)))
 	end
 	if coins < coinCost then
-		return false, string.format("Нужно %s монет (есть %s)", tostring(coinCost), tostring(math.floor(coins)))
+		return false, string.format("Need %s coins (have %s)", tostring(coinCost), tostring(math.floor(coins)))
 	end
 	return true, nil
 end
