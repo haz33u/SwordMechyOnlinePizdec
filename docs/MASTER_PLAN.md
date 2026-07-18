@@ -1,9 +1,10 @@
 # Sword Masters — полный план проекта
 
-> Живой документ. Сводка на 2026-07-18 (UI sprint + roadmap).  
-> Репо: https://github.com/haz33u/SwordMechyOnlinePizdec  
+> Living doc. Snapshot 2026-07-18 (UI + EN locale + input).  
+> Repo: https://github.com/haz33u/SwordMechyOnlinePizdec  
 > Place: «Искусство меча онлайн» (Team Create + Rojo)  
-> Детальный backlog: session plan / `docs/FIGMA_PROMPTS.md` (иконки)
+> Icons: `docs/FIGMA_PROMPTS.md`  
+> **Locale: English** for all player-facing strings (UI, configs, Notify). New work stays in EN.
 
 ---
 
@@ -49,13 +50,19 @@ Packages (Fusion, OnyxUI)           Art, VFX, Team Create
 
 ---
 
-## 4. Игровой loop (core)
+## 4. Core loop + input
 
 ```
-Клик → Swing (rate limit CPS) → урон мобу
-  → kill → coins + power + оружие (1 меч, таблица %)
-  → апы / чары / rebirth → сильнее
+LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
+  → kill → coins + power + weapon drop
+  → upgrades / enchants / rebirth → stronger
 ```
+
+**Attack input (locked decision):**
+- **No Space** for combat
+- **MouseButton1** and **Touch** fire manual swing when `gameProcessed == false` (not on UI buttons)
+- ClickDetectors on mobs still work; server swing CD prevents double-hit spam
+- **Q** = rebirth modal · **E** / **I** = weapon inventory · **T** = auto-clicker · **U** = profile
 
 **TotalPower** = (base + lifetimePower) × rebirth × weapons × (петы/ауры/чар/апы)
 
@@ -89,14 +96,16 @@ Packages (Fusion, OnyxUI)           Art, VFX, Team Create
 - [x] Квесты Loc1 skeleton
 
 ### UI (SCREEENS pass 2026-07-18)
-- [x] GameUI: HUD, окна, модалки (Fusion) — **repo-only**, без dual StarterGui
-- [x] Theme charcoal + blue CTA + red close (как Cristalix-like SCREEENS)
-- [x] HUD: бусты top-left · coins/power bottom · **Q**=rebirth · **E**=инвентарь · Space=удар
-- [x] CPS/DPS/клики → панель **Профиль** (не на main HUD)
-- [x] Инвентарь оружия: 32 слота + IconConfig Loc1
-- [x] Телепорт: сетка локаций → `SetLocation`
-- [x] Кейсы: spin open + odds 1/rarity; донат-магазин **stubs only**
-- [x] Left rail only (правый text-menu Cristalix — **не** делаем)
+- [x] GameUI: HUD, windows, modals (Fusion) — **repo-only**, no dual StarterGui
+- [x] Theme charcoal + blue CTA + red close (SCREEENS / Cristalix-like)
+- [x] HUD: boosts top-left · coins/power bottom · **Q**=rebirth · **E**=inventory
+- [x] **Attack = LMB + mobile tap** (screen-wide, not Space) — see §4
+- [x] **English locale** for UI + configs + server Notify (commit `d36756e`)
+- [x] CPS/DPS/clicks → **Profile** panel (not main HUD)
+- [x] Weapon inventory: 32 slots + IconConfig Loc1
+- [x] Teleport location grid → `SetLocation`
+- [x] Cases: spin open + odds 1/rarity; donate shop **stubs only**
+- [x] Left rail only (no right-side Cristalix bind list)
 - [x] Toast nil fix (`T.TopH` removed)
 - [ ] Floating damage / click pop polish
 - [ ] Enchant dust counter top-right
@@ -136,12 +145,13 @@ Packages (Fusion, OnyxUI)           Art, VFX, Team Create
 
 ## 7. Дорожная карта (что делать)
 
-### P0 — stabilization (спринт 1) ✅/→
+### P0 — stabilization (sprint 1) ✅/→
 1. ~~Toast nil~~  
-2. Добить **атаку**: confirm `133642421878218` in Play  
-3. Playtest Loc1: kill → drop → inventory → enchant dust → rebirth  
-4. Save place + git sync (`COLLAB.md`)  
-5. `FIGMA_PROMPTS.md` + первая очередь UI icons  
+2. ~~English locale + LMB/touch attack~~  
+3. Confirm attack anim `133642421878218` in Play  
+4. Playtest Loc1: kill → drop → inventory → enchant dust → rebirth  
+5. Save place + git sync (`COLLAB.md`)  
+6. `FIGMA_PROMPTS.md` + first UI icon batch  
 
 ### P1 — UI polish + Loc1 content (спринты 2–3)
 1. Dust/gems strip top-right; inventory UX; case/rebirth polish  
@@ -201,11 +211,13 @@ git add -A ; git commit ; git pull --rebase ; git push
 
 ---
 
-## 10. Принципы
+## 10. Principles
 
-1. **Backend truth** в git; Place = карта + ассеты  
-2. Цифры Cristalix — **реконструкция**, тюним playtest  
-3. Loc1 easy → LocN дольше (drop squeeze + HP)  
-4. Limited не с мобов  
-5. Босс не спамится (10 мин) — чары сильные  
-6. Не класть Keyframe/Animations внутрь `Shared`
+1. **Backend truth** in git; Place = map + assets  
+2. Cristalix numbers = reconstruction, tune in playtest  
+3. Loc1 easy → LocN longer (drop squeeze + HP)  
+4. Limited not from mobs  
+5. Boss 10 min respawn — enchant dust is strong  
+6. No Keyframe/Animations inside `Shared`  
+7. **Player-facing language = English** (UI, configs, Notify, new features)  
+8. **Combat click = LMB / touch**, not Space; GUI clicks do not swing
