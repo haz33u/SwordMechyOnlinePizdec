@@ -1,38 +1,37 @@
 --!strict
 --[[
-	Combat animations.
+	Combat attack animation — ONE source of truth.
 
-	Published attack (user):
+	Your published / store animation:
 	  https://create.roblox.com/store/asset/133642421878218
+	  rbxassetid://133642421878218
 
-	Optional KeyframeSequences in ReplicatedStorage.CombatAnimations (Swing1/Swing2)
-	used only if PreferPublishedAttack = false or published id empty.
+	Also set on Place: ReplicatedStorage.Animations.Swing.AnimationId (same id).
+	WeaponVisual plays ONLY this (and AttackAlt if different).
 ]]
 
 local AnimationConfig = {
-	-- Published sword attack (right hand / main swings)
-	-- Store: https://create.roblox.com/store/asset/133642421878218
+	-- === ATTACK (right hand / click) — change THESE only ===
 	AttackMain = "rbxassetid://133642421878218",
-	-- Second hit variety — same pack for now; replace if you publish Swing2
-	AttackAlt = "rbxassetid://133642421878218",
+	AttackAlt = "rbxassetid://133642421878218", -- set another id when you have Swing2 published
 
-	-- false = prefer Place CombatAnimations / Animations first (more reliable)
-	-- true  = try AttackMain rbxassetid first (may fail if asset not owned / not Animation)
-	PreferPublishedAttack = false,
+	-- true = always use AttackMain/AttackAlt above (recommended)
+	PreferPublishedAttack = true,
 
-	-- Place-only folders under ReplicatedStorage (NOT inside Shared — Rojo-safe)
+	-- Do NOT auto-use Combat Dummy KeyframeSequences (they look "wrong"/random)
+	UseCombatKeyframeSequences = false,
+
 	CombatAnimsFolder = "CombatAnimations",
-	-- Also supported: ReplicatedStorage.Animations (Idle/Walk/Run/Swing KeyframeSequences)
 	ExtraAnimsFolder = "Animations",
 	Swing1Name = "Swing1",
 	Swing2Name = "Swing2",
 
-	-- Ultimate fallback: official R15 tool anims
+	-- Only if AttackMain fails to load
 	AttackMainFallback = "rbxassetid://522635514",
 	AttackAltFallback = "rbxassetid://522638767",
 	ToolHold = "rbxassetid://522696694",
 
-	AlternateDual = true,
+	AlternateDual = false, -- one attack anim until you set a real AttackAlt
 
 	SwordLength = 2.4,
 	SwordWidth = 0.22,
@@ -40,21 +39,16 @@ local AnimationConfig = {
 }
 
 function AnimationConfig.GetAttackId(isAlt: boolean?): string
-	if AnimationConfig.PreferPublishedAttack then
-		if isAlt then
-			local a = AnimationConfig.AttackAlt
-			if type(a) == "string" and a ~= "" then
-				return a
-			end
-		else
-			local m = AnimationConfig.AttackMain
-			if type(m) == "string" and m ~= "" then
-				return m
-			end
-		end
-	end
 	if isAlt then
+		local a = AnimationConfig.AttackAlt
+		if type(a) == "string" and a ~= "" then
+			return a
+		end
 		return AnimationConfig.AttackAltFallback
+	end
+	local m = AnimationConfig.AttackMain
+	if type(m) == "string" and m ~= "" then
+		return m
 	end
 	return AnimationConfig.AttackMainFallback
 end
