@@ -521,11 +521,13 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: str
 	UIKit.Stroke(root, T.Gold, 1.6, 0.4)
 	UIKit.SizeConstraint(root, Vector2.new(340, 300), Vector2.new(920, 820))
 
+	-- Slightly larger chrome for left-rail panel interiors (HUD untouched)
+	local headerH = 58
 	local header = Instance.new("Frame")
 	header.Name = "Header"
 	header.BackgroundColor3 = Color3.new(1, 1, 1)
 	header.BorderSizePixel = 0
-	header.Size = UDim2.new(1, 0, 0, 52)
+	header.Size = UDim2.new(1, 0, 0, headerH)
 	header.ZIndex = 31
 	header.Parent = root
 	UIKit.Gradient(header, T.Surface3, T.Surface2, 90)
@@ -534,9 +536,9 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: str
 	UIKit.Label({
 		Parent = header,
 		Text = iconTxt .. "  " .. title,
-		Size = UDim2.new(1, -56, 1, 0),
-		Position = UDim2.fromOffset(16, 0),
-		SizePx = 18,
+		Size = UDim2.new(1, -62, 1, 0),
+		Position = UDim2.fromOffset(18, 0),
+		SizePx = 20,
 		Font = T.Font.Title,
 		Color = T.Text,
 		Z = 32,
@@ -546,12 +548,12 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: str
 		Name = "Close",
 		Parent = header,
 		Text = "✕",
-		Size = UDim2.fromOffset(40, 36),
-		Position = UDim2.new(1, -48, 0.5, 0),
+		Size = UDim2.fromOffset(44, 40),
+		Position = UDim2.new(1, -52, 0.5, 0),
 		Anchor = Vector2.new(0, 0.5),
 		Color = T.Danger,
 		Color2 = T.Colors and T.Colors.DangerDeep or Color3.fromRGB(160, 40, 50),
-		SizePx = 18,
+		SizePx = 20,
 		Radius = T.R.sm,
 		Z = 32,
 		OnClick = onClose,
@@ -560,8 +562,8 @@ function UIKit.Window(gui: Instance, title: string, onClose: () -> (), icon: str
 	local body = Instance.new("Frame")
 	body.Name = "Body"
 	body.BackgroundTransparency = 1
-	body.Size = UDim2.new(1, -24, 1, -64)
-	body.Position = UDim2.fromOffset(12, 56)
+	body.Size = UDim2.new(1, -28, 1, -(headerH + 16))
+	body.Position = UDim2.fromOffset(14, headerH + 8)
 	body.ZIndex = 31
 	body.ClipsDescendants = true
 	body.Parent = root

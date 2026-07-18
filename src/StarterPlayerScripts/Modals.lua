@@ -7,6 +7,12 @@ local Net = require(script.Parent.Net)
 
 local Modals = {}
 
+-- Same interior scale as left-rail windows (HUD bottom/balance untouched)
+local S = 1.22
+local function px(n: number): number
+	return math.floor(n * S + 0.5)
+end
+
 function Modals.Mount(gui: ScreenGui, store: any)
 	local layer = Instance.new("Folder")
 	layer.Name = "Modals"
@@ -29,7 +35,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 	local card = UIKit.Glass({
 		Name = "ModalCard",
 		Parent = layer,
-		Size = UDim2.fromOffset(380, 220),
+		Size = UDim2.fromOffset(px(440), px(260)),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Anchor = Vector2.new(0.5, 0.5),
 		Radius = T.R.lg,
@@ -39,13 +45,13 @@ function Modals.Mount(gui: ScreenGui, store: any)
 	})
 	card.Visible = false
 	UIKit.Stroke(card, T.Gold, 1.6, 0.4)
-	UIKit.Pad(card, 18)
+	UIKit.Pad(card, px(22))
 
 	local title = UIKit.Label({
 		Parent = card,
 		Text = "",
-		Size = UDim2.new(1, 0, 0, 26),
-		SizePx = 18,
+		Size = UDim2.new(1, 0, 0, px(30)),
+		SizePx = px(20),
 		Font = T.Font.Title,
 		X = Enum.TextXAlignment.Center,
 		Z = 52,
@@ -53,9 +59,9 @@ function Modals.Mount(gui: ScreenGui, store: any)
 	local body = UIKit.Label({
 		Parent = card,
 		Text = "",
-		Size = UDim2.new(1, 0, 0, 70),
-		Position = UDim2.fromOffset(0, 36),
-		SizePx = 13,
+		Size = UDim2.new(1, 0, 0, px(84)),
+		Position = UDim2.fromOffset(0, px(42)),
+		SizePx = px(15),
 		Color = T.TextSoft,
 		X = Enum.TextXAlignment.Center,
 		Y = Enum.TextYAlignment.Top,
@@ -65,20 +71,20 @@ function Modals.Mount(gui: ScreenGui, store: any)
 
 	local barHost = Instance.new("Frame")
 	barHost.BackgroundTransparency = 1
-	barHost.Size = UDim2.new(1, 0, 0, 10)
-	barHost.Position = UDim2.fromOffset(0, 118)
+	barHost.Size = UDim2.new(1, 0, 0, px(12))
+	barHost.Position = UDim2.fromOffset(0, px(140))
 	barHost.ZIndex = 52
 	barHost.Visible = false
 	barHost.Parent = card
-	local _, fill = UIKit.Bar(barHost, 0, T.Accent, 8)
+	local _, fill = UIKit.Bar(barHost, 0, T.Accent, px(10))
 
 	local row = Instance.new("Frame")
 	row.BackgroundTransparency = 1
-	row.Size = UDim2.new(1, 0, 0, 40)
-	row.Position = UDim2.new(0, 0, 1, -48)
+	row.Size = UDim2.new(1, 0, 0, px(46))
+	row.Position = UDim2.new(0, 0, 1, -px(56))
 	row.ZIndex = 52
 	row.Parent = card
-	UIKit.List(row, 10, true, Enum.HorizontalAlignment.Center)
+	UIKit.List(row, px(12), true, Enum.HorizontalAlignment.Center)
 
 	local primary = UIKit.Button({
 		Parent = row,
@@ -87,7 +93,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 		Color = T.Success,
 		Color2 = T.Colors and T.Colors.SuccessDeep or Color3.fromRGB(28, 140, 80),
 		Primary = true,
-		SizePx = 16,
+		SizePx = px(17),
 		Z = 53,
 	})
 	local cancel = UIKit.Button({
@@ -96,7 +102,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 		Size = UDim2.new(0.48, 0, 1, 0),
 		Color = T.Surface3,
 		Color2 = T.Surface2,
-		SizePx = 16,
+		SizePx = px(17),
 		Z = 53,
 	})
 	cancel.MouseButton1Click:Connect(function()
