@@ -635,6 +635,31 @@ function Inventory.Bind(
 		UIKit.Stroke(btn, BD, SLOT_STROKE_THICK, 0.2)
 	end
 
+	--- Full-page scroll for Shop / Profile: top air so first row is not clipped by Main
+	local function makePageScroll(parent: Instance): ScrollingFrame
+		local scroll = UIKit.Scroll(parent, UDim2.new(1, -16, 1, -22))
+		scroll.Position = UDim2.fromOffset(8, 14)
+		scroll.ZIndex = 34
+		scroll.ClipsDescendants = true
+		scroll.ScrollBarThickness = 8
+		scroll.ScrollBarImageColor3 = BD2
+		-- UIKit.Scroll seeds Pad(2) + List(VerticalAlignment.Center) — both clip the top
+		for _, c in scroll:GetChildren() do
+			if c:IsA("UIPadding") then
+				c.PaddingTop = UDim.new(0, 16)
+				c.PaddingBottom = UDim.new(0, 14)
+				c.PaddingLeft = UDim.new(0, 10)
+				c.PaddingRight = UDim.new(0, 10)
+			elseif c:IsA("UIListLayout") then
+				c.Padding = UDim.new(0, 12)
+				c.VerticalAlignment = Enum.VerticalAlignment.Top
+				c.HorizontalAlignment = Enum.HorizontalAlignment.Left
+				c.SortOrder = Enum.SortOrder.LayoutOrder
+			end
+		end
+		return scroll
+	end
+
 	--- Grid that fills the whole tab width (cells scale to fit COLS columns).
 	local function makeSlotGrid(parent: Instance): ScrollingFrame
 		local scroll = Instance.new("ScrollingFrame")
@@ -1357,10 +1382,7 @@ function Inventory.Bind(
 		elseif tab == "shop" then
 			setPreviewAvatar(nil, "🪙")
 			countLab.Text = "Gamepasses"
-			local scroll = UIKit.Scroll(main, UDim2.new(1, -12, 1, -12))
-			scroll.Position = UDim2.fromOffset(6, 6)
-			UIKit.List(scroll, 10, false)
-			UIKit.Pad(scroll, 8)
+			local scroll = makePageScroll(main)
 
 			local unlocks = profile.unlocks or {}
 			for i, key in ipairs(GamePassConfig.Order) do
@@ -1438,8 +1460,7 @@ function Inventory.Bind(
 			local viewUserId = inspectUserId or (lp and lp.UserId) or 0
 			setPreviewAvatar(viewUserId, "👤")
 			countLab.Text = inspectName and ("@" .. inspectName) or "You"
-			local scroll = UIKit.Scroll(main, UDim2.new(1, -12, 1, -12))
-			scroll.Position = UDim2.fromOffset(6, 6)
+			local scroll = makePageScroll(main)
 
 			-- Search bar (tall)
 			local searchBar = solid(scroll, "Search", UDim2.new(1, -8, 0, 64), nil, BG_SECTION, 35)
