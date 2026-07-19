@@ -41,27 +41,26 @@ local GOLD = Color3.fromRGB(232, 184, 0)
 local RED_CLOSE = Color3.fromRGB(204, 34, 0)
 local GREEN = Color3.fromRGB(120, 170, 100)
 
-local SLOT = 76
 local SLOT_GAP = 6
-local COLS = 9
+local COLS = 9 -- target columns; cell size fills width
 local MAX_SLOTS = 45
 local INV_CAP = 32
-local TAB_R = 68
+local TAB_R = 64
 local HOVER_SCALE = 1.1
 
 --[[
-	Bottom tabs: flat ImageButtons (NO circle/plate bg).
-	Images from create.roblox.com/store free Decals (searched 2026-07-19).
-	Glyph TextLabel stays under image as fallback if Decal fails to load.
+	Bottom tabs ≈ nobackground.png: rounded icon tiles, semi-transparent fill,
+	white symbol, NO solid black plate under them.
+	Images: free Creator Store Decals (Texture ids verified in Studio).
 ]]
 local TABS = {
-	{ id = "weapons", glyph = "⚔", label = "Weapons", image = "rbxassetid://15949920673" }, -- two-swords-clashing-cartoon
+	{ id = "weapons", glyph = "⚔", label = "Weapons", image = "rbxassetid://292768036" }, -- Sword.Png TRANSPARENT
 	{ id = "pets", glyph = "🐾", label = "Pets", image = "rbxassetid://18514765742" }, -- Pet Icon
-	{ id = "auras", glyph = "✨", label = "Auras", image = "rbxassetid://119757312338567" }, -- Star
-	{ id = "relics", glyph = "💎", label = "Relics", image = "rbxassetid://9650296120" }, -- gem
-	{ id = "cases", glyph = "📦", label = "Cases", image = "rbxassetid://10168237291" }, -- Daily Reward Treasure Chest Icon
-	{ id = "shop", glyph = "🪙", label = "Shop", image = "rbxassetid://5684864511" }, -- gold coin icon (Dev_Ryan free use)
-	{ id = "profile", glyph = "👤", label = "Profile", image = "rbxassetid://98048782159448" }, -- bust_in_silhouette
+	{ id = "auras", glyph = "✦", label = "Auras", image = "rbxassetid://119757312338567" }, -- Star
+	{ id = "relics", glyph = "◆", label = "Relics", image = "rbxassetid://9650296120" }, -- gem
+	{ id = "cases", glyph = "▣", label = "Cases", image = "rbxassetid://10168237291" }, -- chest
+	{ id = "shop", glyph = "$", label = "Shop", image = "rbxassetid://5684864511" }, -- gold coin
+	{ id = "profile", glyph = "☺", label = "Profile", image = "rbxassetid://98048782159448" }, -- bust
 }
 
 local function rarityBorder(r: string?): Color3
@@ -429,11 +428,11 @@ function Inventory.Bind(
 		end)
 	end
 
-	--- Opaque filled slot (prevents inventory bg showing through icons)
+	--- Opaque filled slot (grid CellSize drives size)
 	local function makeItemSlot(parent: Instance, order: number, edge: Color3): (TextButton, Frame, UIStroke)
 		local btn = Instance.new("TextButton")
 		btn.Name = "Slot" .. order
-		btn.Size = UDim2.fromOffset(SLOT, SLOT)
+		btn.Size = UDim2.fromOffset(80, 80)
 		btn.BackgroundColor3 = BG_SLOT
 		btn.BackgroundTransparency = 0
 		btn.BorderSizePixel = 0
@@ -444,7 +443,6 @@ function Inventory.Bind(
 		btn.ZIndex = 35
 		btn.Parent = parent
 
-		-- full opaque plate under any transparent icon pixels
 		local plate = Instance.new("Frame")
 		plate.Name = "Plate"
 		plate.Size = UDim2.fromScale(1, 1)
@@ -462,7 +460,7 @@ function Inventory.Bind(
 	local function emptySlot(parent: Instance, order: number)
 		local btn = Instance.new("TextButton")
 		btn.Name = "E" .. order
-		btn.Size = UDim2.fromOffset(SLOT, SLOT)
+		btn.Size = UDim2.fromOffset(80, 80)
 		btn.BackgroundColor3 = BG_SLOT_MT
 		btn.BackgroundTransparency = 0
 		btn.BorderSizePixel = 0
@@ -475,28 +473,74 @@ function Inventory.Bind(
 		UIKit.Stroke(btn, BD, 1, 0.3)
 	end
 
+	--- Grid that fills the whole tab width (cells scale to fit COLS columns).
 	local function makeSlotGrid(parent: Instance): ScrollingFrame
 		local scroll = Instance.new("ScrollingFrame")
 		scroll.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 		scroll.BackgroundTransparency = 0
 		scroll.BorderSizePixel = 0
-		scroll.Size = UDim2.new(1, -10, 1, -10)
-		scroll.Position = UDim2.fromOffset(5, 5)
+		scroll.Size = UDim2.new(1, -8, 1, -8)
+		scroll.Position = UDim2.fromOffset(4, 4)
 		scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 		scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-		scroll.ScrollBarThickness = 6
+		scroll.ScrollBarThickness = 8
 		scroll.ScrollBarImageColor3 = BD2
 		scroll.ZIndex = 34
 		scroll.ClipsDescendants = true
 		scroll.Parent = parent
+		local pad = 8
+		UIKit.Pad(scroll, pad)
 		local grid = Instance.new("UIGridLayout")
-		grid.CellSize = UDim2.fromOffset(SLOT, SLOT)
 		grid.CellPadding = UDim2.fromOffset(SLOT_GAP, SLOT_GAP)
 		grid.SortOrder = Enum.SortOrder.LayoutOrder
 		grid.FillDirectionMaxCells = COLS
+		grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		grid.Parent = scroll
-		UIKit.Pad(scroll, 8)
+
+		local function relayout()
+			local w = scroll.AbsoluteSize.X
+			if w < 40 then
+				return
+			end
+			local inner = w - pad * 2 - scroll.ScrollBarThickness
+			local cell = math.floor((inner - SLOT_GAP * (COLS - 1)) / COLS)
+			cell = math.clamp(cell, 52, 140)
+			grid.CellSize = UDim2.fromOffset(cell, cell)
+		end
+		scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
+		task.defer(relayout)
 		return scroll
+	end
+
+	--- Shop / card grid fills width with adaptive cell size
+	local function makeFillCardGrid(scroll: ScrollingFrame, preferW: number, preferH: number, maxCols: number)
+		for _, ch in scroll:GetChildren() do
+			if ch:IsA("UIListLayout") or ch:IsA("UIGridLayout") then
+				ch:Destroy()
+			end
+		end
+		local pad = 10
+		UIKit.Pad(scroll, pad)
+		local grid = Instance.new("UIGridLayout")
+		grid.CellPadding = UDim2.fromOffset(10, 10)
+		grid.SortOrder = Enum.SortOrder.LayoutOrder
+		grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		grid.Parent = scroll
+		local function relayout()
+			local w = scroll.AbsoluteSize.X
+			if w < 40 then
+				return
+			end
+			local inner = w - pad * 2 - scroll.ScrollBarThickness
+			local cols = math.clamp(math.floor(inner / (preferW + 10)), 1, maxCols)
+			local cellW = math.floor((inner - 10 * (cols - 1)) / cols)
+			local cellH = math.floor(cellW * (preferH / preferW))
+			grid.CellSize = UDim2.fromOffset(cellW, cellH)
+			grid.FillDirectionMaxCells = cols
+		end
+		scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
+		task.defer(relayout)
+		return grid
 	end
 
 	local function actBtn(parent: Instance, text: string, color: Color3, order: number, onClick: () -> ())
@@ -618,56 +662,70 @@ function Inventory.Bind(
 			local col = Instance.new("Frame")
 			col.Name = def.id .. "Col"
 			col.BackgroundTransparency = 1
-			col.Size = UDim2.fromOffset(TAB_R + 10, 86)
+			col.Size = UDim2.fromOffset(TAB_R + 12, 88)
 			col.ZIndex = 34
 			col.Parent = tabRow
 
-			-- Flat ImageButton: NO Background, NO Corner, NO Stroke (icon only on bar frame)
+			--[[
+				nobackground.png style:
+				- rounded icon tile (not a solid black plate under art)
+				- semi-transparent dark fill so game/UI peeks through
+				- ImageButton always clickable; glyph always readable if image fails
+			]]
 			local b = Instance.new("ImageButton")
 			b.Name = def.id
 			b.Size = UDim2.fromOffset(TAB_R, TAB_R)
 			b.Position = UDim2.new(0.5, 0, 0, 0)
 			b.AnchorPoint = Vector2.new(0.5, 0)
-			b.BackgroundColor3 = Color3.new(0, 0, 0)
-			b.BackgroundTransparency = 1
+			b.BackgroundColor3 = Color3.fromRGB(48, 48, 54)
+			b.BackgroundTransparency = 0.22 -- soft round tile, not opaque plate
 			b.BorderSizePixel = 0
 			b.Image = def.image
 			b.ImageTransparency = 0
+			b.ImageColor3 = Color3.new(1, 1, 1)
 			b.ScaleType = Enum.ScaleType.Fit
 			b.AutoButtonColor = false
 			b.ZIndex = 36
 			b.Parent = col
+			UIKit.Corner(b, 14) -- rounded square like ref icons
 
-			-- Glyph fallback under image (visible if Decal doesn't load in place)
 			local glyph = Instance.new("TextLabel")
 			glyph.Name = "Glyph"
 			glyph.BackgroundTransparency = 1
 			glyph.Size = UDim2.fromScale(1, 1)
 			glyph.Font = Enum.Font.GothamBold
-			glyph.TextSize = 26
+			glyph.TextSize = 28
 			glyph.Text = def.glyph
-			glyph.TextColor3 = Color3.fromRGB(180, 180, 180)
-			glyph.ZIndex = 35
-			glyph.Parent = col
-			glyph.Position = UDim2.new(0.5, 0, 0, 0)
-			glyph.AnchorPoint = Vector2.new(0.5, 0)
-			glyph.Size = UDim2.fromOffset(TAB_R, TAB_R)
+			glyph.TextColor3 = Color3.fromRGB(235, 235, 240)
+			glyph.TextTransparency = 0.15
+			glyph.ZIndex = 37
+			glyph.Parent = b
 			glyph.TextXAlignment = Enum.TextXAlignment.Center
 			glyph.TextYAlignment = Enum.TextYAlignment.Center
+			-- If image loads, soft-hide glyph so art shows; keep clickable either way
+			-- Glyph stays readable; image draws on top when asset loads in place
+			task.spawn(function()
+				local ContentProvider = game:GetService("ContentProvider")
+				pcall(function()
+					ContentProvider:PreloadAsync({ def.image })
+				end)
+			end)
 
 			local hoverScale = Instance.new("UIScale")
 			hoverScale.Scale = 1
 			hoverScale.Parent = b
 			b.MouseEnter:Connect(function()
 				TweenService:Create(hoverScale, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-					Scale = 1.16,
+					Scale = 1.14,
 				}):Play()
+				TweenService:Create(b, TweenInfo.new(0.1), { BackgroundTransparency = 0.05 }):Play()
 			end)
 			b.MouseLeave:Connect(function()
 				TweenService:Create(hoverScale, TweenInfo.new(0.1), { Scale = 1 }):Play()
+				TweenService:Create(b, TweenInfo.new(0.1), { BackgroundTransparency = 0.22 }):Play()
 			end)
 
-			local lab = lbl(col, def.label, UDim2.new(1, 0, 0, 16), UDim2.new(0, 0, 1, -16), 11, Color3.fromRGB(74, 74, 74), 35)
+			local lab = lbl(col, def.label, UDim2.new(1, 0, 0, 16), UDim2.new(0, 0, 1, -16), 12, Color3.fromRGB(90, 90, 90), 35)
 			lab.TextXAlignment = Enum.TextXAlignment.Center
 			lab.Font = Enum.Font.GothamBold
 
@@ -1043,21 +1101,33 @@ function Inventory.Bind(
 			local row = actionsRow()
 			lbl(row, "Relics are read-only (dungeon drops)", UDim2.fromOffset(300, 32), nil, 13, TL, 35)
 
-		---------------------------------------------------------------- CASES
+		---------------------------------------------------------------- CASES — compact rows (no stretched full-width text)
 		elseif tab == "cases" then
 			setPreviewAvatar(nil, "📦")
 			countLab.Text = ""
-			local scroll = UIKit.Scroll(main, UDim2.new(1, -10, 1, -10))
-			scroll.Position = UDim2.fromOffset(5, 5)
+			local wrap = Instance.new("Frame")
+			wrap.BackgroundTransparency = 1
+			wrap.Size = UDim2.new(1, -16, 1, -16)
+			wrap.Position = UDim2.fromOffset(8, 8)
+			wrap.ZIndex = 34
+			wrap.Parent = main
+			UIKit.List(wrap, 10, false)
+
 			local function caseCard(order: number, title: string, kind: string, color: Color3)
-				local c = solid(scroll, kind, UDim2.new(1, -8, 0, 100), nil, BG_SECTION, 35)
+				local c = solid(wrap, kind, UDim2.new(1, 0, 0, 64), nil, BG_SECTION, 35)
 				c.LayoutOrder = order
-				UIKit.Stroke(c, color, 1.5, 0.2)
-				UIKit.Pad(c, 12)
-				lbl(c, title, UDim2.new(1, 0, 0, 28), nil, 16, TW, 36)
+				UIKit.Stroke(c, color, 1.2, 0.2)
+				UIKit.Corner(c, 6)
+
+				local icon = lbl(c, if kind == "pet" then "🐾" else "✨", UDim2.fromOffset(48, 48), UDim2.fromOffset(10, 8), 26, TW, 36)
+				icon.TextXAlignment = Enum.TextXAlignment.Center
+
+				lbl(c, title, UDim2.new(1, -180, 1, 0), UDim2.fromOffset(64, 0), 16, TW, 36)
+
 				local b = Instance.new("TextButton")
-				b.Size = UDim2.new(1, 0, 0, 38)
-				b.Position = UDim2.new(0, 0, 1, -38)
+				b.Size = UDim2.fromOffset(100, 36)
+				b.Position = UDim2.new(1, -112, 0.5, 0)
+				b.AnchorPoint = Vector2.new(0, 0.5)
 				b.BackgroundColor3 = color
 				b.BackgroundTransparency = 0
 				b.Text = "Open"
@@ -1072,43 +1142,34 @@ function Inventory.Bind(
 					openModal("case", { kind = kind })
 				end)
 			end
-			caseCard(1, "🐾  Pet Case", "pet", Color3.fromRGB(40, 120, 80))
-			caseCard(2, "✨  Aura Case", "aura", Color3.fromRGB(100, 60, 160))
+			caseCard(1, "Pet Case", "pet", Color3.fromRGB(40, 120, 80))
+			caseCard(2, "Aura Case", "aura", Color3.fromRGB(100, 60, 160))
 			local row = actionsRow()
-			keybind(row, 1, "LMB", "Open case")
+			lbl(row, "LMB · Open case", UDim2.fromOffset(160, 32), nil, 13, TL, 35)
 
-		---------------------------------------------------------------- SHOP
+		---------------------------------------------------------------- SHOP — fill whole tab with adaptive cards
 		elseif tab == "shop" then
 			setPreviewAvatar(nil, "🪙")
 			countLab.Text = "Gamepasses"
-			local scroll = UIKit.Scroll(main, UDim2.new(1, -10, 1, -10))
-			scroll.Position = UDim2.fromOffset(5, 5)
-			for _, ch in scroll:GetChildren() do
-				if ch:IsA("UIListLayout") then
-					ch:Destroy()
-				end
-			end
-			local grid = Instance.new("UIGridLayout")
-			grid.CellSize = UDim2.fromOffset(168, 210)
-			grid.CellPadding = UDim2.fromOffset(12, 12)
-			grid.SortOrder = Enum.SortOrder.LayoutOrder
-			grid.FillDirectionMaxCells = 4
-			grid.Parent = scroll
-			UIKit.Pad(scroll, 8)
+			local scroll = UIKit.Scroll(main, UDim2.new(1, -8, 1, -8))
+			scroll.Position = UDim2.fromOffset(4, 4)
+			makeFillCardGrid(scroll, 180, 220, 5)
 
 			local unlocks = profile.unlocks or {}
 			for i, key in ipairs(GamePassConfig.Order) do
 				local def = GamePassConfig.Get(key)
 				if def then
-					local owned = def.feature and unlocks[def.feature] == true
-					local card = solid(scroll, key, UDim2.fromOffset(168, 210), nil, BG_SECTION, 35)
+					local owned = (def.feature and unlocks[def.feature] == true)
+						or (def.feature == "autoClicker" and profile.purchasedAutoClicker == true)
+					local card = solid(scroll, key, UDim2.fromOffset(180, 220), nil, BG_SECTION, 35)
 					card.LayoutOrder = i
 					card.BackgroundTransparency = 0
 					UIKit.Stroke(card, owned and GREEN or BD2, 1.5, owned and 0.05 or 0.12)
 
 					local imgBtn = Instance.new("ImageButton")
 					imgBtn.Name = "Buy"
-					imgBtn.Size = UDim2.fromOffset(128, 128)
+					imgBtn.Size = UDim2.new(1, -24, 0, 0)
+					imgBtn.Size = UDim2.new(1, -28, 0.58, 0)
 					imgBtn.Position = UDim2.new(0.5, 0, 0, 10)
 					imgBtn.AnchorPoint = Vector2.new(0.5, 0)
 					imgBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
@@ -1123,17 +1184,16 @@ function Inventory.Bind(
 					UIKit.Stroke(imgBtn, BD, 1, 0.15)
 					bindHover(imgBtn, imgBtn:FindFirstChildOfClass("UIStroke"), BD)
 
-					-- price pill on image (always visible)
 					local pricePill = Instance.new("TextLabel")
 					pricePill.Name = "PricePill"
-					pricePill.Size = UDim2.new(1, -8, 0, 22)
-					pricePill.Position = UDim2.new(0.5, 0, 1, -26)
+					pricePill.Size = UDim2.new(1, -8, 0, 24)
+					pricePill.Position = UDim2.new(0.5, 0, 1, -28)
 					pricePill.AnchorPoint = Vector2.new(0.5, 0)
 					pricePill.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-					pricePill.BackgroundTransparency = 0.15
+					pricePill.BackgroundTransparency = 0.12
 					pricePill.BorderSizePixel = 0
 					pricePill.Font = Enum.Font.GothamBold
-					pricePill.TextSize = 13
+					pricePill.TextSize = 14
 					pricePill.TextColor3 = owned and GREEN or GOLD
 					pricePill.ZIndex = 39
 					pricePill.Parent = imgBtn
@@ -1146,16 +1206,16 @@ function Inventory.Bind(
 						fetchPrice(def.gamePassId, pricePill)
 					end
 
-					local titleL = lbl(card, def.title, UDim2.new(1, -10, 0, 22), UDim2.fromOffset(5, 144), 12, TW, 36)
+					local titleL = lbl(card, def.title, UDim2.new(1, -12, 0, 22), UDim2.new(0, 6, 0.62, 4), 13, TW, 36)
 					titleL.TextXAlignment = Enum.TextXAlignment.Center
 					titleL.TextTruncate = Enum.TextTruncate.AtEnd
 
 					local priceLab = lbl(
 						card,
 						owned and "Owned" or (priceCache[def.gamePassId] or "…"),
-						UDim2.new(1, -10, 0, 22),
-						UDim2.fromOffset(5, 172),
-						14,
+						UDim2.new(1, -12, 0, 24),
+						UDim2.new(0, 6, 0.78, 0),
+						15,
 						owned and GREEN or GOLD,
 						36,
 						Enum.Font.GothamBold
@@ -1163,17 +1223,6 @@ function Inventory.Bind(
 					priceLab.TextXAlignment = Enum.TextXAlignment.Center
 					if not owned then
 						fetchPrice(def.gamePassId, priceLab)
-						-- keep pill in sync when cache fills
-						task.spawn(function()
-							for _ = 1, 20 do
-								task.wait(0.15)
-								if priceCache[def.gamePassId] and pricePill.Parent then
-									pricePill.Text = priceCache[def.gamePassId]
-									priceLab.Text = priceCache[def.gamePassId]
-									break
-								end
-							end
-						end)
 					end
 
 					imgBtn.MouseButton1Click:Connect(function()
@@ -1188,28 +1237,26 @@ function Inventory.Bind(
 				end
 			end
 			local row = actionsRow()
-			keybind(row, 1, "LMB", "Purchase")
-			lbl(row, "Roblox gamepasses", UDim2.fromOffset(180, 32), nil, 13, TL, 35)
+			lbl(row, "LMB · Purchase gamepass", UDim2.fromOffset(220, 32), nil, 13, TL, 35)
 
-		---------------------------------------------------------------- PROFILE
+		---------------------------------------------------------------- PROFILE — large FullHD-friendly type + layout
 		else
 			local viewUserId = inspectUserId or (lp and lp.UserId) or 0
 			setPreviewAvatar(viewUserId, "👤")
 			countLab.Text = inspectName and ("@" .. inspectName) or "You"
-			local scroll = UIKit.Scroll(main, UDim2.new(1, -10, 1, -10))
-			scroll.Position = UDim2.fromOffset(5, 5)
+			local scroll = UIKit.Scroll(main, UDim2.new(1, -12, 1, -12))
+			scroll.Position = UDim2.fromOffset(6, 6)
 
-			-- Search bar
-			local searchBar = solid(scroll, "Search", UDim2.new(1, -8, 0, 48), nil, BG_SECTION, 35)
+			-- Search bar (tall)
+			local searchBar = solid(scroll, "Search", UDim2.new(1, -8, 0, 64), nil, BG_SECTION, 35)
 			searchBar.LayoutOrder = 0
 			searchBar.BackgroundTransparency = 0
 			UIKit.Stroke(searchBar, BD2, 1, 0.15)
-			UIKit.Pad(searchBar, 8)
+			UIKit.Pad(searchBar, 10)
 
 			local box = Instance.new("TextBox")
 			box.Name = "UserSearch"
-			box.Size = UDim2.new(1, -100, 1, 0)
-			box.Position = UDim2.fromOffset(0, 0)
+			box.Size = UDim2.new(1, -130, 1, 0)
 			box.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 			box.BackgroundTransparency = 0
 			box.BorderSizePixel = 0
@@ -1218,18 +1265,18 @@ function Inventory.Bind(
 			box.Text = inspectName and ("@" .. inspectName) or ""
 			box.TextColor3 = TW
 			box.Font = Enum.Font.Gotham
-			box.TextSize = 14
+			box.TextSize = 20
 			box.TextXAlignment = Enum.TextXAlignment.Left
 			box.ClearTextOnFocus = false
 			box.ZIndex = 37
 			box.Parent = searchBar
-			UIKit.Corner(box, 4)
-			UIKit.Pad(box, nil, 10, 0, 10, 0)
+			UIKit.Corner(box, 6)
+			UIKit.Pad(box, nil, 14, 0, 14, 0)
 			UIKit.Stroke(box, BD, 1, 0.2)
 
 			local searchBtn = Instance.new("TextButton")
-			searchBtn.Size = UDim2.fromOffset(88, 32)
-			searchBtn.Position = UDim2.new(1, -88, 0.5, 0)
+			searchBtn.Size = UDim2.fromOffset(118, 44)
+			searchBtn.Position = UDim2.new(1, -118, 0.5, 0)
 			searchBtn.AnchorPoint = Vector2.new(0, 0.5)
 			searchBtn.BackgroundColor3 = Color3.fromRGB(0, 90, 80)
 			searchBtn.BackgroundTransparency = 0
@@ -1237,12 +1284,20 @@ function Inventory.Bind(
 			searchBtn.Text = "Search"
 			searchBtn.TextColor3 = TW
 			searchBtn.Font = Enum.Font.GothamBold
-			searchBtn.TextSize = 12
+			searchBtn.TextSize = 18
 			searchBtn.ZIndex = 37
 			searchBtn.Parent = searchBar
-			UIKit.Corner(searchBtn, 4)
+			UIKit.Corner(searchBtn, 6)
 
-			local statusLab = lbl(scroll, inspectStatus or "View your stats or search an online player", UDim2.new(1, -8, 0, 22), nil, 12, inspectStatus and GOLD or TL, 35)
+			local statusLab = lbl(
+				scroll,
+				inspectStatus or "Your stats · search an online player",
+				UDim2.new(1, -8, 0, 28),
+				nil,
+				16,
+				inspectStatus and GOLD or TL,
+				35
+			)
 			statusLab.LayoutOrder = 1
 
 			local function doSearch()
@@ -1283,16 +1338,16 @@ function Inventory.Bind(
 				end
 			end)
 
-			-- Avatar + name row
-			local headRow = solid(scroll, "HeadRow", UDim2.new(1, -8, 0, 120), nil, BG_SECTION, 35)
+			-- Avatar + name (large)
+			local headRow = solid(scroll, "HeadRow", UDim2.new(1, -8, 0, 180), nil, BG_SECTION, 35)
 			headRow.LayoutOrder = 2
 			headRow.BackgroundTransparency = 0
 			UIKit.Stroke(headRow, BD, 1, 0.15)
 
 			local bust = Instance.new("ImageLabel")
 			bust.Name = "Bust"
-			bust.Size = UDim2.fromOffset(100, 100)
-			bust.Position = UDim2.fromOffset(12, 10)
+			bust.Size = UDim2.fromOffset(150, 150)
+			bust.Position = UDim2.fromOffset(16, 15)
 			bust.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 			bust.BackgroundTransparency = 0
 			bust.BorderSizePixel = 0
@@ -1300,25 +1355,34 @@ function Inventory.Bind(
 			bust.ScaleType = Enum.ScaleType.Crop
 			bust.ZIndex = 36
 			bust.Parent = headRow
-			UIKit.Corner(bust, 8)
-			UIKit.Stroke(bust, CYAN, 1.5, 0.3)
+			UIKit.Corner(bust, 12)
+			UIKit.Stroke(bust, CYAN, 2, 0.25)
 
-			lbl(headRow, inspectName or (lp and lp.DisplayName) or "Player", UDim2.new(1, -130, 0, 28), UDim2.fromOffset(124, 20), 18, TW, 36)
-			lbl(headRow, "@" .. (inspectName or (lp and lp.Name) or "player"), UDim2.new(1, -130, 0, 22), UDim2.fromOffset(124, 50), 13, CYAN, 36, Enum.Font.Gotham)
+			lbl(headRow, inspectName or (lp and lp.DisplayName) or "Player", UDim2.new(1, -190, 0, 40), UDim2.fromOffset(184, 28), 28, TW, 36)
+			lbl(
+				headRow,
+				"@" .. (inspectName or (lp and lp.Name) or "player"),
+				UDim2.new(1, -190, 0, 28),
+				UDim2.fromOffset(184, 72),
+				20,
+				CYAN,
+				36,
+				Enum.Font.Gotham
+			)
 			if inspectName then
 				local meBtn = Instance.new("TextButton")
-				meBtn.Size = UDim2.fromOffset(110, 28)
-				meBtn.Position = UDim2.fromOffset(124, 78)
+				meBtn.Size = UDim2.fromOffset(140, 40)
+				meBtn.Position = UDim2.fromOffset(184, 116)
 				meBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 				meBtn.BackgroundTransparency = 0
 				meBtn.Text = "Back to me"
 				meBtn.TextColor3 = TW
 				meBtn.Font = Enum.Font.GothamBold
-				meBtn.TextSize = 12
+				meBtn.TextSize = 16
 				meBtn.BorderSizePixel = 0
 				meBtn.ZIndex = 37
 				meBtn.Parent = headRow
-				UIKit.Corner(meBtn, 4)
+				UIKit.Corner(meBtn, 6)
 				meBtn.MouseButton1Click:Connect(function()
 					inspectName = nil
 					inspectUserId = nil
@@ -1332,11 +1396,11 @@ function Inventory.Bind(
 			local s = inspectStats or stats
 			local cols = Instance.new("Frame")
 			cols.BackgroundTransparency = 1
-			cols.Size = UDim2.new(1, -8, 0, 280)
+			cols.Size = UDim2.new(1, -8, 0, 380)
 			cols.LayoutOrder = 3
 			cols.ZIndex = 35
 			cols.Parent = scroll
-			UIKit.List(cols, 12, true)
+			UIKit.List(cols, 16, true)
 
 			local function colPanel(name: string, order: number): Frame
 				local p = solid(cols, name, UDim2.new(0.5, -8, 1, 0), nil, BG_SECTION, 36)
