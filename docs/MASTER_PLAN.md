@@ -10,6 +10,12 @@
 > **LOCALE LOCK: English only** for every player-facing string (UI labels, buttons, Notify toasts, case result, configs shown to player). Comments in code may be RU/EN; **never ship RU text to players.**  
 > **AI handoff:** local `CONTEXT_MEPC.md` (gitignored) — copy to other agents; not in repo.
 
+> ### Agent / AI (навсегда)
+> **Перед работой:** (1) `git pull` — версии с другом · (2) перечитать этот `MASTER_PLAN.md` · (3) только потом код.  
+> **После работы:** сам **`commit` + `push`**, чтобы remote всегда был актуальным.  
+> **Без commit/push** — только если пользователь явно сказал «не коммить / не пушь».  
+> Подробно: корневой `AGENTS.md`.
+
 ---
 
 ## 1. Что это за игра
@@ -253,8 +259,10 @@ cd "D:\RobloxProject\САО БРАТ"
 git pull
 rojo serve          # Connect в Studio
 # ...работа...
-git add -A ; git commit ; git pull --rebase ; git push
+# Агент после работы сам:
+git add … ; git commit -m "…" ; git pull --rebase ; git push
 # Place: Save to Roblox (Team Create)
+# Исключение: пользователь сказал «не пушь» / «не коммить»
 ```
 
 ---
