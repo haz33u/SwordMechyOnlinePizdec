@@ -22,6 +22,8 @@ local PetConfig = require(Shared.Config.PetConfig)
 local AuraConfig = require(Shared.Config.AuraConfig)
 local CaseConfig = require(Shared.Config.CaseConfig)
 local IconConfig = require(Shared.Config.IconConfig)
+local GamePassConfig = require(Shared.Config.GamePassConfig)
+local Inventory = require(script.Parent.Inventory)
 
 local Windows = {}
 
@@ -71,7 +73,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 
 	local titles = {
 		character = "Profile",
-		weapons = "Weapon Inventory",
+		weapons = "Inventory", -- INVETAR shell (E key)
 		pets = "Pets",
 		auras = "Auras",
 		cases = "Cases",
@@ -92,13 +94,48 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		bodies[id] = body
 	end
 
-	-- Larger shells so upscaled interiors fit (HUD layout metrics untouched)
+	-- Inventory uses fixed design scale (Make ~920 panel); hide outer Window chrome
+	-- so INVETAR shell provides its own header/close (no double title bar).
+	do
+		local invRoot = frames.weapons
+		local invHeader = invRoot:FindFirstChild("Header")
+		if invHeader and invHeader:IsA("GuiObject") then
+			invHeader.Visible = false
+		end
+		local invBody = bodies.weapons
+		invBody.Size = UDim2.new(1, 0, 1, 0)
+		invBody.Position = UDim2.fromOffset(0, 0)
+		invRoot.BackgroundColor3 = Color3.fromRGB(13, 13, 13)
+		-- drop outer gradient/stroke feel for Make flat panel
+		local stroke = invRoot:FindFirstChildOfClass("UIStroke")
+		if stroke then
+			stroke.Color = Color3.fromRGB(62, 62, 62)
+			stroke.Thickness = 2
+			stroke.Transparency = 0.1
+		end
+		local sc = invRoot:FindFirstChildOfClass("UISizeConstraint")
+		if sc then
+			sc.MinSize = Vector2.new(640, 480)
+			sc.MaxSize = Vector2.new(980, 780)
+		end
+	end
+
 	Layout.Bind(function(m)
 		local ww = math.clamp((m.windowW or 0.5) + 0.10, 0.56, 0.68)
 		local wh = math.clamp((m.windowH or 0.62) + 0.10, 0.66, 0.80)
-		for _, root in frames do
-			root.Size = UDim2.fromScale(ww, wh)
+		for id, root in frames do
+			if id == "weapons" then
+				-- Make design ~920×~620 aspect; fill more of screen
+				root.Size = UDim2.fromScale(0.74, 0.84)
+			else
+				root.Size = UDim2.fromScale(ww, wh)
+			end
 		end
+	end)
+
+	-- Unified inventory (Figma Make INVETAR) on weapons body
+	local invApi = Inventory.Bind(bodies.weapons, frames.weapons, store, openModal, function()
+		store:ClosePanel()
 	end)
 
 	local function showOnly(active: string)
@@ -302,252 +339,15 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 	end
 
-	---------------------------------------------------------------- Weapons — slot inventory (no paper doll)
-	local selectedWeaponUid: string? = nil
-	local INV_CAP = 32
-
+	---------------------------------------------------------------- Inventory (INVETAR Make) — E key
 	local function refreshWeapons()
-		local body = bodies.weapons
-		UIKit.Clear(body)
-		UIKit.List(body, px(8), false)
-		local profile = store:PeekProfile()
-		if not profile then
-			return
+		-- tab can be set by rail: store._invTab
+		local t = (store :: any)._invTab
+		if type(t) == "string" and t ~= "" then
+			invApi:SetTab(t)
+			(store :: any)._invTab = nil
 		end
-		local weapons = profile.weapons or {}
-		local count = #weapons
-
-		local function weaponLabel(uid: any): string
-			if type(uid) ~= "string" then
-				return "—"
-			end
-			for _, w in ipairs(weapons) do
-				if w.uid == uid then
-					local def = WeaponConfig.Get(w.id)
-					return ((def and def.name) or w.id):sub(1, 14)
-				end
-			end
-			return "—"
-		end
-
-		-- header: equipped + count
-		local head = surfaceCard(body, 48, 1, T.Stroke)
-		local stats = store:PeekStats()
-		local offUnlocked = (stats and stats.offhandUnlocked) == true
-			or (profile.unlocks and profile.unlocks.offhand) == true
-		UIKit.Label({
-			Parent = head,
-			Text = string.format(
-				"Main: %s   ·   Off: %s",
-				weaponLabel(profile.equippedMain),
-				if offUnlocked then weaponLabel(profile.equippedOffhand) else "🔒 paid"
-			),
-			Size = UDim2.new(0.72, 0, 1, 0),
-			SizePx = px(14),
-			Color = T.TextSoft,
-			Z = 33,
-		})
-		UIKit.Label({
-			Parent = head,
-			Text = string.format("%d of %d", count, INV_CAP),
-			Size = UDim2.new(0.28, 0, 1, 0),
-			Position = UDim2.new(0.72, 0, 0, 0),
-			SizePx = px(14),
-			Color = T.TextMuted,
-			X = Enum.TextXAlignment.Right,
-			Z = 33,
-		})
-
-		-- action bar for selected
-		local act = surfaceCard(body, 52, 2, T.Stroke)
-		local selected: any = nil
-		for _, w in ipairs(weapons) do
-			if w.uid == selectedWeaponUid then
-				selected = w
-				break
-			end
-		end
-		if not selected and weapons[1] then
-			selected = weapons[1]
-			selectedWeaponUid = selected.uid
-		end
-		if selected then
-			local def = WeaponConfig.Get(selected.id)
-			local name = (def and def.name) or selected.id
-			UIKit.Label({
-				Parent = act,
-				Text = name,
-				Size = UDim2.new(0.28, 0, 1, 0),
-				SizePx = px(13),
-				Font = T.Font.Title,
-				Color = Rarity.Of(def and def.rarity),
-				Z = 33,
-			})
-			local row = Instance.new("Frame")
-			row.BackgroundTransparency = 1
-			row.Size = UDim2.new(0.72, 0, 1, 0)
-			row.Position = UDim2.new(0.28, 0, 0, 0)
-			row.ZIndex = 33
-			row.Parent = act
-			UIKit.List(row, px(6), true, Enum.HorizontalAlignment.Right)
-			UIKit.Button({
-				Parent = row,
-				Text = "Equip main",
-				Size = UDim2.fromOffset(px(100), px(34)),
-				SizePx = px(12),
-				Primary = true,
-				OnClick = function()
-					Net.EquipWeapon(selected.uid, "main")
-				end,
-			})
-			UIKit.Button({
-				Parent = row,
-				Text = if offUnlocked then "Equip off" else "Off 🔒",
-				Size = UDim2.fromOffset(px(100), px(34)),
-				SizePx = px(12),
-				Disabled = not offUnlocked,
-				OnClick = function()
-					if offUnlocked then
-						Net.EquipWeapon(selected.uid, "offhand")
-					else
-						Net.UnlockPaidFeature("offhand")
-					end
-				end,
-			})
-			UIKit.Button({
-				Parent = row,
-				Text = "Enchant",
-				Size = UDim2.fromOffset(px(56), px(34)),
-				SizePx = px(12),
-				Color = Color3.fromRGB(90, 60, 140),
-				Color2 = Color3.fromRGB(55, 35, 90),
-				OnClick = function()
-					Net.EnchantWeapon(selected.uid)
-					openModal("enchant", selected)
-				end,
-			})
-			UIKit.Button({
-				Parent = row,
-				Text = "Sell",
-				Size = UDim2.fromOffset(px(72), px(34)),
-				SizePx = px(12),
-				Color = T.Danger,
-				Color2 = T.Colors and T.Colors.DangerDeep,
-				OnClick = function()
-					openModal("sell", selected)
-				end,
-			})
-		else
-			UIKit.Label({
-				Parent = act,
-				Text = "Empty — loot weapons from mobs",
-				Size = UDim2.new(1, 0, 1, 0),
-				SizePx = px(14),
-				Color = T.TextMuted,
-				Z = 33,
-			})
-		end
-
-		-- slot grid
-		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(120)))
-		scroll.LayoutOrder = 3
-		-- replace default vertical list with grid
-		for _, ch in scroll:GetChildren() do
-			if ch:IsA("UIListLayout") then
-				ch:Destroy()
-			end
-		end
-		local grid = Instance.new("UIGridLayout")
-		grid.CellSize = UDim2.fromOffset(px(78), px(78))
-		grid.CellPadding = UDim2.fromOffset(px(8), px(8))
-		grid.SortOrder = Enum.SortOrder.LayoutOrder
-		grid.FillDirectionMaxCells = 6
-		grid.Parent = scroll
-		UIKit.Pad(scroll, px(4))
-
-		local function makeSlot(order: number, w: any?)
-			local rarity = "Common"
-			local edge = T.Stroke
-			if w then
-				local def = WeaponConfig.Get(w.id)
-				rarity = (def and def.rarity) or "Common"
-				edge = Rarity.Of(rarity)
-			end
-			local isSel = w and w.uid == selectedWeaponUid
-			local slot = Instance.new("TextButton")
-			slot.Name = w and ("W_" .. tostring(w.uid)) or ("Empty_" .. order)
-			slot.AutoButtonColor = false
-			slot.Text = ""
-			slot.BackgroundColor3 = Color3.new(1, 1, 1)
-			slot.BorderSizePixel = 0
-			slot.LayoutOrder = order
-			slot.ZIndex = 33
-			slot.Parent = scroll
-			UIKit.Corner(slot, T.R.sm)
-			UIKit.Stroke(slot, isSel and T.Accent or edge, isSel and 2 or 1.3, isSel and 0.15 or 0.25)
-			UIKit.Gradient(slot, T.Surface3, T.Surface2, 110)
-
-			if w then
-				local img = Instance.new("ImageLabel")
-				img.BackgroundTransparency = 1
-				img.Size = UDim2.fromScale(0.72, 0.72)
-				img.Position = UDim2.fromScale(0.5, 0.42)
-				img.AnchorPoint = Vector2.new(0.5, 0.5)
-				img.Image = IconConfig.GetWeaponImage(w.id)
-				img.ScaleType = Enum.ScaleType.Fit
-				img.ZIndex = 34
-				img.Parent = slot
-				local def = WeaponConfig.Get(w.id)
-				UIKit.Label({
-					Parent = slot,
-					Text = (def and def.name or w.id):sub(1, 8),
-					Size = UDim2.new(1, -4, 0, px(14)),
-					Position = UDim2.new(0, 2, 1, -px(16)),
-					SizePx = px(10),
-					Color = edge,
-					X = Enum.TextXAlignment.Center,
-					Z = 34,
-				})
-				-- equipped badge (profile stores weapon uid)
-				local eq = ""
-				if profile.equippedMain == w.uid then
-					eq = "M"
-				elseif profile.equippedOffhand == w.uid then
-					eq = "O"
-				end
-				if eq ~= "" then
-					UIKit.Label({
-						Parent = slot,
-						Text = eq,
-						Size = UDim2.fromOffset(px(16), px(16)),
-						Position = UDim2.fromOffset(px(4), px(2)),
-						SizePx = px(11),
-						Color = T.Accent,
-						Font = T.Font.Title,
-						Z = 35,
-					})
-				end
-				slot.MouseButton1Click:Connect(function()
-					selectedWeaponUid = w.uid
-					refreshWeapons()
-				end)
-			else
-				UIKit.Label({
-					Parent = slot,
-					Text = "",
-					Size = UDim2.fromScale(1, 1),
-					Z = 34,
-				})
-				slot.Active = false
-			end
-		end
-
-		for i, w in ipairs(weapons) do
-			makeSlot(i, w)
-		end
-		for i = count + 1, INV_CAP do
-			makeSlot(i, nil)
-		end
+		invApi:Refresh()
 	end
 
 	---------------------------------------------------------------- Pets
@@ -1293,115 +1093,94 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		addOddsSection(scroll, "POSSIBLE REWARDS · AURAS", "aura", AuraConfig.Weights, loc, 30)
 	end
 
-	---------------------------------------------------------------- Donate shop (UI stubs only)
+	---------------------------------------------------------------- Donate shop — gamepass ImageButtons
 	local function refreshShop()
 		local body = bodies.shop
 		UIKit.Clear(body)
-		UIKit.List(body, px(10), false)
-
-		local tabs = { "Packs", "Boosts", "Misc", "Game currency" }
-		local tabRow = Instance.new("Frame")
-		tabRow.BackgroundTransparency = 1
-		tabRow.Size = UDim2.new(1, 0, 0, px(40))
-		tabRow.LayoutOrder = 1
-		tabRow.ZIndex = 32
-		tabRow.Parent = body
-		UIKit.List(tabRow, px(8), true)
-
-		local activeTab = (store :: any)._shopTab or "Boosts"
-		for i, name in ipairs(tabs) do
-			local on = name == activeTab
-			UIKit.Button({
-				Parent = tabRow,
-				Text = name,
-				Size = UDim2.fromOffset(px(120), px(34)),
-				SizePx = px(12),
-				Primary = on,
-				Color = on and nil or T.Surface3,
-				Color2 = on and nil or T.Surface2,
-				Order = i,
-				OnClick = function()
-					(store :: any)._shopTab = name
-					refreshShop()
-				end,
-			})
-		end
-
-		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(52)))
+		UIKit.List(body, px(12), false)
+		sectionLabel(body, "GAMEPASSES", 1)
+		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(40)))
 		scroll.LayoutOrder = 2
+		for _, ch in scroll:GetChildren() do
+			if ch:IsA("UIListLayout") then
+				ch:Destroy()
+			end
+		end
+		local grid = Instance.new("UIGridLayout")
+		grid.CellSize = UDim2.fromOffset(px(150), px(180))
+		grid.CellPadding = UDim2.fromOffset(px(12), px(12))
+		grid.SortOrder = Enum.SortOrder.LayoutOrder
+		grid.FillDirectionMaxCells = 4
+		grid.Parent = scroll
+		UIKit.Pad(scroll, px(6))
 
-		-- Luau: Cyrillic keys must be quoted ["..."], not bare identifiers
-		local stubs = {
-			["Packs"] = {
-				{ name = "Starter pack", price = "99 R$", desc = "Coins + keys (stub)" },
-				{ name = "Warrior pack", price = "199 R$", desc = "Power x2 1h (stub)" },
-				{ name = "VIP pack", price = "499 R$", desc = "Cosmetics + bonuses (stub)" },
-			},
-			["Boosts"] = {
-				{ name = "Local power boost x2", price = "149 R$", desc = "30 min · soon" },
-				{ name = "Global power boost x1.5", price = "199 R$", desc = "30 min · soon" },
-				{ name = "Local damage boost x2", price = "149 R$", desc = "30 min · soon" },
-				{ name = "Global damage boost x1.5", price = "199 R$", desc = "30 min · soon" },
-				{ name = "Local coin boost x1.5", price = "149 R$", desc = "30 min · soon" },
-				{ name = "Global coin boost x1.5", price = "199 R$", desc = "30 min · soon" },
-				{ name = "Local luck boost x1.25", price = "149 R$", desc = "30 min · soon" },
-				{ name = "Global luck boost x1.25", price = "199 R$", desc = "30 min · soon" },
-			},
-			["Misc"] = {
-				{ name = "Sword skins", price = "--", desc = "Soon" },
-				{ name = "Emotes", price = "--", desc = "Soon" },
-				{ name = "Name frames", price = "--", desc = "Soon" },
-			},
-			["Game currency"] = {
-				{ name = "5,000 coins", price = "49 R$", desc = "Stub" },
-				{ name = "25,000 coins", price = "149 R$", desc = "Stub" },
-				{ name = "100,000 coins", price = "399 R$", desc = "Stub" },
-			},
-		}
+		local MarketplaceService = game:GetService("MarketplaceService")
+		local profile = store:PeekProfile()
+		local unlocks = (profile and profile.unlocks) or {}
+		for i, key in ipairs(GamePassConfig.Order) do
+			local def = GamePassConfig.Get(key)
+			if def then
+				local owned = def.feature and unlocks[def.feature] == true
+				local card = surfaceCard(scroll, 170, i, owned and T.Success or T.Stroke)
+				card.Size = UDim2.fromOffset(px(140), px(168))
 
-		local list = stubs[activeTab] or stubs["Boosts"]
-		for i, item in ipairs(list) do
-			local c = surfaceCard(scroll, 96, i, T.Stroke)
-			UIKit.Label({
-				Parent = c,
-				Text = "🧪  " .. item.name,
-				Size = UDim2.new(1, -px(100), 0, px(24)),
-				SizePx = px(15),
-				Font = T.Font.Title,
-				Color = T.Text,
-				Z = 33,
-			})
-			UIKit.Label({
-				Parent = c,
-				Text = item.desc,
-				Size = UDim2.new(1, -px(100), 0, px(20)),
-				Position = UDim2.fromOffset(0, px(28)),
-				SizePx = px(12),
-				Color = T.TextMuted,
-				Z = 33,
-			})
-			UIKit.Label({
-				Parent = c,
-				Text = item.price,
-				Size = UDim2.new(1, -px(100), 0, px(18)),
-				Position = UDim2.fromOffset(0, px(50)),
-				SizePx = px(13),
-				Color = T.Accent,
-				Font = T.Font.Title,
-				Z = 33,
-			})
-			UIKit.Button({
-				Parent = c,
-				Text = "Soon",
-				Size = UDim2.fromOffset(px(90), px(36)),
-				Position = UDim2.new(1, -px(90), 0.5, -px(18)),
-				Primary = true,
-				SizePx = px(13),
-				Z = 34,
-				OnClick = function()
-					openModal("stub", { title = item.name, text = "Purchase not wired yet.\nSoon: " .. item.price })
-				end,
-			})
+				local img = Instance.new("ImageButton")
+				img.Name = "Buy"
+				img.Size = UDim2.fromOffset(px(100), px(100))
+				img.Position = UDim2.new(0.5, 0, 0, px(8))
+				img.AnchorPoint = Vector2.new(0.5, 0)
+				img.BackgroundColor3 = T.Surface2
+				img.BorderSizePixel = 0
+				img.Image = GamePassConfig.ThumbUrl(def.gamePassId, 150)
+				img.ScaleType = Enum.ScaleType.Fit
+				img.AutoButtonColor = not owned
+				img.ImageTransparency = owned and 0.2 or 0
+				img.ZIndex = 34
+				img.Parent = card
+				UIKit.Corner(img, T.R.sm)
+
+				UIKit.Label({
+					Parent = card,
+					Text = def.title,
+					Size = UDim2.new(1, -8, 0, px(28)),
+					Position = UDim2.fromOffset(4, px(112)),
+					SizePx = px(11),
+					Color = T.Text,
+					X = Enum.TextXAlignment.Center,
+					Wrap = true,
+					Z = 34,
+				})
+				local priceLab = UIKit.Label({
+					Parent = card,
+					Text = owned and "Owned" or "…",
+					Size = UDim2.new(1, 0, 0, px(18)),
+					Position = UDim2.fromOffset(0, px(142)),
+					SizePx = px(12),
+					Color = owned and (T.Success or Color3.fromRGB(100, 200, 120)) or T.Gold,
+					Font = T.Font.Title,
+					X = Enum.TextXAlignment.Center,
+					Z = 34,
+				})
+				if not owned then
+					task.spawn(function()
+						local ok, info = pcall(function()
+							return MarketplaceService:GetProductInfo(def.gamePassId, Enum.InfoType.GamePass)
+						end)
+						if priceLab.Parent then
+							if ok and type(info) == "table" and type(info.PriceInRobux) == "number" then
+								priceLab.Text = "R$ " .. tostring(info.PriceInRobux)
+							else
+								priceLab.Text = "R$ —"
+							end
+						end
+					end)
+				end
+				img.MouseButton1Click:Connect(function()
+					if not owned then
+						Net.PromptGamePass(def.gamePassId)
+					end
+				end)
+			end
 		end
 	end
 

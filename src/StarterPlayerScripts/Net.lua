@@ -85,9 +85,20 @@ function Net.BanDrop(kind: string, id: string, banned: boolean)
 	Net.Event("BanDrop"):FireServer(kind, id, banned)
 end
 
---- featureId: "offhand" | "paidPetSlot" (DEBUG free if ProgressConfig.DEBUG_FREE_PAID)
+--- featureId: "offhand" | "paidPetSlot" | ... (DEBUG free if ProgressConfig.DEBUG_FREE_PAID)
 function Net.UnlockPaidFeature(featureId: string)
 	Net.Event("UnlockPaidFeature"):FireServer(featureId)
+end
+
+function Net.PromptGamePass(gamePassId: number)
+	local MarketplaceService = game:GetService("MarketplaceService")
+	local Players = game:GetService("Players")
+	local lp = Players.LocalPlayer
+	if lp and type(gamePassId) == "number" then
+		pcall(function()
+			MarketplaceService:PromptGamePassPurchase(lp, gamePassId)
+		end)
+	end
 end
 
 function Net.GetProfile(): any

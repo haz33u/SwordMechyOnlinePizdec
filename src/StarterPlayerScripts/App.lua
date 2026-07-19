@@ -372,7 +372,8 @@ function App.Start()
 		-- Binds: Q=rebirth, E=inventory (no Space attack)
 		if input.KeyCode == Enum.KeyCode.Q then
 			openModal("rebirth", nil)
-		elseif input.KeyCode == Enum.KeyCode.E then
+		elseif input.KeyCode == Enum.KeyCode.E or input.KeyCode == Enum.KeyCode.I then
+			(store :: any)._invTab = "weapons"
 			store:OpenPanel("weapons")
 		elseif input.KeyCode == Enum.KeyCode.T then
 			pcall(function()
@@ -380,20 +381,22 @@ function App.Start()
 			end)
 		elseif input.KeyCode == Enum.KeyCode.R then
 			openModal("rebirth", nil)
-		elseif input.KeyCode == Enum.KeyCode.I then
-			store:OpenPanel("weapons")
 		elseif input.KeyCode == Enum.KeyCode.P then
-			store:OpenPanel("pets")
+			(store :: any)._invTab = "pets"
+			store:OpenPanel("weapons")
 		elseif input.KeyCode == Enum.KeyCode.J then
 			store:OpenPanel("quests")
 		elseif input.KeyCode == Enum.KeyCode.L then
 			store:OpenPanel("locations")
 		elseif input.KeyCode == Enum.KeyCode.C then
-			store:OpenPanel("cases")
+			(store :: any)._invTab = "cases"
+			store:OpenPanel("weapons")
 		elseif input.KeyCode == Enum.KeyCode.B then
-			store:OpenPanel("shop")
+			(store :: any)._invTab = "shop"
+			store:OpenPanel("weapons")
 		elseif input.KeyCode == Enum.KeyCode.U then
-			store:OpenPanel("character")
+			(store :: any)._invTab = "profile"
+			store:OpenPanel("weapons")
 		elseif input.KeyCode == Enum.KeyCode.Escape then
 			if caseApi and caseApi.IsOpen() then
 				caseApi.Close()

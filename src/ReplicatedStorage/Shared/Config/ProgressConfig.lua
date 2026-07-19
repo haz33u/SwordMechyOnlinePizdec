@@ -48,7 +48,9 @@ local ProgressConfig = {
 	----------------------------------------------------------------------
 	-- DEBUG: free unlock paid features without R$ (playtest)
 	----------------------------------------------------------------------
-	DEBUG_FREE_PAID = true, -- set false when real gamepasses exist
+	-- Studio playtest: true = free unlock via UnlockPaidFeature.
+	-- Live: false + real GamePass ownership (UnlockService).
+	DEBUG_FREE_PAID = false,
 }
 
 --- Total pet slots for current progress (pure function)

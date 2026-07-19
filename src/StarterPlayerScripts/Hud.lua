@@ -70,6 +70,17 @@ function Hud.Mount(
 	railList.VerticalAlignment = Enum.VerticalAlignment.Top
 	UIKit.SizeConstraint(rail, Vector2.new(56, 200), Vector2.new(120, 900))
 
+	-- Inventory shell tabs (INVETAR): open weapons panel with tab
+	local INV_TABS = {
+		weapons = true,
+		pets = true,
+		auras = true,
+		relics = true,
+		cases = true,
+		shop = true,
+		character = true, -- profile tab inside inventory
+	}
+
 	local railBtns: { [string]: TextButton } = {}
 	for i, item in ipairs(RAIL) do
 		local b = UIKit.IconBtn({
@@ -78,7 +89,13 @@ function Hud.Mount(
 			Glyph = item.glyph,
 			Order = i,
 			OnClick = function()
-				store:OpenPanel(item.id)
+				if INV_TABS[item.id] then
+					local tab = item.id == "character" and "profile" or item.id
+					(store :: any)._invTab = tab
+					store:OpenPanel("weapons")
+				else
+					store:OpenPanel(item.id)
+				end
 			end,
 		})
 		railBtns[item.id] = b

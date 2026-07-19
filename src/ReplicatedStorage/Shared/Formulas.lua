@@ -247,7 +247,11 @@ function Formulas.IsAutoClickerUnlocked(profile: any): boolean
 	if (profile.rebirthLevel or 0) >= (ClickConfig.AUTO_UNLOCK_REBIRTH or 0) then
 		return true
 	end
-	return profile.autoClickerUnlocked == true
+	if profile.autoClickerUnlocked == true then
+		return true
+	end
+	local unlocks = profile.unlocks or {}
+	return unlocks.autoClicker == true
 end
 
 function Formulas.GetCritChance(profile: any): number
