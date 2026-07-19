@@ -1,7 +1,8 @@
 --!strict
 --[[
-	Mob catalog — Loc1 + Loc2 1:1 from Cristalix dumps only.
-	HP / coins / per-mob weapon drop tables from screenshots.
+	ACTIVE mob catalog — Loc1 + Loc2 dump roster only.
+	Extras / old fillers → Config/Spare/MobConfigSpare.lua
+	DEBUG_Dummy: debug remote only, not world location spawns.
 ]]
 
 export type MobVisualHint = {
@@ -87,21 +88,7 @@ local MobConfig = {
 			visual = { preferredModelName = "L1_Slime", color = "#58D68D", scale = 1.0, shape = "humanoid" },
 			description = "Dump: HP 1K, coins 200",
 		},
-		L1_GoblinScout = {
-			id = "L1_GoblinScout",
-			name = "Goblin Runner",
-			location = 1,
-			tier = "simple",
-			defaultZone = "A",
-			hp = 2_500,
-			powerReward = 8,
-			coinReward = 350,
-			weaponDropChance = 1,
-			weaponDropScale = 1,
-			weaponPool = {},
-			respawnSeconds = 3.5,
-			visual = { preferredModelName = "L1_GoblinScout", color = "#52BE80", scale = 1.05, shape = "humanoid" },
-		},
+		-- L1_GoblinScout (Runner) → Spare/MobConfigSpare.lua
 		L1_Skeleton = {
 			id = "L1_Skeleton",
 			name = "Skeleton",

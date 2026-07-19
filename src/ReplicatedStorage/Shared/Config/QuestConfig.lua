@@ -33,12 +33,12 @@ local QuestConfig = {
 			rewards = { coins = 2_000, powerPct = 3 },
 			location = 1,
 		},
-		Q1_GoblinScouts = {
-			id = "Q1_GoblinScouts",
-			name = "Runners",
-			description = "Kill 15 goblin runners · reward +3% Power",
+		Q1_Skeletons = {
+			id = "Q1_Skeletons",
+			name = "Skeletons",
+			description = "Kill 15 skeletons · reward +3% Power",
 			type = "kill",
-			targetId = "L1_GoblinScout",
+			targetId = "L1_Skeleton",
 			amount = 15,
 			rewards = { coins = 3_000, powerPct = 3 },
 			location = 1,

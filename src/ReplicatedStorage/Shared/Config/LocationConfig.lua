@@ -44,26 +44,25 @@ local MOB_OVERRIDES: {
 	----------------------------------------------------------------------
 	[1] = {
 		-- Counts by tier: T1=13 · T2=15 · T3=11 · T4=9
+		-- Dump-aligned roster (counts for playtest density, all feature tiers)
 		mobs = {
-			-- Tier 1 simple (13)
-			{ mobId = "L1_Slime", count = 7, zone = "A" },
-			{ mobId = "L1_GoblinScout", count = 6, zone = "A" },
-			-- Tier 2 medium (15)
+			-- T1 simple — Goblin (dump 1K/200)
+			{ mobId = "L1_Slime", count = 10, zone = "A" },
+			-- T2 medium — Skeleton / Wolf
 			{ mobId = "L1_Skeleton", count = 8, zone = "B" },
 			{ mobId = "L1_Wolf", count = 7, zone = "B" },
-			-- Tier 3 hard (11)
-			{ mobId = "L1_GoblinWarrior", count = 11, zone = "C" },
-			-- Tier 4 elite (9) — secret sword lottery
-			{ mobId = "L1_Knight", count = 5, zone = "D" },
-			{ mobId = "L1_Elite", count = 4, zone = "D" },
+			-- T3 hard — Warrior (dump 5.68M/100K)
+			{ mobId = "L1_GoblinWarrior", count = 6, zone = "C" },
+			-- T4 elite — Scout 300K + Elite (secret 0.0001%)
+			{ mobId = "L1_Knight", count = 4, zone = "D" },
+			{ mobId = "L1_Elite", count = 3, zone = "D" },
 		},
 		bossId = "L1_Boss",
-		debugMobs = {
-			{ mobId = "DEBUG_Dummy", count = 1, zone = "Debug" },
-		},
+		-- Dummy only via DebugSpawnDummy remote — not auto-spawn
+		debugMobs = {},
 		questIds = {
 			"Q1_Slimes",
-			"Q1_GoblinScouts",
+			"Q1_Skeletons",
 			"Q2_Wolves",
 			"Q2_GoblinWarriors",
 			"Q3_Boss",
@@ -78,15 +77,14 @@ local MOB_OVERRIDES: {
 	----------------------------------------------------------------------
 	[2] = {
 		-- Dump: Sailor / Gunner / Captain (no Admiral in screenshots)
+		-- Dump: Sailor / Gunner / Captain only
 		mobs = {
-			{ mobId = "L2_Sailor", count = 12, zone = "A" },
-			{ mobId = "L2_Gunner", count = 8, zone = "B" },
-			{ mobId = "L2_Captain", count = 3, zone = "C" },
+			{ mobId = "L2_Sailor", count = 10, zone = "A" },
+			{ mobId = "L2_Gunner", count = 6, zone = "B" },
+			{ mobId = "L2_Captain", count = 2, zone = "C" },
 		},
 		bossId = nil,
-		debugMobs = {
-			{ mobId = "DEBUG_Dummy", count = 1, zone = "Debug" },
-		},
+		debugMobs = {},
 		questIds = { "Q_L2_Intro" },
 		caseId = "Case_Loc2",
 	},
@@ -94,9 +92,7 @@ local MOB_OVERRIDES: {
 		-- No Loc3 dump yet — empty combat
 		mobs = {},
 		bossId = nil,
-		debugMobs = {
-			{ mobId = "DEBUG_Dummy", count = 1, zone = "Debug" },
-		},
+		debugMobs = {},
 		questIds = {},
 		caseId = "Case_Loc3",
 	},
@@ -121,7 +117,7 @@ for _, meta in WorldConfig.Locations do
 		status = meta.status,
 		mobs = ov and ov.mobs or {},
 		bossId = ov and ov.bossId or nil,
-		debugMobs = ov and ov.debugMobs or { { mobId = "DEBUG_Dummy", count = 1, zone = "Debug" } },
+		debugMobs = ov and ov.debugMobs or {},
 		questIds = ov and ov.questIds or {},
 		caseId = ov and ov.caseId or ("Case_Loc" .. meta.id),
 	}

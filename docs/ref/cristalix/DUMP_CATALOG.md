@@ -129,6 +129,8 @@ Sum = 100%. (Same pool as old `relics_loc1/` — these are **premium pets**, not
 | T4 | 9 | Scout 300K + Elite | Secret **0.0001%** |
 | Boss | 1 | Guardian 1.2M | |
 
+**Live roster (code):** see `docs/MOB_ROSTER.md` — dump ids only; Runner filler → Spare; melee range 10 studs.
+
 ### Other Loc1 systems (from HUD dumps, applied)
 - Loc1 CPS cap **4** without auto purchase; game max **20** without purchase
 - Bags base **32** each (weapons / pets / items), +1 per backpack level

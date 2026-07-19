@@ -8,6 +8,7 @@ local Players = game:GetService("Players")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local MobConfig = require(Shared.Config.MobConfig)
+local GameConfig = require(Shared.Config.GameConfig)
 local Formulas = require(Shared.Formulas)
 local Remotes = require(Shared.Remotes)
 local ClickConfig = require(Shared.Config.ClickConfig)
@@ -127,41 +128,57 @@ function CombatService.GetMobsForClient(locationId: number?): { any }
 	return list
 end
 
+local function hitRange(): number
+	return (GameConfig.HIT_RANGE or 10) + (GameConfig.HIT_RANGE_EPSILON or 0)
+end
+
 local function pickTarget(player: Player, targetMobUid: string?, locId: number): any?
+	local maxRange = hitRange()
+
+	-- explicit target (manual click on mob) — still must be in range
 	local mob = targetMobUid and CombatService._mobs[targetMobUid] or nil
 	if mob and mob.alive then
-		return mob
+		local char = player.Character
+		local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if not hrp then
+			return nil
+		end
+		if (mob.position - hrp.Position).Magnitude <= maxRange then
+			return mob
+		end
+		return nil
 	end
 
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-	local origin = hrp and hrp.Position or nil
+	if not hrp then
+		-- no character → cannot melee (no map-wide auto)
+		return nil
+	end
+	local origin = hrp.Position
 
 	local best = nil
 	local bestDist = math.huge
-	local dummy = nil
+	local dummyInRange = nil
 
 	for _, m in CombatService._mobs do
 		if m.alive then
 			local sameLoc = m.locationId == locId or m.isDebug
 			if sameLoc then
-				if m.isDebug then
-					dummy = m
-				end
-				if origin then
-					local d = (m.position - origin).Magnitude
-					if d < 40 and d < bestDist and not m.isDebug then
+				local d = (m.position - origin).Magnitude
+				if d <= maxRange then
+					if m.isDebug then
+						dummyInRange = m
+					elseif d < bestDist then
 						bestDist = d
 						best = m
 					end
-				elseif not best and not m.isDebug then
-					best = m
 				end
 			end
 		end
 	end
 
-	return best or dummy
+	return best or dummyInRange
 end
 
 function CombatService.Swing(player: Player, targetMobUid: string?, source: any?)
@@ -191,14 +208,15 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 		return
 	end
 
-	-- range check if player has character
+	-- Melee range (manual + auto). No kill-aura.
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if hrp then
-		local dist = (mob.position - hrp.Position).Magnitude
-		if dist > 48 then
-			return
-		end
+	if not hrp then
+		return
+	end
+	local dist = (mob.position - hrp.Position).Magnitude
+	if dist > hitRange() then
+		return
 	end
 
 	local damage, isCrit, isMultiCrit = Formulas.GetHitDamage(profile)
