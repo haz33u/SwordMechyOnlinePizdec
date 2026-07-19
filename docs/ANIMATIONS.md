@@ -2,12 +2,12 @@
 
 ## Атака
 
-### A) Minecraft procedural swing (**default ON**)
+### A) Minecraft procedural swing (OFF by default)
 
 | | |
 |--|--|
-| **Включить** | `AnimationConfig.UseMinecraftSwing = true` (сейчас так) |
-| **Выключить** | `= false` → снова `rbxassetid://95040065182870` |
+| **Включить** | `AnimationConfig.UseMinecraftSwing = true` |
+| **Сейчас** | `false` → **`rbxassetid://95040065182870`** |
 | How | `Motor6D` RightShoulder / Waist `.Transform` |
 | Code | `WeaponVisual.PlayAttack` на LMB (Tool не нужен) |
 | Tune | `MinecraftSwing.SwingTime / RaisePower / RollPower / SwingDir` |

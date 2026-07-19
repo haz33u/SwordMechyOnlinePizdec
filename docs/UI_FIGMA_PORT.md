@@ -19,6 +19,20 @@ Backend already live (`UpgradeService` / `UpgradeConfig`).
 
 This is the **existing code UI** for testing buys. Full Figma look comes next (layout/tokens), same remotes.
 
+### Figma source (user link)
+
+https://www.figma.com/design/caEi1mtAqOKINnxEDFfcTe/HeroUI-Figma-Kit--Community---Community-?node-id=5034-3188  
+
+- File: **HeroUI Figma Kit (Community)**  
+- Node: `5034:3188`  
+- **MCP blocked:** no edit access on Community files → agent cannot `get_design_context` until:
+
+**Option A (best):** Duplicate the kit into *your* Figma (Drafts) → Share with edit / “Anyone with link can edit” → send **your** file URL.  
+**Option B:** Export PNG/PDF of the Character Upgrade frame + list components.  
+**Option C:** Select the frame in Figma Desktop with MCP “link selection” if your account has access.
+
+Without A/B we only keep the functional upgrades panel; cannot pixel-match HeroUI.
+
 ---
 
 ## How to load from Figma (parts, not all at once)

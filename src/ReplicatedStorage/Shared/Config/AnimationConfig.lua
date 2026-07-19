@@ -4,14 +4,14 @@
 	  UseMinecraftSwing = true  → procedural Minecraft-like Motor6D swing (no asset)
 	  UseMinecraftSwing = false → rbxassetid AttackMain (published anim)
 
-	Test default: Minecraft swing ON (no permission issues).
+	Default: published user attack anim (MC swing optional).
 ]]
 
 local ATTACK = "rbxassetid://95040065182870"
 
 local AnimationConfig = {
-	-- === TEST: procedural MC swing (toggle false to use published anim) ===
-	UseMinecraftSwing = true,
+	-- === published anim ON; set true only to retest procedural MC swing ===
+	UseMinecraftSwing = false,
 
 	MinecraftSwing = {
 		SwingTime = 0.3, -- ~6 ticks at 20 TPS
