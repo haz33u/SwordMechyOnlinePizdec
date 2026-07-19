@@ -1403,13 +1403,13 @@ function Inventory.Bind(
 			UIKit.List(cols, 16, true)
 
 			local function colPanel(name: string, order: number): Frame
-				local p = solid(cols, name, UDim2.new(0.5, -8, 1, 0), nil, BG_SECTION, 36)
+				local p = solid(cols, name, UDim2.new(0.5, -10, 1, 0), nil, BG_SECTION, 36)
 				p.LayoutOrder = order
 				p.BackgroundTransparency = 0
 				UIKit.Stroke(p, BD, 1, 0.15)
-				UIKit.Pad(p, 12)
+				UIKit.Pad(p, 16)
 				local list = Instance.new("UIListLayout")
-				list.Padding = UDim.new(0, 5)
+				list.Padding = UDim.new(0, 10)
 				list.SortOrder = Enum.SortOrder.LayoutOrder
 				list.Parent = p
 				return p
@@ -1417,15 +1417,15 @@ function Inventory.Bind(
 
 			local leftCol = colPanel("Mods", 1)
 			local rightCol = colPanel("Combat", 2)
-			lbl(leftCol, "MODIFIERS", UDim2.new(1, 0, 0, 18), nil, 11, TL, 37).LayoutOrder = 0
-			lbl(rightCol, "COMBAT STATS", UDim2.new(1, 0, 0, 18), nil, 11, TL, 37).LayoutOrder = 0
+			lbl(leftCol, "MODIFIERS", UDim2.new(1, 0, 0, 28), nil, 16, TL, 37).LayoutOrder = 0
+			lbl(rightCol, "COMBAT STATS", UDim2.new(1, 0, 0, 28), nil, 16, TL, 37).LayoutOrder = 0
 
 			local function statLine(parent: Frame, order: number, label: string, value: string, dot: Color3, vcol: Color3?)
-				local line = solid(parent, "L" .. order, UDim2.new(1, 0, 0, 24), nil, BG_SECTION, 37)
+				local line = solid(parent, "L" .. order, UDim2.new(1, 0, 0, 36), nil, BG_SECTION, 37)
 				line.BackgroundTransparency = 1
 				line.LayoutOrder = order
 				local d = Instance.new("Frame")
-				d.Size = UDim2.fromOffset(8, 8)
+				d.Size = UDim2.fromOffset(12, 12)
 				d.Position = UDim2.new(0, 0, 0.5, 0)
 				d.AnchorPoint = Vector2.new(0, 0.5)
 				d.BackgroundColor3 = dot
@@ -1433,8 +1433,8 @@ function Inventory.Bind(
 				d.ZIndex = 38
 				d.Parent = line
 				UIKit.Corner(d, 99)
-				lbl(line, label, UDim2.new(0.58, -12, 1, 0), UDim2.fromOffset(14, 0), 12, TD, 38, Enum.Font.Gotham)
-				local v = lbl(line, value, UDim2.new(0.42, 0, 1, 0), UDim2.new(0.58, 0, 0, 0), 13, vcol or TW, 38, Enum.Font.GothamBold)
+				lbl(line, label, UDim2.new(0.55, -16, 1, 0), UDim2.fromOffset(22, 0), 18, TD, 38, Enum.Font.Gotham)
+				local v = lbl(line, value, UDim2.new(0.42, 0, 1, 0), UDim2.new(0.55, 0, 0, 0), 20, vcol or TW, 38, Enum.Font.GothamBold)
 				v.TextXAlignment = Enum.TextXAlignment.Right
 			end
 
@@ -1451,7 +1451,7 @@ function Inventory.Bind(
 			statLine(rightCol, 5, "Location", tostring(inspectLocation or profile.currentLocation or 1), CYAN, CYAN)
 
 			local row = actionsRow()
-			lbl(row, inspectName and ("Viewing @" .. inspectName) or "Your live profile", UDim2.fromOffset(240, 32), nil, 13, TL, 35)
+			lbl(row, inspectName and ("Viewing @" .. inspectName) or "Your live profile", UDim2.fromOffset(360, 36), nil, 17, TL, 35)
 		end
 	end
 
