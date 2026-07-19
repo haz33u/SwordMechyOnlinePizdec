@@ -58,6 +58,49 @@ Remotes.Function("GetProfile").OnServerInvoke = function(player)
 	}
 end
 
+--- Public stats for inventory Profile search (@username). Online players only.
+Remotes.Function("GetPublicProfile").OnServerInvoke = function(_player, usernameRaw)
+	if type(usernameRaw) ~= "string" then
+		return { ok = false, error = "Enter a username" }
+	end
+	local name = string.gsub(usernameRaw, "^%s*@?", "")
+	name = string.gsub(name, "%s+$", "")
+	if name == "" or #name > 40 then
+		return { ok = false, error = "Enter a username" }
+	end
+	local target: Player? = nil
+	for _, p in Players:GetPlayers() do
+		if string.lower(p.Name) == string.lower(name) or string.lower(p.DisplayName) == string.lower(name) then
+			target = p
+			break
+		end
+	end
+	if not target then
+		-- resolve id then match online session
+		local okId, userId = pcall(function()
+			return Players:GetUserIdFromNameAsync(name)
+		end)
+		if okId and type(userId) == "number" then
+			target = Players:GetPlayerByUserId(userId)
+		end
+	end
+	if not target then
+		return { ok = false, error = "Player not in this server" }
+	end
+	local profile = ProfileService.Get(target)
+	if not profile then
+		return { ok = false, error = "Profile not loaded" }
+	end
+	return {
+		ok = true,
+		userId = target.UserId,
+		name = target.Name,
+		displayName = target.DisplayName,
+		stats = Formulas.Snapshot(profile),
+		currentLocation = profile.currentLocation or 1,
+	}
+end
+
 Remotes.Function("GetMobCatalog").OnServerInvoke = function(_player)
 	local MobConfig = require(Shared.Config.MobConfig)
 	return MobConfig.GetPublicCatalog()

@@ -41,6 +41,10 @@ function Net.SellWeapon(uid: string)
 	Net.Event("SellWeapon"):FireServer(uid)
 end
 
+function Net.SellAllWeapons()
+	Net.Event("SellAllWeapons"):FireServer()
+end
+
 function Net.EnchantWeapon(uid: string)
 	Net.Event("EnchantWeapon"):FireServer(uid)
 end
@@ -103,6 +107,11 @@ end
 
 function Net.GetProfile(): any
 	return Net.Fn("GetProfile"):InvokeServer()
+end
+
+--- @username of online player → public stats for inventory Profile tab
+function Net.GetPublicProfile(username: string): any
+	return Net.Fn("GetPublicProfile"):InvokeServer(username)
 end
 
 return Net

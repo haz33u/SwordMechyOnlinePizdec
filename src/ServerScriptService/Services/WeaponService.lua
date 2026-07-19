@@ -16,6 +16,9 @@ function WeaponService.Init()
 	Remotes.Event("SellWeapon").OnServerEvent:Connect(function(player, weaponUid)
 		WeaponService.Sell(player, weaponUid)
 	end)
+	Remotes.Event("SellAllWeapons").OnServerEvent:Connect(function(player)
+		WeaponService.SellAll(player)
+	end)
 	Remotes.Event("EnchantWeapon").OnServerEvent:Connect(function(player, weaponUid)
 		WeaponService.Enchant(player, weaponUid)
 	end)
@@ -85,6 +88,53 @@ function WeaponService.Sell(player: Player, weaponUid: string)
 	profile.coins += price
 	table.remove(profile.weapons, idx)
 	ProfileService.Push(player)
+end
+
+--- Sell every unequipped weapon; keep main/offhand and at least one sword.
+function WeaponService.SellAll(player: Player)
+	local profile = ProfileService.Get(player)
+	if not profile then
+		return
+	end
+	local kept: { any } = {}
+	local gained = 0
+	local sold = 0
+	for _, w in ipairs(profile.weapons or {}) do
+		local equipped = profile.equippedMain == w.uid or profile.equippedOffhand == w.uid
+		if equipped then
+			table.insert(kept, w)
+		else
+			local def = WeaponConfig.Get(w.id)
+			gained += (def and def.sellPrice) or 5
+			sold += 1
+		end
+	end
+	-- never empty inventory
+	if #kept == 0 and #(profile.weapons or {}) > 0 then
+		-- keep first weapon if nothing equipped (safety)
+		local first = profile.weapons[1]
+		table.insert(kept, first)
+		local def = WeaponConfig.Get(first.id)
+		gained = math.max(0, gained - ((def and def.sellPrice) or 5))
+		sold = math.max(0, sold - 1)
+		if not profile.equippedMain then
+			profile.equippedMain = first.uid
+		end
+	end
+	if sold <= 0 then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = "No unequipped swords to sell",
+			color = "yellow",
+		})
+		return
+	end
+	profile.weapons = kept
+	profile.coins = (profile.coins or 0) + gained
+	ProfileService.Push(player)
+	Remotes.Event("Notify"):FireClient(player, {
+		text = string.format("Sold %d swords for %d coins", sold, gained),
+		color = "gold",
+	})
 end
 
 function WeaponService.Enchant(player: Player, weaponUid: string)

@@ -115,8 +115,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 		local sc = invRoot:FindFirstChildOfClass("UISizeConstraint")
 		if sc then
-			sc.MinSize = Vector2.new(640, 480)
-			sc.MaxSize = Vector2.new(980, 780)
+			sc.MinSize = Vector2.new(820, 560)
+			sc.MaxSize = Vector2.new(1480, 980)
 		end
 	end
 
@@ -125,8 +125,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local wh = math.clamp((m.windowH or 0.62) + 0.10, 0.66, 0.80)
 		for id, root in frames do
 			if id == "weapons" then
-				-- Make design ~920×~620 aspect; fill more of screen
-				root.Size = UDim2.fromScale(0.74, 0.84)
+				-- Large inventory shell — slots/icons must stay readable
+				root.Size = UDim2.fromScale(0.88, 0.90)
 			else
 				root.Size = UDim2.fromScale(ww, wh)
 			end

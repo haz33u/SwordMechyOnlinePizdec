@@ -51,6 +51,7 @@ function Remotes.InitAll()
 	Remotes.Event("BuyUpgrade")
 	Remotes.Event("EquipWeapon")
 	Remotes.Event("SellWeapon")
+	Remotes.Event("SellAllWeapons")
 	Remotes.Event("EnchantWeapon")
 	Remotes.Event("OpenPetCase")
 	Remotes.Event("OpenAuraCase")
@@ -75,6 +76,7 @@ function Remotes.InitAll()
 	Remotes.Event("CaseResult")
 
 	Remotes.Function("GetProfile")
+	Remotes.Function("GetPublicProfile") -- inspect online player stats by @username
 	Remotes.Function("GetMobCatalog") -- static mob definitions for UI/Studio
 	Remotes.Function("GetMobDropInfo") -- Shift+RMB inspect: drop table + stats
 end
