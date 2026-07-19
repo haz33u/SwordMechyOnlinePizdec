@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Sword visuals on grips + ONE attack animation (Attack2 only).
+	Sword visuals on grips + attack anim (public R15 tool lunge/slash candidates).
 ]]
 
 local Players = game:GetService("Players")
@@ -20,6 +20,7 @@ local offModel: Model? = nil
 local tracks: { [string]: AnimationTrack } = {}
 local lastPlay = 0
 local lastPlayedId: string? = nil
+local swingToggle = false
 
 local RARITY_COLOR = {
 	Common = Color3.fromRGB(170, 175, 185),
@@ -174,6 +175,9 @@ local function getAnimator(char: Model): Animator?
 end
 
 local function loadTrack(animator: Animator, id: string): AnimationTrack?
+	if AnimationConfig.IsBannedId(id) then
+		return nil
+	end
 	if tracks[id] then
 		return tracks[id]
 	end
@@ -189,23 +193,19 @@ local function loadTrack(animator: Animator, id: string): AnimationTrack?
 		return nil
 	end
 	local track = result :: AnimationTrack
+	-- Length 0 often means asset failed silently
+	if track.Length == 0 then
+		warn("[WeaponVisual] track length 0 (asset missing?):", id)
+		-- still try play; some tracks report 0 until first play
+	end
 	track.Priority = Enum.AnimationPriority.Action4
 	track.Looped = false
 	tracks[id] = track
-	print("[WeaponVisual] Loaded attack track:", id)
+	print("[WeaponVisual] Loaded attack track:", id, "len=", track.Length)
 	return track
 end
 
-local function getAttackId(): string
-	-- Always use AnimationConfig slash — never Place Swing (often banned 12741376562)
-	local id = AnimationConfig.GetAttackId(false)
-	if AnimationConfig.IsBannedId(id) then
-		return "rbxassetid://522635514"
-	end
-	return id
-end
-
-function WeaponVisual.PlayAttack(_forceAlt: boolean?)
+function WeaponVisual.PlayAttack(forceAlt: boolean?)
 	local now = os.clock()
 	if now - lastPlay < 0.08 then
 		return
@@ -222,10 +222,26 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 		return
 	end
 
-	local id = getAttackId()
-	local track = loadTrack(animator, id)
-	if not track then
-		warn("[WeaponVisual] PlayAttack: failed to load", id)
+	local useAlt = forceAlt
+	if useAlt == nil and AnimationConfig.AlternateDual then
+		swingToggle = not swingToggle
+		useAlt = swingToggle
+	else
+		useAlt = useAlt == true
+	end
+
+	local candidates = AnimationConfig.GetAttackCandidateList(useAlt)
+	local track: AnimationTrack? = nil
+	local usedId: string? = nil
+	for _, id in candidates do
+		track = loadTrack(animator, id)
+		if track then
+			usedId = id
+			break
+		end
+	end
+	if not track or not usedId then
+		warn("[WeaponVisual] PlayAttack: ALL candidates failed", table.concat(candidates, ", "))
 		return
 	end
 	for _, t in tracks do
@@ -235,15 +251,15 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 			end)
 		end
 	end
-	track:Play(0.05, 1, 1.2)
-	if lastPlayedId ~= id then
-		lastPlayedId = id
-		print("[WeaponVisual] PlayAttack →", id)
+	track:Play(0.05, 1, 1.15)
+	if lastPlayedId ~= usedId then
+		lastPlayedId = usedId
+		print("[WeaponVisual] PlayAttack →", usedId)
 	end
 end
 
 function WeaponVisual.Init(getProfile: () -> any?)
-	print("[WeaponVisual] AttackMain =", AnimationConfig.AttackMain)
+	print("[WeaponVisual] Attack candidates:", table.concat(AnimationConfig.AttackCandidates, " | "))
 
 	local function onChar(char: Model)
 		tracks = {}

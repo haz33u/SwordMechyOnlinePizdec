@@ -2,13 +2,21 @@
 
 ## Атака (сейчас)
 
-| | |
-|--|--|
-| **Attack (main + alt)** | `rbxassetid://522635514` (Roblox Tool Slash) |
-| Config | `AttackMain` = `AttackAlt` = slash |
-| Код | `AnimationConfig` + `WeaponVisual.PlayAttack` |
+| Роль | ID | Что это |
+|------|-----|---------|
+| **Main (prefer)** | `rbxassetid://522638767` | R15 **Tool Lunge** |
+| **Alt (toggle)** | `rbxassetid://522635514` | R15 **Tool Slash** |
+| Fallback same | `http://www.roblox.com/asset/?id=…` | тот же asset, другой URL |
+| Last resort | `rbxassetid://507768375` | Tool None (hold) |
 
-Одна character-анимация на клик (R15 tool slash). Мечи main/offhand на grips — визуал, не отдельные anim tracks.
+Код: `AnimationConfig.AttackCandidates` → `WeaponVisual` пробует **по списку**, пока LoadAnimation не успеет.  
+`AlternateDual = true` → клики чередуют lunge / slash.
+
+### НЕ делай «Duplicate» в Creator / Toolbox
+Дубликат = **новый** asset, часто **пустой** или private → «пропал / не работает».  
+Нужен только **голый id** в строке `rbxassetid://ЧИСЛО`, без копирования asset.
+
+Мечи main/offhand на grips — визуал; анимация одна на Humanoid (официальный tool swing).
 
 ## Запрещённый id (не грузить)
 
