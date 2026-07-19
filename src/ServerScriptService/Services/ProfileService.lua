@@ -142,13 +142,6 @@ function ProfileService.Load(player: Player)
 	if data.purchasedAutoClicker == nil then
 		data.purchasedAutoClicker = false
 	end
-	-- migrate old saves that had free auto
-	if data.purchasedAutoClicker ~= true then
-		data.autoClickerUnlocked = false
-		if data.autoClicker == true and not data.purchasedAutoClicker then
-			data.autoClicker = false
-		end
-	end
 	if type(data.unlocks) ~= "table" then
 		data.unlocks = { offhand = false, paidPetSlot = false }
 	else
@@ -157,6 +150,21 @@ function ProfileService.Load(player: Player)
 		end
 		if data.unlocks.paidPetSlot == nil then
 			data.unlocks.paidPetSlot = false
+		end
+		if data.unlocks.autoClicker == nil then
+			data.unlocks.autoClicker = false
+		end
+	end
+	-- migrate: gamepass unlocks → purchase flags (do NOT wipe owned auto)
+	if data.unlocks.autoClicker == true or data.autoClickerUnlocked == true then
+		data.purchasedAutoClicker = true
+		data.autoClickerUnlocked = true
+		data.unlocks.autoClicker = true
+	elseif data.purchasedAutoClicker ~= true then
+		-- old free-auto saves without purchase
+		data.autoClickerUnlocked = false
+		if data.autoClicker == true then
+			data.autoClicker = false
 		end
 	end
 	if type(data.dungeonStage) ~= "table" then

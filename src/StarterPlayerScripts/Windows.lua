@@ -115,8 +115,9 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 		local sc = invRoot:FindFirstChildOfClass("UISizeConstraint")
 		if sc then
-			sc.MinSize = Vector2.new(820, 560)
-			sc.MaxSize = Vector2.new(1480, 980)
+			-- Responsive: fill most of the screen on any resolution
+			sc.MinSize = Vector2.new(720, 480)
+			sc.MaxSize = Vector2.new(1920, 1200)
 		end
 	end
 
@@ -125,8 +126,10 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local wh = math.clamp((m.windowH or 0.62) + 0.10, 0.66, 0.80)
 		for id, root in frames do
 			if id == "weapons" then
-				-- Large inventory shell — slots/icons must stay readable
-				root.Size = UDim2.fromScale(0.88, 0.90)
+				-- Near-fullscreen inventory, same relative size on every resolution
+				root.Size = UDim2.fromScale(0.94, 0.93)
+				root.Position = UDim2.fromScale(0.5, 0.5)
+				root.AnchorPoint = Vector2.new(0.5, 0.5)
 			else
 				root.Size = UDim2.fromScale(ww, wh)
 			end

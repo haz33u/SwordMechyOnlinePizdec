@@ -1,8 +1,8 @@
 --!strict
 --[[
-	Case opening overlay adapted from "Reproduce case opening" design:
-	dark dim, horizontal rarity spin strip, center marker, result card.
-	Mechanics: pet / aura cases via existing Net remotes + profile resolve.
+	Case opening: spin strip + centered result card (no dark fullscreen dim).
+	Result notification is center-screen, high ZIndex, scale-responsive.
+	Mechanics: pet / aura via Net remotes + CaseResult / profile resolve.
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -98,11 +98,11 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 	layer.Name = "CaseOpening"
 	layer.Parent = gui
 
+	-- No dark overlay — fully transparent hit catcher only (optional block)
 	local dim = Instance.new("TextButton")
 	dim.Name = "Dim"
 	dim.Size = UDim2.fromScale(1, 1)
-	dim.BackgroundColor3 = Color3.fromRGB(8, 8, 10)
-	dim.BackgroundTransparency = 0.25
+	dim.BackgroundTransparency = 1
 	dim.Text = ""
 	dim.AutoButtonColor = false
 	dim.Visible = false
@@ -203,20 +203,26 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 	})
 	arrowLab.TextStrokeTransparency = 0.3
 
-	-- Result card (flat panel)
+	-- Result card — center of screen, top-most layer, responsive size
 	local result = UIKit.Glass({
 		Name = "Result",
 		Parent = root,
-		Size = UDim2.fromOffset(px(400), px(260)),
-		Position = UDim2.new(0.5, 0, 0.78, 0),
+		Size = UDim2.fromScale(0.36, 0.32),
+		Position = UDim2.fromScale(0.5, 0.5),
 		Anchor = Vector2.new(0.5, 0.5),
 		Radius = T.R.md,
-		Z = 85,
+		Z = 250,
 		Deep = true,
 	})
 	result.Visible = false
-	UIKit.Stroke(result, T.StrokeLight, 1.2, 0.25)
+	local rsc = Instance.new("UISizeConstraint")
+	rsc.MinSize = Vector2.new(280, 200)
+	rsc.MaxSize = Vector2.new(520, 360)
+	rsc.Parent = result
+	UIKit.Stroke(result, T.StrokeLight, 1.5, 0.2)
 	UIKit.Pad(result, px(16))
+	-- raise children Z under high parent
+	result.ZIndex = 250
 
 	local resultTitle = UIKit.Label({
 		Parent = result,
@@ -226,7 +232,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		Font = T.Font.Title,
 		Color = T.Text,
 		X = Enum.TextXAlignment.Center,
-		Z = 86,
+		Z = 251,
 	})
 	local resultIcon = UIKit.Label({
 		Parent = result,
@@ -235,7 +241,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		Position = UDim2.fromOffset(0, px(40)),
 		SizePx = px(52),
 		X = Enum.TextXAlignment.Center,
-		Z = 86,
+		Z = 251,
 	})
 	local resultName = UIKit.Label({
 		Parent = result,
@@ -246,7 +252,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		Font = T.Font.Title,
 		Color = T.Text,
 		X = Enum.TextXAlignment.Center,
-		Z = 86,
+		Z = 251,
 	})
 	local resultRarity = UIKit.Label({
 		Parent = result,
@@ -256,7 +262,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		SizePx = px(15),
 		Color = T.TextMuted,
 		X = Enum.TextXAlignment.Center,
-		Z = 86,
+		Z = 251,
 	})
 	local resultSub = UIKit.Label({
 		Parent = result,
@@ -266,7 +272,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		SizePx = px(14),
 		Color = T.TextSoft,
 		X = Enum.TextXAlignment.Center,
-		Z = 86,
+		Z = 251,
 	})
 
 	local closeBtn = UIKit.Button({
@@ -281,7 +287,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		SizePx = px(18),
 		Compact = true,
 		Radius = T.R.sm,
-		Z = 95,
+		Z = 260,
 	})
 
 	local okBtn = UIKit.Button({
@@ -292,7 +298,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		Anchor = Vector2.new(0.5, 1),
 		Primary = true,
 		SizePx = px(15),
-		Z = 87,
+		Z = 252,
 	})
 
 	local busy = false
@@ -596,13 +602,25 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 				return
 			end
 
+			-- Center drop card above everything (no dim)
 			result.Visible = true
+			result.ZIndex = 250
 			resultIcon.Text = won.icon
 			resultName.Text = won.name
 			resultRarity.Text = string.upper(won.rarity)
 			resultRarity.TextColor3 = Rarity.Of(won.rarity)
 			resultSub.Text = won.sub or ""
-			UIKit.Stroke(result, Rarity.Of(won.rarity), 2.2, 0.25)
+			UIKit.Stroke(result, Rarity.Of(won.rarity), 2.2, 0.15)
+			-- soft pop
+			local rScale = result:FindFirstChildOfClass("UIScale")
+			if not rScale then
+				rScale = Instance.new("UIScale")
+				rScale.Parent = result
+			end
+			rScale.Scale = 0.85
+			TweenService:Create(rScale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+				Scale = 1,
+			}):Play()
 
 			busy = false
 		end)

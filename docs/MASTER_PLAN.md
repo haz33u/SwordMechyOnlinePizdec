@@ -1,13 +1,14 @@
 # Sword Masters — полный план проекта
 
-> Living doc. Snapshot 2026-07-19 (full dump inventory from Downloads Loc1/Loc2/Effects).  
+> Living doc. Snapshot 2026-07-19 (INVETAR inventory + gamepasses + case polish).  
 > Repo: https://github.com/haz33u/SwordMechyOnlinePizdec  
 > Place: «Искусство меча онлайн» (Team Create + Rojo)  
 > Icons: `docs/FIGMA_PROMPTS.md`  
 > Cristalix dumps: `docs/ref/cristalix/DUMP_CATALOG.md` (+ `captures/`)  
 > **World effects (eclipse/darkness/blast): PARKED — catalog only, no code yet.**  
 > Loc2 full tables + Loc1 cases 50K/49 keys inventoried — **apply to code when asked**.  
-> **Locale: English** for all player-facing strings (UI, configs, Notify). New work stays in EN.
+> **Locale: English** for all player-facing strings (UI, configs, Notify). New work stays in EN.  
+> **AI handoff:** local `CONTEXT_MEPC.md` (gitignored) — copy to other agents; not in repo.
 
 ---
 
@@ -98,21 +99,31 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 - [x] WorldConfig 4 локации (meta)
 - [x] Квесты Loc1 skeleton
 
-### UI (SCREEENS pass 2026-07-18)
-- [x] GameUI: HUD, windows, modals (Fusion) — **repo-only**, no dual StarterGui
+### UI (SCREEENS + INVETAR inventory 2026-07-18…19)
+- [x] GameUI: HUD, windows, modals — **repo-only**, no dual StarterGui
 - [x] Theme charcoal + blue CTA + red close (SCREEENS / Cristalix-like)
 - [x] HUD: boosts top-left · coins/power bottom · **Q**=rebirth · **E**=inventory
 - [x] **Attack = LMB + mobile tap** (screen-wide, not Space) — see §4
-- [x] **English locale** for UI + configs + server Notify (commit `d36756e`)
+- [x] **English locale** for UI + configs + server Notify
 - [x] CPS/DPS/clicks → **Profile** panel (not main HUD)
-- [x] Weapon inventory: 32 slots + IconConfig Loc1
+- [x] **Unified inventory** (`Inventory.lua` on weapons panel) from Figma Make INVETAR
+  - Bottom tabs: weapons / pets / auras / relics / cases / shop / profile
+  - Fixed large slots (opaque plates), hover pulse, structured tooltips (refICONTOLLTIP)
+  - Near-fullscreen **responsive** size (scale 0.94×0.93 + UIScale)
+  - **No left preview strip** (removed by request)
+  - Tab **ImageButtons** (Creator Store free cartoon icons, no circle bg)
+  - Sell all unequipped swords; profile AvatarBust + @username inspect (online)
+- [x] **Donate shop gamepasses** live: `GamePassConfig` + rbxthumb + R$ + PromptGamePass
+- [x] UnlockService ownership sync + purchase → profile.unlocks / purchasedAutoClicker
+- [x] Auto-clicker after gamepass purchase fixed (`ClickConfig.IsAutoPurchased` + flags)
+- [x] Cases: spin + CaseResult; **no dark fullscreen dim**; result card **center + high Z**
 - [x] Teleport location grid → `SetLocation`
-- [x] Cases: spin open + odds 1/rarity; donate shop **stubs only**
-- [x] Left rail only (no right-side Cristalix bind list)
+- [x] Left rail only (no right-side Cristalix bind list); rail opens inv tabs via `_invTab`
 - [x] Toast nil fix (`T.TopH` removed)
 - [ ] Floating damage / click pop polish
 - [ ] Enchant dust counter top-right
 - [ ] Boosts backend `profile.boosts` + timers
+- [ ] Replace tab icon asset IDs if any fail moderation / ownership in place
 
 ### Анимации / визуал
 - [x] CombatController: Idle/Walk/Run + sprint Shift
@@ -141,7 +152,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Boosts `profile.boosts` | HUD empty pills, no backend |
 | Wings (equip cosmetic + % ) | **idea parked** — see §11 |
 | Сезоны / топы / банды / BP | нет |
-| Донат R$ wire | UI stubs + UnlockService DEBUG free |
+| Донат R$ wire | Gamepasses wired (IDs in GamePassConfig); DEBUG_FREE_PAID=false |
 | Точный Cristalix HP/coins | playtest-скейл |
 | Босс unlock Loc2 квест «у портала» | частично Q3_Boss |
 | Dual-wield отдельные анимки L/R | один AttackMain |
@@ -164,9 +175,9 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | P3 | Leaderboard OrderedDataStore | no service | stable stats |
 | P3 | Battle Pass season XP | none | boosts + quests |
 | P3 | **Wings system** (see §11) | none | pets/auras pattern + visual |
-| P4 | DataStore versioning, anti-cheat, R$ wire | skeleton | soft launch |
+| P4 | DataStore versioning, anti-cheat, soft launch | skeleton | soft launch |
 
-**Already shipped (do not re-do):** clicks/CPS/rebirth dual-cost · upgrades · weapons drop/enchant/ban · case keys + CaseResult · pet slots 3→7 + paid offhand · Loc1 quests skeleton · cristalix lang dump in `docs/ref/cristalix/`.
+**Already shipped (do not re-do):** clicks/CPS/rebirth dual-cost · upgrades · weapons drop/enchant/ban · case keys + CaseResult · pet slots 3→7 + paid offhand · Loc1 quests skeleton · cristalix lang dump · **INVETAR inventory shell** · **gamepass donate shop + auto unlock** · case open no-dim center result.
 
 ---
 
@@ -181,16 +192,18 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 6. `FIGMA_PROMPTS.md` + first UI icon batch  
 
 ### P1 — UI polish + Loc1 content (спринты 2–3)
-1. Dust/gems strip top-right; inventory UX; case/rebirth polish  
-2. ~~CaseResult remote + case keys (не free-infinite)~~ ✅ `0.5.4-case-keys`  
+1. Dust/gems strip top-right; rebirth polish  
+2. ~~CaseResult remote + case keys (не free-infinite)~~ ✅  
 2b. ~~Pet slots 3→8 + paid offhand~~ ✅  
 2c. ~~Loc1 cristalix stats + pets 500 coins~~ ✅  
-2d. ~~Loc2 buy 500K + Ferryman + weapon L1/L2/L3 merge~~ ✅ `0.5.8`  
+2d. ~~Loc2 buy 500K + Ferryman + weapon L1/L2/L3 merge~~ ✅  
+2e. ~~INVETAR inventory + gamepass shop + structured tooltips + case no-dim~~ ✅  
 3. Boosts data model for top-left pills  ← **NEXT**  
 4. Mesh swords, hit VFX, balance pass  
 5. Boss quest → Loc2 unlock UX  
 6. Dungeon real fight + relic equip/upgrade remotes  
-7. Enchant transfer remote (config ready)
+7. Enchant transfer remote (config ready)  
+8. Verify all tab Image IDs load in live place; upload owned icons if needed
 
 ### P2 — Loc2–4 + icons
 1. Мобы + маркеры Place  

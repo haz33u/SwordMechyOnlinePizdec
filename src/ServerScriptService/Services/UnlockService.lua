@@ -74,12 +74,15 @@ local function applyFeature(profile: any, feature: string): boolean
 		profile.unlocks.relicSlot = true
 		return true
 	elseif feature == "autoClicker" then
-		if profile.unlocks.autoClicker then
+		if profile.unlocks.autoClicker and profile.purchasedAutoClicker then
 			return false
 		end
 		profile.unlocks.autoClicker = true
-		-- permanent auto unlock flag; ToggleAuto still used
+		-- ClickConfig.IsAutoPurchased checks purchasedAutoClicker first
+		profile.purchasedAutoClicker = true
 		profile.autoClickerUnlocked = true
+		-- turn ON after purchase so player feels the pass immediately
+		profile.autoClicker = true
 		return true
 	elseif feature == "teleporter" then
 		if profile.unlocks.teleporter then

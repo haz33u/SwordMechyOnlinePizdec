@@ -18,6 +18,11 @@ sourcemap.json
 # Local Figma Make extracts (not needed in repo)
 art/refs/
 
+# Local AI handoff memory (not committed)
+CONTEXT_MEPC.md
+CONTEXT_MEPC
+docs/CONTEXT_MEPC.md
+
 # bad neural icon batches
 art/icons/_failed_v1/
 art/icons/weapons/_draw_test.png

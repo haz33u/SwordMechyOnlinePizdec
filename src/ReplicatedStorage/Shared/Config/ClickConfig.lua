@@ -54,7 +54,18 @@ function ClickConfig.IsAutoPurchased(profile: any): boolean
 	if ClickConfig.AUTO_UNLOCKED_BY_DEFAULT then
 		return true
 	end
-	return profile.purchasedAutoClicker == true
+	-- gamepass / UnlockService / legacy flags all count as purchased
+	if profile.purchasedAutoClicker == true then
+		return true
+	end
+	if profile.autoClickerUnlocked == true then
+		return true
+	end
+	local unlocks = profile.unlocks
+	if type(unlocks) == "table" and unlocks.autoClicker == true then
+		return true
+	end
+	return false
 end
 
 --- Max CPS for this profile (location + purchase)
