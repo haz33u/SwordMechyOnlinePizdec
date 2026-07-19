@@ -243,17 +243,18 @@ function Hud.Mount(
 	end
 
 	local function metricChip(name: string, order: number, accent: Color3, glow: Color3): (Frame, TextLabel)
-		-- Glass-style chip matching SCREEENS panels (Surface3→Surface2), not pure black
-		local chip = UIKit.Glass({
-			Name = name .. "Chip",
-			Parent = bal,
-			Size = UDim2.fromOffset(180, CHIP_H),
-			Radius = 12,
-			Z = 13,
-			Deep = false,
-		})
+		-- Solid Theme charcoal (Surface3) — NO UIGradient on same node as text
+		local chip = Instance.new("Frame")
+		chip.Name = name .. "Chip"
+		chip.BackgroundColor3 = MAKE_SECTION -- Surface3 blue-gray charcoal
+		chip.BackgroundTransparency = 0.05
+		chip.BorderSizePixel = 0
+		chip.Size = UDim2.fromOffset(180, CHIP_H)
 		chip.LayoutOrder = order
-		UIKit.Stroke(chip, accent, 2, 0.3)
+		chip.ZIndex = 13
+		chip.Parent = bal
+		UIKit.Corner(chip, 12)
+		UIKit.Stroke(chip, accent, 2, 0.28)
 
 		local title = Instance.new("TextLabel")
 		title.Name = "Title"
