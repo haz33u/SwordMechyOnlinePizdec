@@ -412,16 +412,18 @@ function Inventory.Bind(
 		return sc
 	end
 
-	-- Shared hover state so moving between slots does not flash reset→highlight
+	-- Hover tracking. IMPORTANT: when moving A→B the old leave handler used to
+	-- bail on hoverGen mismatch and NEVER reset A — neon stuck forever.
 	local hoverGen = 0
 	local activeHover: GuiObject? = nil
+	type SlotHoverMeta = { stroke: UIStroke?, baseCol: Color3, baseZ: number, grid: Instance? }
+	local slotHover: { [GuiObject]: SlotHoverMeta } = {}
 
 	-- Neon hover: bright core stroke + soft outer glow (rarity color), idle = quiet edge
 	local SLOT_STROKE_THICK = 2
 	local SLOT_NEON_CORE = 2.6
 	local SLOT_NEON_GLOW = 8
-	local NEON_IN = TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-	local NEON_OUT = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local NEON_IN = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 	local function neonBright(c: Color3): Color3
 		return c:Lerp(Color3.new(1, 1, 1), 0.32)
@@ -444,65 +446,59 @@ function Inventory.Bind(
 		return glow
 	end
 
-	local function resetSlotVisual(btn: GuiObject, stroke: UIStroke?, baseCol: Color3, baseZ: number)
+	--- Hard idle: set values immediately so neon can never stick mid-tween
+	local function forceIdleVisual(btn: GuiObject)
+		if not btn.Parent then
+			slotHover[btn] = nil
+			return
+		end
+		local meta = slotHover[btn]
+		local baseCol = if meta then meta.baseCol else BD
+		local baseZ = if meta then meta.baseZ else 35
+		local stroke = if meta then meta.stroke else btn:FindFirstChild("Edge")
+
 		local sc = btn:FindFirstChildOfClass("UIScale")
 		if sc then
-			TweenService:Create(sc, NEON_OUT, { Scale = 1 }):Play()
+			sc.Scale = 1
 		end
-		if stroke then
+		if stroke and stroke:IsA("UIStroke") then
 			stroke.Thickness = SLOT_STROKE_THICK
-			TweenService:Create(stroke, NEON_OUT, {
-				Color = baseCol,
-				Transparency = 0.08,
-			}):Play()
+			stroke.Color = baseCol
+			stroke.Transparency = 0.08
 		end
 		local glow = btn:FindFirstChild("NeonGlow")
 		if glow and glow:IsA("UIStroke") then
-			TweenService:Create(glow, NEON_OUT, {
-				Color = baseCol,
-				Thickness = SLOT_NEON_GLOW,
-				Transparency = 1,
-			}):Play()
+			glow.Color = baseCol
+			glow.Thickness = SLOT_NEON_GLOW
+			glow.Transparency = 1
 		end
 		local plate = btn:FindFirstChild("Plate")
 		if plate and plate:IsA("GuiObject") then
-			TweenService:Create(plate, NEON_OUT, {
-				BackgroundColor3 = BG_SLOT,
-			}):Play()
+			plate.BackgroundColor3 = BG_SLOT
 		end
-		if btn:IsA("GuiObject") then
-			btn.ZIndex = baseZ
-		end
+		btn.ZIndex = baseZ
 	end
 
 	local function applyHoverVisual(btn: GuiObject, stroke: UIStroke?, baseZ: number, baseCol: Color3)
 		local sc = ensureScale(btn)
 		TweenService:Create(sc, NEON_IN, { Scale = HOVER_SCALE }):Play()
 
-		local glowCol = baseCol
 		local coreCol = neonBright(baseCol)
 
 		if stroke then
 			stroke.Thickness = SLOT_NEON_CORE
-			TweenService:Create(stroke, NEON_IN, {
-				Color = coreCol,
-				Transparency = 0,
-			}):Play()
+			stroke.Color = coreCol
+			stroke.Transparency = 0
 		end
 
-		local glow = ensureNeonGlow(btn, glowCol)
+		local glow = ensureNeonGlow(btn, baseCol)
+		glow.Color = baseCol
 		glow.Thickness = SLOT_NEON_GLOW
-		TweenService:Create(glow, NEON_IN, {
-			Color = glowCol,
-			Thickness = SLOT_NEON_GLOW,
-			Transparency = 0.42,
-		}):Play()
+		glow.Transparency = 0.42
 
 		local plate = btn:FindFirstChild("Plate")
 		if plate and plate:IsA("GuiObject") then
-			TweenService:Create(plate, NEON_IN, {
-				BackgroundColor3 = BG_SLOT:Lerp(baseCol, 0.14),
-			}):Play()
+			plate.BackgroundColor3 = BG_SLOT:Lerp(baseCol, 0.14)
 		end
 
 		btn.ZIndex = baseZ + 8
@@ -515,12 +511,26 @@ function Inventory.Bind(
 		for _, ch in gridParent:GetChildren() do
 			if ch:IsA("GuiButton") and ch ~= except then
 				local nsc = ensureScale(ch)
-				TweenService:Create(nsc, NEON_IN, { Scale = scale }):Play()
+				nsc.Scale = scale
 			end
 		end
 	end
 
-	--- Neon rarity glow on hover; leave fully clears so nothing stays selected
+	local function clearAllSlotHovers(gridParent: Instance?)
+		if gridParent then
+			for _, ch in gridParent:GetChildren() do
+				if ch:IsA("GuiButton") then
+					forceIdleVisual(ch)
+					local nsc = ch:FindFirstChildOfClass("UIScale")
+					if nsc then
+						nsc.Scale = 1
+					end
+				end
+			end
+		end
+	end
+
+	--- Neon rarity glow on hover only. Leave / switch ALWAYS kills neon on that slot.
 	local function bindHover(btn: GuiObject, stroke: UIStroke?, baseStroke: Color3?, gridParent: Instance?)
 		ensureScale(btn)
 		local baseCol = baseStroke or BD
@@ -531,27 +541,46 @@ function Inventory.Bind(
 			stroke.Transparency = 0.08
 		end
 		ensureNeonGlow(btn, baseCol)
+		slotHover[btn] = { stroke = stroke, baseCol = baseCol, baseZ = baseZ, grid = gridParent }
+
+		btn.Destroying:Connect(function()
+			if activeHover == btn then
+				activeHover = nil
+			end
+			slotHover[btn] = nil
+		end)
 
 		btn.MouseEnter:Connect(function()
 			hoverGen += 1
+			local prev = activeHover
 			activeHover = btn
+			-- Switching slots: kill previous neon immediately (this was the sticky bug)
+			if prev and prev ~= btn then
+				forceIdleVisual(prev)
+			end
 			applyHoverVisual(btn, stroke, baseZ, baseCol)
 			setNeighborsScale(gridParent, btn, NEIGHBOR_SCALE)
 		end)
 
 		btn.MouseLeave:Connect(function()
 			local gen = hoverGen
-			-- delay clear: if pointer enters another slot quickly, skip flash
+			-- Short delay only to avoid flicker when crossing cell gap into neighbor
 			task.delay(HOVER_LEAVE_DELAY, function()
-				if hoverGen ~= gen then
+				if not btn.Parent then
 					return
 				end
+				if activeHover == btn and hoverGen == gen then
+					-- Left into empty space — fully idle grid
+					activeHover = nil
+					forceIdleVisual(btn)
+					clearAllSlotHovers(gridParent)
+					return
+				end
+				-- Entered another slot (gen changed) OR activeHover moved on —
+				-- this button must still go idle. Never bail without reset.
 				if activeHover ~= btn then
-					return
+					forceIdleVisual(btn)
 				end
-				activeHover = nil
-				resetSlotVisual(btn, stroke, baseCol, baseZ)
-				setNeighborsScale(gridParent, nil, 1)
 			end)
 		end)
 	end
@@ -938,6 +967,11 @@ function Inventory.Bind(
 		if not profile then
 			return
 		end
+
+		-- Drop any stuck hover before rebuild (destroyed slots can't leave cleanly)
+		activeHover = nil
+		hoverGen += 1
+		table.clear(slotHover)
 
 		ensureShell()
 		clearMainAndActions()
