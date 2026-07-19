@@ -1,14 +1,16 @@
 # Sword Masters — полный план проекта
 
-> Living doc. Snapshot 2026-07-19 (inventory polish + pixel fonts + bottom-left toasts).  
+> Living doc. Snapshot 2026-07-19 (Figma UI track: CharacterUpgrade → Main Inventory → BattlePass; worlds = one place).  
 > Repo: https://github.com/haz33u/SwordMechyOnlinePizdec  
 > Place: «Искусство меча онлайн» (Team Create + Rojo)  
 > Icons: `docs/FIGMA_PROMPTS.md`  
 > Cristalix dumps: `docs/ref/cristalix/DUMP_CATALOG.md` (+ `captures/`)  
 > **World effects (eclipse/darkness/blast): PARKED — catalog only, no code yet.**  
-> Loc2 full tables + Loc1 cases 50K/49 keys inventoried — **apply to code when asked**.  
+> Loc1+Loc2 dump balance applied in configs (see DUMP_CATALOG).  
 > **LOCALE LOCK: English only** for every player-facing string (UI labels, buttons, Notify toasts, case result, configs shown to player). Comments in code may be RU/EN; **never ship RU text to players.**  
-> **AI handoff:** local `CONTEXT_MEPC.md` (gitignored) — copy to other agents; not in repo.
+> **AI handoff:** local `CONTEXT_MEPC.md` (gitignored) — copy to other agents; not in repo.  
+> **Next UI sprint:** Figma → game. **Start test:** Character Upgrade only, then Main Inventory, then Battle Pass.  
+> **Worlds:** stay **one Roblox place**, multiple islands + teleport pads (see §13). Not Minecraft Realms / multi-universe by default.
 
 > ### Agent / AI (навсегда)
 > **Перед работой:** (1) `git pull` — версии с другом · (2) перечитать этот `MASTER_PLAN.md` · (3) только потом код.  
@@ -177,18 +179,18 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 
 | Priority | Missing in code | Why | Depends on |
 |----------|-----------------|-----|------------|
-| **P1 NEXT** | `profile.boosts` + timers in Formulas | HUD top-left dead; Cristalix/katana x2 money/hits | — |
+| **P1 NEXT** | **Figma Character Upgrade UI** → live window | First UI test slice; upgrade buy already server-side | Figma export + `Windows`/`UpgradeConfig` |
+| P1 | Figma **Main Inventory** port (full shell polish) | INVETAR skeleton exists; match Figma layout/tokens | Character Upgrade pass |
+| P1 | Figma **Battle Pass** shell + XP track | No BP yet; design-first then data | inventory UI pattern |
+| P1 | `profile.boosts` + timers in Formulas | HUD top-left dead | — |
 | P1 | Dust/gems strip in HUD | economy visible | dust already in profile |
-| P1 | Enchant polish (slot pick, no coin abuse, TransferEnchant) | config has TRANSFER_*; not wired | dust economy |
-| P1 | Boss → Loc2 unlock UX | Q5 gives unlockLocation; soft gate polish | quests |
-| P1 | Real dungeon fight (HP dummy) + **per-player** gate | now global timer AFK | DungeonService |
-| P1 | EquipRelic / UnequipRelic / UpgradeRelic(stars) | Formulas read stars; no remotes | RelicConfig |
-| P2 | Loc2–4 mobs + markers Place | only Loc1 combat | World/MobConfig stubs |
-| P2 | IconConfig Loc2+ / UI currency icons | empty rbxassetid | FIGMA_PROMPTS |
-| P3 | Pets/auras content depth + CaseResult polish | thin roster; economy ok | CaseConfig |
-| P3 | Leaderboard OrderedDataStore | no service | stable stats |
-| P3 | Battle Pass season XP | none | boosts + quests |
-| P3 | **Wings system** (see §11) | none | pets/auras pattern + visual |
+| P1 | Enchant polish / TransferEnchant | config ready; not wired | dust |
+| P1 | Boss → Loc2 unlock UX | soft gate polish | quests |
+| P1 | Real dungeon fight + **per-player** gate | AFK timer only | DungeonService |
+| P1 | EquipRelic / UpgradeRelic | no remotes | RelicConfig |
+| P2 | World pads + polish Ferryman / `SetLocation` UX | backend exists; map pads + UI | Place art |
+| P2 | Loc2–4 content + IconConfig Loc2+ | Loc2 dump in configs; art/markers | Place + FIGMA_PROMPTS |
+| P3 | Leaderboard / full BP economy / Wings | meta | stable core |
 | P4 | DataStore versioning, anti-cheat, soft launch | skeleton | soft launch |
 
 **Already shipped (do not re-do):** clicks/CPS/rebirth dual-cost · upgrades · weapons drop/enchant/ban · case keys + CaseResult · pet slots 3→7 + paid offhand · Loc1 quests skeleton · cristalix lang dump · **INVETAR inventory shell** · **gamepass donate shop + auto unlock** · case open no-dim center result.
@@ -205,30 +207,38 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 5. Save place + git sync (`COLLAB.md`)  
 6. `FIGMA_PROMPTS.md` + first UI icon batch  
 
-### P1 — UI polish + Loc1 content (спринты 2–3)
-1. Dust/gems strip top-right; rebirth polish  
-2. ~~CaseResult remote + case keys (не free-infinite)~~ ✅  
-2b. ~~Pet slots 3→8 + paid offhand~~ ✅  
-2c. ~~Loc1 cristalix stats + pets 500 coins~~ ✅  
-2d. ~~Loc2 buy 500K + Ferryman + weapon L1/L2/L3 merge~~ ✅  
-2e. ~~INVETAR inventory + gamepass shop + structured tooltips + case no-dim~~ ✅  
-3. Boosts data model for top-left pills  ← **NEXT**  
-4. Mesh swords, hit VFX, balance pass  
-5. Boss quest → Loc2 unlock UX  
-6. Dungeon real fight + relic equip/upgrade remotes  
-7. Enchant transfer remote (config ready)  
-8. Verify all tab Image IDs load in live place; upload owned icons if needed
+### P1 — Figma UI track + Loc1 content (спринты 2–3)
 
-### P2 — Loc2–4 + icons
-1. Мобы + маркеры Place  
-2. Иконки Loc2–4 по FIGMA_PROMPTS → IconConfig  
-3. Drop tables уже есть (squeeze)
+**Order (locked):** Character Upgrade → Main Inventory → Battle Pass.  
+Do not start BP implementation until inventory Figma pass is testable.
+
+1. **Character Upgrade (START HERE — first Figma → game test)**  
+   - Source: Figma screen for character upgrades (power, CPS, bag, crit locks, etc.)  
+   - Wire to existing `UpgradeConfig` + `BuyUpgrade` remote + `Windows` upgrades body  
+   - Match layout / tokens from Figma; keep EN strings; Arcade/theme as agreed  
+   - Acceptance: open panel → see levels/costs → buy → profile updates  
+2. **Main Inventory (Figma port)**  
+   - Source: Figma main inventory (weapons/pets/auras/… shell)  
+   - Evolve `Inventory.lua` (INVETAR base) to match Figma 1:1 where possible  
+   - No inventory layout experiments mid-BP  
+3. **Battle Pass (Figma → shell → data)**  
+   - First: static UI from Figma (track, free/premium rows, claim buttons disabled)  
+   - Then: `profile.battlePass` XP, tiers, claim remotes  
+4. Dust/gems strip; rebirth polish  
+5. Boosts data model for top-left pills  
+6. Mesh swords, hit VFX  
+7. Boss → Loc2 unlock UX · dungeon real fight · relic equip · enchant transfer  
+8. Verify icon asset ids in live place  
+
+### P2 — Worlds map + Loc2–4 content
+1. **Teleport pads / portal art** at each island (see §13) + Ferryman polish  
+2. Loc2 markers Place · icons Loc2+ · content pass  
+3. Drop tables Loc2 dump already in MobConfig/WeaponConfig  
 
 ### P3 — meta
 1. Pets/auras/dungeons real content  
-2. Leaderboard / BP (после stable)  
-3. LIMITED events + VFX  
-4. **Wings** (equip layer — parked design in §11)  
+2. Leaderboard · full BP rewards live  
+3. LIMITED events + VFX · **Wings** (§11 parked)  
 
 ### P4 — live
 1. DataStore versioning + migrations  
@@ -255,6 +265,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | `ICON_UPLOAD.md` | rbxassetid иконок |
 | `FIGMA_PROMPTS.md` | промпты AI/Figma + tracking иконок |
 | `COLLAB.md` | Git + Team Create |
+| **§13 this file** | Figma UI order + Roblox worlds/teleport design |
 
 ---
 
@@ -384,6 +395,99 @@ Then pick **one** parked idea (recommended: onboarding **or** aura tower; **Wing
 - Prompts: `docs/FIGMA_PROMPTS.md`  
 - Upload: `docs/ICON_UPLOAD.md` → IconConfig  
 - Agent can use **Figma MCP** (when connected) + local Imagine; cannot “see” your desktop Figma window as a human unless MCP/API exposes the file.
+
+---
+
+## 13. Figma UI track + how “worlds” / teleports work in Roblox
+
+### 13.1 Figma → game (what we need next)
+
+| Screen (Figma) | In game today | Target | When |
+|----------------|---------------|--------|------|
+| **Character Upgrade** | Basic upgrades list in `Windows` + `UpgradeConfig` / `BuyUpgrade` | Full Figma layout, same remotes | **FIRST test** |
+| **Main Inventory** | `Inventory.lua` INVETAR shell (E/I) | Figma main bag 1:1 polish | After Character Upgrade OK |
+| **Battle Pass** | None | Figma shell → then XP/tiers/claim | After Main Inventory |
+
+**Pipeline (every screen):**
+1. Figma frame(s) + EN copy (or translate to EN before code)  
+2. Agent/dev maps components → Fusion/`UIKit`/`Theme`  
+3. Bind **existing** remotes/configs first; new remotes only if needed  
+4. Playtest one screen end-to-end before the next  
+
+**Character Upgrade test checklist:**
+- [ ] Open from HUD/rail (same bind as upgrades / character)  
+- [ ] Rows match upgrade defs (Power, ClickSpeed, Backpack, Crit locked Loc3+, …)  
+- [ ] Cost + level + Locked state from `UpgradeConfig.IsUnlocked`  
+- [ ] Click Upgrade → `Net.BuyUpgrade` → coins down, level up, toast  
+- [ ] No RU player strings  
+
+---
+
+### 13.2 Minecraft Realms vs Roblox “worlds” (важно)
+
+| | Minecraft Realms / multi-world | Typical popular Roblox sim |
+|--|-------------------------------|----------------------------|
+| Worlds | Separate dimensions/servers | **Usually one Place** (one universe map) |
+| Travel | Portal → other dimension | **Teleport player CFrame** to another island/zone |
+| Data | Different world files | **Same DataStore profile** always |
+| Loading | Chunk/dimension load | Instant (or short fade UI) |
+
+**What big clicker / sword / pet sims do (Pet Sim, Anime Fighting, Blade Ball hubs, etc.):**
+
+1. **One place, many “maps”**  
+   - Loc1 forest, Loc2 ship, Loc3… built far apart in **Workspace** (islands, skyboxes, walls).  
+   - Player walks to a **pad / portal / NPC** → ProximityPrompt **Travel** → server checks unlock →  
+     `character:PivotTo(spawnCFrame)` (we already do this via `WorldService.TeleportToLocation` + `SetLocation`).  
+
+2. **Optional: TeleportService to another Place**  
+   - Only when map is huge or you need separate game instances (raid place, trading hub).  
+   - Harder: same profile must load in place B; more Studio places to maintain.  
+   - **Not recommended for Loc1–4 now.**  
+
+**Our decision (locked for Loc1–4):**  
+→ **One Roblox place**, locations = zones/islands.  
+→ Travel = **in-place teleport**, not a new universe.
+
+---
+
+### 13.3 How travel works *in our project already*
+
+```
+Player near Ferryman / Travel UI
+  → client OpenTravel / locations panel
+  → Net.SetLocation(locId)
+  → LocationService.Set (R2 + 500K for Loc2 first time, etc.)
+  → profile.currentLocation = locId
+  → WorldService.TeleportToLocation(player, locId)  -- CFrame to spawn
+  → mobs for that location already exist / markers
+```
+
+| Piece | Role |
+|-------|------|
+| `WorldConfig` | Island centers, spawn CFrames, zone math |
+| `LocationConfig` | Unlocks, mob spawns per loc |
+| `LocationService` | Gate + set current location |
+| `FerrymanService` | NPC + ProximityPrompt “Travel” → `OpenTravel` |
+| Place art (you/friend) | Portal mesh, pad, VFX at each island |
+
+**Player fantasy “подхожу к телепортеру → открывается другой мир”:**
+1. Build a **portal prop** on Loc1 near spawn (Place).  
+2. Put **ProximityPrompt** *Travel* (or reuse Ferryman).  
+3. On trigger → open locations UI **or** auto `SetLocation(2)` if unlocked.  
+4. Server teleports character to Loc2 spawn CFrame — looks like a new world, same server.  
+5. Optional: black fade ScreenGui 0.3s so jump feels like loading a realm.
+
+**Do not** create a second Roblox experience/place for Loc2 unless we outgrow one map.
+
+---
+
+### 13.4 Place checklist (friend / map)
+
+- [ ] Loc1 island + spawn `PlayerSpawn` / WorldConfig spawn  
+- [ ] Loc2 island far enough (no see Loc1)  
+- [ ] Portal pad on each island (prompt → travel UI)  
+- [ ] Optional: `OpenTravel` only; never free-teleport locked locs  
+- [ ] Ferryman can stay as alternate entry  
 
 ---
 
