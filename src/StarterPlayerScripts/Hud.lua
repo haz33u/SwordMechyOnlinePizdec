@@ -220,8 +220,8 @@ function Hud.Mount(
 		lab.BorderSizePixel = 0
 		lab.Size = UDim2.new(1, -16, 0, 52)
 		lab.Position = UDim2.new(0, 8, 0, 38)
-		lab.Font = Enum.Font.BuilderSansBold
-		lab.TextSize = 32
+		lab.Font = Enum.Font.GothamBold -- normal clean UI font (not pixel/Builder)
+		lab.TextSize = 30
 		lab.TextColor3 = color
 		lab.TextXAlignment = Enum.TextXAlignment.Center
 		lab.TextYAlignment = Enum.TextYAlignment.Center
@@ -229,13 +229,12 @@ function Hud.Mount(
 		lab.ZIndex = 16
 		lab.Parent = parent
 		lab.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-		lab.TextStrokeTransparency = 0.45
-		-- soft glow (color stays on TextColor3 — no parent UIGradient)
+		lab.TextStrokeTransparency = 0.5
 		local st = Instance.new("UIStroke")
 		st.Name = "SoftGlow"
 		st.Color = glow
-		st.Thickness = 1.6
-		st.Transparency = 0.5
+		st.Thickness = 1.4
+		st.Transparency = 0.55
 		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 		st.LineJoinMode = Enum.LineJoinMode.Round
 		st.Parent = lab
@@ -417,10 +416,10 @@ function Hud.Mount(
 		chipW = math.clamp(chipW, 160, 240)
 		coinChip.Size = UDim2.fromOffset(chipW, CHIP_H)
 		powerChip.Size = UDim2.fromOffset(chipW, CHIP_H)
-		coinLab.Font = Enum.Font.BuilderSansBold
-		powerLab.Font = Enum.Font.BuilderSansBold
-		coinLab.TextSize = 32
-		powerLab.TextSize = 32
+		coinLab.Font = Enum.Font.GothamBold
+		powerLab.Font = Enum.Font.GothamBold
+		coinLab.TextSize = 30
+		powerLab.TextSize = 30
 
 		rbHost.Size = UDim2.fromOffset(math.min(rowW, 520), RB_H)
 		rbHost.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB))

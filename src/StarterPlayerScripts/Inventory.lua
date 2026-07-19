@@ -416,6 +416,10 @@ function Inventory.Bind(
 	local hoverGen = 0
 	local activeHover: GuiObject? = nil
 
+	-- Stroke thickness is ALWAYS 2 (idle + hover). Only color/transparency change on hover.
+	-- First hover used to "jump" thicker and looked broken until second pass.
+	local SLOT_STROKE_THICK = 2
+
 	local function resetSlotVisual(btn: GuiObject, stroke: UIStroke?, baseCol: Color3, baseZ: number)
 		local sc = btn:FindFirstChildOfClass("UIScale")
 		if sc then
@@ -424,10 +428,10 @@ function Inventory.Bind(
 			}):Play()
 		end
 		if stroke then
-			-- keep thickness stable — only color/transparency (avoids stroke "break" glitch)
+			stroke.Thickness = SLOT_STROKE_THICK
 			TweenService:Create(stroke, TweenInfo.new(0.14), {
 				Color = baseCol,
-				Transparency = 0.12,
+				Transparency = 0.08,
 			}):Play()
 		end
 		if btn:IsA("GuiObject") then
@@ -441,10 +445,10 @@ function Inventory.Bind(
 			Scale = HOVER_SCALE,
 		}):Play()
 		if stroke then
-			stroke.Thickness = 2 -- fixed, not tweened thickness (tweening thickness glitches UIStroke)
+			stroke.Thickness = SLOT_STROKE_THICK
 			TweenService:Create(stroke, TweenInfo.new(0.16), {
 				Color = CYAN,
-				Transparency = 0.05,
+				Transparency = 0.02,
 			}):Play()
 		end
 		btn.ZIndex = baseZ + 8
@@ -470,8 +474,8 @@ function Inventory.Bind(
 		local baseCol = baseStroke or BD
 		local baseZ = btn.ZIndex
 		if stroke then
-			stroke.Thickness = 1.5
-			stroke.Transparency = 0.12
+			stroke.Thickness = SLOT_STROKE_THICK
+			stroke.Transparency = 0.08
 		end
 
 		btn.MouseEnter:Connect(function()
@@ -523,7 +527,7 @@ function Inventory.Bind(
 		plate.ZIndex = 35
 		plate.Parent = btn
 
-		local stroke = UIKit.Stroke(btn, edge, 1.5, 0.12)
+		local stroke = UIKit.Stroke(btn, edge, SLOT_STROKE_THICK, 0.08)
 		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		bindHover(btn, stroke, edge, parent)
 		return btn, plate, stroke
@@ -542,7 +546,7 @@ function Inventory.Bind(
 		btn.LayoutOrder = order
 		btn.ZIndex = 35
 		btn.Parent = parent
-		UIKit.Stroke(btn, BD, 1, 0.3)
+		UIKit.Stroke(btn, BD, SLOT_STROKE_THICK, 0.2)
 	end
 
 	--- Grid that fills the whole tab width (cells scale to fit COLS columns).
@@ -1261,13 +1265,14 @@ function Inventory.Bind(
 			local row = actionsRow()
 			lbl(row, "LMB · Open case", UDim2.fromOffset(200, 32), nil, 14, TL, 35, Enum.Font.Arcade)
 
-		---------------------------------------------------------------- SHOP — large pretty gamepass cards
+		---------------------------------------------------------------- SHOP — compact horizontal rows (less empty space)
 		elseif tab == "shop" then
 			setPreviewAvatar(nil, "🪙")
 			countLab.Text = "Gamepasses"
-			local scroll = UIKit.Scroll(main, UDim2.new(1, -8, 1, -8))
-			scroll.Position = UDim2.fromOffset(4, 4)
-			makeFillCardGrid(scroll, 200, 260, 4)
+			local scroll = UIKit.Scroll(main, UDim2.new(1, -12, 1, -12))
+			scroll.Position = UDim2.fromOffset(6, 6)
+			UIKit.List(scroll, 10, false)
+			UIKit.Pad(scroll, 8)
 
 			local unlocks = profile.unlocks or {}
 			for i, key in ipairs(GamePassConfig.Order) do
@@ -1275,18 +1280,18 @@ function Inventory.Bind(
 				if def then
 					local owned = (def.feature and unlocks[def.feature] == true)
 						or (def.feature == "autoClicker" and profile.purchasedAutoClicker == true)
-					local card = solid(scroll, key, UDim2.fromOffset(200, 260), nil, Color3.fromRGB(28, 28, 34), 35)
+
+					local card = solid(scroll, key, UDim2.new(1, -8, 0, 88), nil, Color3.fromRGB(30, 30, 36), 35)
 					card.LayoutOrder = i
 					card.BackgroundTransparency = 0
-					UIKit.Corner(card, 12)
-					UIKit.Stroke(card, owned and GREEN or GOLD, owned and 2 or 1.5, owned and 0.1 or 0.2)
+					UIKit.Corner(card, 10)
+					UIKit.Stroke(card, owned and GREEN or GOLD, 1.5, owned and 0.12 or 0.22)
 
 					local imgBtn = Instance.new("ImageButton")
 					imgBtn.Name = "Buy"
-					imgBtn.Size = UDim2.new(1, -24, 0, 140)
-					imgBtn.Position = UDim2.new(0.5, 0, 0, 12)
-					imgBtn.AnchorPoint = Vector2.new(0.5, 0)
-					imgBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+					imgBtn.Size = UDim2.fromOffset(72, 72)
+					imgBtn.Position = UDim2.fromOffset(8, 8)
+					imgBtn.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
 					imgBtn.BackgroundTransparency = 0
 					imgBtn.BorderSizePixel = 0
 					imgBtn.Image = GamePassConfig.ThumbUrl(def.gamePassId, 150)
@@ -1294,75 +1299,47 @@ function Inventory.Bind(
 					imgBtn.AutoButtonColor = not owned
 					imgBtn.ZIndex = 36
 					imgBtn.Parent = card
-					UIKit.Corner(imgBtn, 10)
+					UIKit.Corner(imgBtn, 8)
 					UIKit.Stroke(imgBtn, BD2, 1, 0.2)
-					bindHover(imgBtn, imgBtn:FindFirstChildOfClass("UIStroke"), BD2)
 
-					local pricePill = Instance.new("TextLabel")
-					pricePill.Name = "PricePill"
-					pricePill.Size = UDim2.new(1, -12, 0, 28)
-					pricePill.Position = UDim2.new(0.5, 0, 1, -34)
-					pricePill.AnchorPoint = Vector2.new(0.5, 0)
-					pricePill.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
-					pricePill.BackgroundTransparency = 0.1
-					pricePill.BorderSizePixel = 0
-					pricePill.Font = Enum.Font.GothamBold
-					pricePill.TextSize = 18
-					pricePill.TextColor3 = owned and GREEN or GOLD
-					pricePill.ZIndex = 39
-					pricePill.Parent = imgBtn
-					UIKit.Corner(pricePill, 6)
-					if owned then
-						pricePill.Text = "OWNED"
-						imgBtn.ImageTransparency = 0.15
-					else
-						pricePill.Text = priceCache[def.gamePassId] or "…"
-						fetchPrice(def.gamePassId, pricePill)
-					end
-
-					local titleL = lbl(card, def.title, UDim2.new(1, -16, 0, 28), UDim2.fromOffset(8, 160), 18, TW, 36, Enum.Font.GothamBold)
-					titleL.TextXAlignment = Enum.TextXAlignment.Center
+					local titleL = lbl(card, def.title, UDim2.new(1, -200, 0, 26), UDim2.fromOffset(92, 10), 18, TW, 36, Enum.Font.GothamBold)
 					titleL.TextTruncate = Enum.TextTruncate.AtEnd
-					titleL.TextWrapped = true
 
-					local descL = lbl(
-						card,
-						def.desc,
-						UDim2.new(1, -16, 0, 36),
-						UDim2.fromOffset(8, 190),
-						14,
-						TD,
-						36,
-						Enum.Font.Gotham
-					)
-					descL.TextXAlignment = Enum.TextXAlignment.Center
+					local descL = lbl(card, def.desc, UDim2.new(1, -200, 0, 36), UDim2.fromOffset(92, 38), 14, TD, 36, Enum.Font.Gotham)
 					descL.TextWrapped = true
 					descL.TextYAlignment = Enum.TextYAlignment.Top
 
 					local priceLab = lbl(
 						card,
-						owned and "Owned" or (priceCache[def.gamePassId] or "…"),
-						UDim2.new(1, -16, 0, 26),
-						UDim2.fromOffset(8, 226),
+						owned and "OWNED" or (priceCache[def.gamePassId] or "…"),
+						UDim2.fromOffset(100, 32),
+						UDim2.new(1, -112, 0.5, -16),
 						18,
 						owned and GREEN or GOLD,
 						36,
 						Enum.Font.GothamBold
 					)
-					priceLab.TextXAlignment = Enum.TextXAlignment.Center
+					priceLab.TextXAlignment = Enum.TextXAlignment.Right
 					if not owned then
 						fetchPrice(def.gamePassId, priceLab)
 					end
 
-					imgBtn.MouseButton1Click:Connect(function()
+					local buyHit = Instance.new("TextButton")
+					buyHit.Name = "BuyHit"
+					buyHit.Size = UDim2.fromScale(1, 1)
+					buyHit.BackgroundTransparency = 1
+					buyHit.Text = ""
+					buyHit.ZIndex = 37
+					buyHit.Parent = card
+					buyHit.MouseButton1Click:Connect(function()
 						if not owned then
 							Net.PromptGamePass(def.gamePassId)
 						end
 					end)
-					imgBtn.MouseEnter:Connect(function()
+					buyHit.MouseEnter:Connect(function()
 						setTooltip(def.title, nil, def.desc, owned and "● Already owned" or (priceCache[def.gamePassId] or "LMB purchase"))
 					end)
-					imgBtn.MouseLeave:Connect(hideTooltip)
+					buyHit.MouseLeave:Connect(hideTooltip)
 				end
 			end
 			local row = actionsRow()
