@@ -35,17 +35,17 @@ https://www.figma.com/design/WhLWwV1ZttJfjbvxKhSve2/Untitled?node-id=1-122
 - Local file paths are rejected.
 - Agent **did** download all Figma PNGs into git (`art/icons/upgrades/`).
 
-**You (2 min once):** Studio → Asset Manager → Images → **Bulk Import** → select `art/icons/upgrades/*.png` → paste Asset IDs into `UpgradeIconConfig.lua` → then UI is 1:1 with real icons.
+**Done (2026-07-19):** IDs pasted into `UpgradeIconConfig.lua` after Bulk Import.
 
-| File | Config key |
-|------|------------|
-| icon_strength.png | `Power` |
-| icon_backpack.png | `Backpack` |
-| icon_speed.png | `ClickSpeed` |
-| icon_crit.png | `CritChance` |
-| icon_multicrit.png | `MultiCrit` |
-| coin.png | `Coin` |
-| close.png | `Close` |
+| File | Config key | Asset |
+|------|------------|-------|
+| icon_strength.png | `Power` | `rbxassetid://93071491476836` |
+| icon_backpack.png | `Backpack` | `rbxassetid://113695116998745` |
+| icon_speed.png | `ClickSpeed` | `rbxassetid://101300421089207` |
+| icon_crit.png | `CritChance` | `rbxassetid://94418234037518` |
+| icon_multicrit.png | `MultiCrit` | `rbxassetid://75432680898371` |
+| coin.png | `Coin` | `rbxassetid://80023959014102` |
+| close.png | `Close` | `rbxassetid://94627396642381` |
 
 ---
 

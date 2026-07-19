@@ -17,14 +17,14 @@
 ]]
 
 local UpgradeIconConfig = {
-	-- Fill after Bulk Import (leave "" for gradient+glyph fallback)
-	Power = "", -- icon_strength.png
-	Backpack = "", -- icon_backpack.png
-	ClickSpeed = "", -- icon_speed.png
-	CritChance = "", -- icon_crit.png
-	MultiCrit = "", -- icon_multicrit.png
-	Coin = "", -- coin.png
-	Close = "", -- close.png
+	-- Uploaded from art/icons/upgrades/ (leave "" for gradient+glyph fallback)
+	Power = "rbxassetid://93071491476836", -- icon_strength.png
+	Backpack = "rbxassetid://113695116998745", -- icon_backpack.png
+	ClickSpeed = "rbxassetid://101300421089207", -- icon_speed.png
+	CritChance = "rbxassetid://94418234037518", -- icon_crit.png
+	MultiCrit = "rbxassetid://75432680898371", -- icon_multicrit.png
+	Coin = "rbxassetid://80023959014102", -- coin.png
+	Close = "rbxassetid://94627396642381", -- close.png
 }
 
 function UpgradeIconConfig.Get(key: string): string

@@ -159,7 +159,8 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 |------|--------|
 | Loc2–4 мобы/контент | stubs |
 | Реальные 3D модели мечей | placeholder Parts |
-| Иконки Loc2+ / UI currency | пустые id → FIGMA_PROMPTS |
+| Иконки Loc2+ weapons | пустые id → FIGMA_PROMPTS |
+| Character Upgrade icons | ✅ `UpgradeIconConfig` (strength/bag/speed/crit/multicrit/coin/close) |
 | Питомцы / ауры / кейсы economy | keys + CaseResult (v0.5.4); roster still thin |
 | CaseResult remote (spin accuracy) | ✅ `CaseResult` + profile fallback |
 | Данжи Easy/Mid/Hard | timer AFK complete, не бой |
@@ -230,7 +231,7 @@ Do not start BP implementation until inventory Figma pass is testable.
 5. Boosts data model for top-left pills  
 6. Mesh swords, hit VFX  
 7. Boss → Loc2 unlock UX · dungeon real fight · relic equip · enchant transfer  
-8. Verify icon asset ids in live place  
+8. ~~Verify Character Upgrade icon asset ids~~ (filled in `UpgradeIconConfig`) · still verify in live Play
 
 ### P2 — Worlds map + Loc2–4 content
 1. **Teleport pads / portal art** at each island (see §13) + Ferryman polish  
