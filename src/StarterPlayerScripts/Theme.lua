@@ -59,12 +59,12 @@ local Theme = {
 		UpClick = Color3.fromRGB(45, 140, 180),
 	},
 
-	-- Pixel / Minecraft-adjacent (built-in Roblox fonts — no custom asset upload)
+	-- Clean readable fonts. Num must NOT be Arcade (pixel mess on big counters).
 	Fonts = {
-		Title = Enum.Font.Arcade, -- blocky pixel titles
-		Body = Enum.Font.Arcade, -- match titles for full UI pixel look
-		Num = Enum.Font.Arcade,
-		Ui = Enum.Font.Arcade,
+		Title = Enum.Font.GothamBold,
+		Body = Enum.Font.GothamMedium,
+		Num = Enum.Font.BuilderSansBold, -- smooth large numbers (coins/power)
+		Ui = Enum.Font.Gotham,
 	},
 
 	Radius = {

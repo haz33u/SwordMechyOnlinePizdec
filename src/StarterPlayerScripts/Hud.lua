@@ -210,24 +210,25 @@ function Hud.Mount(
 		lab.Name = name
 		lab.BackgroundTransparency = 1
 		lab.BorderSizePixel = 0
-		lab.Size = UDim2.new(1, -20, 0, 56)
-		lab.Position = UDim2.new(0, 10, 0, 36)
-		lab.Font = Enum.Font.GothamBold -- crisp big numbers (Arcade was muddy)
-		lab.TextSize = 34
+		lab.Size = UDim2.new(1, -16, 0, 52)
+		lab.Position = UDim2.new(0, 8, 0, 38)
+		-- Smooth non-pixel font (Arcade made counters look broken)
+		lab.Font = Enum.Font.BuilderSansBold
+		lab.TextSize = 32
 		lab.TextColor3 = color
 		lab.TextXAlignment = Enum.TextXAlignment.Center
 		lab.TextYAlignment = Enum.TextYAlignment.Center
 		lab.Text = "0"
 		lab.ZIndex = 15
 		lab.Parent = parent
+		-- soft readable edge (not chunky pixel stroke)
 		lab.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-		lab.TextStrokeTransparency = 0.25
-		-- outer soft glow
+		lab.TextStrokeTransparency = 0.4
 		local st = Instance.new("UIStroke")
 		st.Name = "SoftGlow"
 		st.Color = glow
-		st.Thickness = 3
-		st.Transparency = 0.42
+		st.Thickness = 1.8
+		st.Transparency = 0.55
 		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 		st.LineJoinMode = Enum.LineJoinMode.Round
 		st.Parent = lab
@@ -260,7 +261,7 @@ function Hud.Mount(
 		title.Text = string.upper(name)
 		title.TextXAlignment = Enum.TextXAlignment.Center
 		title.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-		title.TextStrokeTransparency = 0.5
+		title.TextStrokeTransparency = 0.55
 		title.ZIndex = 14
 		title.Parent = chip
 
@@ -400,8 +401,10 @@ function Hud.Mount(
 		chipW = math.clamp(chipW, 160, 240)
 		coinChip.Size = UDim2.fromOffset(chipW, CHIP_H)
 		powerChip.Size = UDim2.fromOffset(chipW, CHIP_H)
-		coinLab.TextSize = 34
-		powerLab.TextSize = 34
+		coinLab.Font = Enum.Font.BuilderSansBold
+		powerLab.Font = Enum.Font.BuilderSansBold
+		coinLab.TextSize = 32
+		powerLab.TextSize = 32
 
 		rbHost.Size = UDim2.fromOffset(math.min(rowW, 520), RB_H)
 		rbHost.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB))
