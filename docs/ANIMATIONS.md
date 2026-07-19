@@ -1,14 +1,26 @@
 # Анимации
 
-## Атака — ОДНА
+## Атака
 
+### A) Minecraft procedural swing (**default test ON**)
 | | |
 |--|--|
-| **Единственный id** | `rbxassetid://95040065182870` |
-| Config | `AnimationConfig.AttackMain` / `AttackAlt` / fallbacks — все он |
-| Код | `WeaponVisual.PlayAttack` — **без** списка кандидатов |
+| Flag | `AnimationConfig.UseMinecraftSwing = true` |
+| How | `Motor6D` RightShoulder / Waist `.Transform` each frame |
+| Curve | cubic ease + sin raise/roll (ModelBiped-style) |
+| Code | `WeaponVisual` — no Tool required; LMB already calls `PlayAttack` |
+| Tune | `AnimationConfig.MinecraftSwing` (SwingTime, RaisePower, RollPower, SwingDir) |
 
-Slash / lunge / toolnone / старый Attack2 **запрещены** для удара (`BannedAssetIds`).
+**Pros:** no asset permission, works offline, feels like MC.  
+**Cons:** fights Animator slightly; tune READY pose for R15; not a KeyframeSequence.
+
+### B) Published AnimationId
+| | |
+|--|--|
+| Flag | `UseMinecraftSwing = false` |
+| Id | `rbxassetid://95040065182870` |
+
+Toggle in `AnimationConfig.lua` only.
 
 ## Ходьба (не атака)
 

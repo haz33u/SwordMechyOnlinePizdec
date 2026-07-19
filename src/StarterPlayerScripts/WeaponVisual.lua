@@ -1,10 +1,13 @@
 --!strict
 --[[
-	Sword visuals on grips + ONE attack anim (AnimationConfig.AttackMain only).
+	Sword visuals on grips + attack:
+	  AnimationConfig.UseMinecraftSwing → procedural Motor6D swing (MC curve)
+	  else → published AnimationId
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AnimationConfig = require(Shared.Config.AnimationConfig)
@@ -20,6 +23,16 @@ local offModel: Model? = nil
 local tracks: { [string]: AnimationTrack } = {}
 local lastPlay = 0
 local lastPlayedId: string? = nil
+
+-- Minecraft-style procedural swing state
+local mcShoulder: Motor6D? = nil
+local mcWaist: Motor6D? = nil
+local mcSwinging = false
+local mcT = 0
+local mcBound: RBXScriptConnection? = nil
+local mcSlash: Sound? = nil
+
+local READY = CFrame.Angles(math.rad(-90), 0, math.rad(-15))
 
 local RARITY_COLOR = {
 	Common = Color3.fromRGB(170, 175, 185),
@@ -173,6 +186,108 @@ local function getAnimator(char: Model): Animator?
 	return animator
 end
 
+local function findMotor(char: Model, name: string): Motor6D?
+	local m = char:FindFirstChild(name, true)
+	if m and m:IsA("Motor6D") then
+		return m
+	end
+	return nil
+end
+
+local function mcCurve(x: number): (number, number, number)
+	-- ModelBiped-style cubic ease + sin raise/roll (from user MC script)
+	local f = 1 - x
+	f = 1 - f * f * f
+	local raise = math.sin(f * math.pi)
+	local roll = math.sin(x * math.pi)
+	local body = -math.sin(math.sqrt(math.max(0, x)) * math.pi * 2) * 0.2
+	return raise, roll, body
+end
+
+local function ensureMcSound(): Sound?
+	if mcSlash and mcSlash.Parent then
+		return mcSlash
+	end
+	local cfg = AnimationConfig.MinecraftSwing or {}
+	local s = Instance.new("Sound")
+	s.Name = "SM_MCSlash"
+	s.SoundId = cfg.SoundId or "rbxasset://sounds/swordslash.wav"
+	s.Volume = cfg.SoundVolume or 0.6
+	s.Parent = player:FindFirstChild("PlayerGui") or player
+	mcSlash = s
+	return s
+end
+
+local function setupMcJoints(char: Model)
+	mcShoulder = findMotor(char, "RightShoulder") or findMotor(char, "Right Shoulder")
+	mcWaist = findMotor(char, "Waist")
+	if not mcShoulder then
+		warn("[WeaponVisual] MC swing: RightShoulder Motor6D not found (need R15/R6)")
+	end
+end
+
+local function bindMcRender()
+	if mcBound then
+		return
+	end
+	mcBound = RunService.RenderStepped:Connect(function(dt)
+		if not mcShoulder or not mcShoulder.Parent then
+			return
+		end
+		local cfg = AnimationConfig.MinecraftSwing or {}
+		local swingTime = cfg.SwingTime or 0.3
+		local raisePower = cfg.RaisePower or 1.2
+		local rollPower = cfg.RollPower or 0.4
+		local swingDir = cfg.SwingDir or -1
+
+		if mcSwinging then
+			mcT += dt / swingTime
+			if mcT >= 1 then
+				mcSwinging = false
+				mcT = 0
+				mcShoulder.Transform = READY
+				if mcWaist and mcWaist.Parent then
+					mcWaist.Transform = CFrame.new()
+				end
+				return
+			end
+			local raise, roll, body = mcCurve(mcT)
+			mcShoulder.Transform = READY
+				* CFrame.Angles(swingDir * raise * raisePower, body * 2, -roll * rollPower)
+			if mcWaist and mcWaist.Parent then
+				mcWaist.Transform = CFrame.Angles(0, body, 0)
+			end
+		else
+			-- hold ready pose while equipped swords exist
+			if mainModel and mainModel.Parent then
+				mcShoulder.Transform = READY
+			end
+		end
+	end)
+end
+
+local function playMinecraftSwing()
+	local char = player.Character
+	if not char then
+		return
+	end
+	if mcSwinging then
+		return -- MC-style cooldown: no re-swing mid anim
+	end
+	setupMcJoints(char)
+	if not mcShoulder then
+		return
+	end
+	bindMcRender()
+	mcSwinging = true
+	mcT = 0
+	local s = ensureMcSound()
+	if s then
+		s:Play()
+	end
+	print("[WeaponVisual] PlayAttack → MinecraftSwing")
+end
+
 local function loadTrack(animator: Animator, id: string): AnimationTrack?
 	if tracks[id] then
 		return tracks[id]
@@ -185,7 +300,7 @@ local function loadTrack(animator: Animator, id: string): AnimationTrack?
 	end)
 	anim:Destroy()
 	if not ok or typeof(result) ~= "Instance" then
-		warn("[WeaponVisual] LoadAnimation FAILED (only attack id, no fallback):", id, result)
+		warn("[WeaponVisual] LoadAnimation FAILED:", id, result)
 		return nil
 	end
 	local track = result :: AnimationTrack
@@ -206,6 +321,11 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	end
 	lastPlay = now
 
+	if AnimationConfig.UseMinecraftSwing then
+		playMinecraftSwing()
+		return
+	end
+
 	local char = player.Character
 	if not char then
 		return
@@ -216,11 +336,10 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 		return
 	end
 
-	-- ONLY user attack — never slash/lunge/other
 	local id = AnimationConfig.GetAttackId(false)
 	local track = loadTrack(animator, id)
 	if not track then
-		warn("[WeaponVisual] PlayAttack FAILED — only id is", id)
+		warn("[WeaponVisual] PlayAttack FAILED — id", id)
 		return
 	end
 	for _, t in tracks do
@@ -238,23 +357,25 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 end
 
 function WeaponVisual.Init(getProfile: () -> any?)
-	local only = AnimationConfig.GetAttackId(false)
-	print("[WeaponVisual] Attack ONLY =", only)
-	task.spawn(function()
-		local ContentProvider = game:GetService("ContentProvider")
-		local a = Instance.new("Animation")
-		a.AnimationId = only
-		pcall(function()
-			ContentProvider:PreloadAsync({ a })
-		end)
-		a:Destroy()
-	end)
+	if AnimationConfig.UseMinecraftSwing then
+		print("[WeaponVisual] Attack mode = MinecraftSwing (procedural)")
+	else
+		print("[WeaponVisual] Attack mode = AnimationId", AnimationConfig.GetAttackId(false))
+	end
 
 	local function onChar(char: Model)
 		tracks = {}
 		lastPlayedId = nil
+		mcSwinging = false
+		mcT = 0
+		mcShoulder = nil
+		mcWaist = nil
 		task.defer(function()
 			task.wait(0.25)
+			setupMcJoints(char)
+			if AnimationConfig.UseMinecraftSwing then
+				bindMcRender()
+			end
 			WeaponVisual.Refresh(getProfile())
 		end)
 		char.Destroying:Connect(function()
@@ -262,6 +383,9 @@ function WeaponVisual.Init(getProfile: () -> any?)
 			offModel = nil
 			folder = nil
 			tracks = {}
+			mcShoulder = nil
+			mcWaist = nil
+			mcSwinging = false
 		end)
 	end
 
