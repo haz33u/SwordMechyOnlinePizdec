@@ -186,7 +186,8 @@ function Inventory.Bind(
 	local canvas: Frame
 	local titleLab: TextLabel
 	local countLab: TextLabel
-	local identityLab: TextLabel
+	local identityTitleLab: TextLabel
+	local identityNickLab: TextLabel
 	local locLab: TextLabel
 	local main: Frame
 	local actions: Frame
@@ -808,9 +809,9 @@ function Inventory.Bind(
 		canvas = solid(body, "InvCanvas", UDim2.new(1, 0, 1, 0), nil, BG_PANEL, 31)
 		UIKit.Stroke(canvas, BD2, 2, 0.08)
 
-		-- Variant B: fixed-size header chips (no AutoSize mush / no TextScaled blur)
-		local HEADER_H = 60
-		local CHIP_H = Titles.HudChipH
+		-- Variant B: title left, Title|Nick + Loc chips right (plain TextLabels, fixed TextSize)
+		local HEADER_H = 56
+		local CHIP_H = 36
 		local header = solid(canvas, "Header", UDim2.new(1, 0, 0, HEADER_H), UDim2.fromOffset(0, 0), Color3.fromRGB(18, 18, 18), 32)
 		solid(header, "Line", UDim2.new(1, 0, 0, 2), UDim2.new(0, 0, 1, -2), BD, 33)
 
@@ -838,7 +839,6 @@ function Inventory.Bind(
 		UIKit.Corner(close, 99)
 		close.MouseButton1Click:Connect(onClose)
 
-		-- Right cluster: count · Title|Nick · Loc  (before close)
 		local right = Instance.new("Frame")
 		right.Name = "HeaderRight"
 		right.BackgroundTransparency = 1
@@ -849,65 +849,86 @@ function Inventory.Bind(
 		right.Parent = header
 		local rightList = UIKit.List(right, 8, true, Enum.HorizontalAlignment.Right)
 		rightList.VerticalAlignment = Enum.VerticalAlignment.Center
-		rightList.Padding = UDim.new(0, 8)
 
 		countLab = lbl(right, "", UDim2.fromOffset(88, CHIP_H), nil, 13, TL, 35, Enum.Font.Gotham)
 		countLab.Name = "Count"
 		countLab.LayoutOrder = 1
 		countLab.TextXAlignment = Enum.TextXAlignment.Right
 		countLab.TextScaled = false
-		countLab.Size = UDim2.fromOffset(88, CHIP_H)
 
-		local function headerChip(name: string, order: number, edge: Color3, w: number, useRich: boolean): (Frame, TextLabel)
-			local chip = Instance.new("Frame")
-			chip.Name = name
-			chip.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
-			chip.BackgroundTransparency = 0.05
-			chip.BorderSizePixel = 0
-			-- FIXED size — no AutomaticSize (was making text look soft / uneven)
-			chip.Size = UDim2.fromOffset(w, CHIP_H)
-			chip.AutomaticSize = Enum.AutomaticSize.None
-			chip.LayoutOrder = order
-			chip.ZIndex = 35
-			chip.Parent = right
-			UIKit.Corner(chip, 8)
-			UIKit.Stroke(chip, edge, 1.6, 0.18)
+		-- Identity: three plain labels (Title | Nick), fixed TextSize — no RichText
+		local idChip = Instance.new("Frame")
+		idChip.Name = "Identity"
+		idChip.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+		idChip.BackgroundTransparency = 0.05
+		idChip.BorderSizePixel = 0
+		idChip.Size = UDim2.fromOffset(240, CHIP_H)
+		idChip.LayoutOrder = 2
+		idChip.ZIndex = 35
+		idChip.Parent = right
+		UIKit.Corner(idChip, 8)
+		UIKit.Stroke(idChip, Titles.TitleColor, 1.4, 0.2)
+		local idRow = Instance.new("Frame")
+		idRow.BackgroundTransparency = 1
+		idRow.Size = UDim2.fromScale(1, 1)
+		idRow.ZIndex = 36
+		idRow.Parent = idChip
+		local idList = UIKit.List(idRow, 5, true, Enum.HorizontalAlignment.Center)
+		idList.VerticalAlignment = Enum.VerticalAlignment.Center
 
+		local function plainLab(parent: Instance, order: number): TextLabel
 			local lab = Instance.new("TextLabel")
-			lab.Name = "Text"
 			lab.BackgroundTransparency = 1
-			lab.Size = UDim2.new(1, -16, 1, 0)
-			lab.Position = UDim2.fromOffset(8, 0)
-			lab.AutomaticSize = Enum.AutomaticSize.None
+			lab.Size = UDim2.fromOffset(0, CHIP_H)
+			lab.AutomaticSize = Enum.AutomaticSize.X
+			lab.LayoutOrder = order
+			lab.Font = Titles.Font
+			lab.TextSize = Titles.HudTextSize
 			lab.TextScaled = false
-			lab.TextWrapped = false
-			lab.TextTruncate = Enum.TextTruncate.AtEnd
+			lab.RichText = false
+			lab.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+			lab.TextStrokeTransparency = 0.45
 			lab.TextXAlignment = Enum.TextXAlignment.Center
 			lab.TextYAlignment = Enum.TextYAlignment.Center
-			lab.Text = ""
-			lab.ZIndex = 36
-			lab.Parent = chip
-			if useRich then
-				Titles.StyleLabel(lab, Titles.HudTextSize)
-				lab.Size = UDim2.new(1, -16, 1, 0)
-				lab.Position = UDim2.fromOffset(8, 0)
-			else
-				lab.Font = Enum.Font.GothamBold
-				lab.TextSize = 15
-				lab.TextColor3 = Color3.fromRGB(170, 210, 255)
-				lab.RichText = false
-			end
-			return chip, lab
+			lab.ZIndex = 37
+			lab.Parent = parent
+			return lab
 		end
+		identityTitleLab = plainLab(idRow, 1)
+		identityTitleLab.Name = "TitlePart"
+		local identitySepLab = plainLab(idRow, 2)
+		identitySepLab.Name = "Sep"
+		identityNickLab = plainLab(idRow, 3)
+		identityNickLab.Name = "NickPart"
+		-- stash sep on identityTitleLab via parent for refresh
+		identityTitleLab:SetAttribute("HasSep", true)
+		idChip:SetAttribute("SepName", "Sep")
 
-		local _, idLab = headerChip("Identity", 2, Titles.TitleColor, Titles.HudIdentityMinW, true)
-		identityLab = idLab
-		-- pin again after StyleLabel
-		identityLab.TextSize = Titles.HudTextSize
-		identityLab.TextScaled = false
-
-		local _, lLab = headerChip("Loc", 3, Color3.fromRGB(90, 160, 255), 150, false)
-		locLab = lLab
+		local locChip = Instance.new("Frame")
+		locChip.Name = "Loc"
+		locChip.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+		locChip.BackgroundTransparency = 0.05
+		locChip.BorderSizePixel = 0
+		locChip.Size = UDim2.fromOffset(150, CHIP_H)
+		locChip.LayoutOrder = 3
+		locChip.ZIndex = 35
+		locChip.Parent = right
+		UIKit.Corner(locChip, 8)
+		UIKit.Stroke(locChip, Color3.fromRGB(90, 160, 255), 1.4, 0.2)
+		locLab = Instance.new("TextLabel")
+		locLab.Name = "Text"
+		locLab.BackgroundTransparency = 1
+		locLab.Size = UDim2.fromScale(1, 1)
+		locLab.Font = Enum.Font.GothamBold
+		locLab.TextSize = 14
+		locLab.TextScaled = false
+		locLab.RichText = false
+		locLab.TextColor3 = Color3.fromRGB(170, 210, 255)
+		locLab.TextXAlignment = Enum.TextXAlignment.Center
+		locLab.TextYAlignment = Enum.TextYAlignment.Center
+		locLab.TextTruncate = Enum.TextTruncate.AtEnd
+		locLab.ZIndex = 36
+		locLab.Parent = locChip
 
 		local actionH = 68 -- room for larger Equip best / action chips
 		local contentH = HEADER_H + actionH + 100
@@ -1107,14 +1128,28 @@ function Inventory.Bind(
 		local locMeta = WorldConfig.GetMeta(showLoc)
 		local locName = (locMeta and locMeta.name) or ("Loc " .. tostring(showLoc))
 
-		if identityLab then
-			identityLab.TextScaled = false
-			identityLab.TextSize = Titles.HudTextSize
-			identityLab.Text = Titles.Rich(showTitle, showNick)
+		if identityTitleLab and identityNickLab then
+			local sep = identityTitleLab.Parent and identityTitleLab.Parent:FindFirstChild("Sep")
+			Titles.PaintLine(
+				identityTitleLab,
+				if sep and sep:IsA("TextLabel") then sep else nil,
+				identityNickLab,
+				if inspectName then { title = Titles.DEFAULT } else profile,
+				showNick
+			)
+			identityTitleLab.TextSize = Titles.HudTextSize
+			identityNickLab.TextSize = Titles.HudTextSize
+			if sep and sep:IsA("TextLabel") then
+				sep.TextSize = Titles.HudTextSize
+			end
+			-- showTitle already resolved; PaintLine re-reads profile — force when inspecting
+			if inspectName then
+				identityTitleLab.Text = showTitle
+			end
 		end
 		if locLab then
 			locLab.TextScaled = false
-			locLab.TextSize = 15
+			locLab.TextSize = 14
 			locLab.Text = if inspectName then (locName .. " · VIEW") else locName
 		end
 
@@ -1656,17 +1691,38 @@ function Inventory.Bind(
 			UIKit.Stroke(bust, CYAN, 2, 0.25)
 
 			local headNick = inspectName or (lp and ((lp.DisplayName ~= "" and lp.DisplayName) or lp.Name)) or "Player"
-			local headTitle = if inspectName then Titles.DEFAULT else Titles.Of(profile)
-			local idLine = Instance.new("TextLabel")
-			idLine.Name = "TitleNick"
-			idLine.Size = UDim2.new(1, -190, 0, 40)
-			idLine.Position = UDim2.fromOffset(184, 28)
-			idLine.ZIndex = 36
-			idLine.Parent = headRow
-			Titles.StyleLabel(idLine, 24)
-			idLine.TextXAlignment = Enum.TextXAlignment.Left
-			idLine.TextTruncate = Enum.TextTruncate.AtEnd
-			idLine.Text = Titles.Rich(headTitle, headNick)
+			local headRowId = Instance.new("Frame")
+			headRowId.Name = "TitleNick"
+			headRowId.BackgroundTransparency = 1
+			headRowId.Size = UDim2.new(1, -190, 0, 40)
+			headRowId.Position = UDim2.fromOffset(184, 28)
+			headRowId.ZIndex = 36
+			headRowId.Parent = headRow
+			local hl = UIKit.List(headRowId, 6, true, Enum.HorizontalAlignment.Left)
+			hl.VerticalAlignment = Enum.VerticalAlignment.Center
+			local function headPlain(order: number): TextLabel
+				local lab = Instance.new("TextLabel")
+				lab.BackgroundTransparency = 1
+				lab.Size = UDim2.fromOffset(0, 40)
+				lab.AutomaticSize = Enum.AutomaticSize.X
+				lab.LayoutOrder = order
+				lab.Font = Titles.Font
+				lab.TextSize = 24
+				lab.TextScaled = false
+				lab.RichText = false
+				lab.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+				lab.TextStrokeTransparency = 0.4
+				lab.ZIndex = 37
+				lab.Parent = headRowId
+				return lab
+			end
+			local ht = headPlain(1)
+			local hs = headPlain(2)
+			local hn = headPlain(3)
+			Titles.PaintLine(ht, hs, hn, if inspectName then { title = Titles.DEFAULT } else profile, headNick)
+			ht.TextSize = 24
+			hs.TextSize = 24
+			hn.TextSize = 24
 			lbl(
 				headRow,
 				"@" .. (inspectName or (lp and lp.Name) or "player"),
