@@ -49,15 +49,19 @@ local INV_CAP = 32
 local TAB_R = 68
 local HOVER_SCALE = 1.1
 
--- Bottom section tabs: ImageButton icons (no circle plate). Free Creator Store IDs.
+--[[
+	Bottom tabs: flat ImageButtons (NO circle/plate bg).
+	Images from create.roblox.com/store free Decals (searched 2026-07-19).
+	Glyph TextLabel stays under image as fallback if Decal fails to load.
+]]
 local TABS = {
-	{ id = "weapons", glyph = "⚔", label = "Weapons", image = "rbxassetid://114848036963361" },
-	{ id = "pets", glyph = "🐾", label = "Pets", image = "rbxassetid://92327170909498" },
-	{ id = "auras", glyph = "✨", label = "Auras", image = "rbxassetid://133879685799043" },
-	{ id = "relics", glyph = "💎", label = "Relics", image = "rbxassetid://9650296120" },
-	{ id = "cases", glyph = "📦", label = "Cases", image = "rbxassetid://7181747872" },
-	{ id = "shop", glyph = "🪙", label = "Shop", image = "rbxassetid://16009435598" },
-	{ id = "profile", glyph = "👤", label = "Profile", image = "rbxassetid://7492903668" },
+	{ id = "weapons", glyph = "⚔", label = "Weapons", image = "rbxassetid://15949920673" }, -- two-swords-clashing-cartoon
+	{ id = "pets", glyph = "🐾", label = "Pets", image = "rbxassetid://18514765742" }, -- Pet Icon
+	{ id = "auras", glyph = "✨", label = "Auras", image = "rbxassetid://119757312338567" }, -- Star
+	{ id = "relics", glyph = "💎", label = "Relics", image = "rbxassetid://9650296120" }, -- gem
+	{ id = "cases", glyph = "📦", label = "Cases", image = "rbxassetid://10168237291" }, -- Daily Reward Treasure Chest Icon
+	{ id = "shop", glyph = "🪙", label = "Shop", image = "rbxassetid://5684864511" }, -- gold coin icon (Dev_Ryan free use)
+	{ id = "profile", glyph = "👤", label = "Profile", image = "rbxassetid://98048782159448" }, -- bust_in_silhouette
 }
 
 local function rarityBorder(r: string?): Color3
@@ -233,55 +237,149 @@ function Inventory.Bind(
 		end)
 	end
 
+	--[[
+		Tooltip pinned to cursor edge (refICONTOLLTIP style):
+		- prefer RIGHT of cursor: left edge of tip = mouse + EDGE
+		- if no room, LEFT of cursor: right edge of tip = mouse - EDGE
+		- never floats free of the cursor with a large clamp offset
+		ScreenGui.IgnoreGuiInset = false → subtract GuiInset from mouse.
+	]]
 	local function placeTooltip()
-		if not tip.Visible or not canvas then
+		if not tip.Visible or not tip.Parent then
 			return
 		end
+		local parent = tip.Parent :: GuiObject
 		local inset = GuiService:GetGuiInset()
 		local mouse = UserInputService:GetMouseLocation()
-		local screenX = mouse.X - inset.X
-		local screenY = mouse.Y - inset.Y
-		local abs = canvas.AbsolutePosition
-		local canvasSz = canvas.AbsoluteSize
-		local tipSz = tip.AbsoluteSize
-		if tipSz.X < 2 then
-			tipSz = Vector2.new(240, 130)
+		-- convert to same space as Gui AbsolutePosition (IgnoreGuiInset=false)
+		local mx = mouse.X - inset.X
+		local my = mouse.Y - inset.Y
+
+		local tipW = tip.AbsoluteSize.X
+		local tipH = tip.AbsoluteSize.Y
+		if tipW < 8 then
+			tipW = 210
 		end
-		local gap = 14
-		-- Prefer right of cursor
-		local localX = (screenX - abs.X) + gap
-		local localY = (screenY - abs.Y) + gap
-		if localX + tipSz.X > canvasSz.X - 6 then
-			-- flip to left of cursor
-			localX = (screenX - abs.X) - tipSz.X - gap
+		if tipH < 8 then
+			tipH = 110
 		end
-		if localY + tipSz.Y > canvasSz.Y - 6 then
-			localY = canvasSz.Y - tipSz.Y - 6
+
+		local parentAbs = parent.AbsolutePosition
+		local parentSz = parent.AbsoluteSize
+		local EDGE = 10 -- cursor sits on the outer edge of the tooltip
+
+		-- Prefer: tooltip to the RIGHT of cursor
+		local screenX = mx + EDGE
+		local screenY = my + 4
+		local placeRight = true
+		if screenX + tipW > parentAbs.X + parentSz.X - 4 then
+			-- flip: tooltip to the LEFT of cursor
+			placeRight = false
+			screenX = mx - EDGE - tipW
 		end
-		localX = math.clamp(localX, 4, math.max(4, canvasSz.X - tipSz.X - 4))
-		localY = math.clamp(localY, 4, math.max(4, canvasSz.Y - tipSz.Y - 4))
+		if screenY + tipH > parentAbs.Y + parentSz.Y - 4 then
+			screenY = parentAbs.Y + parentSz.Y - tipH - 4
+		end
+		if screenY < parentAbs.Y + 2 then
+			screenY = parentAbs.Y + 2
+		end
+		-- Keep X glued to cursor edge (only clamp if still out after flip)
+		if placeRight then
+			if screenX < parentAbs.X + 2 then
+				screenX = parentAbs.X + 2
+			end
+		else
+			if screenX + tipW > parentAbs.X + parentSz.X - 2 then
+				screenX = parentAbs.X + parentSz.X - tipW - 2
+			end
+		end
+
+		local localX = math.floor(screenX - parentAbs.X + 0.5)
+		local localY = math.floor(screenY - parentAbs.Y + 0.5)
 		tip.Position = UDim2.fromOffset(localX, localY)
 	end
 
-	--- Compact labeled tooltip (title + rarity + stats lines — less empty space)
+	local function clearTipBody()
+		for _, c in tip:GetChildren() do
+			if c:IsA("TextLabel") or (c:IsA("Frame") and c.Name ~= "Pad") then
+				if not c:IsA("UIListLayout") and not c:IsA("UIPadding") and not c:IsA("UIStroke") and not c:IsA("UICorner") and not c:IsA("UISizeConstraint") then
+					c:Destroy()
+				end
+			end
+		end
+	end
+
+	local function tipRow(order: number, text: string, color: Color3?, bold: boolean?): TextLabel
+		local l = Instance.new("TextLabel")
+		l.Name = "Row" .. order
+		l.BackgroundTransparency = 1
+		l.BorderSizePixel = 0
+		l.Size = UDim2.new(1, 0, 0, 0)
+		l.AutomaticSize = Enum.AutomaticSize.Y
+		l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
+		l.TextSize = bold and 14 or 13
+		l.TextColor3 = color or TW
+		l.TextXAlignment = Enum.TextXAlignment.Left
+		l.TextYAlignment = Enum.TextYAlignment.Top
+		l.TextWrapped = true
+		l.Text = text
+		l.LayoutOrder = order
+		l.ZIndex = (tip.ZIndex or 90) + 1
+		l.Parent = tip
+		return l
+	end
+
+	--[[
+		Structured like ref:
+		  Title
+		  Rarity: Common
+		  (gap)
+		  Power: …
+		  Sell: …
+		  Level: …
+		  ● Equipped  (inside bounds, wrapped)
+	]]
 	local function setTooltip(title: string, rarity: string?, desc: string?, extra: string?, borderCol: Color3?)
-		local tLab = tip:FindFirstChild("Title") :: TextLabel
-		local rLab = tip:FindFirstChild("Rarity") :: TextLabel
-		local dLab = tip:FindFirstChild("Desc") :: TextLabel
-		local eLab = tip:FindFirstChild("Extra") :: TextLabel
-		tLab.Text = title
-		rLab.Text = rarity and ("Rarity: " .. rarity) or ""
-		rLab.TextColor3 = borderCol or rarityBorder(rarity)
-		dLab.Text = desc or ""
-		eLab.Text = extra or ""
+		clearTipBody()
+		local order = 1
+		tipRow(order, title, borderCol or TW, true)
+		order += 1
+		if rarity and rarity ~= "" then
+			local r = tipRow(order, "Rarity: " .. rarity, borderCol or rarityBorder(rarity), false)
+			r.TextSize = 13
+			order += 1
+		end
+		-- small spacer
+		local sp = Instance.new("Frame")
+		sp.Name = "Gap"
+		sp.BackgroundTransparency = 1
+		sp.Size = UDim2.new(1, 0, 0, 6)
+		sp.LayoutOrder = order
+		sp.ZIndex = tip.ZIndex
+		sp.Parent = tip
+		order += 1
+
+		if desc and desc ~= "" then
+			-- desc may be multi-line "Power: …\nSell: …"
+			for line in string.gmatch(desc .. "\n", "([^\n]*)\n") do
+				if line ~= "" then
+					tipRow(order, line, Color3.fromRGB(100, 160, 220), false)
+					order += 1
+				end
+			end
+		end
+		if extra and extra ~= "" then
+			local e = tipRow(order, extra, CYAN, false)
+			e.TextTruncate = Enum.TextTruncate.AtEnd
+		end
+
 		local st = tip:FindFirstChildOfClass("UIStroke")
 		if st then
 			st.Color = borderCol or rarityBorder(rarity) or BD2
 		end
-		-- tighter fixed height when lines empty
-		local lines = 1 + (rarity and 1 or 0) + ((desc and desc ~= "") and 2 or 0) + ((extra and extra ~= "") and 1 or 0)
-		tip.Size = UDim2.fromOffset(220, math.clamp(18 + lines * 20, 70, 140))
 		tip.Visible = true
+		-- layout needs a frame before AbsoluteSize is correct
+		task.defer(placeTooltip)
 		placeTooltip()
 	end
 
@@ -524,19 +622,38 @@ function Inventory.Bind(
 			col.ZIndex = 34
 			col.Parent = tabRow
 
-			-- ImageButton only — no circle/plate background (sits on tab frame)
+			-- Flat ImageButton: NO Background, NO Corner, NO Stroke (icon only on bar frame)
 			local b = Instance.new("ImageButton")
 			b.Name = def.id
 			b.Size = UDim2.fromOffset(TAB_R, TAB_R)
 			b.Position = UDim2.new(0.5, 0, 0, 0)
 			b.AnchorPoint = Vector2.new(0.5, 0)
+			b.BackgroundColor3 = Color3.new(0, 0, 0)
 			b.BackgroundTransparency = 1
 			b.BorderSizePixel = 0
 			b.Image = def.image
+			b.ImageTransparency = 0
 			b.ScaleType = Enum.ScaleType.Fit
 			b.AutoButtonColor = false
-			b.ZIndex = 35
+			b.ZIndex = 36
 			b.Parent = col
+
+			-- Glyph fallback under image (visible if Decal doesn't load in place)
+			local glyph = Instance.new("TextLabel")
+			glyph.Name = "Glyph"
+			glyph.BackgroundTransparency = 1
+			glyph.Size = UDim2.fromScale(1, 1)
+			glyph.Font = Enum.Font.GothamBold
+			glyph.TextSize = 26
+			glyph.Text = def.glyph
+			glyph.TextColor3 = Color3.fromRGB(180, 180, 180)
+			glyph.ZIndex = 35
+			glyph.Parent = col
+			glyph.Position = UDim2.new(0.5, 0, 0, 0)
+			glyph.AnchorPoint = Vector2.new(0.5, 0)
+			glyph.Size = UDim2.fromOffset(TAB_R, TAB_R)
+			glyph.TextXAlignment = Enum.TextXAlignment.Center
+			glyph.TextYAlignment = Enum.TextYAlignment.Center
 
 			local hoverScale = Instance.new("UIScale")
 			hoverScale.Scale = 1
@@ -562,18 +679,26 @@ function Inventory.Bind(
 			end)
 		end
 
-		tip = solid(canvas, "Tooltip", UDim2.fromOffset(250, 130), UDim2.fromOffset(0, 0), Color3.fromRGB(12, 12, 12), 90)
+		-- Tooltip: auto-size body, high Z, list layout (refICONTOLLTIP)
+		tip = solid(canvas, "Tooltip", UDim2.fromOffset(200, 0), UDim2.fromOffset(0, 0), Color3.fromRGB(40, 40, 44), 120)
 		tip.Visible = false
-		tip.BackgroundTransparency = 0
-		UIKit.Stroke(tip, BD2, 1.5, 0.05)
-		UIKit.Pad(tip, 12)
-		lbl(tip, "", UDim2.new(1, 0, 0, 20), UDim2.fromOffset(0, 0), 13, TW, 91).Name = "Title"
-		lbl(tip, "", UDim2.new(1, 0, 0, 18), UDim2.fromOffset(0, 24), 13, TD, 91, Enum.Font.Gotham).Name = "Rarity"
-		local td = lbl(tip, "", UDim2.new(1, 0, 0, 48), UDim2.fromOffset(0, 46), 13, TD, 91, Enum.Font.Gotham)
-		td.Name = "Desc"
-		td.TextWrapped = true
-		td.TextYAlignment = Enum.TextYAlignment.Top
-		lbl(tip, "", UDim2.new(1, 0, 0, 18), UDim2.fromOffset(0, 100), 13, GOLD, 91, Enum.Font.Gotham).Name = "Extra"
+		tip.BackgroundTransparency = 0.08
+		tip.ClipsDescendants = true
+		tip.AutomaticSize = Enum.AutomaticSize.XY
+		UIKit.Stroke(tip, BD2, 1.2, 0.1)
+		UIKit.Pad(tip, 10)
+		local pad = tip:FindFirstChildOfClass("UIPadding")
+		if pad then
+			pad.Name = "Pad"
+		end
+		local list = Instance.new("UIListLayout")
+		list.SortOrder = Enum.SortOrder.LayoutOrder
+		list.Padding = UDim.new(0, 2)
+		list.Parent = tip
+		local tipMax = Instance.new("UISizeConstraint")
+		tipMax.MinSize = Vector2.new(170, 48)
+		tipMax.MaxSize = Vector2.new(260, 200)
+		tipMax.Parent = tip
 
 		if mouseMove then
 			mouseMove:Disconnect()
@@ -716,10 +841,18 @@ function Inventory.Bind(
 				local name = (def and def.name) or w.id
 				local rar = (def and def.rarity) or "Common"
 				local mult = (def and def.powerMult) or 1
+				local sellP = (def and def.sellPrice) or 5
+				local wLevel = w.level or 1
 				btn.MouseEnter:Connect(function()
 					local eq = profile.equippedMain == w.uid and "● Equipped main"
 						or (profile.equippedOffhand == w.uid and "● Equipped off" or nil)
-					setTooltip(name, rar, string.format("Power mult ×%.2f", mult), eq, edge)
+					setTooltip(
+						name,
+						rar,
+						string.format("Power: ×%.2f\nSell: %d\nLevel: %d", mult, sellP, wLevel),
+						eq,
+						edge
+					)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
 				btn.MouseButton1Click:Connect(function()
@@ -812,7 +945,13 @@ function Inventory.Bind(
 				end
 				btn.MouseEnter:Connect(function()
 					local power = def and def.powerPct or p.powerPct or 0
-					setTooltip(name, rar, string.format("+%d%% power", math.floor(power)), inTeam and "● On team" or "LMB equip/unequip", rarityBorder(rar))
+					setTooltip(
+						name,
+						rar,
+						string.format("Power: +%d%%", math.floor(power)),
+						inTeam and "● On team" or nil,
+						rarityBorder(rar)
+					)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
 				btn.MouseButton1Click:Connect(function()
@@ -861,8 +1000,8 @@ function Inventory.Bind(
 					setTooltip(
 						name,
 						rar,
-						def and string.format("+%d%% power", math.floor(def.powerPct or 0)) or nil,
-						active and "● Active" or "LMB equip",
+						def and string.format("Power: +%d%%", math.floor(def.powerPct or 0)) or nil,
+						active and "● Active" or nil,
 						rarityBorder(rar)
 					)
 				end)
