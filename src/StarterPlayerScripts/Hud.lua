@@ -173,11 +173,16 @@ function Hud.Mount(
 		boostRows[meta.key] = makeBoostRow(meta)
 	end
 
-	---------------------------------------------------------------- BOTTOM-CENTER: Q | coins/power | E  (large — FullHD readable)
+	---------------------------------------------------------------- BOTTOM-CENTER balance sector
+	-- Structure (by design): 2 TextLabels (Coins, Power) + 2 ImageLabels (Rebirth, Inventory)
+	-- Icons from Creator Store free Decals (searched).
+	local ICON_REBIRTH = "rbxassetid://442097927" -- Refresh/Switch Icon/Button (Sir_Melio)
+	local ICON_INVENTORY = "rbxassetid://105019719047516" -- Inventory button
+
 	local bal = UIKit.Glass({
 		Name = "BalanceBar",
 		Parent = root,
-		Size = UDim2.fromOffset(440, 108),
+		Size = UDim2.fromOffset(480, 112),
 		Position = UDim2.new(0.5, 0, 1, -20),
 		Anchor = Vector2.new(0.5, 1),
 		Radius = T.R.md,
@@ -186,102 +191,146 @@ function Hud.Mount(
 	})
 	UIKit.Stroke(bal, T.Stroke, 1.4, 0.22)
 
-	-- Q = rebirth (left)
-	local qBtn = UIKit.Button({
-		Name = "RebirthQ",
-		Parent = bal,
-		Text = "Q",
-		Size = UDim2.fromOffset(56, 56),
-		Position = UDim2.new(0, 14, 0.5, 0),
-		Anchor = Vector2.new(0, 0.5),
-		Color = Color3.fromRGB(70, 90, 160),
-		Color2 = Color3.fromRGB(40, 55, 110),
-		Primary = true,
-		SizePx = 22,
-		Compact = true,
-		Radius = T.R.sm,
-		Z = 14,
-		OnClick = function()
-			openModal("rebirth", nil)
-		end,
-	})
-	UIKit.Label({
-		Parent = bal,
-		Text = "♻",
-		Size = UDim2.fromOffset(28, 28),
-		Position = UDim2.new(0, 76, 0.5, -22),
-		SizePx = 18,
-		Color = T.Accent,
-		Z = 14,
-	})
+	--- Soft text glow (UIStroke Contextual) — keeps same gold/power tones
+	local function metricText(name: string, parent: Instance, color: Color3, glow: Color3, y: number): TextLabel
+		local lab = Instance.new("TextLabel")
+		lab.Name = name
+		lab.BackgroundTransparency = 1
+		lab.BorderSizePixel = 0
+		lab.Size = UDim2.new(1, 0, 0, 44)
+		lab.Position = UDim2.fromOffset(0, y)
+		lab.Font = T.Font.Num
+		lab.TextSize = 28
+		lab.TextColor3 = color
+		lab.TextXAlignment = Enum.TextXAlignment.Center
+		lab.TextYAlignment = Enum.TextYAlignment.Center
+		lab.Text = "0"
+		lab.ZIndex = 15
+		lab.Parent = parent
+		-- soft outer glow
+		local glowStroke = Instance.new("UIStroke")
+		glowStroke.Name = "SoftGlow"
+		glowStroke.Color = glow
+		glowStroke.Thickness = 2.2
+		glowStroke.Transparency = 0.55
+		glowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+		glowStroke.LineJoinMode = Enum.LineJoinMode.Round
+		glowStroke.Parent = lab
+		-- subtle dark edge for readability
+		lab.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+		lab.TextStrokeTransparency = 0.45
+		return lab
+	end
 
-	-- center metrics (big numbers)
+	--- ImageButton hit area + ImageLabel icon (Creator Store art)
+	local function iconBtn(
+		name: string,
+		parent: Instance,
+		image: string,
+		side: "left" | "right",
+		onClick: () -> ()
+	): ImageButton
+		local btn = Instance.new("ImageButton")
+		btn.Name = name
+		btn.Size = UDim2.fromOffset(64, 64)
+		if side == "left" then
+			btn.Position = UDim2.new(0, 14, 0.5, 0)
+			btn.AnchorPoint = Vector2.new(0, 0.5)
+		else
+			btn.Position = UDim2.new(1, -14, 0.5, 0)
+			btn.AnchorPoint = Vector2.new(1, 0.5)
+		end
+		btn.BackgroundColor3 = Color3.fromRGB(36, 40, 56)
+		btn.BackgroundTransparency = 0.25
+		btn.BorderSizePixel = 0
+		btn.Image = "" -- image lives on child ImageLabel
+		btn.AutoButtonColor = true
+		btn.ZIndex = 14
+		btn.Parent = parent
+		UIKit.Corner(btn, 12)
+		UIKit.Stroke(btn, T.StrokeLight, 1.2, 0.35)
+
+		local img = Instance.new("ImageLabel")
+		img.Name = "Icon"
+		img.BackgroundTransparency = 1
+		img.BorderSizePixel = 0
+		img.Size = UDim2.fromScale(0.78, 0.78)
+		img.Position = UDim2.fromScale(0.5, 0.5)
+		img.AnchorPoint = Vector2.new(0.5, 0.5)
+		img.Image = image
+		img.ScaleType = Enum.ScaleType.Fit
+		img.ZIndex = 15
+		img.Parent = btn
+
+		btn.MouseButton1Click:Connect(onClick)
+		return btn
+	end
+
+	-- Left: Rebirth (Q) — ImageLabel icon
+	local qBtn = iconBtn("RebirthQ", bal, ICON_REBIRTH, "left", function()
+		openModal("rebirth", nil)
+	end)
+	-- Keybind hint under icon (small, not the main control)
+	local qHint = Instance.new("TextLabel")
+	qHint.Name = "KeyHint"
+	qHint.BackgroundTransparency = 1
+	qHint.Size = UDim2.fromOffset(64, 16)
+	qHint.Position = UDim2.new(0, 14, 1, -18)
+	qHint.Font = T.Font.Ui
+	qHint.TextSize = 12
+	qHint.TextColor3 = T.TextMuted
+	qHint.Text = "Q"
+	qHint.TextXAlignment = Enum.TextXAlignment.Center
+	qHint.ZIndex = 15
+	qHint.Parent = bal
+
+	-- Center: Coins + Power as separate TextLabels
 	local mid = Instance.new("Frame")
 	mid.Name = "Mid"
 	mid.BackgroundTransparency = 1
-	mid.Size = UDim2.fromOffset(220, 88)
+	mid.Size = UDim2.fromOffset(260, 96)
 	mid.Position = UDim2.new(0.5, 0, 0.5, 0)
 	mid.AnchorPoint = Vector2.new(0.5, 0.5)
 	mid.ZIndex = 13
 	mid.Parent = bal
 
-	local coinLab = UIKit.Label({
-		Name = "Coins",
-		Parent = mid,
-		Text = "🪙  0",
-		Size = UDim2.new(1, 0, 0, 40),
-		Position = UDim2.fromOffset(0, 4),
-		SizePx = 26,
-		Font = T.Font.Num,
-		Color = T.Gold,
-		X = Enum.TextXAlignment.Center,
-		Z = 14,
-	})
-	local powerLab = UIKit.Label({
-		Name = "Power",
-		Parent = mid,
-		Text = "⚔  0",
-		Size = UDim2.new(1, 0, 0, 40),
-		Position = UDim2.fromOffset(0, 44),
-		SizePx = 26,
-		Font = T.Font.Num,
-		Color = Color3.fromRGB(255, 120, 90),
-		X = Enum.TextXAlignment.Center,
-		Z = 14,
-	})
+	local coinLab = metricText(
+		"Coins",
+		mid,
+		T.Gold,
+		Color3.fromRGB(255, 220, 100),
+		4
+	)
+	local powerLab = metricText(
+		"Power",
+		mid,
+		Color3.fromRGB(255, 120, 90),
+		Color3.fromRGB(255, 150, 120),
+		50
+	)
 
-	-- E = inventory (right)
-	local eBtn = UIKit.Button({
-		Name = "InvE",
-		Parent = bal,
-		Text = "E",
-		Size = UDim2.fromOffset(56, 56),
-		Position = UDim2.new(1, -14, 0.5, 0),
-		Anchor = Vector2.new(1, 0.5),
-		Color = Color3.fromRGB(70, 90, 160),
-		Color2 = Color3.fromRGB(40, 55, 110),
-		Primary = true,
-		SizePx = 22,
-		Compact = true,
-		Radius = T.R.sm,
-		Z = 14,
-		OnClick = function()
-			store:OpenPanel("weapons")
-		end,
-	})
-	UIKit.Label({
-		Parent = bal,
-		Text = "🎒",
-		Size = UDim2.fromOffset(28, 28),
-		Position = UDim2.new(1, -100, 0.5, -22),
-		SizePx = 18,
-		Color = T.TextSoft,
-		Z = 14,
-	})
+	-- Right: Inventory (E) — ImageLabel icon
+	local eBtn = iconBtn("InvE", bal, ICON_INVENTORY, "right", function()
+		store:OpenPanel("weapons")
+	end)
+	local eHint = Instance.new("TextLabel")
+	eHint.Name = "KeyHint"
+	eHint.BackgroundTransparency = 1
+	eHint.Size = UDim2.fromOffset(64, 16)
+	eHint.Position = UDim2.new(1, -78, 1, -18)
+	eHint.Font = T.Font.Ui
+	eHint.TextSize = 12
+	eHint.TextColor3 = T.TextMuted
+	eHint.Text = "E"
+	eHint.TextXAlignment = Enum.TextXAlignment.Center
+	eHint.ZIndex = 15
+	eHint.Parent = bal
+	local _ = qBtn
+	local _ = eBtn
 
 	-- Stack above balance (bottom → top): BalanceBar | rebirth bar | AUTO
 	-- Heights used by applyMetrics so nothing overlaps after layout scale
-	local BAL_H = 108
+	local BAL_H = 112
 	local RB_H = 10
 	local AUTO_H = 42
 	local GAP_BAL_RB = 12
@@ -374,8 +423,9 @@ function Hud.Mount(
 			return
 		end
 
-		coinLab.Text = "🪙  " .. Format.Num(st.coins)
-		powerLab.Text = "⚔  " .. Format.Num(st.damagePerClick or st.totalPower)
+		-- TextLabels only — numbers (icons are separate ImageLabels on Q/E)
+		coinLab.Text = Format.Num(st.coins)
+		powerLab.Text = Format.Num(st.damagePerClick or st.totalPower)
 
 		-- rebirth progress (damage toward next R)
 		local pct = st.rebirthProgress

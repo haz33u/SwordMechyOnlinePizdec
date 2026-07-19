@@ -109,7 +109,9 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 - [x] GameUI: HUD, windows, modals — **repo-only**, no dual StarterGui
 - [x] Theme charcoal + blue CTA + red close (SCREEENS / Cristalix-like)
 - [x] **Pixel / Minecraft-like fonts** — `Theme.Fonts` = `Enum.Font.Arcade` (Title/Body/Num/Ui). Whole UIKit labels/buttons pick this up.
-- [x] HUD: boosts top-left · **large** coins/power bottom bar (~380–560×108) · **Q**=rebirth · **E**=inventory  
+- [x] HUD: boosts top-left · **large** coins/power bottom bar (~380–560×112)  
+  - Balance sector: **2 TextLabels** (Coins, Power — soft UIStroke glow, gold/power colors) + **2 ImageLabels** (Rebirth / Inventory icons from Creator Store)  
+  - Key hints **Q** / **E** under icons; click = ImageButton hit area  
   - Rule: **do not make tiny HUD metrics** (FullHD readability)
 - [x] **Attack = LMB + mobile tap** (screen-wide, not Space) — see §4
 - [x] **English locale** for UI + configs + server Notify (see §12 UI string map)
