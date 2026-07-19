@@ -70,17 +70,19 @@ Wire later as world modifiers on spawn / loot / case cost / power.
 After rebirth: wipe coins + lifetime damage progress; weapons/pets stay. ETA = ideal time with current gear.
 
 ### Weapons Loc1 (strength / sell)
-| Name | Rarity | Сила | Sell |
-|------|--------|------|------|
-| Starter Weapon | Common | 1 | 10 |
-| Old Sword | Common | 2 | 40 |
-| Bone Dagger | Common | 3 | 50 |
-| Wooden Mace | Rare | 10 | 150 |
-| Double-edged Sword | Epic | 17 | 200 |
-| Forest Spirit Staff | Epic | 28 | 250 |
-| Ardite | Legendary | 50 | 500 |
-| Forest Sword | Mythic | 125 | 1K |
-| Forest Shadow | Secret | 150 | 1.5K |
+| Name | id (code) | Rarity | Сила | Sell |
+|------|-----------|--------|------|------|
+| Starter Weapon | `starter_weapon` | Common | 1 | 10 |
+| Old Sword | `old_sword` | Common | 2 | 40 |
+| Bone Dagger | `bone_dagger` | Common | 3 | 50 |
+| Wooden Mace | `wooden_mace` | Rare | 10 | 150 |
+| Double-edged Sword | `double_edged_sword` | Epic | 17 | 200 |
+| Forest Spirit Staff | `forest_spirit_staff` | Epic | 28 | 250 |
+| Ardite | `ardite` | Legendary | 50 | 500 |
+| Forest Sword | `forest_sword` | Mythic | 125 | 1K |
+| Forest Shadow | `forest_shadow` | Secret | 150 | 1.5K |
+
+> Internal ids are **readable slugs** (not `W1_U2`). Old codes migrate via `WeaponConfig.LegacyIdMap`.
 
 Levels: L1/L2/L3 = strength **×1 / ×2 / ×3** (17→34→51). Merge **5×L1→L2**, **3×L2→L3** (MMB).
 

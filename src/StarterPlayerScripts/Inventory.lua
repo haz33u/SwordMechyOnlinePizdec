@@ -934,7 +934,7 @@ function Inventory.Bind(
 					UIKit.Corner(dot, 99)
 				end
 
-				local name = (def and def.name) or w.id
+				local name = (def and def.name) or WeaponConfig.GetDisplayName(w.id)
 				local rar = (def and def.rarity) or "Common"
 				local mult = (def and def.powerMult) or 1
 				local sellP = (def and def.sellPrice) or 5
@@ -979,7 +979,7 @@ function Inventory.Bind(
 			local row = actionsRow()
 			if selected then
 				local def = WeaponConfig.Get(selected.id)
-				lbl(row, (def and def.name) or selected.id, UDim2.fromOffset(120, 32), nil, 12, rarityBorder(def and def.rarity), 35)
+				lbl(row, (def and def.name) or WeaponConfig.GetDisplayName(selected.id), UDim2.fromOffset(120, 32), nil, 12, rarityBorder(def and def.rarity), 35)
 				actBtn(row, "Equip main", Color3.fromRGB(0, 90, 80), 2, function()
 					Net.EquipWeapon(selected.uid, "main")
 				end)

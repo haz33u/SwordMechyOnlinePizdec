@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Weapon image assets — dump Loc1/Loc2 ids only.
+	Weapon image assets — keys match dump weapon slugs (WeaponConfig ids).
 ]]
 
 local IconConfig = {
@@ -8,25 +8,25 @@ local IconConfig = {
 	FallbackFrame = "",
 
 	WeaponAssetIds = {
-		-- Loc1 dump (uploaded)
-		W1_C1 = "rbxassetid://116982617153585",
-		W1_C2 = "rbxassetid://85575954431015",
-		W1_C3 = "rbxassetid://82149069182844", -- reuse knife art until Bone Dagger upload
-		W1_R1 = "rbxassetid://140029944614319",
-		W1_E1 = "rbxassetid://72874627405282",
-		W1_E2 = "rbxassetid://113405820939595",
-		W1_L1 = "rbxassetid://92192514816761",
-		W1_M1 = "rbxassetid://75341679116800",
-		W1_S1 = "rbxassetid://122837329722306",
-		-- Loc2 dump (fill when art ready)
-		W2_C1 = "",
-		W2_C2 = "",
-		W2_C3 = "",
-		W2_R1 = "",
-		W2_R2 = "",
-		W2_E1 = "",
-		W2_E2 = "",
-		W2_L1 = "",
+		-- Loc1 dump
+		starter_weapon = "rbxassetid://116982617153585",
+		old_sword = "rbxassetid://85575954431015",
+		bone_dagger = "rbxassetid://82149069182844",
+		wooden_mace = "rbxassetid://140029944614319",
+		double_edged_sword = "rbxassetid://72874627405282",
+		forest_spirit_staff = "rbxassetid://113405820939595",
+		ardite = "rbxassetid://92192514816761",
+		forest_sword = "rbxassetid://75341679116800",
+		forest_shadow = "rbxassetid://122837329722306",
+		-- Loc2 dump (upload when art ready)
+		pirate_hook = "",
+		pirate_hammer = "",
+		pirate_saber = "",
+		golden_plated_sword = "",
+		captain_axe = "",
+		element_blade = "",
+		emerald_blade = "",
+		sea_dagger = "",
 	} :: { [string]: string },
 
 	FrameAssetIds = {
@@ -42,7 +42,9 @@ local IconConfig = {
 }
 
 function IconConfig.GetWeaponImage(weaponId: string): string
-	local id = IconConfig.WeaponAssetIds[weaponId]
+	local WeaponConfig = require(script.Parent.WeaponConfig)
+	local resolved = WeaponConfig.ResolveId(weaponId)
+	local id = IconConfig.WeaponAssetIds[resolved] or IconConfig.WeaponAssetIds[weaponId]
 	if type(id) == "string" and id ~= "" then
 		return id
 	end

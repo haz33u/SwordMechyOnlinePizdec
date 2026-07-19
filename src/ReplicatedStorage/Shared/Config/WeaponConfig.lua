@@ -110,7 +110,50 @@ local WeaponConfig = {
 
 	Weapons = {} :: { [string]: WeaponDef },
 
-	STARTER_WEAPON = "W1_C1",
+	STARTER_WEAPON = "starter_weapon",
+
+	--[[
+		Legacy codes (old W1_U2-style fillers + previous dump codes) → current dump slug.
+		Unknown fillers without a dump twin map to nearest dump common of same loc.
+	]]
+	LegacyIdMap = {
+		-- Loc1 dump codes
+		W1_C1 = "starter_weapon",
+		W1_C2 = "old_sword",
+		W1_C3 = "bone_dagger",
+		W1_R1 = "wooden_mace",
+		W1_E1 = "double_edged_sword",
+		W1_E2 = "forest_spirit_staff",
+		W1_L1 = "ardite",
+		W1_M1 = "forest_sword",
+		W1_S1 = "forest_shadow",
+		-- Loc1 fillers (removed) → closest dump
+		W1_U1 = "old_sword",
+		W1_U2 = "bone_dagger",
+		W1_R2 = "wooden_mace",
+		W1_L2 = "ardite",
+		W1_M2 = "forest_sword",
+		W1_S2 = "forest_shadow",
+		W1_X1 = "forest_shadow",
+		-- Loc2 dump codes
+		W2_C1 = "pirate_hook",
+		W2_C2 = "pirate_hammer",
+		W2_C3 = "pirate_saber",
+		W2_R1 = "golden_plated_sword",
+		W2_R2 = "captain_axe",
+		W2_E1 = "element_blade",
+		W2_E2 = "emerald_blade",
+		W2_L1 = "sea_dagger",
+		-- Loc2 old stubs
+		W2_U1 = "pirate_hook",
+		W2_U2 = "pirate_hammer",
+		W2_L2 = "sea_dagger",
+		W2_M1 = "sea_dagger",
+		W2_M2 = "sea_dagger",
+		W2_S1 = "sea_dagger",
+		W2_S2 = "sea_dagger",
+		W2_X1 = "sea_dagger",
+	} :: { [string]: string },
 
 	MAX_WEAPON_LEVEL = 3,
 	-- Double-edged dump: 17 → 34 → 51 = × level
@@ -171,36 +214,60 @@ local function add(
 end
 
 ----------------------------------------------------------------------
--- LOC 1 — dump «Мечи статы» (Сила / sell exact)
+-- LOC 1 — dump names (id = readable slug, name = player-facing English)
 ----------------------------------------------------------------------
-add("W1_C1", "Starter Weapon", "Common", 1, 1, 10, "Dump Сила 1")
-add("W1_C2", "Old Sword", "Common", 1, 2, 40, "Dump Сила 2")
-add("W1_C3", "Bone Dagger", "Common", 1, 3, 50, "Dump Сила 3")
-add("W1_R1", "Wooden Mace", "Rare", 1, 10, 150, "Dump Сила 10")
-add("W1_E1", "Double-Edged Sword", "Epic", 1, 17, 200, "Dump Сила 17")
-add("W1_E2", "Forest Spirit Staff", "Epic", 1, 28, 250, "Dump Сила 28")
-add("W1_L1", "Ardite", "Legendary", 1, 50, 500, "Dump Сила 50")
-add("W1_M1", "Forest Sword", "Mythic", 1, 125, 1000, "Dump Сила 125")
-add("W1_S1", "Forest Shadow", "Secret", 1, 150, 1500, "Dump Сила 150")
+add("starter_weapon", "Starter Weapon", "Common", 1, 1, 10, "Dump strength 1")
+add("old_sword", "Old Sword", "Common", 1, 2, 40, "Dump strength 2")
+add("bone_dagger", "Bone Dagger", "Common", 1, 3, 50, "Dump strength 3")
+add("wooden_mace", "Wooden Mace", "Rare", 1, 10, 150, "Dump strength 10")
+add("double_edged_sword", "Double-Edged Sword", "Epic", 1, 17, 200, "Dump strength 17")
+add("forest_spirit_staff", "Forest Spirit Staff", "Epic", 1, 28, 250, "Dump strength 28")
+add("ardite", "Ardite", "Legendary", 1, 50, 500, "Dump strength 50")
+add("forest_sword", "Forest Sword", "Mythic", 1, 125, 1000, "Dump strength 125")
+add("forest_shadow", "Forest Shadow", "Secret", 1, 150, 1500, "Dump strength 150")
 
 ----------------------------------------------------------------------
--- LOC 2 — dump «Мечи2ялока»
+-- LOC 2 — dump names
 ----------------------------------------------------------------------
-add("W2_C1", "Pirate Hook", "Common", 2, 50, 50_000, "Dump Сила 50")
-add("W2_C2", "Pirate Hammer", "Common", 2, 100, 100_000, "Dump Сила 100")
-add("W2_C3", "Pirate Saber", "Common", 2, 150, 250_000, "Dump Сила 150")
-add("W2_R1", "Golden-plated Sword", "Rare", 2, 300, 500_000, "Dump Сила 300")
-add("W2_R2", "Captain Axe", "Rare", 2, 500, 1_000_000, "Dump Сила 500")
-add("W2_E1", "Element Blade", "Epic", 2, 800, 25_000_000, "Dump Сила 800")
-add("W2_E2", "Emerald Blade", "Epic", 2, 1500, 50_000_000, "Dump Сила 1.5K")
-add("W2_L1", "Sea Dagger", "Legendary", 2, 4250, 120_000_000, "Dump Сила 4.25K")
+add("pirate_hook", "Pirate Hook", "Common", 2, 50, 50_000, "Dump strength 50")
+add("pirate_hammer", "Pirate Hammer", "Common", 2, 100, 100_000, "Dump strength 100")
+add("pirate_saber", "Pirate Saber", "Common", 2, 150, 250_000, "Dump strength 150")
+add("golden_plated_sword", "Golden-plated Sword", "Rare", 2, 300, 500_000, "Dump strength 300")
+add("captain_axe", "Captain Axe", "Rare", 2, 500, 1_000_000, "Dump strength 500")
+add("element_blade", "Element Blade", "Epic", 2, 800, 25_000_000, "Dump strength 800")
+add("emerald_blade", "Emerald Blade", "Epic", 2, 1500, 50_000_000, "Dump strength 1.5K")
+add("sea_dagger", "Sea Dagger", "Legendary", 2, 4250, 120_000_000, "Dump strength 4.25K")
 
 ----------------------------------------------------------------------
 -- API
 ----------------------------------------------------------------------
 
+--- Resolve legacy W1_U2 / W1_C1 codes → dump slug; pass through if already valid
+function WeaponConfig.ResolveId(id: string): string
+	if type(id) ~= "string" or id == "" then
+		return WeaponConfig.STARTER_WEAPON
+	end
+	if WeaponConfig.Weapons[id] then
+		return id
+	end
+	local mapped = WeaponConfig.LegacyIdMap[id]
+	if mapped and WeaponConfig.Weapons[mapped] then
+		return mapped
+	end
+	return id
+end
+
 function WeaponConfig.Get(id: string): WeaponDef?
-	return WeaponConfig.Weapons[id]
+	local resolved = WeaponConfig.ResolveId(id)
+	return WeaponConfig.Weapons[resolved] or WeaponConfig.Weapons[id]
+end
+
+function WeaponConfig.GetDisplayName(id: string): string
+	local def = WeaponConfig.Get(id)
+	if def then
+		return def.name
+	end
+	return "Unknown Sword"
 end
 
 function WeaponConfig.RarityIndex(rarity: string): number

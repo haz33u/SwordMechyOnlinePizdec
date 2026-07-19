@@ -50,7 +50,7 @@ local QuestConfig = {
 			type = "kill",
 			targetId = "L1_Wolf",
 			amount = 15,
-			rewards = { coins = 8_000, powerPct = 3, weaponId = "W1_R1" },
+			rewards = { coins = 8_000, powerPct = 3, weaponId = "wooden_mace" },
 			location = 1,
 		},
 		Q2_GoblinWarriors = {

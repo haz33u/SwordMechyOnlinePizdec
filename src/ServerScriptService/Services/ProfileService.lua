@@ -187,6 +187,69 @@ function ProfileService.Load(player: Player)
 	local PetService = require(script.Parent.PetService)
 	PetService.SyncSlots(data)
 
+	-- Weapons: rename legacy W1_U2 / W1_C1 codes → dump slugs; drop unknown
+	do
+		local kept = {}
+		local mainUid = data.equippedMain
+		local offUid = data.equippedOffhand
+		for _, w in ipairs(data.weapons or {}) do
+			if type(w) == "table" and type(w.id) == "string" then
+				local resolved = WeaponConfig.ResolveId(w.id)
+				if WeaponConfig.Get(resolved) then
+					w.id = resolved
+					if type(w.level) ~= "number" then
+						w.level = 1
+					end
+					table.insert(kept, w)
+				end
+			end
+		end
+		if #kept == 0 then
+			local starterUid = uid()
+			table.insert(kept, {
+				uid = starterUid,
+				id = WeaponConfig.STARTER_WEAPON,
+				level = 1,
+				enchants = {},
+			})
+			data.equippedMain = starterUid
+			data.equippedOffhand = nil
+		else
+			data.weapons = kept
+			local function stillOwns(uidVal: any): boolean
+				if type(uidVal) ~= "string" then
+					return false
+				end
+				for _, w in kept do
+					if w.uid == uidVal then
+						return true
+					end
+				end
+				return false
+			end
+			if not stillOwns(mainUid) then
+				data.equippedMain = kept[1].uid
+			end
+			if offUid and not stillOwns(offUid) then
+				data.equippedOffhand = nil
+			end
+		end
+		data.weapons = kept
+		-- banned list: remap keys
+		if type(data.bannedWeaponIds) == "table" then
+			local nb = {}
+			for id, banned in data.bannedWeaponIds do
+				if banned then
+					local r = WeaponConfig.ResolveId(id)
+					if WeaponConfig.Get(r) then
+						nb[r] = true
+					end
+				end
+			end
+			data.bannedWeaponIds = nb
+		end
+	end
+
 	if GameConfig.GIVE_STARTER_KIT and data.coins == 0 and data.lifetimePower == 0 then
 		data.coins = GameConfig.STARTER_COINS or 1000
 		-- only brand-new profiles get starter keys

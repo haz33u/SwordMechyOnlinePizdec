@@ -215,10 +215,10 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			dropTable = {
-				W2_C1 = 54.998, -- Pirate Hook
-				W2_C2 = 34.999, -- Pirate Hammer
-				W2_C3 = 8.0, -- Pirate Saber
-				W2_R1 = 2.004, -- Golden-plated
+				pirate_hook = 54.998,
+				pirate_hammer = 34.999,
+				pirate_saber = 8.0,
+				golden_plated_sword = 2.004,
 			},
 			respawnSeconds = 4,
 			visual = { preferredModelName = "L2_Sailor", color = "#5DADE2", scale = 1.0, shape = "humanoid" },
@@ -237,12 +237,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			dropTable = {
-				W2_C1 = 18.182,
-				W2_C2 = 36.363,
-				W2_C3 = 31.818,
-				W2_R1 = 10.454,
-				W2_R2 = 2.727, -- Captain Axe
-				W2_E1 = 0.456, -- Element Blade
+				pirate_hook = 18.182,
+				pirate_hammer = 36.363,
+				pirate_saber = 31.818,
+				golden_plated_sword = 10.454,
+				captain_axe = 2.727,
+				element_blade = 0.456,
 			},
 			respawnSeconds = 8,
 			visual = { preferredModelName = "L2_Gunner", color = "#2874A6", scale = 1.15, shape = "humanoid" },
@@ -261,14 +261,14 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			dropTable = {
-				W2_C1 = 2.997,
-				W2_C2 = 21.98,
-				W2_C3 = 29.973,
-				W2_R1 = 26.976,
-				W2_R2 = 13.388,
-				W2_E1 = 3.996,
-				W2_E2 = 0.59, -- Emerald Blade
-				W2_L1 = 0.1, -- Sea Dagger
+				pirate_hook = 2.997,
+				pirate_hammer = 21.98,
+				pirate_saber = 29.973,
+				golden_plated_sword = 26.976,
+				captain_axe = 13.388,
+				element_blade = 3.996,
+				emerald_blade = 0.59,
+				sea_dagger = 0.1,
 			},
 			respawnSeconds = 15,
 			visual = { preferredModelName = "L2_Captain", color = "#1A5276", scale = 1.4, shape = "humanoid" },
