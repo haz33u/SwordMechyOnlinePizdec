@@ -174,15 +174,14 @@ function Hud.Mount(
 	end
 
 	---------------------------------------------------------------- BOTTOM-CENTER: 4 separate chips
-	-- INVETAR.make palette: GOLD #e8b800, panels #181818/#202020, text #cccccc
-	-- CRITICAL: never put UIGradient on the same frame as TextLabels (multiplies text → black)
-	local MAKE_GOLD = Color3.fromRGB(232, 184, 0) -- #e8b800
-	local MAKE_GOLD_GLOW = Color3.fromRGB(255, 220, 80)
+	-- SCREEENS / Theme palette (not pure black — matches rail/windows)
+	local MAKE_GOLD = T.Gold -- coin gold
+	local MAKE_GOLD_GLOW = Color3.fromRGB(255, 220, 100)
 	local MAKE_POWER = Color3.fromRGB(255, 120, 90)
 	local MAKE_POWER_GLOW = Color3.fromRGB(255, 160, 120)
-	local MAKE_PANEL = Color3.fromRGB(24, 24, 24) -- #181818
-	local MAKE_SECTION = Color3.fromRGB(32, 32, 32) -- #202020
-	local MAKE_BD2 = Color3.fromRGB(62, 62, 62) -- #3e3e3e
+	local MAKE_PANEL = T.Surface2 -- 30,30,36 charcoal (not pure black)
+	local MAKE_SECTION = T.Surface3 -- 40,40,48
+	local MAKE_BD2 = T.StrokeLight
 
 	-- Creator Store free Decals (rebirth / backpack)
 	local ICON_REBIRTH = "rbxassetid://18367579979" -- Rebirth Icon
@@ -244,27 +243,17 @@ function Hud.Mount(
 	end
 
 	local function metricChip(name: string, order: number, accent: Color3, glow: Color3): (Frame, TextLabel)
-		local chip = Instance.new("Frame")
-		chip.Name = name .. "Chip"
-		chip.BackgroundColor3 = MAKE_PANEL
-		chip.BackgroundTransparency = 0
-		chip.BorderSizePixel = 0
-		chip.Size = UDim2.fromOffset(180, CHIP_H)
+		-- Glass-style chip matching SCREEENS panels (Surface3→Surface2), not pure black
+		local chip = UIKit.Glass({
+			Name = name .. "Chip",
+			Parent = bal,
+			Size = UDim2.fromOffset(180, CHIP_H),
+			Radius = 12,
+			Z = 13,
+			Deep = false,
+		})
 		chip.LayoutOrder = order
-		chip.ZIndex = 13
-		chip.Parent = bal
-		UIKit.Corner(chip, 12)
-		UIKit.Stroke(chip, accent, 2, 0.25)
-		-- gradient only on background child so text is NOT tinted black
-		local bg = Instance.new("Frame")
-		bg.Name = "Bg"
-		bg.BackgroundColor3 = MAKE_SECTION
-		bg.BorderSizePixel = 0
-		bg.Size = UDim2.fromScale(1, 1)
-		bg.ZIndex = 13
-		bg.Parent = chip
-		UIKit.Corner(bg, 12)
-		UIKit.Gradient(bg, MAKE_SECTION, MAKE_PANEL, 90)
+		UIKit.Stroke(chip, accent, 2, 0.3)
 
 		local title = Instance.new("TextLabel")
 		title.Name = "Title"
@@ -295,8 +284,8 @@ function Hud.Mount(
 		local btn = Instance.new("ImageButton")
 		btn.Name = name
 		btn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
-		btn.BackgroundColor3 = MAKE_PANEL
-		btn.BackgroundTransparency = 0
+		btn.BackgroundColor3 = MAKE_SECTION
+		btn.BackgroundTransparency = 0.05
 		btn.BorderSizePixel = 0
 		btn.Image = ""
 		btn.AutoButtonColor = true
@@ -304,7 +293,9 @@ function Hud.Mount(
 		btn.ZIndex = 13
 		btn.Parent = bal
 		UIKit.Corner(btn, 12)
-		UIKit.Stroke(btn, MAKE_BD2, 1.5, 0.2)
+		UIKit.Stroke(btn, MAKE_BD2, 1.5, 0.25)
+		-- subtle panel fill (same family as windows)
+		UIKit.Gradient(btn, MAKE_SECTION, MAKE_PANEL, 100)
 
 		-- Always-visible glyph fallback (Decals often fail to load in place)
 		local glyph = Instance.new("TextLabel")

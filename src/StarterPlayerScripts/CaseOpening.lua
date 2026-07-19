@@ -93,7 +93,7 @@ local function uidSet(list: { any }?, key: string): { [string]: boolean }
 	return s
 end
 
-function CaseOpening.Mount(gui: ScreenGui, store: any)
+function CaseOpening.Mount(gui: ScreenGui, store: any, toastApi: any?)
 	local layer = Instance.new("Folder")
 	layer.Name = "CaseOpening"
 	layer.Parent = gui
@@ -621,6 +621,14 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 			TweenService:Create(rScale, TweenInfo.new(0.22, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 				Scale = 1,
 			}):Play()
+
+			-- Toast ONLY after the result window is visible
+			if toastApi and type(toastApi.Show) == "function" then
+				toastApi.Show(
+					string.format("Got: %s [%s]", won.name, won.rarity),
+					"gold"
+				)
+			end
 
 			busy = false
 		end)

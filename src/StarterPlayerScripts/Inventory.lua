@@ -319,7 +319,7 @@ function Inventory.Bind(
 		l.Size = UDim2.new(1, 0, 0, 0)
 		l.AutomaticSize = Enum.AutomaticSize.Y
 		l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
-		l.TextSize = bold and 22 or 18
+		l.TextSize = bold and 20 or 16
 		l.TextColor3 = color or TW
 		l.TextXAlignment = Enum.TextXAlignment.Left
 		l.TextYAlignment = Enum.TextYAlignment.Top
@@ -616,29 +616,29 @@ function Inventory.Bind(
 		return grid
 	end
 
-	--- Cartoon-ish action chips (weapons bar): fat radius, pixel font, bright stroke
+	--- Action chips (Equip best, etc.) — large readable buttons every tab
 	local function actBtn(parent: Instance, text: string, color: Color3, order: number, onClick: () -> ())
 		local b = Instance.new("TextButton")
-		b.Size = UDim2.fromOffset(0, 40)
+		b.Size = UDim2.fromOffset(0, 52)
 		b.AutomaticSize = Enum.AutomaticSize.X
 		b.BackgroundColor3 = color
 		b.BackgroundTransparency = 0
 		b.BorderSizePixel = 0
 		b.Text = text
 		b.TextColor3 = Color3.new(1, 1, 1)
-		b.Font = Enum.Font.Arcade
-		b.TextSize = 14
+		b.Font = Enum.Font.GothamBold
+		b.TextSize = 17
 		b.AutoButtonColor = false
 		b.LayoutOrder = order
 		b.ZIndex = 35
 		b.Parent = parent
-		UIKit.Corner(b, 12)
-		UIKit.Stroke(b, Color3.fromRGB(255, 255, 255), 2, 0.55)
-		UIKit.Pad(b, nil, 16, 4, 16, 4)
+		UIKit.Corner(b, 10)
+		UIKit.Stroke(b, Color3.fromRGB(255, 255, 255), 1.5, 0.55)
+		UIKit.Pad(b, nil, 20, 6, 20, 6)
 		local sc = ensureScale(b)
 		b.MouseEnter:Connect(function()
 			TweenService:Create(sc, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-				Scale = 1.08,
+				Scale = 1.06,
 			}):Play()
 		end)
 		b.MouseLeave:Connect(function()
@@ -651,7 +651,7 @@ function Inventory.Bind(
 	local function actionsRow(): Frame
 		local row = Instance.new("Frame")
 		row.BackgroundTransparency = 1
-		row.Size = UDim2.new(1, -24, 1, -8)
+		row.Size = UDim2.new(1, -24, 1, -6)
 		row.Position = UDim2.fromOffset(14, 6)
 		row.ZIndex = 34
 		row.Parent = actions
@@ -720,14 +720,15 @@ function Inventory.Bind(
 		infoLab = lbl(info, "", UDim2.new(1, -24, 1, 0), UDim2.fromOffset(18, 0), 13, TD, 34, Enum.Font.Arcade)
 		infoLab.Name = "InfoText"
 
-		local contentH = 48 + 32 + 56 + 100
+		local actionH = 68 -- room for larger Equip best / action chips
+		local contentH = 48 + 32 + actionH + 100
 		-- Full-width main content (left preview strip intentionally removed)
 		main = solid(canvas, "Main", UDim2.new(1, 0, 1, -contentH), UDim2.fromOffset(0, 80), Color3.fromRGB(20, 20, 20), 32)
 		main.BackgroundTransparency = 0
 		main.ClipsDescendants = true
 		main.Name = "Main"
 
-		actions = solid(canvas, "Actions", UDim2.new(1, 0, 0, 56), UDim2.new(0, 0, 1, -(56 + 100)), Color3.fromRGB(16, 16, 16), 32)
+		actions = solid(canvas, "Actions", UDim2.new(1, 0, 0, actionH), UDim2.new(0, 0, 1, -(actionH + 100)), Color3.fromRGB(16, 16, 16), 32)
 		actions.Name = "Actions"
 		solid(actions, "Line", UDim2.new(1, 0, 0, 2), UDim2.fromOffset(0, 0), BD, 33)
 
@@ -820,29 +821,29 @@ function Inventory.Bind(
 			end)
 		end
 
-		-- Tooltip: large readable body (FullHD), high Z
-		tip = solid(canvas, "Tooltip", UDim2.fromOffset(300, 0), UDim2.fromOffset(0, 0), Color3.fromRGB(16, 16, 20), 120)
+		-- Tooltip: readable but not too wide (less empty space)
+		tip = solid(canvas, "Tooltip", UDim2.fromOffset(240, 0), UDim2.fromOffset(0, 0), Color3.fromRGB(22, 22, 28), 120)
 		tip.Visible = false
 		tip.BackgroundTransparency = 0.04
 		tip.ClipsDescendants = true
 		tip.AutomaticSize = Enum.AutomaticSize.XY
 		UIKit.Stroke(tip, BD2, 2, 0.08)
-		UIKit.Pad(tip, 16)
+		UIKit.Pad(tip, 12)
 		local pad = tip:FindFirstChildOfClass("UIPadding")
 		if pad then
 			pad.Name = "Pad"
-			pad.PaddingTop = UDim.new(0, 14)
-			pad.PaddingBottom = UDim.new(0, 14)
-			pad.PaddingLeft = UDim.new(0, 16)
-			pad.PaddingRight = UDim.new(0, 16)
+			pad.PaddingTop = UDim.new(0, 12)
+			pad.PaddingBottom = UDim.new(0, 12)
+			pad.PaddingLeft = UDim.new(0, 12)
+			pad.PaddingRight = UDim.new(0, 12)
 		end
 		local list = Instance.new("UIListLayout")
 		list.SortOrder = Enum.SortOrder.LayoutOrder
-		list.Padding = UDim.new(0, 6)
+		list.Padding = UDim.new(0, 4)
 		list.Parent = tip
 		local tipMax = Instance.new("UISizeConstraint")
-		tipMax.MinSize = Vector2.new(280, 90)
-		tipMax.MaxSize = Vector2.new(400, 320)
+		tipMax.MinSize = Vector2.new(200, 72)
+		tipMax.MaxSize = Vector2.new(280, 280)
 		tipMax.Parent = tip
 
 		if mouseMove then
@@ -1260,13 +1261,13 @@ function Inventory.Bind(
 			local row = actionsRow()
 			lbl(row, "LMB · Open case", UDim2.fromOffset(200, 32), nil, 14, TL, 35, Enum.Font.Arcade)
 
-		---------------------------------------------------------------- SHOP — fill whole tab with adaptive cards
+		---------------------------------------------------------------- SHOP — large pretty gamepass cards
 		elseif tab == "shop" then
 			setPreviewAvatar(nil, "🪙")
 			countLab.Text = "Gamepasses"
 			local scroll = UIKit.Scroll(main, UDim2.new(1, -8, 1, -8))
 			scroll.Position = UDim2.fromOffset(4, 4)
-			makeFillCardGrid(scroll, 180, 220, 5)
+			makeFillCardGrid(scroll, 200, 260, 4)
 
 			local unlocks = profile.unlocks or {}
 			for i, key in ipairs(GamePassConfig.Order) do
@@ -1274,18 +1275,18 @@ function Inventory.Bind(
 				if def then
 					local owned = (def.feature and unlocks[def.feature] == true)
 						or (def.feature == "autoClicker" and profile.purchasedAutoClicker == true)
-					local card = solid(scroll, key, UDim2.fromOffset(180, 220), nil, BG_SECTION, 35)
+					local card = solid(scroll, key, UDim2.fromOffset(200, 260), nil, Color3.fromRGB(28, 28, 34), 35)
 					card.LayoutOrder = i
 					card.BackgroundTransparency = 0
-					UIKit.Stroke(card, owned and GREEN or BD2, 1.5, owned and 0.05 or 0.12)
+					UIKit.Corner(card, 12)
+					UIKit.Stroke(card, owned and GREEN or GOLD, owned and 2 or 1.5, owned and 0.1 or 0.2)
 
 					local imgBtn = Instance.new("ImageButton")
 					imgBtn.Name = "Buy"
-					imgBtn.Size = UDim2.new(1, -24, 0, 0)
-					imgBtn.Size = UDim2.new(1, -28, 0.58, 0)
-					imgBtn.Position = UDim2.new(0.5, 0, 0, 10)
+					imgBtn.Size = UDim2.new(1, -24, 0, 140)
+					imgBtn.Position = UDim2.new(0.5, 0, 0, 12)
 					imgBtn.AnchorPoint = Vector2.new(0.5, 0)
-					imgBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
+					imgBtn.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
 					imgBtn.BackgroundTransparency = 0
 					imgBtn.BorderSizePixel = 0
 					imgBtn.Image = GamePassConfig.ThumbUrl(def.gamePassId, 150)
@@ -1293,45 +1294,60 @@ function Inventory.Bind(
 					imgBtn.AutoButtonColor = not owned
 					imgBtn.ZIndex = 36
 					imgBtn.Parent = card
-					UIKit.Corner(imgBtn, 8)
-					UIKit.Stroke(imgBtn, BD, 1, 0.15)
-					bindHover(imgBtn, imgBtn:FindFirstChildOfClass("UIStroke"), BD)
+					UIKit.Corner(imgBtn, 10)
+					UIKit.Stroke(imgBtn, BD2, 1, 0.2)
+					bindHover(imgBtn, imgBtn:FindFirstChildOfClass("UIStroke"), BD2)
 
 					local pricePill = Instance.new("TextLabel")
 					pricePill.Name = "PricePill"
-					pricePill.Size = UDim2.new(1, -8, 0, 24)
-					pricePill.Position = UDim2.new(0.5, 0, 1, -28)
+					pricePill.Size = UDim2.new(1, -12, 0, 28)
+					pricePill.Position = UDim2.new(0.5, 0, 1, -34)
 					pricePill.AnchorPoint = Vector2.new(0.5, 0)
-					pricePill.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-					pricePill.BackgroundTransparency = 0.12
+					pricePill.BackgroundColor3 = Color3.fromRGB(12, 12, 16)
+					pricePill.BackgroundTransparency = 0.1
 					pricePill.BorderSizePixel = 0
-					pricePill.Font = Enum.Font.Arcade
-					pricePill.TextSize = 14
+					pricePill.Font = Enum.Font.GothamBold
+					pricePill.TextSize = 18
 					pricePill.TextColor3 = owned and GREEN or GOLD
 					pricePill.ZIndex = 39
 					pricePill.Parent = imgBtn
-					UIKit.Corner(pricePill, 4)
+					UIKit.Corner(pricePill, 6)
 					if owned then
 						pricePill.Text = "OWNED"
-						imgBtn.ImageTransparency = 0.2
+						imgBtn.ImageTransparency = 0.15
 					else
 						pricePill.Text = priceCache[def.gamePassId] or "…"
 						fetchPrice(def.gamePassId, pricePill)
 					end
 
-					local titleL = lbl(card, def.title, UDim2.new(1, -12, 0, 22), UDim2.new(0, 6, 0.62, 4), 13, TW, 36)
+					local titleL = lbl(card, def.title, UDim2.new(1, -16, 0, 28), UDim2.fromOffset(8, 160), 18, TW, 36, Enum.Font.GothamBold)
 					titleL.TextXAlignment = Enum.TextXAlignment.Center
 					titleL.TextTruncate = Enum.TextTruncate.AtEnd
+					titleL.TextWrapped = true
+
+					local descL = lbl(
+						card,
+						def.desc,
+						UDim2.new(1, -16, 0, 36),
+						UDim2.fromOffset(8, 190),
+						14,
+						TD,
+						36,
+						Enum.Font.Gotham
+					)
+					descL.TextXAlignment = Enum.TextXAlignment.Center
+					descL.TextWrapped = true
+					descL.TextYAlignment = Enum.TextYAlignment.Top
 
 					local priceLab = lbl(
 						card,
 						owned and "Owned" or (priceCache[def.gamePassId] or "…"),
-						UDim2.new(1, -12, 0, 24),
-						UDim2.new(0, 6, 0.78, 0),
-						15,
+						UDim2.new(1, -16, 0, 26),
+						UDim2.fromOffset(8, 226),
+						18,
 						owned and GREEN or GOLD,
 						36,
-						Enum.Font.Arcade
+						Enum.Font.GothamBold
 					)
 					priceLab.TextXAlignment = Enum.TextXAlignment.Center
 					if not owned then
@@ -1350,7 +1366,7 @@ function Inventory.Bind(
 				end
 			end
 			local row = actionsRow()
-			lbl(row, "LMB · Purchase gamepass", UDim2.fromOffset(220, 32), nil, 13, TL, 35)
+			lbl(row, "LMB · Purchase gamepass", UDim2.fromOffset(260, 36), nil, 15, TL, 35)
 
 		---------------------------------------------------------------- PROFILE — large FullHD-friendly type + layout
 		else

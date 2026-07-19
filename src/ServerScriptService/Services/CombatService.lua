@@ -71,10 +71,7 @@ function CombatService.ToggleAuto(player: Player)
 		return
 	end
 	profile.autoClicker = not profile.autoClicker
-	Remotes.Event("Notify"):FireClient(player, {
-		text = profile.autoClicker and "Auto-clicker: ON" or "Auto-clicker: OFF",
-		color = profile.autoClicker and "green" or "red",
-	})
+	-- No toast for auto on/off (user request — status is on AUTO chip)
 	ProfileService.Push(player)
 end
 

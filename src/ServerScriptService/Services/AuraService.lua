@@ -108,10 +108,7 @@ function AuraService.Open(player: Player)
 		keysLeft = profile.auraKeys,
 	})
 
-	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Aura: %s +%d%% power  (keys left: %d)", name, powerPct, profile.auraKeys or 0),
-		color = "blue",
-	})
+	-- Toast is shown by CaseOpening AFTER the result card appears (not here).
 	ProfileService.Push(player)
 end
 

@@ -150,13 +150,7 @@ function PetService.OpenCase(player: Player)
 		casePool = poolId,
 	})
 
-	local costNote = if keyCost > 0
-		then string.format("−%d keys", keyCost)
-		else string.format("−%s coins", tostring(coinCost))
-	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Pet: %s [%s]  Power x%.2f  (%s)", name, rarity, powerMult, costNote),
-		color = "pink",
-	})
+	-- Toast is shown by CaseOpening AFTER the result card appears (not here).
 
 	-- auto equip if slot free
 	if #profile.petTeam < profile.petSlots then
