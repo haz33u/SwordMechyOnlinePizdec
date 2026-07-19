@@ -41,7 +41,7 @@ local GOLD = Color3.fromRGB(232, 184, 0)
 local RED_CLOSE = Color3.fromRGB(204, 34, 0)
 local GREEN = Color3.fromRGB(120, 170, 100)
 
-local SLOT_GAP = 14 -- room so mild hover scale does not clip strokes
+local SLOT_GAP = 16 -- room for hover scale + neon glow
 local COLS = 9 -- target columns; cell size fills width
 local MAX_SLOTS = 45
 local INV_CAP = 32
@@ -416,22 +416,58 @@ function Inventory.Bind(
 	local hoverGen = 0
 	local activeHover: GuiObject? = nil
 
-	-- Stroke thickness is ALWAYS 2 (idle + hover). Only color/transparency change on hover.
-	-- First hover used to "jump" thicker and looked broken until second pass.
+	-- Neon hover: bright core stroke + soft outer glow (rarity color), idle = quiet edge
 	local SLOT_STROKE_THICK = 2
+	local SLOT_NEON_CORE = 2.6
+	local SLOT_NEON_GLOW = 8
+	local NEON_IN = TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local NEON_OUT = TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+	local function neonBright(c: Color3): Color3
+		return c:Lerp(Color3.new(1, 1, 1), 0.32)
+	end
+
+	local function ensureNeonGlow(btn: GuiObject, col: Color3): UIStroke
+		local existing = btn:FindFirstChild("NeonGlow")
+		if existing and existing:IsA("UIStroke") then
+			existing.Color = col
+			return existing
+		end
+		local glow = Instance.new("UIStroke")
+		glow.Name = "NeonGlow"
+		glow.Color = col
+		glow.Thickness = SLOT_NEON_GLOW
+		glow.Transparency = 1
+		glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		glow.LineJoinMode = Enum.LineJoinMode.Round
+		glow.Parent = btn
+		return glow
+	end
 
 	local function resetSlotVisual(btn: GuiObject, stroke: UIStroke?, baseCol: Color3, baseZ: number)
 		local sc = btn:FindFirstChildOfClass("UIScale")
 		if sc then
-			TweenService:Create(sc, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-				Scale = 1,
-			}):Play()
+			TweenService:Create(sc, NEON_OUT, { Scale = 1 }):Play()
 		end
 		if stroke then
 			stroke.Thickness = SLOT_STROKE_THICK
-			TweenService:Create(stroke, TweenInfo.new(0.14), {
+			TweenService:Create(stroke, NEON_OUT, {
 				Color = baseCol,
 				Transparency = 0.08,
+			}):Play()
+		end
+		local glow = btn:FindFirstChild("NeonGlow")
+		if glow and glow:IsA("UIStroke") then
+			TweenService:Create(glow, NEON_OUT, {
+				Color = baseCol,
+				Thickness = SLOT_NEON_GLOW,
+				Transparency = 1,
+			}):Play()
+		end
+		local plate = btn:FindFirstChild("Plate")
+		if plate and plate:IsA("GuiObject") then
+			TweenService:Create(plate, NEON_OUT, {
+				BackgroundColor3 = BG_SLOT,
 			}):Play()
 		end
 		if btn:IsA("GuiObject") then
@@ -441,17 +477,34 @@ function Inventory.Bind(
 
 	local function applyHoverVisual(btn: GuiObject, stroke: UIStroke?, baseZ: number, baseCol: Color3)
 		local sc = ensureScale(btn)
-		TweenService:Create(sc, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-			Scale = HOVER_SCALE,
-		}):Play()
+		TweenService:Create(sc, NEON_IN, { Scale = HOVER_SCALE }):Play()
+
+		local glowCol = baseCol
+		local coreCol = neonBright(baseCol)
+
 		if stroke then
-			-- Keep rarity color; only tighten transparency + slight thickness for hover
-			stroke.Thickness = SLOT_STROKE_THICK + 0.5
-			TweenService:Create(stroke, TweenInfo.new(0.16), {
-				Color = baseCol,
-				Transparency = 0.02,
+			stroke.Thickness = SLOT_NEON_CORE
+			TweenService:Create(stroke, NEON_IN, {
+				Color = coreCol,
+				Transparency = 0,
 			}):Play()
 		end
+
+		local glow = ensureNeonGlow(btn, glowCol)
+		glow.Thickness = SLOT_NEON_GLOW
+		TweenService:Create(glow, NEON_IN, {
+			Color = glowCol,
+			Thickness = SLOT_NEON_GLOW,
+			Transparency = 0.42,
+		}):Play()
+
+		local plate = btn:FindFirstChild("Plate")
+		if plate and plate:IsA("GuiObject") then
+			TweenService:Create(plate, NEON_IN, {
+				BackgroundColor3 = BG_SLOT:Lerp(baseCol, 0.14),
+			}):Play()
+		end
+
 		btn.ZIndex = baseZ + 8
 	end
 
@@ -462,14 +515,12 @@ function Inventory.Bind(
 		for _, ch in gridParent:GetChildren() do
 			if ch:IsA("GuiButton") and ch ~= except then
 				local nsc = ensureScale(ch)
-				TweenService:Create(nsc, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-					Scale = scale,
-				}):Play()
+				TweenService:Create(nsc, NEON_IN, { Scale = scale }):Play()
 			end
 		end
 	end
 
-	--- Soft scale + rarity stroke; leave clears visual so nothing stays "selected"
+	--- Neon rarity glow on hover; leave fully clears so nothing stays selected
 	local function bindHover(btn: GuiObject, stroke: UIStroke?, baseStroke: Color3?, gridParent: Instance?)
 		ensureScale(btn)
 		local baseCol = baseStroke or BD
@@ -479,6 +530,7 @@ function Inventory.Bind(
 			stroke.Thickness = SLOT_STROKE_THICK
 			stroke.Transparency = 0.08
 		end
+		ensureNeonGlow(btn, baseCol)
 
 		btn.MouseEnter:Connect(function()
 			hoverGen += 1
@@ -514,7 +566,7 @@ function Inventory.Bind(
 		btn.BorderSizePixel = 0
 		btn.Text = ""
 		btn.AutoButtonColor = false
-		-- false so scaled hover/stroke are not clipped mid-edge
+		-- false so scaled hover/neon glow are not clipped mid-edge
 		btn.ClipsDescendants = false
 		btn.LayoutOrder = order
 		btn.ZIndex = 35
@@ -530,7 +582,10 @@ function Inventory.Bind(
 		plate.Parent = btn
 
 		local stroke = UIKit.Stroke(btn, edge, SLOT_STROKE_THICK, 0.08)
+		stroke.Name = "Edge"
 		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		stroke.LineJoinMode = Enum.LineJoinMode.Round
+		ensureNeonGlow(btn, edge)
 		bindHover(btn, stroke, edge, parent)
 		return btn, plate, stroke
 	end
