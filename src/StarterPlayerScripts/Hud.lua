@@ -178,10 +178,10 @@ function Hud.Mount(
 	local ICON_REBIRTH = "rbxassetid://442097927" -- Creator Store: Refresh/Switch Icon
 	local ICON_INVENTORY = "rbxassetid://105019719047516" -- Creator Store: Inventory button
 
-	local BAL_H = 100
-	local CHIP_H = 88
-	local ICON_SZ = 72
-	local GAP = 12
+	local BAL_H = 118
+	local CHIP_H = 104
+	local ICON_SZ = 80
+	local GAP = 14
 	local RB_H = 10
 	local AUTO_H = 42
 	local GAP_BAL_RB = 12
@@ -192,7 +192,7 @@ function Hud.Mount(
 	bal.Name = "BalanceBar"
 	bal.BackgroundTransparency = 1
 	bal.BorderSizePixel = 0
-	bal.Size = UDim2.fromOffset(560, BAL_H)
+	bal.Size = UDim2.fromOffset(620, BAL_H)
 	bal.Position = UDim2.new(0.5, 0, 1, -20)
 	bal.AnchorPoint = Vector2.new(0.5, 1)
 	bal.ZIndex = 12
@@ -210,11 +210,10 @@ function Hud.Mount(
 		lab.Name = name
 		lab.BackgroundTransparency = 1
 		lab.BorderSizePixel = 0
-		lab.Size = UDim2.new(1, -16, 0, 42)
-		lab.Position = UDim2.new(0, 8, 0.5, 0)
-		lab.AnchorPoint = Vector2.new(0, 0.5)
-		lab.Font = Enum.Font.Arcade
-		lab.TextSize = 30
+		lab.Size = UDim2.new(1, -20, 0, 56)
+		lab.Position = UDim2.new(0, 10, 0, 36)
+		lab.Font = Enum.Font.GothamBold -- crisp big numbers (Arcade was muddy)
+		lab.TextSize = 34
 		lab.TextColor3 = color
 		lab.TextXAlignment = Enum.TextXAlignment.Center
 		lab.TextYAlignment = Enum.TextYAlignment.Center
@@ -222,51 +221,50 @@ function Hud.Mount(
 		lab.ZIndex = 15
 		lab.Parent = parent
 		lab.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-		lab.TextStrokeTransparency = 0.35
+		lab.TextStrokeTransparency = 0.25
+		-- outer soft glow
 		local st = Instance.new("UIStroke")
 		st.Name = "SoftGlow"
 		st.Color = glow
-		st.Thickness = 2.4
-		st.Transparency = 0.5
+		st.Thickness = 3
+		st.Transparency = 0.42
 		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 		st.LineJoinMode = Enum.LineJoinMode.Round
 		st.Parent = lab
 		return lab
 	end
 
-	local function metricChip(name: string, order: number, accent: Color3, glow: Color3): (Frame, TextLabel)
+	local function metricChip(name: string, order: number, accent: Color3, glow: Color3, fillDeep: Color3): (Frame, TextLabel)
 		local chip = Instance.new("Frame")
 		chip.Name = name .. "Chip"
-		chip.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
-		chip.BackgroundTransparency = 0.08
+		chip.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
+		chip.BackgroundTransparency = 0.02
 		chip.BorderSizePixel = 0
-		chip.Size = UDim2.fromOffset(160, CHIP_H)
+		chip.Size = UDim2.fromOffset(180, CHIP_H)
 		chip.LayoutOrder = order
 		chip.ZIndex = 13
 		chip.Parent = bal
-		UIKit.Corner(chip, 10)
-		local stroke = UIKit.Stroke(chip, accent, 1.6, 0.35)
-		-- soft accent rim
-		if stroke then
-			stroke.Color = accent
-		end
+		UIKit.Corner(chip, 12)
+		UIKit.Stroke(chip, accent, 2, 0.28)
+		UIKit.Gradient(chip, Color3.fromRGB(28, 28, 36), fillDeep, 90)
+
 		local title = Instance.new("TextLabel")
 		title.Name = "Title"
 		title.BackgroundTransparency = 1
-		title.Size = UDim2.new(1, 0, 0, 18)
-		title.Position = UDim2.fromOffset(0, 8)
-		title.Font = Enum.Font.Arcade
-		title.TextSize = 12
+		title.Size = UDim2.new(1, 0, 0, 22)
+		title.Position = UDim2.fromOffset(0, 10)
+		title.Font = Enum.Font.GothamBold
+		title.TextSize = 14
 		title.TextColor3 = accent
-		title.TextTransparency = 0.15
+		title.TextTransparency = 0.05
 		title.Text = string.upper(name)
 		title.TextXAlignment = Enum.TextXAlignment.Center
+		title.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+		title.TextStrokeTransparency = 0.5
 		title.ZIndex = 14
 		title.Parent = chip
+
 		local lab = softNumLabel(chip, name, accent, glow)
-		lab.Position = UDim2.new(0, 8, 0, 28)
-		lab.AnchorPoint = Vector2.new(0, 0)
-		lab.Size = UDim2.new(1, -16, 0, 48)
 		return chip, lab
 	end
 
@@ -274,22 +272,22 @@ function Hud.Mount(
 		local btn = Instance.new("ImageButton")
 		btn.Name = name
 		btn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
-		btn.BackgroundColor3 = Color3.fromRGB(28, 32, 48)
-		btn.BackgroundTransparency = 0.12
+		btn.BackgroundColor3 = Color3.fromRGB(24, 28, 42)
+		btn.BackgroundTransparency = 0.06
 		btn.BorderSizePixel = 0
 		btn.Image = ""
 		btn.AutoButtonColor = true
 		btn.LayoutOrder = order
 		btn.ZIndex = 13
 		btn.Parent = bal
-		UIKit.Corner(btn, 10)
-		UIKit.Stroke(btn, T.StrokeLight, 1.3, 0.3)
+		UIKit.Corner(btn, 12)
+		UIKit.Stroke(btn, T.StrokeLight, 1.5, 0.25)
 
 		local img = Instance.new("ImageLabel")
 		img.Name = "Icon"
 		img.BackgroundTransparency = 1
-		img.Size = UDim2.fromOffset(48, 48)
-		img.Position = UDim2.new(0.5, 0, 0, 10)
+		img.Size = UDim2.fromOffset(52, 52)
+		img.Position = UDim2.new(0.5, 0, 0, 12)
 		img.AnchorPoint = Vector2.new(0.5, 0)
 		img.Image = image
 		img.ScaleType = Enum.ScaleType.Fit
@@ -299,11 +297,11 @@ function Hud.Mount(
 		local hintLab = Instance.new("TextLabel")
 		hintLab.Name = "KeyHint"
 		hintLab.BackgroundTransparency = 1
-		hintLab.Size = UDim2.new(1, 0, 0, 16)
-		hintLab.Position = UDim2.new(0, 0, 1, -20)
-		hintLab.Font = Enum.Font.Arcade
-		hintLab.TextSize = 13
-		hintLab.TextColor3 = T.TextMuted
+		hintLab.Size = UDim2.new(1, 0, 0, 18)
+		hintLab.Position = UDim2.new(0, 0, 1, -22)
+		hintLab.Font = Enum.Font.GothamBold
+		hintLab.TextSize = 14
+		hintLab.TextColor3 = T.TextSoft
 		hintLab.Text = hint
 		hintLab.TextXAlignment = Enum.TextXAlignment.Center
 		hintLab.ZIndex = 14
@@ -316,8 +314,20 @@ function Hud.Mount(
 	local qBtn = iconChip("RebirthQ", 1, ICON_REBIRTH, "Q", function()
 		openModal("rebirth", nil)
 	end)
-	local coinChip, coinLab = metricChip("Coins", 2, T.Gold, Color3.fromRGB(255, 230, 120))
-	local powerChip, powerLab = metricChip("Power", 3, Color3.fromRGB(255, 120, 90), Color3.fromRGB(255, 160, 130))
+	local coinChip, coinLab = metricChip(
+		"Coins",
+		2,
+		T.Gold,
+		Color3.fromRGB(255, 230, 120),
+		Color3.fromRGB(36, 28, 12)
+	)
+	local powerChip, powerLab = metricChip(
+		"Power",
+		3,
+		Color3.fromRGB(255, 120, 90),
+		Color3.fromRGB(255, 160, 130),
+		Color3.fromRGB(40, 18, 18)
+	)
 	local eBtn = iconChip("InvE", 4, ICON_INVENTORY, "E", function()
 		store:OpenPanel("weapons")
 	end)
@@ -380,16 +390,18 @@ function Hud.Mount(
 
 		boosts.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad)
 
-		local rowW = math.clamp(m.actionW * 1.05, 480, 720)
+		local rowW = math.clamp(m.actionW * 1.1, 520, 780)
 		local pad = m.pad
 		bal.Size = UDim2.fromOffset(rowW, BAL_H)
 		bal.Position = UDim2.new(0.5, 0, 1, -pad)
 
-		-- scale chips with row width
+		-- scale chips with row width (keep metrics wide + readable)
 		local chipW = math.floor((rowW - GAP * 3 - ICON_SZ * 2) / 2)
-		chipW = math.clamp(chipW, 140, 220)
+		chipW = math.clamp(chipW, 160, 240)
 		coinChip.Size = UDim2.fromOffset(chipW, CHIP_H)
 		powerChip.Size = UDim2.fromOffset(chipW, CHIP_H)
+		coinLab.TextSize = 34
+		powerLab.TextSize = 34
 
 		rbHost.Size = UDim2.fromOffset(math.min(rowW, 520), RB_H)
 		rbHost.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB))

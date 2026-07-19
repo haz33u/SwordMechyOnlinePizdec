@@ -260,10 +260,10 @@ function Inventory.Bind(
 		local tipW = tip.AbsoluteSize.X
 		local tipH = tip.AbsoluteSize.Y
 		if tipW < 8 then
-			tipW = 210
+			tipW = 320
 		end
 		if tipH < 8 then
-			tipH = 110
+			tipH = 160
 		end
 
 		local parentAbs = parent.AbsolutePosition
@@ -318,13 +318,15 @@ function Inventory.Bind(
 		l.BorderSizePixel = 0
 		l.Size = UDim2.new(1, 0, 0, 0)
 		l.AutomaticSize = Enum.AutomaticSize.Y
-		l.Font = Enum.Font.Arcade
-		l.TextSize = bold and 15 or 13
+		l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
+		l.TextSize = bold and 22 or 18
 		l.TextColor3 = color or TW
 		l.TextXAlignment = Enum.TextXAlignment.Left
 		l.TextYAlignment = Enum.TextYAlignment.Top
 		l.TextWrapped = true
 		l.Text = text
+		l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+		l.TextStrokeTransparency = 0.55
 		l.LayoutOrder = order
 		l.ZIndex = (tip.ZIndex or 90) + 1
 		l.Parent = tip
@@ -348,14 +350,14 @@ function Inventory.Bind(
 		order += 1
 		if rarity and rarity ~= "" then
 			local r = tipRow(order, "Rarity: " .. rarity, borderCol or rarityBorder(rarity), false)
-			r.TextSize = 13
+			r.TextSize = 18
 			order += 1
 		end
 		-- small spacer
 		local sp = Instance.new("Frame")
 		sp.Name = "Gap"
 		sp.BackgroundTransparency = 1
-		sp.Size = UDim2.new(1, 0, 0, 6)
+		sp.Size = UDim2.new(1, 0, 0, 10)
 		sp.LayoutOrder = order
 		sp.ZIndex = tip.ZIndex
 		sp.Parent = tip
@@ -818,25 +820,29 @@ function Inventory.Bind(
 			end)
 		end
 
-		-- Tooltip: auto-size body, high Z, list layout (refICONTOLLTIP)
-		tip = solid(canvas, "Tooltip", UDim2.fromOffset(200, 0), UDim2.fromOffset(0, 0), Color3.fromRGB(40, 40, 44), 120)
+		-- Tooltip: large readable body (FullHD), high Z
+		tip = solid(canvas, "Tooltip", UDim2.fromOffset(300, 0), UDim2.fromOffset(0, 0), Color3.fromRGB(16, 16, 20), 120)
 		tip.Visible = false
-		tip.BackgroundTransparency = 0.08
+		tip.BackgroundTransparency = 0.04
 		tip.ClipsDescendants = true
 		tip.AutomaticSize = Enum.AutomaticSize.XY
-		UIKit.Stroke(tip, BD2, 1.2, 0.1)
-		UIKit.Pad(tip, 10)
+		UIKit.Stroke(tip, BD2, 2, 0.08)
+		UIKit.Pad(tip, 16)
 		local pad = tip:FindFirstChildOfClass("UIPadding")
 		if pad then
 			pad.Name = "Pad"
+			pad.PaddingTop = UDim.new(0, 14)
+			pad.PaddingBottom = UDim.new(0, 14)
+			pad.PaddingLeft = UDim.new(0, 16)
+			pad.PaddingRight = UDim.new(0, 16)
 		end
 		local list = Instance.new("UIListLayout")
 		list.SortOrder = Enum.SortOrder.LayoutOrder
-		list.Padding = UDim.new(0, 2)
+		list.Padding = UDim.new(0, 6)
 		list.Parent = tip
 		local tipMax = Instance.new("UISizeConstraint")
-		tipMax.MinSize = Vector2.new(170, 48)
-		tipMax.MaxSize = Vector2.new(260, 200)
+		tipMax.MinSize = Vector2.new(280, 90)
+		tipMax.MaxSize = Vector2.new(400, 320)
 		tipMax.Parent = tip
 
 		if mouseMove then
