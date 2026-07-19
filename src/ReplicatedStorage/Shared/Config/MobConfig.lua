@@ -1,70 +1,56 @@
 --!strict
 --[[
-	Mob catalog — data only (no visuals).
-
-	Loc1 (Тёмный лес): tier ladder trash → elite → boss
-	DEBUG_Dummy: infinite training bag for combat/UI tests
+	Mob catalog — Loc1 + Loc2 1:1 from Cristalix dumps only.
+	HP / coins / per-mob weapon drop tables from screenshots.
 ]]
 
 export type MobVisualHint = {
-	-- hints for Studio / client visual layer (not enforced by backend)
-	preferredModelName: string?, -- Workspace/ReplicatedStorage model name
-	color: string?, -- hex for placeholder
-	scale: number?, -- relative size
-	shape: string?, -- "ball" | "r6" | "quad" | "humanoid"
+	preferredModelName: string?,
+	color: string?,
+	scale: number?,
+	shape: string?,
 }
 
 export type MobDef = {
 	id: string,
 	name: string,
-	location: number, -- 0 = global/debug, 1+ = location id
-	tier: string, -- simple | medium | hard | boss | debug  (aliases: trash/normal/elite)
-	defaultZone: string, -- A | B | C | Boss | Debug
+	location: number,
+	tier: string,
+	defaultZone: string,
 	hp: number,
 	powerReward: number,
 	coinReward: number,
-	--[[
-		Loot:
-		  weaponDropChance = 0 → no weapon drop (dummy)
-		  otherwise LootService uses WeaponConfig tier+location tables
-		  weaponDropScale → multiplies template chance (default 1)
-		  weaponPool → optional ALLOWLIST of weapon ids (empty = full loc catalog)
-		Limited swords never drop from mobs.
-	]]
 	weaponDropChance: number,
 	weaponDropScale: number?,
 	weaponPool: { string },
+	-- exact dump % per weapon id (Loc2); if set, LootService uses this instead of rarity roll
+	dropTable: { [string]: number }?,
 	respawnSeconds: number,
 	isBoss: boolean?,
 	isDebug: boolean?,
-	-- combat modifiers
-	armorFlat: number?, -- subtract from hit damage (min 1 dmg)
-	-- presentation
+	armorFlat: number?,
 	visual: MobVisualHint?,
 	description: string?,
 }
 
 local MobConfig = {
-	Tiers = { "simple", "medium", "hard", "boss", "debug" },
+	Tiers = { "simple", "medium", "hard", "elite", "boss", "debug" },
 	TierLabels = {
-		simple = "Simple",
-		medium = "Medium",
-		hard = "Hard",
+		simple = "Tier 1",
+		medium = "Tier 2",
+		hard = "Tier 3",
+		elite = "Tier 4",
 		boss = "Boss",
 		debug = "Debug",
 	},
 
 	Mobs = {
-		----------------------------------------------------------------------
-		-- DEBUG
-		----------------------------------------------------------------------
 		DEBUG_Dummy = {
 			id = "DEBUG_Dummy",
 			name = "Training Dummy",
 			location = 0,
 			tier = "debug",
 			defaultZone = "Debug",
-			-- Easier to see HP bar move; still tanky for long tests
 			hp = 50_000,
 			powerReward = 0,
 			coinReward = 0,
@@ -79,173 +65,142 @@ local MobConfig = {
 				scale = 1.3,
 				shape = "r6",
 			},
-			description = "Debug bag near spawn. No loot/quests. HP bar test target.",
+			description = "Debug bag. No loot.",
 		},
 
 		----------------------------------------------------------------------
-		-- LOCATION 1 — Тёмный лес
-		-- Zone A (слабые) → B → C (элита) → Boss
+		-- LOC 1
 		----------------------------------------------------------------------
 		L1_Slime = {
 			id = "L1_Slime",
-			name = "Shadow Slime",
+			name = "Goblin",
 			location = 1,
 			tier = "simple",
 			defaultZone = "A",
-			hp = 40,
-			powerReward = 1,
-			coinReward = 3,
+			hp = 1_000,
+			powerReward = 5,
+			coinReward = 200,
 			weaponDropChance = 1,
-			weaponDropScale = 1.0,
+			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 3,
-			visual = {
-				preferredModelName = "L1_Slime",
-				color = "#5B2C6F",
-				scale = 0.7,
-				shape = "ball",
-			},
-			description = "Simple. Zone A. Cristalix-style weak mob table.",
+			visual = { preferredModelName = "L1_Slime", color = "#58D68D", scale = 1.0, shape = "humanoid" },
+			description = "Dump: HP 1K, coins 200",
 		},
-
 		L1_GoblinScout = {
 			id = "L1_GoblinScout",
-			name = "Goblin Scout",
+			name = "Goblin Runner",
 			location = 1,
 			tier = "simple",
 			defaultZone = "A",
-			hp = 70,
-			powerReward = 2,
-			coinReward = 4,
+			hp = 2_500,
+			powerReward = 8,
+			coinReward = 350,
 			weaponDropChance = 1,
-			weaponDropScale = 1.0,
-			weaponPool = {},
-			respawnSeconds = 3.2,
-			visual = {
-				preferredModelName = "L1_GoblinScout",
-				color = "#27AE60",
-				scale = 0.85,
-				shape = "humanoid",
-			},
-			description = "Simple. Quest. Zone A.",
-		},
-
-		L1_Skeleton = {
-			id = "L1_Skeleton",
-			name = "Forest Skeleton",
-			location = 1,
-			tier = "medium",
-			defaultZone = "B",
-			hp = 120,
-			powerReward = 3,
-			coinReward = 6,
-			weaponDropChance = 1,
-			weaponDropScale = 1.0,
+			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 3.5,
-			visual = {
-				preferredModelName = "L1_Skeleton",
-				color = "#D5D8DC",
-				scale = 1.0,
-				shape = "humanoid",
-			},
-			description = "Medium. Zone B.",
+			visual = { preferredModelName = "L1_GoblinScout", color = "#52BE80", scale = 1.05, shape = "humanoid" },
 		},
-
-		L1_Wolf = {
-			id = "L1_Wolf",
-			name = "Dark Wolf",
+		L1_Skeleton = {
+			id = "L1_Skeleton",
+			name = "Skeleton",
 			location = 1,
 			tier = "medium",
 			defaultZone = "B",
-			hp = 350,
-			powerReward = 8,
-			coinReward = 14,
+			hp = 8_000,
+			powerReward = 15,
+			coinReward = 800,
 			weaponDropChance = 1,
-			weaponDropScale = 1.0,
+			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 4,
-			visual = {
-				preferredModelName = "L1_Wolf",
-				color = "#1C2833",
-				scale = 1.1,
-				shape = "quad",
-			},
-			description = "Medium. Quest. Zone B.",
+			visual = { preferredModelName = "L1_Skeleton", color = "#AED6F1", scale = 1.1, shape = "humanoid" },
 		},
-
+		L1_Wolf = {
+			id = "L1_Wolf",
+			name = "Wolf",
+			location = 1,
+			tier = "medium",
+			defaultZone = "B",
+			hp = 12_000,
+			powerReward = 20,
+			coinReward = 1_200,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 5,
+			visual = { preferredModelName = "L1_Wolf", color = "#85929E", scale = 1.15, shape = "quad" },
+		},
+		-- Dump warrior: 5.68M HP / 100K coins (player screenshot)
 		L1_GoblinWarrior = {
 			id = "L1_GoblinWarrior",
 			name = "Goblin Warrior",
 			location = 1,
 			tier = "hard",
 			defaultZone = "C",
-			hp = 500,
-			powerReward = 12,
-			coinReward = 18,
+			hp = 5_680_000,
+			powerReward = 80,
+			coinReward = 100_000,
 			weaponDropChance = 1,
-			weaponDropScale = 1.0,
+			weaponDropScale = 1,
 			weaponPool = {},
-			respawnSeconds = 5,
-			visual = {
-				preferredModelName = "L1_GoblinWarrior",
-				color = "#1E8449",
-				scale = 1.0,
-				shape = "humanoid",
-			},
-			description = "Hard (Cristalix hard table). Zone C.",
+			respawnSeconds = 6,
+			visual = { preferredModelName = "L1_GoblinWarrior", color = "#1E8449", scale = 1.25, shape = "humanoid" },
+			description = "Dump: HP 5.68M, coins 100K",
 		},
-
 		L1_Knight = {
 			id = "L1_Knight",
-			name = "Cursed Knight",
+			name = "Goblin Scout",
 			location = 1,
-			tier = "hard",
-			defaultZone = "C",
-			hp = 1_200,
-			powerReward = 25,
-			coinReward = 40,
+			tier = "elite",
+			defaultZone = "D",
+			hp = 300_000,
+			powerReward = 120,
+			coinReward = 12_500,
 			weaponDropChance = 1,
-			weaponDropScale = 1.0,
+			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 8,
-			armorFlat = 2,
-			visual = {
-				preferredModelName = "L1_Knight",
-				color = "#5D6D7E",
-				scale = 1.25,
-				shape = "humanoid",
-			},
-			description = "Hard. Zone C.",
+			visual = { preferredModelName = "L1_Knight", color = "#7D3C98", scale = 1.35, shape = "humanoid" },
+			description = "Dump: HP 300K, coins 12.5K; Secret 0.0001%",
 		},
-
+		L1_Elite = {
+			id = "L1_Elite",
+			name = "Forest Warden",
+			location = 1,
+			tier = "elite",
+			defaultZone = "D",
+			hp = 450_000,
+			powerReward = 160,
+			coinReward = 18_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 10,
+			visual = { preferredModelName = "L1_Elite", color = "#6C3483", scale = 1.45, shape = "humanoid" },
+		},
 		L1_Boss = {
 			id = "L1_Boss",
 			name = "Forest Guardian",
 			location = 1,
 			tier = "boss",
 			defaultZone = "Boss",
-			hp = 8_000,
-			powerReward = 200,
-			coinReward = 300,
+			hp = 1_200_000,
+			powerReward = 500,
+			coinReward = 25_000,
 			weaponDropChance = 1,
-			weaponDropScale = 1.0,
+			weaponDropScale = 1,
 			weaponPool = {},
-			-- 10 min: enchants (dust) are strong — no rapid boss farm
-			respawnSeconds = 600,
+			respawnSeconds = 5,
 			isBoss = true,
-			armorFlat = 5,
-			visual = {
-				preferredModelName = "L1_Boss",
-				color = "#145A32",
-				scale = 2.0,
-				shape = "humanoid",
-			},
-			description = "Boss at portal (10 min respawn) → enchant dust + strong sword.",
+			armorFlat = 0,
+			visual = { preferredModelName = "L1_Boss", color = "#145A32", scale = 2.0, shape = "humanoid" },
+			description = "Dump: HP 1.2M, coins 25K",
 		},
 
 		----------------------------------------------------------------------
-		-- LOCATION 2 stubs (keep for later)
+		-- LOC 2 — dump «Мобы» exact HP/coins + drop %
 		----------------------------------------------------------------------
 		L2_Sailor = {
 			id = "L2_Sailor",
@@ -253,61 +208,71 @@ local MobConfig = {
 			location = 2,
 			tier = "simple",
 			defaultZone = "A",
-			hp = 2_500,
-			powerReward = 40,
-			coinReward = 60,
+			hp = 9_000_000,
+			powerReward = 200,
+			coinReward = 750_000,
 			weaponDropChance = 1,
-			weaponDropScale = 1.0,
+			weaponDropScale = 1,
 			weaponPool = {},
+			dropTable = {
+				W2_C1 = 54.998, -- Pirate Hook
+				W2_C2 = 34.999, -- Pirate Hammer
+				W2_C3 = 8.0, -- Pirate Saber
+				W2_R1 = 2.004, -- Golden-plated
+			},
 			respawnSeconds = 4,
 			visual = { preferredModelName = "L2_Sailor", color = "#5DADE2", scale = 1.0, shape = "humanoid" },
+			description = "Dump: 9M HP / 750K coins",
+		},
+		L2_Gunner = {
+			id = "L2_Gunner",
+			name = "Gunner",
+			location = 2,
+			tier = "medium",
+			defaultZone = "B",
+			hp = 70_640_000,
+			powerReward = 800,
+			coinReward = 5_770_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			dropTable = {
+				W2_C1 = 18.182,
+				W2_C2 = 36.363,
+				W2_C3 = 31.818,
+				W2_R1 = 10.454,
+				W2_R2 = 2.727, -- Captain Axe
+				W2_E1 = 0.456, -- Element Blade
+			},
+			respawnSeconds = 8,
+			visual = { preferredModelName = "L2_Gunner", color = "#2874A6", scale = 1.15, shape = "humanoid" },
+			description = "Dump: 70.64M HP / 5.77M coins",
 		},
 		L2_Captain = {
 			id = "L2_Captain",
 			name = "Captain",
 			location = 2,
 			tier = "hard",
-			defaultZone = "B",
-			hp = 8_000,
-			powerReward = 100,
-			coinReward = 150,
+			defaultZone = "C",
+			hp = 4_750_000_000, -- 4.75B
+			powerReward = 5000,
+			coinReward = 46_400_000,
 			weaponDropChance = 1,
-			weaponDropScale = 1.15,
+			weaponDropScale = 1,
 			weaponPool = {},
-			respawnSeconds = 10,
-			visual = { preferredModelName = "L2_Captain", color = "#2874A6", scale = 1.2, shape = "humanoid" },
-		},
-		L2_Admiral = {
-			id = "L2_Admiral",
-			name = "Admiral",
-			location = 2,
-			tier = "boss",
-			defaultZone = "Boss",
-			hp = 40_000,
-			powerReward = 600,
-			coinReward = 800,
-			weaponDropChance = 1,
-			weaponDropScale = 1.0,
-			weaponPool = {},
-			respawnSeconds = 600, -- 10 min (same rule as Loc1+)
-			isBoss = true,
-			visual = { preferredModelName = "L2_Admiral", color = "#1A5276", scale = 1.8, shape = "humanoid" },
-		},
-
-		L3_Samurai = {
-			id = "L3_Samurai",
-			name = "Samurai",
-			location = 3,
-			tier = "medium",
-			defaultZone = "A",
-			hp = 15_000,
-			powerReward = 180,
-			coinReward = 250,
-			weaponDropChance = 1,
-			weaponDropScale = 1.0,
-			weaponPool = {},
-			respawnSeconds = 5,
-			visual = { preferredModelName = "L3_Samurai", color = "#922B21", scale = 1.0, shape = "humanoid" },
+			dropTable = {
+				W2_C1 = 2.997,
+				W2_C2 = 21.98,
+				W2_C3 = 29.973,
+				W2_R1 = 26.976,
+				W2_R2 = 13.388,
+				W2_E1 = 3.996,
+				W2_E2 = 0.59, -- Emerald Blade
+				W2_L1 = 0.1, -- Sea Dagger
+			},
+			respawnSeconds = 15,
+			visual = { preferredModelName = "L2_Captain", color = "#1A5276", scale = 1.4, shape = "humanoid" },
+			description = "Dump: 4.75B HP / 46.4M coins",
 		},
 	} :: { [string]: MobDef },
 }
@@ -317,29 +282,15 @@ function MobConfig.Get(id: string): MobDef?
 end
 
 function MobConfig.GetByLocation(locationId: number): { MobDef }
-	local list = {}
+	local out = {}
 	for _, def in MobConfig.Mobs do
-		if def.location == locationId and not def.isDebug then
-			table.insert(list, def)
+		if def.location == locationId then
+			table.insert(out, def)
 		end
 	end
-	table.sort(list, function(a, b)
-		return a.id < b.id
-	end)
-	return list
+	return out
 end
 
-function MobConfig.GetDebugMobs(): { MobDef }
-	local list = {}
-	for _, def in MobConfig.Mobs do
-		if def.isDebug then
-			table.insert(list, def)
-		end
-	end
-	return list
-end
-
---- Catalog for client / Studio Agent (no secrets)
 function MobConfig.GetPublicCatalog(): { any }
 	local out = {}
 	for _, def in MobConfig.Mobs do
@@ -348,11 +299,11 @@ function MobConfig.GetPublicCatalog(): { any }
 			name = def.name,
 			location = def.location,
 			tier = def.tier,
-			defaultZone = def.defaultZone,
 			hp = def.hp,
+			coinReward = def.coinReward,
+			powerReward = def.powerReward,
 			isBoss = def.isBoss == true,
 			isDebug = def.isDebug == true,
-			visual = def.visual,
 			description = def.description,
 		})
 	end
@@ -360,7 +311,7 @@ function MobConfig.GetPublicCatalog(): { any }
 		if a.location ~= b.location then
 			return a.location < b.location
 		end
-		return a.id < b.id
+		return a.hp < b.hp
 	end)
 	return out
 end

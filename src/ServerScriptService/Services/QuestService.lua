@@ -57,15 +57,21 @@ function QuestService.Claim(player: Player, questId: string)
 
 	state.claimed = true
 	local r = def.rewards
+	local note = "Quest: " .. def.name .. " ✓"
 	if r.coins then
 		profile.coins += r.coins
 	end
 	if r.power then
 		profile.lifetimePower += r.power
 	end
+	-- permanent global power % (same pool as Power upgrade)
+	if r.powerPct and r.powerPct > 0 then
+		profile.questPowerPct = (profile.questPowerPct or 0) + r.powerPct
+		note = string.format("Quest: %s ✓  (+%g%% Power permanent)", def.name, r.powerPct)
+	end
 	if r.weaponId then
 		local wuid = ProfileService.NewUid()
-		table.insert(profile.weapons, { uid = wuid, id = r.weaponId, enchants = {} })
+		table.insert(profile.weapons, { uid = wuid, id = r.weaponId, level = 1, enchants = {} })
 	end
 	if r.petKeys then
 		profile.petKeys = (profile.petKeys or 0) + r.petKeys
@@ -73,7 +79,6 @@ function QuestService.Claim(player: Player, questId: string)
 	if r.auraKeys then
 		profile.auraKeys = (profile.auraKeys or 0) + r.auraKeys
 	end
-	-- petSlot reward ignored — ProgressConfig.SyncSlots is source of truth
 	if r.unlockLocation then
 		ProfileService.UnlockLocation(profile, r.unlockLocation)
 	end
@@ -81,7 +86,7 @@ function QuestService.Claim(player: Player, questId: string)
 	PetService.SyncSlots(profile)
 
 	Remotes.Event("Notify"):FireClient(player, {
-		text = "Quest: " .. def.name .. " ✓",
+		text = note,
 		color = "cyan",
 	})
 	ProfileService.Push(player)

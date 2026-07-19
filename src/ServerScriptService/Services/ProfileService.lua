@@ -37,25 +37,29 @@ local function defaultProfile()
 		enchantDust = 0, -- boss drop → weapon enchant
 		petKeys = 0, -- OpenPetCase
 		auraKeys = 0, -- OpenAuraCase
+		questPowerPct = 0, -- permanent +% power from main quests
 		lifetimePower = 0,
 		lifetimeDamage = 0,
 		totalClicks = 0, -- CORE metric: every successful attack
 		rebirthLevel = 0,
 		rebirthMult = 1,
-		autoClicker = true, -- default ON for testing (toggleable)
-		autoClickerUnlocked = true,
+		autoClicker = false, -- needs purchased auto
+		autoClickerUnlocked = false,
+		purchasedAutoClicker = false, -- donat later; without it CPS capped (Loc1=4, max=20)
 		upgradeLevels = {
 			RunSpeed = 0,
 			Backpack = 0,
 			Power = 0,
 			ClickSpeed = 0,
 			CritChance = 0,
+			MultiCrit = 0,
 			Luck = 0,
 		},
 		weapons = {
 			{
 				uid = starterUid,
 				id = WeaponConfig.STARTER_WEAPON,
+				level = 1,
 				enchants = {},
 			},
 		},
@@ -131,6 +135,19 @@ function ProfileService.Load(player: Player)
 	end
 	if data.enchantDust == nil then
 		data.enchantDust = 0
+	end
+	if data.questPowerPct == nil then
+		data.questPowerPct = 0
+	end
+	if data.purchasedAutoClicker == nil then
+		data.purchasedAutoClicker = false
+	end
+	-- migrate old saves that had free auto
+	if data.purchasedAutoClicker ~= true then
+		data.autoClickerUnlocked = false
+		if data.autoClicker == true and not data.purchasedAutoClicker then
+			data.autoClicker = false
+		end
 	end
 	if type(data.unlocks) ~= "table" then
 		data.unlocks = { offhand = false, paidPetSlot = false }

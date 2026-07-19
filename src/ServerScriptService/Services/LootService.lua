@@ -54,10 +54,21 @@ local function filterCandidates(
 end
 
 function LootService.GrantWeapon(player: Player, profile: any, def: any)
+	local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+	local Formulas = require(Shared.Formulas)
+	local cap = Formulas.GetWeaponBagCap(profile)
+	if #(profile.weapons or {}) >= cap then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Weapon bag full (%d) — sell or upgrade Backpack", cap),
+			color = "red",
+		})
+		return
+	end
 	local wuid = ProfileService.NewUid()
 	table.insert(profile.weapons, {
 		uid = wuid,
 		id = def.id,
+		level = 1,
 		enchants = {},
 	})
 
@@ -89,6 +100,32 @@ function LootService.GrantWeapon(player: Player, profile: any, def: any)
 	})
 end
 
+local function rollExactDropTable(dropTable: { [string]: number }, profile: any): any?
+	local total = 0
+	local entries = {}
+	for id, w in dropTable do
+		if w > 0 and not (profile.bannedWeaponIds and profile.bannedWeaponIds[id]) then
+			local def = WeaponConfig.Get(id)
+			if def then
+				total += w
+				table.insert(entries, { def = def, w = w })
+			end
+		end
+	end
+	if total <= 0 or #entries == 0 then
+		return nil
+	end
+	local r = math.random() * total
+	local acc = 0
+	for _, e in entries do
+		acc += e.w
+		if r <= acc then
+			return e.def
+		end
+	end
+	return entries[#entries].def
+end
+
 function LootService.TryWeaponDrop(player: Player, profile: any, mobDef: any)
 	if not mobDef or mobDef.isDebug then
 		return
@@ -102,11 +139,19 @@ function LootService.TryWeaponDrop(player: Player, profile: any, mobDef: any)
 		return
 	end
 
+	-- Loc2 dump: exact weapon % table on the mob
+	if mobDef.dropTable then
+		local def = rollExactDropTable(mobDef.dropTable, profile)
+		if def then
+			LootService.GrantWeapon(player, profile, def)
+		end
+		return
+	end
+
 	local tier = mobDef.tier or "medium"
 	local luck = Formulas.GetLuck(profile)
 	local baseChance = WeaponConfig.GetBaseDropChance(tier, locationId)
 	local scale = mobDef.weaponDropScale or 1
-	-- slight luck boost to success chance only if not already guaranteed
 	local chance = math.clamp(baseChance * scale * (1 + luck * 0.05), 0, 1)
 
 	if math.random() > chance then
@@ -208,10 +253,11 @@ function LootService.BuildMobInspect(mobDef: any, profile: any?): any?
 	end
 	local locationId = mobDef.location or 1
 	local tier = WeaponConfig.NormalizeTier(mobDef.tier or "medium")
-	local preview = WeaponConfig.BuildDropPreview(tier, locationId)
+	local preview = if mobDef.dropTable
+		then WeaponConfig.BuildDropPreviewFromTable(mobDef.dropTable)
+		else WeaponConfig.BuildDropPreview(tier, locationId)
 	local rows = {}
 	for _, entry in preview do
-		-- pick representative weapon for icon (first in rarity, or random)
 		local rep = entry.weapons[1]
 		local icon = if rep then IconConfig.GetWeaponImage(rep.id) else IconConfig.FallbackWeapon
 		table.insert(rows, {
@@ -240,16 +286,40 @@ function LootService.BuildMobInspect(mobDef: any, profile: any?): any?
 	local petKeyChance = (CaseConfig.PetKeyChance[keyTier] or 0) * 100
 	local auraKeyChance = (CaseConfig.AuraKeyChance[keyTier] or 0) * 100
 
+	-- Kill ETA from equipped gear (Cristalix-style "kill time")
+	local hits, seconds, dmgAvg, yourPower, cps = 0, 0, 0, 0, 0
+	if profile then
+		hits, seconds, dmgAvg, yourPower, cps =
+			Formulas.EstimateKill(profile, mobDef.hp, mobDef.armorFlat)
+	end
+
+	local mainName = nil
+	local mainStrength = nil
+	if profile and profile.equippedMain then
+		for _, w in profile.weapons or {} do
+			if w.uid == profile.equippedMain then
+				local def = WeaponConfig.Get(w.id)
+				if def then
+					mainName = string.format("%s L%d", def.name, w.level or 1)
+					mainStrength = WeaponConfig.GetEffectivePower(def, w.level or 1)
+				end
+				break
+			end
+		end
+	end
+
 	return {
 		mobId = mobDef.id,
 		name = mobDef.name,
 		tier = tier,
 		tierLabel = if tier == "simple"
-			then "Simple"
+			then "Tier 1"
 			elseif tier == "medium"
-			then "Medium"
+			then "Tier 2"
 			elseif tier == "hard"
-			then "Hard"
+			then "Tier 3"
+			elseif tier == "elite"
+			then "Tier 4"
 			elseif tier == "boss"
 			then "Boss"
 			else tier,
@@ -270,6 +340,16 @@ function LootService.BuildMobInspect(mobDef: any, profile: any?): any?
 			note = "Opens Aura Case",
 		},
 		alwaysWeapon = (WeaponConfig.GetBaseDropChance(tier, locationId) >= 0.999),
+		-- combat preview (depends on YOUR sword / CPS)
+		combat = {
+			yourPower = yourPower,
+			cps = cps,
+			dmgPerHit = dmgAvg,
+			hitsToKill = hits,
+			secondsToKill = seconds,
+			mainWeapon = mainName,
+			mainStrength = mainStrength,
+		},
 	}
 end
 

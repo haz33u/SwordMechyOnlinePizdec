@@ -228,17 +228,28 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			if def then
 				local lvl = (profile.upgradeLevels and profile.upgradeLevels[upId]) or 0
 				local cost = UpgradeConfig.GetCost(upId, lvl + 1)
-				local canBuy = lvl < def.maxLevel and coins >= cost
+				local unlocked, lockReason = UpgradeConfig.IsUnlocked(profile, upId)
+				local canBuy = unlocked and lvl < def.maxLevel and coins >= cost
 				local maxed = lvl >= def.maxLevel
 				local icon = (T.UpgradeIcon and T.UpgradeIcon[upId]) or "◆"
 				local col = (T.UpgradeColor and T.UpgradeColor[upId]) or T.Accent
 
 				-- effect preview text
 				local effectLine = ""
-				if def.effectType == "mult_add" then
-					effectLine = string.format("+%s%%", tostring(math.floor((def.effectPerLevel or 0) * 100 * math.max(lvl, 0))))
+				if not unlocked then
+					effectLine = lockReason or "Locked"
+				elseif def.effectType == "mult_add" then
+					local per = math.floor((def.effectPerLevel or 0) * 100 + 0.5)
+					local total = per * lvl
+					effectLine = if lvl > 0
+						then string.format("+%d%% total (+%d%%/lv)", total, per)
+						else string.format("+%d%% per level", per)
 				elseif def.statKey == "bagSlots" then
-					effectLine = string.format("%d slots", math.floor((def.effectPerLevel or 0) * lvl))
+					local cap = UpgradeConfig.GetBagCap(profile)
+					effectLine = string.format("%d / bag (+1 each)", cap)
+				elseif def.statKey == "critChance" or def.statKey == "multiCritChance" then
+					local per = math.floor((def.effectPerLevel or 0) * 100 + 0.5)
+					effectLine = string.format("+%d%% (%d%% total)", per, per * lvl)
 				else
 					effectLine = string.format("+%s", Format.Num((def.effectPerLevel or 0) * lvl))
 				end
@@ -308,29 +319,33 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				})
 				UIKit.Label({
 					Parent = card,
-					Text = maxed and "MAX" or ("Cost  " .. Format.Num(cost) .. " 🪙"),
+					Text = if not unlocked
+						then "LOCKED"
+						elseif maxed
+						then "MAX"
+						else ("Cost  " .. Format.Num(cost) .. " 🪙"),
 					Size = UDim2.new(1, -12, 0, px(18)),
 					Position = UDim2.fromOffset(6, px(172)),
 					SizePx = px(13),
-					Color = maxed and T.TextMuted or T.Gold,
+					Color = (not unlocked or maxed) and T.TextMuted or T.Gold,
 					Font = T.Font.Title,
 					Z = 34,
 				})
 
 				UIKit.Button({
 					Parent = card,
-					Text = maxed and "MAX" or "Upgrade",
+					Text = if not unlocked then "Locked" elseif maxed then "MAX" else "Upgrade",
 					Size = UDim2.new(1, -16, 0, px(36)),
 					Position = UDim2.new(0, 8, 1, -px(44)),
 					Color = maxed and T.Disabled or (canBuy and T.Accent or T.Disabled),
 					Color2 = maxed and (T.Colors and T.Colors.DisabledDeep)
 						or (canBuy and T.AccentDeep or (T.Colors and T.Colors.DisabledDeep)),
 					Primary = canBuy and not maxed,
-					Disabled = maxed or not canBuy,
+					Disabled = maxed or not canBuy or not unlocked,
 					SizePx = px(14),
 					Z = 35,
 					OnClick = function()
-						if canBuy and not maxed then
+						if canBuy and not maxed and unlocked then
 							Net.BuyUpgrade(upId)
 						end
 					end,
@@ -340,8 +355,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 	end
 
 	---------------------------------------------------------------- Inventory (INVETAR Make) — E key
+	-- Merge = MMB on sword slot only (Inventory.lua). No extra buttons / inventory UI redesign.
 	local function refreshWeapons()
-		-- tab can be set by rail: store._invTab
 		local invStore = store :: any
 		local t = invStore._invTab
 		if type(t) == "string" and t ~= "" then
@@ -401,11 +416,11 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		-- paid +1 slot (7th)
 		local paidOwned = (pStats and pStats.paidPetSlot) == true
 			or (profile.unlocks and profile.unlocks.paidPetSlot) == true
-		if not paidOwned and slots < 7 then
+		if not paidOwned and slots < 8 then
 			local payRow = surfaceCard(body, 44, 2, T.Stroke)
 			UIKit.Label({
 				Parent = payRow,
-				Text = "Paid: +1 pet slot",
+				Text = "Paid: +1 pet slot (max 8)",
 				Size = UDim2.new(0.6, 0, 1, 0),
 				SizePx = px(13),
 				Color = T.TextSoft,
@@ -427,6 +442,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(120)))
 		scroll.LayoutOrder = 2
 		for i, p in ipairs(profile.pets or {}) do
+			local def = PetConfig.Get(p.id)
 			local inTeam = false
 			for _, uid in ipairs(profile.petTeam or {}) do
 				if uid == p.uid then
@@ -435,13 +451,15 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				end
 			end
 			local sideW = px(150)
-			local c = surfaceCard(scroll, 88, i, Rarity.Of(p.rarity))
+			local rarity = (def and def.rarity) or p.rarity or "Common"
+			local c = surfaceCard(scroll, 88, i, Rarity.Of(rarity))
+			local dispName = (def and def.name) or p.name or p.id
 			UIKit.Label({
 				Parent = c,
 				Text = string.format(
 					"%s · %s · lv%s%s",
-					tostring(p.name or p.id),
-					tostring(p.rarity or "Common"),
+					tostring(dispName),
+					tostring(rarity),
 					tostring(p.level or 1),
 					inTeam and " · TEAM" or ""
 				),
@@ -451,13 +469,11 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				Color = T.Text,
 				Z = 33,
 			})
+			local pMult = if def then PetConfig.GetPowerMult(def) else 1
+			local coinPct = (def and def.coinPct) or 0
 			UIKit.Label({
 				Parent = c,
-				Text = string.format(
-					"+%s%% power   +%s%% coins",
-					tostring(math.floor((p.powerPct or 0) * 100)),
-					tostring(math.floor((p.coinPct or 0) * 100))
-				),
+				Text = string.format("Power x%.2f   +%d%% coins", pMult, math.floor(coinPct)),
 				Size = UDim2.new(1, -sideW - 8, 0, px(18)),
 				Position = UDim2.fromOffset(0, px(32)),
 				SizePx = px(13),
@@ -729,6 +745,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			Color3.fromRGB(50, 80, 110),
 		}
 
+		local coins = (stats and stats.coins) or (profile.coins or 0)
 		for i, meta in ipairs(WorldConfig.Locations) do
 			local unlocked = false
 			for _, id in ipairs(profile.locationsUnlocked or { 1 }) do
@@ -737,8 +754,11 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 					break
 				end
 			end
-			-- also allow if power enough (display unlock affordability)
-			local canUnlock = power >= (meta.unlockPower or 0)
+			local travelCost = meta.travelCostCoins or 0
+			local needRb = meta.unlockRebirth or 0
+			local myRb = profile.rebirthLevel or 0
+			local rbOk = needRb <= 0 or myRb >= needRb
+			local canBuy = travelCost > 0 and coins >= travelCost and rbOk
 			local here = current == meta.id
 			local tint = themeTint[((i - 1) % #themeTint) + 1]
 
@@ -753,7 +773,6 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			UIKit.Stroke(card, here and T.Accent or T.Stroke, here and 1.8 or 1.1, 0.2)
 			UIKit.Gradient(card, T.Surface2, T.Surface, 105)
 
-			-- preview block
 			local prev = Instance.new("Frame")
 			prev.BackgroundColor3 = tint
 			prev.BorderSizePixel = 0
@@ -793,13 +812,25 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 
 			local btnText = "Teleport"
-			local canGo = unlocked
-			local disabled = not unlocked
-			if not unlocked then
-				btnText = canUnlock and ("Need power " .. Format.Num(meta.unlockPower)) or ("Power " .. Format.Num(meta.unlockPower))
-			elseif here then
+			local canClick = false
+			local disabled = true
+			if here then
 				btnText = "You are here"
+			elseif unlocked then
+				btnText = "Teleport"
+				canClick = true
+				disabled = false
+			elseif not rbOk then
+				btnText = "Need R" .. tostring(needRb)
 				disabled = true
+			elseif travelCost > 0 then
+				btnText = "Buy for " .. Format.Num(travelCost)
+				canClick = canBuy
+				disabled = not canBuy
+			else
+				btnText = "Teleport"
+				canClick = true
+				disabled = false
 			end
 
 			UIKit.Button({
@@ -807,16 +838,18 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				Text = btnText,
 				Size = UDim2.new(1, -px(16), 0, px(34)),
 				Position = UDim2.new(0, px(8), 1, -px(42)),
-				Primary = canGo and not here,
+				Primary = canClick and not here,
 				Disabled = disabled,
 				Color = disabled and T.Disabled or nil,
 				Color2 = disabled and (T.Colors and T.Colors.DisabledDeep) or nil,
 				SizePx = px(12),
 				Z = 35,
 				OnClick = function()
-					if unlocked and not here then
-						Net.SetLocation(meta.id)
+					if here then
+						return
 					end
+					-- SetLocation buys (if needed) + teleports
+					Net.SetLocation(meta.id)
 				end,
 			})
 		end
@@ -987,14 +1020,15 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local petKeys = (stats and stats.petKeys) or (profile and profile.petKeys) or 0
 		local auraKeys = (stats and stats.auraKeys) or (profile and profile.auraKeys) or 0
 		local loc = (profile and profile.currentLocation) or 1
-		local petKeyCost = CaseConfig.PET_KEY_COST or 1
+		local petKeyCost = CaseConfig.PET_KEY_COST or 0
+		local petCoinCost = CaseConfig.PET_COIN_COST or PetConfig.OPEN_COST or 0
 		local auraKeyCost = CaseConfig.AURA_KEY_COST or 1
 
 		local head = surfaceCard(body, 48, 1, T.Stroke)
 		UIKit.Label({
 			Parent = head,
 			Text = string.format(
-				"Keys  🐾 %d   ✨ %d   ·   🪙 %s   ·   loc %d",
+				"Keys 🐾 %d  ✨ %d  ·  🪙 %s  ·  loc %d",
 				petKeys,
 				auraKeys,
 				Format.Num(coins),
@@ -1009,10 +1043,23 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local scroll = UIKit.Scroll(body, UDim2.new(1, 0, 1, -px(60)))
 		scroll.LayoutOrder = 2
 
-		-- Pet case
+		-- Pet case (Loc1: 500 coins)
 		do
-			local can = petKeys >= petKeyCost
-			local costTxt = string.format("%d key", petKeyCost)
+			local can = true
+			if petKeyCost > 0 and petKeys < petKeyCost then
+				can = false
+			end
+			if petCoinCost > 0 and coins < petCoinCost then
+				can = false
+			end
+			local costParts = {}
+			if petKeyCost > 0 then
+				table.insert(costParts, string.format("%d key", petKeyCost))
+			end
+			if petCoinCost > 0 then
+				table.insert(costParts, Format.Num(petCoinCost) .. " coins")
+			end
+			local costTxt = if #costParts > 0 then table.concat(costParts, " + ") else "Free"
 			local c = surfaceCard(scroll, 110, 1, T.Success)
 			UIKit.Label({
 				Parent = c,
@@ -1025,7 +1072,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Label({
 				Parent = c,
-				Text = string.format("Keys: %d  ·  pet for current location", petKeys),
+				Text = string.format("Loc %d pets  ·  cost %s", loc, costTxt),
 				Size = UDim2.new(1, 0, 0, px(20)),
 				Position = UDim2.fromOffset(0, px(28)),
 				SizePx = px(12),
@@ -1049,7 +1096,56 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				end,
 			})
 		end
-		addOddsSection(scroll, "POSSIBLE REWARDS · PETS", "pet", PetConfig.CaseWeights, loc, 10)
+		-- Per-pet odds from dumps (not only rarity weights)
+		do
+			local oddsCard = surfaceCard(scroll, 0, 5, T.Stroke)
+			oddsCard.AutomaticSize = Enum.AutomaticSize.Y
+			UIKit.List(oddsCard, px(4), false)
+			UIKit.Label({
+				Parent = oddsCard,
+				Text = "PET ODDS (this location)",
+				Size = UDim2.new(1, 0, 0, px(20)),
+				SizePx = px(13),
+				Font = T.Font.Title,
+				Color = T.TextSoft,
+				Z = 33,
+			})
+			local pool = PetConfig.GetPool(loc)
+			local sumW = 0
+			for _, def in pool do
+				sumW += def.caseWeight or PetConfig.CaseWeights[def.rarity] or 1
+			end
+			for _, def in pool do
+				local w = def.caseWeight or PetConfig.CaseWeights[def.rarity] or 1
+				local pct = if sumW > 0 then (w / sumW) * 100 else 0
+				local mult = PetConfig.GetPowerMult(def)
+				UIKit.Label({
+					Parent = oddsCard,
+					Text = string.format(
+						"%.2f%%  %s  [%s]  power x%.2f  +%d%% coins",
+						pct,
+						def.name,
+						def.rarity,
+						mult,
+						math.floor(def.coinPct or 0)
+					),
+					Size = UDim2.new(1, 0, 0, px(18)),
+					SizePx = px(12),
+					Color = Rarity.Of(def.rarity),
+					Z = 33,
+				})
+			end
+			if #pool == 0 then
+				UIKit.Label({
+					Parent = oddsCard,
+					Text = "(no pets for this location)",
+					Size = UDim2.new(1, 0, 0, px(18)),
+					SizePx = px(12),
+					Color = T.TextMuted,
+					Z = 33,
+				})
+			end
+		end
 
 		-- Aura case
 		do

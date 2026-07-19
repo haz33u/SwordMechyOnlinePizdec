@@ -746,16 +746,22 @@ function Inventory.Bind(
 
 				local name = (def and def.name) or w.id
 				local rar = (def and def.rarity) or "Common"
-				local mult = (def and def.powerMult) or 1
+				local lv = math.clamp(math.floor(w.level or 1), 1, WeaponConfig.MAX_WEAPON_LEVEL or 3)
+				local mult = if def then WeaponConfig.GetEffectivePower(def, lv) else ((def and def.powerMult) or 1)
 				btn.MouseEnter:Connect(function()
 					local eq = profile.equippedMain == w.uid and "● Equipped main"
 						or (profile.equippedOffhand == w.uid and "● Equipped off" or nil)
-					setTooltip(name, rar, string.format("Power mult ×%.2f", mult), eq, edge)
+					setTooltip(name, rar, string.format("L%d · strength %.0f", lv, mult), eq, edge)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
 				btn.MouseButton1Click:Connect(function()
 					selectedWeaponUid = w.uid
 					api:Refresh()
+				end)
+				-- MMB: merge same swords (5×L1→L2, 3×L2→L3). No extra UI.
+				btn.MouseButton3Click:Connect(function()
+					selectedWeaponUid = w.uid
+					Net.MergeWeapon(w.uid)
 				end)
 			end
 

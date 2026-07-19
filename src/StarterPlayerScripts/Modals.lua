@@ -35,7 +35,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 	local card = UIKit.Glass({
 		Name = "ModalCard",
 		Parent = layer,
-		Size = UDim2.fromOffset(px(440), px(280)),
+		Size = UDim2.fromOffset(px(460), px(340)),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Anchor = Vector2.new(0.5, 0.5),
 		Radius = T.R.md,
@@ -58,9 +58,9 @@ function Modals.Mount(gui: ScreenGui, store: any)
 	local body = UIKit.Label({
 		Parent = card,
 		Text = "",
-		Size = UDim2.new(1, 0, 0, px(84)),
-		Position = UDim2.fromOffset(0, px(42)),
-		SizePx = px(15),
+		Size = UDim2.new(1, 0, 0, px(120)),
+		Position = UDim2.fromOffset(0, px(36)),
+		SizePx = px(14),
 		Color = T.TextSoft,
 		X = Enum.TextXAlignment.Center,
 		Y = Enum.TextYAlignment.Top,
@@ -70,12 +70,25 @@ function Modals.Mount(gui: ScreenGui, store: any)
 
 	local barHost = Instance.new("Frame")
 	barHost.BackgroundTransparency = 1
-	barHost.Size = UDim2.new(1, 0, 0, px(12))
-	barHost.Position = UDim2.fromOffset(0, px(140))
+	barHost.Size = UDim2.new(1, 0, 0, px(14))
+	barHost.Position = UDim2.fromOffset(0, px(168))
 	barHost.ZIndex = 52
 	barHost.Visible = false
 	barHost.Parent = card
-	local _, fill = UIKit.Bar(barHost, 0, T.Accent, px(10))
+	local _, fill = UIKit.Bar(barHost, 0, T.Accent, px(12))
+
+	local etaLabel = UIKit.Label({
+		Parent = card,
+		Text = "",
+		Size = UDim2.new(1, 0, 0, px(22)),
+		Position = UDim2.fromOffset(0, px(188)),
+		SizePx = px(14),
+		Font = T.Font.Title,
+		Color = Color3.fromRGB(100, 230, 140),
+		X = Enum.TextXAlignment.Center,
+		Z = 52,
+	})
+	etaLabel.Visible = false
 
 	local row = Instance.new("Frame")
 	row.BackgroundTransparency = 1
@@ -121,6 +134,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 		dim.Visible = true
 		card.Visible = true
 		barHost.Visible = false
+		etaLabel.Visible = false
 		if primaryConn then
 			primaryConn:Disconnect()
 			primaryConn = nil
@@ -129,29 +143,46 @@ function Modals.Mount(gui: ScreenGui, store: any)
 		if m.kind == "rebirth" then
 			local stats = store:PeekStats() or {}
 			local dmg = stats.lifetimeDamage or 0
-			local coins = stats.coins or 0
 			local costDmg = stats.nextRebirthCost or 1
-			local costCoins = stats.nextRebirthCoinCost or 0
 			local pct = stats.rebirthProgress
 			if type(pct) ~= "number" then
-				local pD = costDmg > 0 and math.clamp(dmg / costDmg, 0, 1) or 1
-				local pC = costCoins > 0 and math.clamp(coins / costCoins, 0, 1) or 1
-				pct = math.min(pD, pC)
+				pct = costDmg > 0 and math.clamp(dmg / costDmg, 0, 1) or 1
 			end
-			-- SCREEENS rebirth copy: buff banner + progress + warn
+			local fromName = stats.rebirthRankName or ("R" .. tostring(stats.rebirthLevel or 0))
+			local toName = stats.nextRebirthRankName or ("R" .. tostring((stats.rebirthLevel or 0) + 1))
+			local fromMult = stats.rebirthMult or 1
+			local toMult = stats.nextRebirthMult or fromMult
+			local etaSec = stats.rebirthEtaSeconds
+			if type(etaSec) ~= "number" then
+				etaSec = 0
+			end
+
 			title.Text = "Rebirth"
 			body.Text = string.format(
-				"Rebirth increases your power multiplier.\n\nR%d %s  →  R%d\nDamage %s / %s\nCoins %s / %s\n\n⚠ After: damage progress and balance reset. Swords and pets stay.",
-				stats.rebirthLevel or 0,
-				Format.Mult(stats.rebirthMult),
-				(stats.rebirthLevel or 0) + 1,
+				"Rebirth increases your power booster.\n\n%s ×%.0f  →  %s ×%.0f\n\nProgress  %s / %s\n\n⚠ After rebirth, damage progress and balance are lost!\nSwords and pets stay.",
+				fromName,
+				fromMult,
+				toName,
+				toMult,
 				Format.Num(dmg),
-				Format.Num(costDmg),
-				Format.Num(coins),
-				Format.Num(costCoins)
+				Format.Num(costDmg)
 			)
 			barHost.Visible = true
 			fill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
+
+			-- Ideal ETA with current swords/pets/gear if always clicking
+			etaLabel.Visible = true
+			if pct >= 1 or etaSec <= 0 then
+				etaLabel.Text = "Time to rebirth  ·  ~0s  (ready)"
+				etaLabel.TextColor3 = Color3.fromRGB(100, 230, 140)
+			else
+				etaLabel.Text = string.format(
+					"Time to rebirth  ·  ~%s  (ideal click, current gear)",
+					Format.Duration(etaSec)
+				)
+				etaLabel.TextColor3 = Color3.fromRGB(100, 230, 140)
+			end
+
 			primary.Text = "Rebirth"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				Net.Rebirth()

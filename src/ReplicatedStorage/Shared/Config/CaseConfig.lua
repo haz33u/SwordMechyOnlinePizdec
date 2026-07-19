@@ -1,27 +1,28 @@
 --!strict
 --[[
-	Case economy (P1): keys + open costs.
-	Pets/auras open with KEYS (not free infinite). Coins optional secondary.
+	Case economy from dumps:
+	  Loc1 pet coin = 500
+	  Loc1 pet coin premium = 50K
+	  Loc1 pet keys = 49
+	  Loc2 pet coin = 3.75M
+	  Loc2 pet keys = 54
+	Default open uses PetConfig.DefaultPoolByLocation.
 ]]
 
 local CaseConfig = {
-	-- cost to open one case
-	PET_KEY_COST = 1,
+	PET_KEY_COST = 0,
 	AURA_KEY_COST = 1,
-	-- optional coin surcharge (0 = keys only)
-	PET_COIN_COST = 0,
+	PET_COIN_COST = 500, -- Loc1 default dump
 	AURA_COIN_COST = 0,
 
-	-- starter kit (new profiles / first session)
-	STARTER_PET_KEYS = 5,
+	STARTER_PET_KEYS = 0,
 	STARTER_AURA_KEYS = 2,
 
-	-- drop chance of +1 key on kill (by weapon tier family)
-	-- tiers: simple / medium / hard / boss (WeaponConfig.NormalizeTier)
 	PetKeyChance = {
 		simple = 0.05,
 		medium = 0.09,
 		hard = 0.15,
+		elite = 0.22,
 		boss = 0.60,
 		debug = 0,
 	} :: { [string]: number },
@@ -30,15 +31,16 @@ local CaseConfig = {
 		simple = 0.02,
 		medium = 0.05,
 		hard = 0.10,
+		elite = 0.15,
 		boss = 0.40,
 		debug = 0,
 	} :: { [string]: number },
 
-	-- amount when key drops
 	PetKeyAmount = {
 		simple = { 1, 1 },
 		medium = { 1, 1 },
 		hard = { 1, 2 },
+		elite = { 1, 2 },
 		boss = { 1, 3 },
 	} :: { [string]: { number } },
 
@@ -46,6 +48,7 @@ local CaseConfig = {
 		simple = { 1, 1 },
 		medium = { 1, 1 },
 		hard = { 1, 1 },
+		elite = { 1, 2 },
 		boss = { 1, 2 },
 	} :: { [string]: { number } },
 }

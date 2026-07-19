@@ -18,7 +18,9 @@ export type WorldLocationMeta = {
 	id: number,
 	name: string,
 	theme: string,
-	unlockPower: number,
+	unlockPower: number, -- soft recommend (0 = ignore)
+	unlockRebirth: number?, -- min rebirthLevel to unlock (Loc2 = 2)
+	travelCostCoins: number?, -- one-time buy (Cristalix Loc2 = 500K)
 	coinMult: number,
 	powerMult: number,
 	status: string, -- stub | wip | ready
@@ -66,18 +68,19 @@ local WorldConfig = {
 	]]
 	ZONE_FRACTIONS = {
 		Spawn = { 0.00, 0.04 },
-		A = { 0.04, 0.08 }, -- ~24–48 studs from center
-		B = { 0.09, 0.14 }, -- ~54–84
-		C = { 0.15, 0.19 }, -- ~90–114
+		A = { 0.04, 0.08 }, -- tier1 simple
+		B = { 0.09, 0.13 }, -- tier2 medium
+		C = { 0.14, 0.18 }, -- tier3 hard
+		D = { 0.19, 0.23 }, -- tier4 elite (secret drop)
 	},
-	-- Boss closer to spawn for tests
-	BOSS_FRACTION = 0.16, -- ~96 studs
+	BOSS_FRACTION = 0.20,
 
 	ZONE_COLORS = {
 		Spawn = Color3.fromRGB(80, 200, 120),
 		A = Color3.fromRGB(100, 160, 255),
 		B = Color3.fromRGB(255, 200, 80),
 		C = Color3.fromRGB(255, 120, 60),
+		D = Color3.fromRGB(180, 80, 220),
 		Boss = Color3.fromRGB(220, 60, 60),
 	},
 
@@ -94,29 +97,34 @@ local WorldConfig = {
 	Locations = {
 		{
 			id = 1,
-			name = "Dark Forest",
+			name = "Starter Village", -- dump: «Стартовый Посёлок»
 			theme = "dark_forest",
 			unlockPower = 0,
+			travelCostCoins = 0, -- free teleport
 			coinMult = 1,
 			powerMult = 1,
 			status = "wip",
-			blurb = "Starter. Forest, trails, spawn glade, boss lair.",
+			blurb = "Cozy start settlement. Free travel.",
 		},
 		{
 			id = 2,
-			name = "Pirate Shore",
+			name = "Pirate Ship", -- dump: «Пиратский корабль»
 			theme = "pirate",
-			unlockPower = 2_000,
+			unlockPower = 0,
+			unlockRebirth = 2, -- opens after 2nd rebirth
+			travelCostCoins = 500_000, -- dump: «Купить за 500K»
 			coinMult = 3,
 			powerMult = 4,
 			status = "stub",
-			blurb = "Ship, pier, sand, cabins, admiral.",
+			blurb = "Needs R2 + 500K once. Cannons, rum, maps.",
 		},
 		{
 			id = 3,
 			name = "Shinobi Lands",
 			theme = "shinobi",
-			unlockPower = 15_000,
+			unlockPower = 0,
+			unlockRebirth = 4, -- placeholder
+			travelCostCoins = 5_000_000,
 			coinMult = 8,
 			powerMult = 12,
 			status = "stub",
@@ -126,7 +134,9 @@ local WorldConfig = {
 			id = 4,
 			name = "Polar Tundra",
 			theme = "tundra",
-			unlockPower = 80_000,
+			unlockPower = 0,
+			unlockRebirth = 6,
+			travelCostCoins = 50_000_000,
 			coinMult = 18,
 			powerMult = 30,
 			status = "stub",

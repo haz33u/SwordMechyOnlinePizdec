@@ -43,7 +43,7 @@ local function petPool(locationId: number): { SpinItem }
 				name = def.name,
 				rarity = def.rarity,
 				icon = "🐾",
-				sub = string.format("+%d%% power", math.floor(def.powerPct or 0)),
+				sub = string.format("power x%.2f", PetConfig.GetPowerMult(def)),
 			})
 		end
 	end
@@ -54,7 +54,7 @@ local function petPool(locationId: number): { SpinItem }
 				name = def.name,
 				rarity = def.rarity,
 				icon = "🐾",
-				sub = string.format("+%d%% power", math.floor(def.powerPct or 0)),
+				sub = string.format("power x%.2f", PetConfig.GetPowerMult(def)),
 			})
 		end
 	end
@@ -412,11 +412,13 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 		local keys = if kind == "aura"
 			then ((stats and stats.auraKeys) or (profile and profile.auraKeys) or 0)
 			else ((stats and stats.petKeys) or (profile and profile.petKeys) or 0)
-		local keyCost = if kind == "aura" then (CaseConfig.AURA_KEY_COST or 1) else (CaseConfig.PET_KEY_COST or 1)
-		local coinCost = if kind == "aura" then (CaseConfig.AURA_COIN_COST or 0) else (CaseConfig.PET_COIN_COST or 0)
+		local keyCost = if kind == "aura" then (CaseConfig.AURA_KEY_COST or 1) else (CaseConfig.PET_KEY_COST or 0)
+		local coinCost = if kind == "aura"
+			then (CaseConfig.AURA_COIN_COST or 0)
+			else (CaseConfig.PET_COIN_COST or PetConfig.OPEN_COST or 0)
 		local coins = (stats and stats.coins) or (profile and profile.coins) or 0
 
-		if keys < keyCost then
+		if keyCost > 0 and keys < keyCost then
 			return false, "need_keys", keyCost
 		end
 		if coinCost > 0 and coins < coinCost then
@@ -467,9 +469,10 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 				local icon = if kind == "aura" then "✨" else "🐾"
 				local sub: string? = nil
 				if kind == "pet" then
+					local mult = 1 + (payload.powerPct or 0) / 100
 					sub = string.format(
-						"+%d%% power · +%d%% coins",
-						math.floor(payload.powerPct or 0),
+						"power x%.2f · +%d%% coins",
+						mult,
 						math.floor(payload.coinPct or 0)
 					)
 				else
@@ -513,9 +516,9 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 									rarity = (def and def.rarity) or "Common",
 									icon = "🐾",
 									sub = def and string.format(
-										"+%d%% power · +%d%% coins",
-										math.floor(def.powerPct),
-										math.floor(def.coinPct)
+										"power x%.2f · +%d%% coins",
+										PetConfig.GetPowerMult(def),
+										math.floor(def.coinPct or 0)
 									) or nil,
 								}
 								break
@@ -608,14 +611,21 @@ function CaseOpening.Mount(gui: ScreenGui, store: any)
 	end
 
 	function api.CostLabel(kind: string): string
-		local keyCost = if kind == "aura" then (CaseConfig.AURA_KEY_COST or 1) else (CaseConfig.PET_KEY_COST or 1)
-		local coinCost = if kind == "aura" then (CaseConfig.AURA_COIN_COST or 0) else (CaseConfig.PET_COIN_COST or 0)
-		local keyName = if kind == "aura" then "aura key" else "pet key"
-		local s = string.format("%d %s", keyCost, keyName)
-		if coinCost > 0 then
-			s ..= " + " .. Format.Num(coinCost) .. " coins"
+		local keyCost = if kind == "aura" then (CaseConfig.AURA_KEY_COST or 1) else (CaseConfig.PET_KEY_COST or 0)
+		local coinCost = if kind == "aura"
+			then (CaseConfig.AURA_COIN_COST or 0)
+			else (CaseConfig.PET_COIN_COST or PetConfig.OPEN_COST or 0)
+		local parts = {}
+		if keyCost > 0 then
+			table.insert(parts, string.format("%d %s", keyCost, if kind == "aura" then "aura key" else "pet key"))
 		end
-		return s
+		if coinCost > 0 then
+			table.insert(parts, Format.Num(coinCost) .. " coins")
+		end
+		if #parts == 0 then
+			return "Free"
+		end
+		return table.concat(parts, " + ")
 	end
 
 	return api

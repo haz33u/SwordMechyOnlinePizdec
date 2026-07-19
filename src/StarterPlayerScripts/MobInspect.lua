@@ -148,6 +148,40 @@ local function show(data: any)
 		makeLabel(body, data.description, 13, Theme.TextMuted, false)
 	end
 
+	-- Cristalix-style kill time from YOUR equipped sword + CPS
+	local c = data.combat
+	if c then
+		makeLabel(body, "Your combat stats", 16, Color3.fromRGB(120, 200, 255), true)
+		local weaponLine = if c.mainWeapon
+			then string.format("Sword: %s  (strength %s)", tostring(c.mainWeapon), tostring(c.mainStrength or "?"))
+			else "Sword: (none)"
+		makeLabel(body, weaponLine, 13, Theme.TextSoft or Theme.Text, false)
+		makeLabel(
+			body,
+			string.format(
+				"Power %s  ·  CPS %.2f  ·  ~%s dmg/hit",
+				tostring(math.floor(c.yourPower or 0)),
+				c.cps or 0,
+				tostring(math.floor(c.dmgPerHit or 0))
+			),
+			13,
+			Theme.TextSoft or Theme.Text,
+			false
+		)
+		local secs = c.secondsToKill or 0
+		local hits = c.hitsToKill or 0
+		local timeStr = if secs < 10
+			then string.format("~%.1fs", secs)
+			else string.format("~%ds", math.floor(secs + 0.5))
+		makeLabel(
+			body,
+			string.format("Kill time %s  ·  %d hits (clicks)", timeStr, hits),
+			15,
+			Color3.fromRGB(100, 230, 140),
+			true
+		)
+	end
+
 	makeLabel(body, "Possible loot:", 16, Theme.Gold or Color3.fromRGB(240, 200, 90), true)
 
 	local grid = Instance.new("Frame")
@@ -192,7 +226,11 @@ local function show(data: any)
 		pct.Font = Enum.Font.GothamBold
 		pct.TextSize = 13
 		pct.TextColor3 = Rarity.Of(row.rarity)
-		pct.Text = string.format("%.3f%%", row.chancePercent or 0)
+		local cp = row.chancePercent or 0
+		-- Secret 0.0001% must not round to blank "0.000%" only — show tiny values
+		pct.Text = if cp > 0 and cp < 0.001
+			then string.format("%.4f%%", cp)
+			else string.format("%.3f%%", cp)
 		pct.Parent = cell
 
 		local nm = Instance.new("TextLabel")

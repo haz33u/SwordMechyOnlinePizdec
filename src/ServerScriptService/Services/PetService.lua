@@ -41,40 +41,83 @@ function PetService.OpenCase(player: Player)
 		return
 	end
 
-	local keyCost = CaseConfig.PET_KEY_COST or 1
-	local coinCost = CaseConfig.PET_COIN_COST or PetConfig.OPEN_COST or 0
+	local loc = profile.currentLocation or 1
+	local poolId = PetConfig.GetDefaultPoolId(loc)
+	local coinCost, keyCost = PetConfig.GetCaseCosts(poolId)
+	-- fallback CaseConfig only if pool missing
+	if coinCost == 0 and keyCost == 0 then
+		keyCost = CaseConfig.PET_KEY_COST or 0
+		coinCost = CaseConfig.PET_COIN_COST or PetConfig.OPEN_COST or 0
+	end
 	local keys = profile.petKeys or 0
 	local coins = profile.coins or 0
 
-	if keys < keyCost then
-		Remotes.Event("Notify"):FireClient(player, {
-			text = string.format("Need %d pet key(s) (have %d)", keyCost, keys),
-			color = "red",
-		})
-		fireCaseFail(player, "need_keys", keyCost, coinCost)
-		return
+	-- Allow either: enough keys (if keyCost>0) OR enough coins (if coinCost>0).
+	-- Loc1 dump: coinCost=500, keyCost=0 → coins only.
+	local needKeys = keyCost > 0 and keys < keyCost
+	local needCoins = coinCost > 0 and coins < coinCost
+	if keyCost > 0 and coinCost > 0 then
+		-- both required
+		if needKeys then
+			Remotes.Event("Notify"):FireClient(player, {
+				text = string.format("Need %d pet key(s) (have %d)", keyCost, keys),
+				color = "red",
+			})
+			fireCaseFail(player, "need_keys", keyCost, coinCost)
+			return
+		end
+		if needCoins then
+			Remotes.Event("Notify"):FireClient(player, {
+				text = "Need " .. tostring(coinCost) .. " coins",
+				color = "red",
+			})
+			fireCaseFail(player, "need_coins", keyCost, coinCost)
+			return
+		end
+	elseif keyCost > 0 then
+		if needKeys then
+			Remotes.Event("Notify"):FireClient(player, {
+				text = string.format("Need %d pet key(s) (have %d)", keyCost, keys),
+				color = "red",
+			})
+			fireCaseFail(player, "need_keys", keyCost, coinCost)
+			return
+		end
+	elseif coinCost > 0 then
+		if needCoins then
+			Remotes.Event("Notify"):FireClient(player, {
+				text = "Need " .. tostring(coinCost) .. " coins for pet case",
+				color = "red",
+			})
+			fireCaseFail(player, "need_coins", keyCost, coinCost)
+			return
+		end
 	end
-	if coinCost > 0 and coins < coinCost then
+
+	local Formulas = require(Shared.Formulas)
+	local maxOwned = Formulas.GetPetBagCap(profile)
+	if #(profile.pets or {}) >= maxOwned then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = "Need " .. tostring(coinCost) .. " coins",
+			text = string.format("Pet bag full (%d) — upgrade Backpack", maxOwned),
 			color = "red",
 		})
-		fireCaseFail(player, "need_coins", keyCost, coinCost)
+		fireCaseFail(player, "bag_full", keyCost, coinCost)
 		return
 	end
 
-	profile.petKeys = keys - keyCost
+	if keyCost > 0 then
+		profile.petKeys = keys - keyCost
+	end
 	if coinCost > 0 then
 		profile.coins = coins - coinCost
 	end
 
-	local loc = profile.currentLocation or 1
-	local petId = PetConfig.RollForLocation(loc)
+	local petId = PetConfig.RollFromPool(poolId)
 	for _ = 1, 5 do
 		if not profile.bannedPetIds[petId] then
 			break
 		end
-		petId = PetConfig.RollForLocation(loc)
+		petId = PetConfig.RollFromPool(poolId)
 	end
 
 	local puid = ProfileService.NewUid()
@@ -88,8 +131,9 @@ function PetService.OpenCase(player: Player)
 	local def = PetConfig.Get(petId)
 	local name = def and def.name or petId
 	local rarity = def and def.rarity or "Common"
-	local powerPct = def and def.powerPct or 0
-	local coinPct = def and def.coinPct or 0
+	local powerMult = if def then PetConfig.GetPowerMult(def) else 1
+	local powerPct = (powerMult - 1) * 100 -- CaseOpening UI still reads %
+	local coinPct = 0
 
 	Remotes.Event("CaseResult"):FireClient(player, {
 		kind = "pet",
@@ -98,14 +142,19 @@ function PetService.OpenCase(player: Player)
 		uid = puid,
 		name = name,
 		rarity = rarity,
+		powerMult = powerMult,
 		powerPct = powerPct,
 		coinPct = coinPct,
 		keysLeft = profile.petKeys,
 		location = loc,
+		casePool = poolId,
 	})
 
+	local costNote = if keyCost > 0
+		then string.format("−%d keys", keyCost)
+		else string.format("−%s coins", tostring(coinCost))
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Pet: %s [%s]  (keys left: %d)", name, rarity, profile.petKeys or 0),
+		text = string.format("Pet: %s [%s]  Мощь x%.2f  (%s)", name, rarity, powerMult, costNote),
 		color = "pink",
 	})
 

@@ -360,16 +360,12 @@ function Hud.Mount(
 		coinLab.Text = "🪙  " .. Format.Num(st.coins)
 		powerLab.Text = "⚔  " .. Format.Num(st.damagePerClick or st.totalPower)
 
-		-- dual-cost rebirth bar
+		-- rebirth progress (damage toward next R)
 		local pct = st.rebirthProgress
 		if type(pct) ~= "number" then
 			local cost = st.nextRebirthCost or 1
-			local coinCost = st.nextRebirthCoinCost or 0
 			local dmg = st.lifetimeDamage or 0
-			local coins = st.coins or 0
-			local pD = cost > 0 and math.clamp(dmg / cost, 0, 1) or 1
-			local pC = coinCost > 0 and math.clamp(coins / coinCost, 0, 1) or 1
-			pct = math.min(pD, pC)
+			pct = cost > 0 and math.clamp(dmg / cost, 0, 1) or 1
 		end
 		rbFill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
 

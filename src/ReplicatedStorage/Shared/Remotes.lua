@@ -53,6 +53,7 @@ function Remotes.InitAll()
 	Remotes.Event("SellWeapon")
 	Remotes.Event("SellAllWeapons")
 	Remotes.Event("EnchantWeapon")
+	Remotes.Event("MergeWeapon") -- MMB inventory: 5×L1→L2, 3×L2→L3
 	Remotes.Event("OpenPetCase")
 	Remotes.Event("OpenAuraCase")
 	Remotes.Event("EquipPet")
@@ -74,6 +75,7 @@ function Remotes.InitAll()
 	Remotes.Event("MobsUpdate") -- full/partial mob list for client visual sync
 	-- case open result (spin accuracy — do not poll profile)
 	Remotes.Event("CaseResult")
+	Remotes.Event("OpenTravel") -- ferryman → open locations panel
 
 	Remotes.Function("GetProfile")
 	Remotes.Function("GetPublicProfile") -- inspect online player stats by @username

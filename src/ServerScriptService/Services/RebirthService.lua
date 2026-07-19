@@ -41,11 +41,20 @@ function RebirthService.Try(player: Player): boolean
 		return false
 	end
 
-	-- spend coins (damage is lifetime metric — not spent, only threshold)
-	profile.coins = coins - coinCost
+	-- Cristalix: wipe damage progress + balance; keep weapons/pets/locations
+	if coinCost > 0 then
+		profile.coins = coins - coinCost
+	end
+	if RebirthConfig.WIPE_COINS_ON_REBIRTH then
+		profile.coins = 0
+	end
+	if RebirthConfig.WIPE_DAMAGE_ON_REBIRTH then
+		profile.lifetimeDamage = 0
+	end
+
 	profile.rebirthLevel = nextLevel
-	local bonus = RebirthConfig.GetBonus(nextLevel)
-	profile.rebirthMult = (profile.rebirthMult or 1) * (1 + bonus)
+	profile.rebirthMult = RebirthConfig.GetMultAfter(nextLevel)
+	local rankName = RebirthConfig.GetRankName(nextLevel)
 
 	-- soft: do NOT wipe weapons/pets/locations
 	QuestService.OnRebirth(profile)
@@ -63,11 +72,10 @@ function RebirthService.Try(player: Player): boolean
 
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format(
-			"Rebirth %d! Mult x%.2f (+%.0f%%)  −%s coins%s",
+			"Rebirth %d — %s ×%.0f%s",
 			nextLevel,
+			rankName,
 			profile.rebirthMult,
-			bonus * 100,
-			tostring(coinCost),
 			slotNote
 		),
 		color = "purple",

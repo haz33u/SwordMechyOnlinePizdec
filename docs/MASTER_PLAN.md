@@ -1,9 +1,12 @@
 # Sword Masters — полный план проекта
 
-> Living doc. Snapshot 2026-07-18 (UI + EN locale + input).  
+> Living doc. Snapshot 2026-07-19 (full dump inventory from Downloads Loc1/Loc2/Effects).  
 > Repo: https://github.com/haz33u/SwordMechyOnlinePizdec  
 > Place: «Искусство меча онлайн» (Team Create + Rojo)  
 > Icons: `docs/FIGMA_PROMPTS.md`  
+> Cristalix dumps: `docs/ref/cristalix/DUMP_CATALOG.md` (+ `captures/`)  
+> **World effects (eclipse/darkness/blast): PARKED — catalog only, no code yet.**  
+> Loc2 full tables + Loc1 cases 50K/49 keys inventoried — **apply to code when asked**.  
 > **Locale: English** for all player-facing strings (UI, configs, Notify). New work stays in EN.
 
 ---
@@ -114,7 +117,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 ### Анимации / визуал
 - [x] CombatController: Idle/Walk/Run + sprint Shift
 - [x] WeaponVisual: мечи на Right/Left grip
-- [x] Attack id `133642421878218` (нужна проверка in-game)
+- [x] Attack id `134636926386401` (Attack2 only)
 - [x] Rojo не сносит Place Animations (meta + папки вне Shared)
 
 ### Документы
@@ -132,14 +135,38 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Иконки Loc2+ / UI currency | пустые id → FIGMA_PROMPTS |
 | Питомцы / ауры / кейсы economy | keys + CaseResult (v0.5.4); roster still thin |
 | CaseResult remote (spin accuracy) | ✅ `CaseResult` + profile fallback |
-| Данжи Easy/Mid/Hard | skeleton UI only |
+| Данжи Easy/Mid/Hard | timer AFK complete, не бой |
+| Реликвии equip/stars | auto-grant only, no Equip/Upgrade remote |
+| Enchant transfer / pet enchants | config constants only |
+| Boosts `profile.boosts` | HUD empty pills, no backend |
+| Wings (equip cosmetic + % ) | **idea parked** — see §11 |
 | Сезоны / топы / банды / BP | нет |
-| Донат R$ wire | UI stubs only |
+| Донат R$ wire | UI stubs + UnlockService DEBUG free |
 | Точный Cristalix HP/coins | playtest-скейл |
 | Босс unlock Loc2 квест «у портала» | частично Q3_Boss |
 | Dual-wield отдельные анимки L/R | один AttackMain |
 | DataStore prod-ready | skeleton |
 | Оффлайн-фарм | нет |
+
+### Code gaps vs plan (what to build next)
+
+| Priority | Missing in code | Why | Depends on |
+|----------|-----------------|-----|------------|
+| **P1 NEXT** | `profile.boosts` + timers in Formulas | HUD top-left dead; Cristalix/katana x2 money/hits | — |
+| P1 | Dust/gems strip in HUD | economy visible | dust already in profile |
+| P1 | Enchant polish (slot pick, no coin abuse, TransferEnchant) | config has TRANSFER_*; not wired | dust economy |
+| P1 | Boss → Loc2 unlock UX | Q5 gives unlockLocation; soft gate polish | quests |
+| P1 | Real dungeon fight (HP dummy) + **per-player** gate | now global timer AFK | DungeonService |
+| P1 | EquipRelic / UnequipRelic / UpgradeRelic(stars) | Formulas read stars; no remotes | RelicConfig |
+| P2 | Loc2–4 mobs + markers Place | only Loc1 combat | World/MobConfig stubs |
+| P2 | IconConfig Loc2+ / UI currency icons | empty rbxassetid | FIGMA_PROMPTS |
+| P3 | Pets/auras content depth + CaseResult polish | thin roster; economy ok | CaseConfig |
+| P3 | Leaderboard OrderedDataStore | no service | stable stats |
+| P3 | Battle Pass season XP | none | boosts + quests |
+| P3 | **Wings system** (see §11) | none | pets/auras pattern + visual |
+| P4 | DataStore versioning, anti-cheat, R$ wire | skeleton | soft launch |
+
+**Already shipped (do not re-do):** clicks/CPS/rebirth dual-cost · upgrades · weapons drop/enchant/ban · case keys + CaseResult · pet slots 3→7 + paid offhand · Loc1 quests skeleton · cristalix lang dump in `docs/ref/cristalix/`.
 
 ---
 
@@ -148,7 +175,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 ### P0 — stabilization (sprint 1) ✅/→
 1. ~~Toast nil~~  
 2. ~~English locale + LMB/touch attack~~  
-3. Confirm attack anim `133642421878218` in Play  
+3. Confirm attack anim `134636926386401` (Attack2) in Play  
 4. Playtest Loc1: kill → drop → inventory → enchant dust → rebirth  
 5. Save place + git sync (`COLLAB.md`)  
 6. `FIGMA_PROMPTS.md` + first UI icon batch  
@@ -156,10 +183,14 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 ### P1 — UI polish + Loc1 content (спринты 2–3)
 1. Dust/gems strip top-right; inventory UX; case/rebirth polish  
 2. ~~CaseResult remote + case keys (не free-infinite)~~ ✅ `0.5.4-case-keys`  
-2b. ~~Pet slots 3→7 (R2/R6/dungeon/paid) + paid offhand~~ ✅ `0.5.5-pet-slots-offhand`  
+2b. ~~Pet slots 3→8 + paid offhand~~ ✅  
+2c. ~~Loc1 cristalix stats + pets 500 coins~~ ✅  
+2d. ~~Loc2 buy 500K + Ferryman + weapon L1/L2/L3 merge~~ ✅ `0.5.8`  
 3. Boosts data model for top-left pills  ← **NEXT**  
 4. Mesh swords, hit VFX, balance pass  
 5. Boss quest → Loc2 unlock UX  
+6. Dungeon real fight + relic equip/upgrade remotes  
+7. Enchant transfer remote (config ready)
 
 ### P2 — Loc2–4 + icons
 1. Мобы + маркеры Place  
@@ -167,9 +198,10 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 3. Drop tables уже есть (squeeze)
 
 ### P3 — meta
-1. Pets/auras/dungeons real  
+1. Pets/auras/dungeons real content  
 2. Leaderboard / BP (после stable)  
 3. LIMITED events + VFX  
+4. **Wings** (equip layer — parked design in §11)  
 
 ### P4 — live
 1. DataStore versioning + migrations  
@@ -177,7 +209,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 3. Donat R$ (если решите)  
 4. Soft launch  
 
-**Не сейчас:** правый Cristalix bind-list, gangs, full R$ shop, Loc5+.
+**Не сейчас:** правый Cristalix bind-list, gangs, full R$ shop, Loc5+, Wings implementation.
 
 ---
 
@@ -245,19 +277,75 @@ git add -A ; git commit ; git pull --rebase ; git push
 | **Onboarding 0–2 min** | Clear first path without wiki | Toasts + first quest highlight; not full tutorial UI yet |
 | **Train pad vs fight zone** | Soft AFK power near spawn; risk elsewhere | Optional later; we are fight-only now |
 | **Aura tower / floor climb** | Vertical content without full Loc2 map | Strong from Reborn; after cases economy real |
-| **Case / gacha polish** | Odds + spin + multi-open + pity | We have spin + 1/rarity odds; need CaseResult + keys first |
+| **Case / gacha polish** | Odds + spin + multi-open + pity | Spin + CaseResult + keys done; multi-open / pity later |
 | **Session goals / “wins”** | Short goals → chest | Overlaps quests; daily-style later |
 | **Power fantasy readability** | Big numbers, equip VFX, limited flex | Mesh/VFX pass; icons via FIGMA_PROMPTS |
 | **Premium train boost** | Gamepass +% | Only after donat R$ decision (P4) |
+| **Wings** | Classic Roblox sim flex layer | Full design below — **do not code until P3** |
+
+---
+
+### 🪽 Wings (parked idea — Roblox sim style)
+
+> Like Pet Simulator / Anime Fighting / sword sims: **back cosmetic + small stats**, rarity ladder, case or craft, 1 equipped.
+
+**Why:** power fantasy + vertical progress without new maps; flex in screenshots; monetize later (keys / Limited wings) without touching main combat feel if % stay small.
+
+**Player-facing loop**
+```
+kill / quest / dungeon → wing keys or wing shards
+  → open Wing Case (or craft)
+  → equip 1 pair of Wings
+  → +% power / coins / speed (small) + back VFX
+```
+
+**Rules (target design)**
+| Rule | Value |
+|------|--------|
+| Equipped | **1** active pair (`profile.equippedWings`) |
+| Inventory | list of wing instances `{ uid, id, level? }` |
+| Stats | stack into Formulas like aura: `powerPct`, `coinPct`, optional `speedPct` / `luckPct` |
+| Rarity ladder | Common → … → Mythic → Secret → **Limited** (event) |
+| Obtain | Wing Case keys (from elite/boss/dungeon) **or** seasonal BP |
+| Level (optional v2) | feed coins → +tiny % (same as pets) |
+| Visual | Accessory / Model on character back (Place assets); client `WingVisual` like `WeaponVisual` |
+| Ban drop | `bannedWingIds` like weapons/pets |
+
+**What it gives (balance intent)**
+- **Not** a second weapon — weaker than main sword mult  
+- Similar weight to **aura** (single slot cosmetic power)  
+- Example skeleton: Common +3–8% power; Legendary +40–70%; Limited flex + VFX, hand-tuned  
+- Coins % secondary so farm feels better without breaking DPS
+
+**Code we would need later (not now)**
+| Piece | Work |
+|-------|------|
+| `WingConfig.lua` | defs id/name/rarity/powerPct/coinPct/vfxKey |
+| `profile.wings`, `equippedWings` | ProfileService + Types |
+| `WingService` | OpenWingCase, EquipWing, UnequipWing |
+| Remotes | + CaseResult kind `"wing"` |
+| `Formulas.GetWingPct` | into TotalPower + coin mult |
+| Client | Wings window + `WingVisual` attach to torso/back |
+| Economy | wing keys in CaseConfig / LootService drops |
+
+**Do not confuse with**
+- **Auras** — body glow / circle; already skeleton  
+- **Pets** — team slots, follow  
+- Wings = **back equip**, 1 slot, visual heavy  
+
+**When to build:** after boosts + Loc1 stable + pets/auras feel real (P3). Until then: only this doc.
+
+---
 
 ### Explicitly do **not** copy blindly
 - Wheel-spin / code spam economy  
 - Heavy P2W before Loc1 is fun  
 - Asset theft from those places  
+- Wings before core combat/economy works  
 
 ### When to reopen this section
-After: Loc1 playtest clean · case economy not free-infinite · UI SCREEENS polish.  
-Then pick **one** parked idea (recommended first: onboarding **or** aura tower slice).
+After: Loc1 playtest clean · case economy not free-infinite · boosts live · UI SCREEENS polish.  
+Then pick **one** parked idea (recommended: onboarding **or** aura tower; **Wings** after equip layers solid).
 
 ### Figma / art pipeline (tools)
 - Prompts: `docs/FIGMA_PROMPTS.md`  

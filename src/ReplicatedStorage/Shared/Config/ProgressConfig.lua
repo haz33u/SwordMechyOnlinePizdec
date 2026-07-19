@@ -2,14 +2,17 @@
 --[[
 	Progression unlocks: pet slots + offhand (second sword).
 
-	Pet slots (max 7):
+	Pet equip slots (max 8 on character):
 	  3  — start (free)
 	  +1 — rebirth R2
 	  +1 — rebirth R6
-	  +1 — dungeon track (easy clears threshold)
+	  +1 — dungeon easy ×5
+	  +1 — rebirth R12
 	  +1 — paid (gamepass / shop stub)
 	  ─────────────────
-	  7 total
+	  8 total
+
+	Pet EQUIP slots max 8 (team). Pet BAG size = Backpack upgrade (base 32).
 
 	Offhand (second sword 50% power):
 	  PAID only — not free via rebirth/dungeon.
@@ -19,25 +22,25 @@
 
 local ProgressConfig = {
 	----------------------------------------------------------------------
-	-- Pet slots
+	-- Pet slots (equip team) — bag size is UpgradeConfig.BASE_BAG_SLOTS
 	----------------------------------------------------------------------
 	START_PET_SLOTS = 3,
-	MAX_PET_SLOTS = 7,
+	MAX_PET_SLOTS = 8, -- equip team hard cap
+	MAX_PETS_OWNED = 32, -- legacy default; runtime uses Formulas.GetPetBagCap
 
 	-- When rebirthLevel reaches `rebirth`, +`slots` (recalculated, not stacked spam)
 	PetSlotsFromRebirth = {
-		{ rebirth = 2, slots = 1, id = "rb_r2" }, -- 4th slot
-		{ rebirth = 6, slots = 1, id = "rb_r6" }, -- 5th slot
+		{ rebirth = 2, slots = 1, id = "rb_r2" }, -- 4th
+		{ rebirth = 6, slots = 1, id = "rb_r6" }, -- 5th
+		{ rebirth = 12, slots = 1, id = "rb_r12" }, -- 7th before paid fills 8
 	} :: { { rebirth: number, slots: number, id: string } },
 
 	-- Dungeon clears (profile.dungeonStage[tier] >= clears)
-	-- Separate from rebirth track. One-time thresholds.
 	PetSlotsFromDungeon = {
-		{ tier = "easy", clears = 5, slots = 1, id = "dg_easy_5" }, -- 6th slot
-		-- hard path kept free for later; paid is 7th
+		{ tier = "easy", clears = 5, slots = 1, id = "dg_easy_5" }, -- 6th
 	} :: { { tier: string, clears: number, slots: number, id: string } },
 
-	-- Paid extra pet slot
+	-- Paid extra pet slot (8th if free path incomplete, else fills remaining)
 	PAID_PET_SLOT = 1,
 
 	----------------------------------------------------------------------

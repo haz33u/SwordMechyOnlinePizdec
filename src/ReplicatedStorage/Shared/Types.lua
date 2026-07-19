@@ -6,6 +6,7 @@
 export type WeaponInstance = {
 	uid: string,
 	id: string,
+	level: number?, -- 1–3; default 1. Merge: 5×L1→L2, 3×L2→L3
 	enchants: { EnchantRoll },
 }
 
@@ -47,6 +48,7 @@ export type PlayerProfile = {
 	enchantDust: number?, -- boss material for weapon enchant
 	petKeys: number?, -- OpenPetCase
 	auraKeys: number?, -- OpenAuraCase
+	questPowerPct: number?, -- permanent +% power from main quests
 
 	-- core progression
 	lifetimePower: number,

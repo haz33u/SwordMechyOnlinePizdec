@@ -13,11 +13,25 @@
 
 | | |
 |--|--|
-| Store | https://create.roblox.com/store/asset/133642421878218 |
-| Config | `AttackMain` / `AttackAlt` = `rbxassetid://133642421878218` |
-| Рука | правая (main swings) |
+| **Единственная атака** | `rbxassetid://134636926386401` (Attack2) |
+| Store | https://create.roblox.com/store/asset/134636926386401 |
+| Config | `AttackMain` = `AttackAlt` = этот id; `AlternateDual = false` |
+| Рука | правая |
+
+Старый swing `133642421878218` и toolslash fallback **убраны**.
+
+### Ошибка `12741376562` / «experience doesn't have access permission»
+Это **не** Attack2. Обычно `ReplicatedStorage.Animations.Idle` / `Walk` / `Run` / `Swing` в **Place**
+содержат чужой `rbxassetid://12741376562`.
+
+- Атака: только `AnimationConfig` → `134636926386401` (`PreferPublishedAttack = true`).
+- Локомоция: в Studio открой `RS.Animations` → замени AnimationId на **свои** published clips,
+  или нажми **Share access** на asset, если это твой/групповой id.
+- Не оставляй Swing на `12741376562` — даже если код атаки его не берёт, Place может путать.
 
 Если анимация **не играет** у других игроков: owner place должен иметь право на asset (твой аккаунт / group publish / Allow Copying).
+
+---
 
 ## Откуда Swing1 / Swing2 (Keyframe, без publish)
 
@@ -41,13 +55,6 @@ ReplicatedStorage.CombatAnimations.Swing2
 **Важно:** `CombatAnimations` живёт в **Place** (Team Create). В git/Rojo KeyframeSequence не лежит.  
 Не удаляй папку в Studio. После клона place — если пропала, снова скопируй из AnimSaves.
 
-## Fallback (если папки нет)
-
-| | Asset |
-|--|--------|
-| Swing1 fallback | `rbxassetid://522635514` toolslash |
-| Swing2 fallback | `rbxassetid://522638767` toollunge |
-
 ## Свои анимации
 
 1. В Studio: Avatar → Animation Editor → R15 swing → **Publish to Roblox**
@@ -56,7 +63,7 @@ ReplicatedStorage.CombatAnimations.Swing2
 
 ```lua
 AttackMain = "rbxassetid://ТВОЙ_ID",
-AttackAlt = "rbxassetid://ТВОЙ_ID_2",
+AttackAlt = "rbxassetid://ТВОЙ_ID", -- same until you have a second clip
 ```
 
 4. `rojo serve` / pull → Play

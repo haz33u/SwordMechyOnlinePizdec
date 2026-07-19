@@ -65,7 +65,7 @@ function CombatService.ToggleAuto(player: Player)
 	end
 	if not Formulas.IsAutoClickerUnlocked(profile) then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = "Auto-clicker not unlocked yet",
+			text = "Auto-clicker not purchased (manual CPS cap: Loc1=4, max=20)",
 			color = "red",
 		})
 		return
@@ -204,7 +204,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 		end
 	end
 
-	local damage, isCrit = Formulas.GetHitDamage(profile)
+	local damage, isCrit, isMultiCrit = Formulas.GetHitDamage(profile)
 	if isAuto then
 		damage *= (ClickConfig.AUTO_DAMAGE_MULT or 1)
 	end
@@ -226,6 +226,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 		name = mob.name,
 		damage = math.floor(damage),
 		crit = isCrit,
+		multiCrit = isMultiCrit == true,
 		hp = math.max(0, mob.hp),
 		maxHp = mob.maxHp,
 		isDebug = mob.isDebug,

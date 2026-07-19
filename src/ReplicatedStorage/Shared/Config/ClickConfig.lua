@@ -1,32 +1,77 @@
 --!strict
 --[[
-	CLICKS = core earning loop (as in Мастера Мечей).
+	CLICKS = core earning loop.
 
-	Manual click  → 1 attack (if off cooldown)
-	AutoClicker   → server-validated attacks at max CPS
-	Each successful hit:
-	  +1 totalClicks
-	  +damage → lifetimeDamage (rebirth)
-	  on kill → power + coins + loot
+	WITHOUT purchased auto-clicker:
+	  - Absolute max CPS in whole game = 20 (raised gradually by location)
+	  - Loc1 hard cap = 4 CPS
+	WITH purchased auto-clicker (later donat):
+	  - Higher cap (MAX_CPS_PURCHASED)
+
+	Manual + auto share the same server rate-limit (GetSwingCooldown).
 ]]
 
 local ClickConfig = {
-	-- theoretical CPS = 1 / swingCooldown
-	-- hard caps (anti-cheat + feel)
 	MIN_CPS = 1.0,
-	MAX_CPS = 50.0, -- skeleton cap; MM videos go 60–140 with endgame gear
 
-	-- AutoClicker (F2P in skeleton — later can gate behind quest / soft unlock)
-	AUTO_UNLOCKED_BY_DEFAULT = true,
-	AUTO_UNLOCK_REBIRTH = 0, -- if not default: unlock at this rebirth
-	AUTO_UNLOCK_QUEST = nil :: string?, -- e.g. "Q5_Rebirth"
+	-- Absolute ceilings
+	MAX_CPS_WITHOUT_AUTO = 20, -- never exceed without purchase (whole game)
+	MAX_CPS_PURCHASED = 50, -- with bought auto-clicker (tune later)
 
-	-- how auto works
-	AUTO_USES_FULL_CPS = true, -- fire every swingCooldown
-	AUTO_DAMAGE_MULT = 1.0, -- 1.0 = same as manual (true AFK farm)
+	--[[
+		Per-location CPS cap WITHOUT purchased auto.
+		Ramps toward MAX_CPS_WITHOUT_AUTO = 20.
+		Loc1 dump/feel = 4.
+	]]
+	LOC_CPS_CAP = {
+		[1] = 4,
+		[2] = 6,
+		[3] = 8,
+		[4] = 10,
+		[5] = 12,
+		[6] = 14,
+		[7] = 16,
+		[8] = 18,
+		[9] = 20,
+		-- Loc10+ stays at 20 without purchase
+	} :: { [number]: number },
 
-	-- optional: offline / AFK bonus later
+	-- AutoClicker purchase / unlock (NOT free by default)
+	AUTO_UNLOCKED_BY_DEFAULT = false,
+	AUTO_UNLOCK_REBIRTH = 999, -- not via rebirth; use purchase flag
+	AUTO_UNLOCK_QUEST = nil :: string?,
+
+	AUTO_USES_FULL_CPS = true,
+	AUTO_DAMAGE_MULT = 1.0,
+
 	AFK_CLICK_MULT = 1.0,
 }
 
+function ClickConfig.IsAutoPurchased(profile: any): boolean
+	if not profile then
+		return false
+	end
+	if ClickConfig.AUTO_UNLOCKED_BY_DEFAULT then
+		return true
+	end
+	return profile.purchasedAutoClicker == true
+end
+
+--- Max CPS for this profile (location + purchase)
+function ClickConfig.GetMaxCPS(profile: any): number
+	if ClickConfig.IsAutoPurchased(profile) then
+		return ClickConfig.MAX_CPS_PURCHASED
+	end
+	local loc = (profile and profile.currentLocation) or 1
+	local locCap = ClickConfig.LOC_CPS_CAP[loc]
+	if not locCap then
+		locCap = math.min(ClickConfig.MAX_CPS_WITHOUT_AUTO, 4 + 2 * math.max(0, loc - 1))
+	end
+	return math.min(locCap, ClickConfig.MAX_CPS_WITHOUT_AUTO)
+end
+
+-- legacy alias
+ClickConfig.MAX_CPS = ClickConfig.MAX_CPS_WITHOUT_AUTO
+
 return ClickConfig
+

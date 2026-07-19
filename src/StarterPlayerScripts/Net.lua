@@ -49,6 +49,10 @@ function Net.EnchantWeapon(uid: string)
 	Net.Event("EnchantWeapon"):FireServer(uid)
 end
 
+function Net.MergeWeapon(uid: string)
+	Net.Event("MergeWeapon"):FireServer(uid)
+end
+
 function Net.OpenPetCase()
 	Net.Event("OpenPetCase"):FireServer()
 end

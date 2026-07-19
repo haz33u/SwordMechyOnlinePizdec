@@ -244,6 +244,14 @@ function App.Start()
 		end)
 	end)
 
+	-- Ferryman NPC → open world travel panel
+	pcall(function()
+		Net.Event("OpenTravel").OnClientEvent:Connect(function()
+			store:OpenPanel("locations")
+			refreshAll()
+		end)
+	end)
+
 	local m = mockSnapshot()
 	store:SetData(m.profile, m.stats)
 	refreshAll()

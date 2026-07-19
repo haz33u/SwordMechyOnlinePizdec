@@ -25,6 +25,10 @@ function WeaponService.Init()
 	Remotes.Event("BanDrop").OnServerEvent:Connect(function(player, kind, id, banned)
 		WeaponService.Ban(player, kind, id, banned)
 	end)
+	-- Inventory MMB: merge 5×L1→L2 or 3×L2→L3 (same weapon id)
+	Remotes.Event("MergeWeapon").OnServerEvent:Connect(function(player, weaponUid)
+		WeaponService.Merge(player, weaponUid)
+	end)
 end
 
 local function findWeapon(profile: any, uid: string)
@@ -34,6 +38,10 @@ local function findWeapon(profile: any, uid: string)
 		end
 	end
 	return nil, nil
+end
+
+local function weaponLevel(w: any): number
+	return math.clamp(math.floor(w.level or 1), 1, WeaponConfig.MAX_WEAPON_LEVEL or 3)
 end
 
 function WeaponService.Equip(player: Player, weaponUid: string, slot: string?)
@@ -84,7 +92,7 @@ function WeaponService.Sell(player: Player, weaponUid: string)
 		return
 	end
 	local def = WeaponConfig.Get(w.id)
-	local price = def and def.sellPrice or 5
+	local price = if def then WeaponConfig.GetSellPrice(def, weaponLevel(w)) else 5
 	profile.coins += price
 	table.remove(profile.weapons, idx)
 	ProfileService.Push(player)
@@ -162,6 +170,9 @@ function WeaponService.Enchant(player: Player, weaponUid: string)
 		return
 	end
 	local roll = EnchantConfig.Roll()
+	if not w.enchants then
+		w.enchants = {}
+	end
 	if #w.enchants >= EnchantConfig.MAX_ENCHANTS_PER_WEAPON then
 		w.enchants[math.random(1, #w.enchants)] = roll
 	else
@@ -176,6 +187,90 @@ function WeaponService.Enchant(player: Player, weaponUid: string)
 			if paidWith == "dust" then "dust" else "coins"
 		),
 		color = "orange",
+	})
+	ProfileService.Push(player)
+end
+
+--[[
+	Merge same weapons in inventory (MMB on a sword):
+	  5 × same id at level 1 → that stack becomes level 2 (4 consumed)
+	  3 × same id at level 2 → becomes level 3
+]]
+function WeaponService.Merge(player: Player, weaponUid: string)
+	local profile = ProfileService.Get(player)
+	if not profile then
+		return
+	end
+	local target, _ = findWeapon(profile, weaponUid)
+	if not target then
+		return
+	end
+
+	local lv = weaponLevel(target)
+	local need = WeaponConfig.GetMergeNeed(lv)
+	if not need then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = "Already max level (L3)",
+			color = "red",
+		})
+		return
+	end
+
+	-- collect matching uid indices (same id + level), target first
+	local matches: { { w: any, i: number } } = {}
+	for i, w in profile.weapons do
+		if w.id == target.id and weaponLevel(w) == lv then
+			table.insert(matches, { w = w, i = i })
+		end
+	end
+
+	if #matches < need then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format(
+				"Need %d × same sword at L%d (have %d) — MMB to merge",
+				need,
+				lv,
+				#matches
+			),
+			color = "red",
+		})
+		return
+	end
+
+	-- Keep target uid; remove (need-1) other copies (highest index first)
+	local toRemove: { number } = {}
+	local removed = 0
+	for _, m in matches do
+		if m.w.uid ~= weaponUid and removed < (need - 1) then
+			table.insert(toRemove, m.i)
+			removed += 1
+		end
+	end
+	table.sort(toRemove, function(a, b)
+		return a > b
+	end)
+	for _, idx in toRemove do
+		local gone = profile.weapons[idx]
+		if gone then
+			if profile.equippedMain == gone.uid then
+				profile.equippedMain = weaponUid
+			end
+			if profile.equippedOffhand == gone.uid then
+				profile.equippedOffhand = nil
+			end
+			table.remove(profile.weapons, idx)
+		end
+	end
+
+	target.level = lv + 1
+	-- optional: clear enchants on upgrade (keep for now — player investment)
+
+	local def = WeaponConfig.Get(target.id)
+	local name = def and def.name or target.id
+	local eff = if def then WeaponConfig.GetEffectivePower(def, target.level) else 0
+	Remotes.Event("Notify"):FireClient(player, {
+		text = string.format("%s → L%d  (strength %.0f)", name, target.level, eff),
+		color = "gold",
 	})
 	ProfileService.Push(player)
 end

@@ -1,8 +1,6 @@
 --!strict
 --[[
-	Sword visuals on grips + ONE attack animation from AnimationConfig.AttackMain.
-
-	Does NOT auto-pick Combat Dummy KFS or default toolslash unless AttackMain fails.
+	Sword visuals on grips + ONE attack animation (Attack2 only).
 ]]
 
 local Players = game:GetService("Players")
@@ -20,7 +18,6 @@ local folder: Folder? = nil
 local mainModel: Model? = nil
 local offModel: Model? = nil
 local tracks: { [string]: AnimationTrack } = {}
-local swingToggle = false
 local lastPlay = 0
 local lastPlayedId: string? = nil
 
@@ -199,30 +196,25 @@ local function loadTrack(animator: Animator, id: string): AnimationTrack?
 	return track
 end
 
-local function getAttackId(preferAlt: boolean): string
-	-- Sync with Place folder if present (user can edit AnimationId in Explorer)
+local function getAttackId(): string
+	-- PreferPublishedAttack: only AnimationConfig (no Place Swing / old toolslash)
+	if AnimationConfig.PreferPublishedAttack ~= false then
+		return AnimationConfig.GetAttackId(false)
+	end
 	local anims = ReplicatedStorage:FindFirstChild(AnimationConfig.ExtraAnimsFolder or "Animations")
 	if anims then
 		local swing = anims:FindFirstChild("Swing")
 		if swing and swing:IsA("Animation") then
 			local id = swing.AnimationId
-			if type(id) == "string" and id ~= "" and id ~= "rbxassetid://0" and id ~= "rbxassetid://522635514" then
-				-- Use place Swing only if it's NOT the default boring toolslash
-				-- (unless config also points there)
-				if not preferAlt then
-					return id
-				end
-			elseif type(id) == "string" and id ~= "" and AnimationConfig.PreferPublishedAttack == false then
-				if not preferAlt then
-					return id
-				end
+			if type(id) == "string" and id ~= "" and id ~= "rbxassetid://0" then
+				return id
 			end
 		end
 	end
-	return AnimationConfig.GetAttackId(preferAlt)
+	return AnimationConfig.GetAttackId(false)
 end
 
-function WeaponVisual.PlayAttack(forceAlt: boolean?)
+function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	local now = os.clock()
 	if now - lastPlay < 0.08 then
 		return
@@ -239,44 +231,24 @@ function WeaponVisual.PlayAttack(forceAlt: boolean?)
 		return
 	end
 
-	local useAlt = forceAlt
-	if useAlt == nil and AnimationConfig.AlternateDual then
-		swingToggle = not swingToggle
-		useAlt = swingToggle
-	else
-		useAlt = false
+	local id = getAttackId()
+	local track = loadTrack(animator, id)
+	if not track then
+		warn("[WeaponVisual] PlayAttack: failed to load", id)
+		return
 	end
-
-	local primary = getAttackId(useAlt == true)
-	local fallback = if useAlt then AnimationConfig.AttackAltFallback else AnimationConfig.AttackMainFallback
-
-	local ids = { primary }
-	if primary ~= AnimationConfig.AttackMain then
-		table.insert(ids, AnimationConfig.AttackMain)
-	end
-	if primary ~= fallback then
-		table.insert(ids, fallback)
-	end
-
-	for _, id in ids do
-		local track = loadTrack(animator, id)
-		if track then
-			for _, t in tracks do
-				if t ~= track and t.IsPlaying then
-					pcall(function()
-						t:Stop(0.05)
-					end)
-				end
-			end
-			track:Play(0.05, 1, 1.2)
-			if lastPlayedId ~= id then
-				lastPlayedId = id
-				print("[WeaponVisual] PlayAttack →", id)
-			end
-			return
+	for _, t in tracks do
+		if t ~= track and t.IsPlaying then
+			pcall(function()
+				t:Stop(0.05)
+			end)
 		end
 	end
-	warn("[WeaponVisual] PlayAttack: no track could load")
+	track:Play(0.05, 1, 1.2)
+	if lastPlayedId ~= id then
+		lastPlayedId = id
+		print("[WeaponVisual] PlayAttack →", id)
+	end
 end
 
 function WeaponVisual.Init(getProfile: () -> any?)

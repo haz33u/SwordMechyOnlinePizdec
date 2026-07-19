@@ -1,32 +1,21 @@
-# Cristalix client reverse notes
+# Cristalix reference dumps
 
-## Location on this PC
-`C:\Users\thisi\.cristalix\updates\Minigames\`
+## Primary catalog
+**→ [DUMP_CATALOG.md](./DUMP_CATALOG.md)** — full Loc1 + Loc2 + effects inventory from player screenshots.
 
-## What we found
-- Client cache is **zstd-compressed** (magic `28 B5 2F FD`).
-- Lang packs + addon JARs are decompressable.
-- Minigame internal id: **`katana`** ("Мастера Катаны" / Katana Masters simulator).
-- Extracted: `katana_lang_*.json`, key lists, balance-related UI strings.
+## Player screenshot sources
+- `Downloads/1я локация` → weapons, pet cases **500 / 50K / 49 keys**, mobs, rebirth R1–R2, Loc2 gate  
+- `Downloads/2я локаци я` → Loc2 mobs/weapons, pet cases **3.75M / 54 keys**, R3, quest notes  
+- `Downloads/Эффекты` → world events (**PARKED** — know only, no code)
 
-## What is NOT in the client
-- Exact HP / damage / sword power formulas (server-side only).
-- Drop weight tables as numbers (only UI labels + % shown as placeholders like `%s`, `%d`).
-- Mob spawn configs.
+## Captures folder
+`captures/` — PNGs + markdown extracts  
+Key READMEs: `loc1_case2_offhand/`, `loc1_case_donate/`, `loc2_case_pets/`, `loc2_case_donate/`, `loc2_weapons/`, `loc2_mobs/`, `effects_parked/`
 
-## Useful for our Roblox port
-- UI vocabulary: stats (strength, rebirth, hits, kills, DNA, storage, chance)
-- Boosters: money / exp / hits / kills (x2, timed)
-- Pets: boosters x%s, max slots 5 (donate), chance slot on rebirth
-- Runes with % abilities
-- Katana upgrade / sell / crystals of preservation (+1 start level after rebirth)
-- Lootbox keys (katana, pet, rune, title)
-- Daily rewards structure
-- Donate products mapping (pet slot, multi-case x5, speed perk)
+## Client lang (katana minigame)
+From `~/.cristalix` zstd cache — UI keys only, not server formulas:
+- `katana_lang_*.json`, `katana_keys.txt`, `katana_balance_kv.txt`, …
 
-## Files here
-- katana_lang_a.json / katana_lang_b.json — full i18n pie
-- katana_keys.txt — all 774 keys
-- katana_key_prefixes.txt — grouped
-- katana_balance_kv.txt — UI strings with balance hints
-- katana_systems_kv.txt — systems-related strings
+## Effects (know only — parked)
+Solar Eclipse · Darkness · Solar Blast — temporary world modifiers.  
+**Do not implement until boosts/events sprint.**

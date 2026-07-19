@@ -55,7 +55,7 @@ function Formulas.GetWeaponPowerMult(profile: any): number
 	if main then
 		local def = WeaponConfig.Get(main.id)
 		if def then
-			mult = def.powerMult
+			mult = WeaponConfig.GetEffectivePower(def, main.level or 1)
 		end
 	end
 	-- offhand only if paid unlock
@@ -64,7 +64,7 @@ function Formulas.GetWeaponPowerMult(profile: any): number
 		if off then
 			local def = WeaponConfig.Get(off.id)
 			if def then
-				mult += def.powerMult * 0.5 -- offhand 50%
+				mult += WeaponConfig.GetEffectivePower(def, off.level or 1) * 0.5
 			end
 		end
 	end
@@ -96,22 +96,32 @@ function Formulas.GetEnchantPools(profile: any): { [string]: number }
 	return pools
 end
 
-function Formulas.GetPetPowerPct(profile: any): number
-	local total = 0
+--[[
+	Pets: dump "Мощь xN" = pure mult.
+	Team stacks additive on excess: factor = 1 + Σ(N-1)×level (same as old % math, no % stored).
+]]
+function Formulas.GetPetPowerMult(profile: any): number
+	local mult = 1
 	for _, uid in profile.petTeam do
 		for _, pet in profile.pets do
 			if pet.uid == uid then
 				local def = PetConfig.Get(pet.id)
 				if def then
+					local base = PetConfig.GetPowerMult(def)
 					local levelFactor = 1 + PetConfig.LEVEL_POWER_PER * math.max(0, pet.level - 1)
-					total += def.powerPct * levelFactor
-					total += sumEnchantStat(pet.enchants, "power")
+					local ench = sumEnchantStat(pet.enchants, "power") -- enchant still % points
+					mult += (base * levelFactor - 1) + ench / 100
 				end
 				break
 			end
 		end
 	end
-	return total
+	return math.max(1, mult)
+end
+
+--- Display/compat only (not combat source of truth)
+function Formulas.GetPetPowerPct(profile: any): number
+	return (Formulas.GetPetPowerMult(profile) - 1) * 100
 end
 
 function Formulas.GetPetCoinPct(profile: any): number
@@ -121,7 +131,9 @@ function Formulas.GetPetCoinPct(profile: any): number
 			if pet.uid == uid then
 				local def = PetConfig.Get(pet.id)
 				if def then
-					total += def.coinPct
+					-- coinMult pure → convert excess to soft % for coin formula
+					local cm = def.coinMult or 1
+					total += (cm - 1) * 100
 				end
 				break
 			end
@@ -166,27 +178,31 @@ end
 function Formulas.GetTotalPower(profile: any): number
 	local base = GameConfig.BASE_POWER + (profile.lifetimePower or 0)
 
-	local rebirthMult = profile.rebirthMult or 1
-	if (profile.rebirthLevel or 0) > 0 and rebirthMult <= 1 then
-		rebirthMult = RebirthConfig.GetMultAfter(profile.rebirthLevel)
+	local rebirthMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
+	if (profile.rebirthMult or 0) > 0 and profile.rebirthLevel and profile.rebirthLevel > 0 then
+		-- prefer stored if it matches rank table; else force table
+		local tableMult = RebirthConfig.GetMultAfter(profile.rebirthLevel)
+		rebirthMult = tableMult
 	end
 
-	local weaponMult = Formulas.GetWeaponPowerMult(profile)
+	local weaponMult = Formulas.GetWeaponPowerMult(profile) -- pure dump Сила
+	local petMult = Formulas.GetPetPowerMult(profile) -- pure dump Мощь product/stack
 	local ench = Formulas.GetEnchantPools(profile)
-	local petPct = Formulas.GetPetPowerPct(profile)
 	local auraP, auraD = Formulas.GetAuraPct(profile)
 	local relicP, relicD = Formulas.GetRelicPct(profile)
 
 	local upgradePowerLvl = Formulas.GetUpgradeLevel(profile, "Power")
 	local upgradePowerPct = upgradePowerLvl * (UpgradeConfig.Defs.Power.effectPerLevel * 100)
+	local questPowerPct = profile.questPowerPct or 0
 
-	-- percent pools stack additively then apply as mult
-	local powerPct = ench.power + petPct + auraP + relicP + upgradePowerPct
+	-- Non-dump systems still use % pools (enchants / aura / relic / upgrades / quests)
+	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct
 	local damagePct = ench.damage + auraD + relicD
 
 	local total = base
 		* rebirthMult
 		* weaponMult
+		* petMult
 		* (1 + powerPct / 100)
 		* (1 + damagePct / 100)
 
@@ -204,12 +220,18 @@ function Formulas.GetAttackSpeedPercent(profile: any): number
 			if pet.uid == uid then
 				local def = PetConfig.Get(pet.id)
 				if def then
-					speedPct += def.speedPct
+					-- speedMult pure; excess → % points for attack-speed pool
+					local sm = def.speedMult or 1
+					speedPct += (sm - 1) * 100
 				end
 			end
 		end
 	end
 	return speedPct
+end
+
+function Formulas.GetMaxCPS(profile: any): number
+	return ClickConfig.GetMaxCPS(profile)
 end
 
 function Formulas.GetSwingCooldown(profile: any): number
@@ -220,20 +242,22 @@ function Formulas.GetSwingCooldown(profile: any): number
 	else
 		cd = GameConfig.BASE_SWING_COOLDOWN * (1 + math.abs(speedPct) / 100)
 	end
-	-- clamp by CPS caps
-	local minCd = 1 / ClickConfig.MAX_CPS
+	-- clamp by location / purchase CPS cap
+	local maxCps = Formulas.GetMaxCPS(profile)
+	local minCd = 1 / maxCps
 	local maxCd = 1 / ClickConfig.MIN_CPS
 	return math.clamp(cd, minCd, maxCd)
 end
 
 --[[
 	CPS = clicks per second = core farming rate.
-	Max theoretical attacks/sec the server will accept.
+	Without purchased auto: Loc1 ≤ 4, global ≤ 20 (see ClickConfig).
 ]]
 function Formulas.GetCPS(profile: any): number
 	local cd = Formulas.GetSwingCooldown(profile)
 	local cps = 1 / cd
-	return math.clamp(cps, ClickConfig.MIN_CPS, ClickConfig.MAX_CPS)
+	local maxCps = Formulas.GetMaxCPS(profile)
+	return math.clamp(cps, ClickConfig.MIN_CPS, maxCps)
 end
 
 function Formulas.GetDPS(profile: any): number
@@ -241,6 +265,10 @@ function Formulas.GetDPS(profile: any): number
 end
 
 function Formulas.IsAutoClickerUnlocked(profile: any): boolean
+	-- Free manual clicking always works; "unlocked auto" = purchased product
+	if type(ClickConfig.IsAutoPurchased) == "function" then
+		return ClickConfig.IsAutoPurchased(profile)
+	end
 	if ClickConfig.AUTO_UNLOCKED_BY_DEFAULT then
 		return true
 	end
@@ -257,18 +285,67 @@ end
 function Formulas.GetCritChance(profile: any): number
 	local ench = Formulas.GetEnchantPools(profile)
 	local lvl = Formulas.GetUpgradeLevel(profile, "CritChance")
-	return math.clamp(lvl * 0.01 + ench.crit / 100, 0, 0.85)
+	local per = (UpgradeConfig.Defs.CritChance and UpgradeConfig.Defs.CritChance.effectPerLevel) or 0.01
+	return math.clamp(lvl * per + ench.crit / 100, 0, 0.85)
 end
 
-function Formulas.GetHitDamage(profile: any): (number, boolean)
+function Formulas.GetMultiCritChance(profile: any): number
+	local lvl = Formulas.GetUpgradeLevel(profile, "MultiCrit")
+	local per = (UpgradeConfig.Defs.MultiCrit and UpgradeConfig.Defs.MultiCrit.effectPerLevel) or 0.01
+	return math.clamp(lvl * per, 0, 0.5)
+end
+
+--- Returns damage, isCrit, isMultiCrit
+function Formulas.GetHitDamage(profile: any): (number, boolean, boolean)
 	local power = Formulas.GetTotalPower(profile)
 	local crit = Formulas.GetCritChance(profile)
 	local isCrit = math.random() < crit
+	local isMulti = false
 	local dmg = power
 	if isCrit then
 		dmg *= 2
+		-- multi-crit: upgrade crit hit to ×3
+		if math.random() < Formulas.GetMultiCritChance(profile) then
+			dmg = power * 3
+			isMulti = true
+		end
 	end
-	return dmg, isCrit
+	return dmg, isCrit, isMulti
+end
+
+function Formulas.GetWeaponBagCap(profile: any): number
+	return UpgradeConfig.GetBagCap(profile, "weapons")
+end
+
+function Formulas.GetPetBagCap(profile: any): number
+	return UpgradeConfig.GetBagCap(profile, "pets")
+end
+
+function Formulas.GetItemBagCap(profile: any): number
+	return UpgradeConfig.GetBagCap(profile, "items")
+end
+
+--[[
+	Expected damage per click (crit averaged). Armor applied like CombatService.
+	Returns: hitsToKill, secondsToKill, dmgPerHitAvg, yourPower, cps
+]]
+function Formulas.EstimateKill(
+	profile: any,
+	mobHp: number,
+	armorFlat: number?
+): (number, number, number, number, number)
+	local power = Formulas.GetTotalPower(profile)
+	local crit = Formulas.GetCritChance(profile)
+	local multi = Formulas.GetMultiCritChance(profile)
+	-- expected: normal + crit×2 + multi-crit portion (crit→×3)
+	local avgDmg = power * ((1 - crit) + crit * ((1 - multi) * 2 + multi * 3))
+	local armor = armorFlat or 0
+	local effective = math.max(1, avgDmg - armor)
+	local hp = math.max(1, mobHp)
+	local hits = math.max(1, math.ceil(hp / effective))
+	local cps = Formulas.GetCPS(profile)
+	local seconds = hits / math.max(0.01, cps)
+	return hits, seconds, effective, power, cps
 end
 
 function Formulas.GetCoinMult(profile: any): number
@@ -289,12 +366,51 @@ function Formulas.GetWalkSpeed(profile: any): number
 	return 16 + lvl * UpgradeConfig.Defs.RunSpeed.effectPerLevel
 end
 
+--[[
+	Ideal-time to next rebirth with CURRENT gear (always clicking).
+	Uses expected DPS (crit averaged). Returns seconds (0 if ready, math.huge if stuck).
+]]
+function Formulas.EstimateRebirthEta(profile: any): (number, number, number, number)
+	local nextLv = (profile.rebirthLevel or 0) + 1
+	local dmgCost, coinCost = RebirthConfig.GetCosts(nextLv)
+	local dmg = profile.lifetimeDamage or 0
+	local coins = profile.coins or 0
+	local remDmg = math.max(0, dmgCost - dmg)
+	local remCoins = math.max(0, coinCost - coins)
+
+	if remDmg <= 0 and remCoins <= 0 then
+		return 0, 0, 0, 0
+	end
+
+	local power = Formulas.GetTotalPower(profile)
+	local cps = Formulas.GetCPS(profile)
+	local crit = Formulas.GetCritChance(profile)
+	local dps = power * cps * ((1 - crit) + crit * 2)
+	if dps < 0.01 then
+		return math.huge, remDmg, remCoins, dps
+	end
+
+	local tDmg = remDmg / dps
+	local tCoin = 0
+	if remCoins > 0 then
+		-- rough farm: damage dealt → coins (Loc1-ish ratio × coin mult)
+		local coinsPerSec = dps * (RebirthConfig.ETA_COINS_PER_DAMAGE or 0.12) * Formulas.GetCoinMult(profile)
+		tCoin = if coinsPerSec > 0.01 then remCoins / coinsPerSec else math.huge
+	end
+
+	return math.max(tDmg, tCoin), remDmg, remCoins, dps
+end
+
 function Formulas.Snapshot(profile: any): { [string]: any }
 	local power = Formulas.GetTotalPower(profile)
 	local cps = Formulas.GetCPS(profile)
+	local nextLv = (profile.rebirthLevel or 0) + 1
+	local etaSec, remDmg, remCoins, dpsIdeal = Formulas.EstimateRebirthEta(profile)
+	local rbMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
 	return {
 		totalPower = power,
 		cps = cps,
+		maxCps = Formulas.GetMaxCPS(profile),
 		dps = power * cps,
 		damagePerClick = power,
 		swingCd = Formulas.GetSwingCooldown(profile),
@@ -304,20 +420,33 @@ function Formulas.Snapshot(profile: any): { [string]: any }
 		luck = Formulas.GetLuck(profile),
 		walkSpeed = Formulas.GetWalkSpeed(profile),
 		rebirthLevel = profile.rebirthLevel,
-		rebirthMult = profile.rebirthMult,
-		nextRebirthCost = RebirthConfig.GetDamageCost((profile.rebirthLevel or 0) + 1),
-		nextRebirthCoinCost = RebirthConfig.GetCoinCost((profile.rebirthLevel or 0) + 1),
+		rebirthMult = rbMult,
+		rebirthRankName = RebirthConfig.GetRankName(profile.rebirthLevel or 0),
+		nextRebirthRankName = RebirthConfig.GetRankName(nextLv),
+		nextRebirthMult = RebirthConfig.GetMultAfter(nextLv),
+		nextRebirthCost = RebirthConfig.GetDamageCost(nextLv),
+		nextRebirthCoinCost = RebirthConfig.GetCoinCost(nextLv),
 		rebirthProgress = RebirthConfig.GetProgress(
 			profile.lifetimeDamage or 0,
 			profile.coins or 0,
-			(profile.rebirthLevel or 0) + 1
+			nextLv
 		),
+		rebirthEtaSeconds = etaSec,
+		rebirthRemainingDamage = remDmg,
+		rebirthRemainingCoins = remCoins,
+		rebirthIdealDps = dpsIdeal,
 		lifetimeDamage = profile.lifetimeDamage,
 		totalClicks = profile.totalClicks or 0,
 		coins = profile.coins,
 		enchantDust = profile.enchantDust or 0,
 		petKeys = profile.petKeys or 0,
 		auraKeys = profile.auraKeys or 0,
+		questPowerPct = profile.questPowerPct or 0,
+		upgradePowerPct = (profile.upgradeLevels and (profile.upgradeLevels.Power or 0) or 0)
+			* (UpgradeConfig.Defs.Power.effectPerLevel * 100),
+		weaponBagCap = Formulas.GetWeaponBagCap(profile),
+		petBagCap = Formulas.GetPetBagCap(profile),
+		itemBagCap = Formulas.GetItemBagCap(profile),
 		petSlots = profile.petSlots,
 		offhandUnlocked = ProgressConfig.IsOffhandUnlocked(profile),
 		paidPetSlot = (profile.unlocks and profile.unlocks.paidPetSlot) == true,
