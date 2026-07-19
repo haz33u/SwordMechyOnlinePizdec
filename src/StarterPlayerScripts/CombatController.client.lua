@@ -26,8 +26,15 @@ end
 
 local function safeIdForName(name: string): string
 	local n = string.lower(name)
-	if string.find(n, "swing", 1, true) or string.find(n, "attack", 1, true) or string.find(n, "slash", 1, true) then
-		return AnimationConfig.AttackMain
+	-- Any attack-like Place anim → user's single attack id only
+	if
+		string.find(n, "swing", 1, true)
+		or string.find(n, "attack", 1, true)
+		or string.find(n, "slash", 1, true)
+		or string.find(n, "lunge", 1, true)
+		or string.find(n, "tool", 1, true)
+	then
+		return AnimationConfig.GetAttackId(false)
 	end
 	if string.find(n, "walk", 1, true) then
 		return AnimationConfig.GetLocomotionId("Walk")

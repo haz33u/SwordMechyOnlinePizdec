@@ -1,28 +1,17 @@
 --!strict
 --[[
-	Attack animation = published asset 95040065182870 (user).
-
-	Character: default Roblox Player.Character (R15 from Avatar).
-	Not a custom model in git — Place/Avatar settings.
-	Swing: WeaponVisual loads AnimationId onto character Humanoid.Animator.
+	ONE attack animation only — user asset 95040065182870.
+	No slash/lunge/tool fallbacks for combat swings.
 ]]
 
-local USER_ATTACK = "rbxassetid://95040065182870"
-
--- Public R15 fallbacks if user asset fails permission/load
-local TOOL_LUNGE = "rbxassetid://522638767"
-local TOOL_SLASH = "rbxassetid://522635514"
+local ATTACK = "rbxassetid://95040065182870"
 
 local AnimationConfig = {
-	AttackMain = USER_ATTACK,
-	AttackAlt = USER_ATTACK,
+	AttackMain = ATTACK,
+	AttackAlt = ATTACK,
 
-	AttackCandidates = {
-		USER_ATTACK,
-		"http://www.roblox.com/asset/?id=95040065182870",
-		TOOL_LUNGE,
-		TOOL_SLASH,
-	},
+	-- Single entry — WeaponVisual must not try anything else
+	AttackCandidates = { ATTACK },
 
 	PreferPublishedAttack = true,
 	UseCombatKeyframeSequences = false,
@@ -32,12 +21,14 @@ local AnimationConfig = {
 	Swing1Name = "Swing1",
 	Swing2Name = "Swing2",
 
-	AttackMainFallback = TOOL_LUNGE,
-	AttackAltFallback = TOOL_SLASH,
-	ToolHold = "rbxassetid://522696694",
+	-- Same id only (no other attack anims)
+	AttackMainFallback = ATTACK,
+	AttackAltFallback = ATTACK,
+	ToolHold = ATTACK,
 
 	AlternateDual = false,
 
+	-- Walk/idle only (not attacks)
 	Locomotion = {
 		Idle = "rbxassetid://507766666",
 		Walk = "rbxassetid://507777826",
@@ -47,6 +38,17 @@ local AnimationConfig = {
 	BannedAssetIds = {
 		["12741376562"] = true,
 		["rbxassetid://12741376562"] = true,
+		-- old public tool swings — do not use for attack
+		["522635514"] = true,
+		["rbxassetid://522635514"] = true,
+		["522638767"] = true,
+		["rbxassetid://522638767"] = true,
+		["507768375"] = true,
+		["rbxassetid://507768375"] = true,
+		["522696694"] = true,
+		["rbxassetid://522696694"] = true,
+		["134636926386401"] = true,
+		["rbxassetid://134636926386401"] = true,
 	},
 
 	SwordLength = 2.4,
@@ -69,26 +71,11 @@ function AnimationConfig.IsBannedId(id: string?): boolean
 end
 
 function AnimationConfig.GetAttackId(_isAlt: boolean?): string
-	return AnimationConfig.AttackMain
+	return ATTACK
 end
 
 function AnimationConfig.GetAttackCandidateList(_preferAlt: boolean?): { string }
-	local list = {}
-	for _, id in AnimationConfig.AttackCandidates do
-		if not AnimationConfig.IsBannedId(id) then
-			local dup = false
-			for _, e in list do
-				if e == id then
-					dup = true
-					break
-				end
-			end
-			if not dup then
-				table.insert(list, id)
-			end
-		end
-	end
-	return list
+	return { ATTACK }
 end
 
 function AnimationConfig.GetLocomotionId(name: string): string
