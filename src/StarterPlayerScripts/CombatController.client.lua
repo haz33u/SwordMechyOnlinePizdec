@@ -24,24 +24,44 @@ if not animFolder then
 	warn("[CombatController] ReplicatedStorage.Animations missing — using code-only locomotion ids")
 end
 
-local function sanitizePlaceAnimations()
-	if not animFolder then
+local function safeIdForName(name: string): string
+	local n = string.lower(name)
+	if string.find(n, "swing", 1, true) or string.find(n, "attack", 1, true) or string.find(n, "slash", 1, true) then
+		return AnimationConfig.AttackMain
+	end
+	if string.find(n, "walk", 1, true) then
+		return AnimationConfig.GetLocomotionId("Walk")
+	end
+	if string.find(n, "run", 1, true) then
+		return AnimationConfig.GetLocomotionId("Run")
+	end
+	return AnimationConfig.GetLocomotionId("Idle")
+end
+
+--- Fix ALL Animation instances under a root (Place assets with banned ids)
+local function sanitizeAnimationsUnder(root: Instance?)
+	if not root then
 		return
 	end
-	for _, child in animFolder:GetChildren() do
-		if child:IsA("Animation") then
-			local id = child.AnimationId
+	for _, desc in root:GetDescendants() do
+		if desc:IsA("Animation") then
+			local id = desc.AnimationId
 			if AnimationConfig.IsBannedId(id) then
-				local safe = AnimationConfig.GetLocomotionId(child.Name)
-				if child.Name == "Swing" or child.Name == "Attack" then
-					safe = AnimationConfig.AttackMain
-				end
-				child.AnimationId = safe
-				print("[CombatController] replaced banned AnimationId on", child.Name, "→", safe)
+				local safe = safeIdForName(desc.Name)
+				desc.AnimationId = safe
+				print("[CombatController] fixed banned id on", desc:GetFullName(), "→", safe)
 			end
 		end
 	end
 end
+
+local function sanitizePlaceAnimations()
+	sanitizeAnimationsUnder(animFolder)
+	sanitizeAnimationsUnder(ReplicatedStorage)
+end
+
+-- Run ASAP so Studio/engine sees fewer bad ids before character loads
+task.defer(sanitizePlaceAnimations)
 
 local function makeAnim(name: string, id: string): Animation
 	local a = Instance.new("Animation")
@@ -145,6 +165,11 @@ local function setupAnimator(char: Model)
 	end
 
 	sanitizePlaceAnimations()
+	-- Default Animate script often embeds toolslash / foreign ids
+	local animate = char:FindFirstChild("Animate")
+	if animate then
+		sanitizeAnimationsUnder(animate)
+	end
 
 	tracks = { idle = nil, walk = nil, run = nil }
 	currentMovementTrack = nil

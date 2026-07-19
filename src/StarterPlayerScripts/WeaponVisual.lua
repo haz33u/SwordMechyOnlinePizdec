@@ -260,6 +260,24 @@ end
 
 function WeaponVisual.Init(getProfile: () -> any?)
 	print("[WeaponVisual] Attack candidates:", table.concat(AnimationConfig.AttackCandidates, " | "))
+	-- Preload so first click is not silent if asset is slow
+	task.spawn(function()
+		local ContentProvider = game:GetService("ContentProvider")
+		local list = {}
+		for _, id in AnimationConfig.AttackCandidates do
+			if not AnimationConfig.IsBannedId(id) then
+				local a = Instance.new("Animation")
+				a.AnimationId = id
+				table.insert(list, a)
+			end
+		end
+		pcall(function()
+			ContentProvider:PreloadAsync(list)
+		end)
+		for _, a in list do
+			a:Destroy()
+		end
+	end)
 
 	local function onChar(char: Model)
 		tracks = {}
