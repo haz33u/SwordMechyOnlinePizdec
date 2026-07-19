@@ -432,7 +432,11 @@ function App.Start()
 		elseif input.KeyCode == Enum.KeyCode.B then
 			openInvTab("shop")
 		elseif input.KeyCode == Enum.KeyCode.U then
-			openInvTab("profile")
+			-- Character Upgrade window (stats + BuyUpgrade) — quick debug / Figma test
+			store:OpenPanel("character")
+		elseif input.KeyCode == Enum.KeyCode.K then
+			-- Debug alias: same Character Upgrade panel
+			store:OpenPanel("character")
 		elseif input.KeyCode == Enum.KeyCode.Escape then
 			if caseApi and caseApi.IsOpen() then
 				caseApi.Close()

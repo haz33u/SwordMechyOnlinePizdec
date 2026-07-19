@@ -213,6 +213,8 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 Do not start BP implementation until inventory Figma pass is testable.
 
 1. **Character Upgrade (START HERE — first Figma → game test)**  
+   - **Debug open now:** rail **UP** · key **U** / **K** → panel `character`  
+   - See `docs/UI_FIGMA_PORT.md`  
    - Source: Figma screen for character upgrades (power, CPS, bag, crit locks, etc.)  
    - Wire to existing `UpgradeConfig` + `BuyUpgrade` remote + `Windows` upgrades body  
    - Match layout / tokens from Figma; keep EN strings; Arcade/theme as agreed  

@@ -71,6 +71,7 @@ function Hud.Mount(
 	UIKit.SizeConstraint(rail, Vector2.new(56, 200), Vector2.new(120, 900))
 
 	-- Inventory shell tabs (INVETAR): open weapons panel with tab
+	-- "character" / UP = dedicated Character Upgrade window (not inventory profile)
 	local INV_TABS = {
 		weapons = true,
 		pets = true,
@@ -78,7 +79,6 @@ function Hud.Mount(
 		relics = true,
 		cases = true,
 		shop = true,
-		character = true, -- profile tab inside inventory
 	}
 
 	local railBtns: { [string]: TextButton } = {}
@@ -89,10 +89,12 @@ function Hud.Mount(
 			Glyph = item.glyph,
 			Order = i,
 			OnClick = function()
-				if INV_TABS[item.id] then
-					local tab = item.id == "character" and "profile" or item.id
+				if item.id == "character" then
+					-- Debug / primary: Character Upgrade panel (Figma track start)
+					store:OpenPanel("character")
+				elseif INV_TABS[item.id] then
 					local s = store :: any
-					s._invTab = tab
+					s._invTab = item.id
 					store:OpenPanel("weapons")
 				else
 					store:OpenPanel(item.id)

@@ -73,7 +73,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 	local bodies: { [string]: Frame } = {}
 
 	local titles = {
-		character = "Profile",
+		character = "Character Upgrade", -- Figma track / debug (rail UP · key U)
 		weapons = "Inventory", -- INVETAR shell (E key)
 		pets = "Pets",
 		auras = "Auras",

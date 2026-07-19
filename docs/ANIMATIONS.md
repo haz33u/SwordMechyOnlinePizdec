@@ -2,25 +2,22 @@
 
 ## Атака
 
-### A) Minecraft procedural swing (**default test ON**)
+### A) Minecraft procedural swing (**default ON**)
+
 | | |
 |--|--|
-| Flag | `AnimationConfig.UseMinecraftSwing = true` |
-| How | `Motor6D` RightShoulder / Waist `.Transform` each frame |
-| Curve | cubic ease + sin raise/roll (ModelBiped-style) |
-| Code | `WeaponVisual` — no Tool required; LMB already calls `PlayAttack` |
-| Tune | `AnimationConfig.MinecraftSwing` (SwingTime, RaisePower, RollPower, SwingDir) |
+| **Включить** | `AnimationConfig.UseMinecraftSwing = true` (сейчас так) |
+| **Выключить** | `= false` → снова `rbxassetid://95040065182870` |
+| How | `Motor6D` RightShoulder / Waist `.Transform` |
+| Code | `WeaponVisual.PlayAttack` на LMB (Tool не нужен) |
+| Tune | `MinecraftSwing.SwingTime / RaisePower / RollPower / SwingDir` |
+| Output | `[WeaponVisual] PlayAttack → MinecraftSwing` |
 
-**Pros:** no asset permission, works offline, feels like MC.  
-**Cons:** fights Animator slightly; tune READY pose for R15; not a KeyframeSequence.
+Если `RightShoulder not found` — rejoin; joint ищется на R15 `RightUpperArm`.
 
 ### B) Published AnimationId
-| | |
-|--|--|
 | Flag | `UseMinecraftSwing = false` |
 | Id | `rbxassetid://95040065182870` |
-
-Toggle in `AnimationConfig.lua` only.
 
 ## Ходьба (не атака)
 
