@@ -173,10 +173,20 @@ function Hud.Mount(
 		boostRows[meta.key] = makeBoostRow(meta)
 	end
 
-	---------------------------------------------------------------- BOTTOM-CENTER: 4 separate chips (not one blob)
-	-- [Rebirth ImageButton] [Coins glass] [Power glass] [Inventory ImageButton]
-	local ICON_REBIRTH = "rbxassetid://442097927" -- Creator Store: Refresh/Switch Icon
-	local ICON_INVENTORY = "rbxassetid://105019719047516" -- Creator Store: Inventory button
+	---------------------------------------------------------------- BOTTOM-CENTER: 4 separate chips
+	-- INVETAR.make palette: GOLD #e8b800, panels #181818/#202020, text #cccccc
+	-- CRITICAL: never put UIGradient on the same frame as TextLabels (multiplies text → black)
+	local MAKE_GOLD = Color3.fromRGB(232, 184, 0) -- #e8b800
+	local MAKE_GOLD_GLOW = Color3.fromRGB(255, 220, 80)
+	local MAKE_POWER = Color3.fromRGB(255, 120, 90)
+	local MAKE_POWER_GLOW = Color3.fromRGB(255, 160, 120)
+	local MAKE_PANEL = Color3.fromRGB(24, 24, 24) -- #181818
+	local MAKE_SECTION = Color3.fromRGB(32, 32, 32) -- #202020
+	local MAKE_BD2 = Color3.fromRGB(62, 62, 62) -- #3e3e3e
+
+	-- Creator Store free Decals (rebirth / backpack)
+	local ICON_REBIRTH = "rbxassetid://18367579979" -- Rebirth Icon
+	local ICON_INVENTORY = "rbxassetid://12878997124" -- Inventory Backpack icon
 
 	local BAL_H = 118
 	local CHIP_H = 104
@@ -187,7 +197,6 @@ function Hud.Mount(
 	local GAP_BAL_RB = 12
 	local GAP_RB_AUTO = 10
 
-	-- Host: transparent row, centers the 4 chips
 	local bal = Instance.new("Frame")
 	bal.Name = "BalanceBar"
 	bal.BackgroundTransparency = 1
@@ -212,42 +221,50 @@ function Hud.Mount(
 		lab.BorderSizePixel = 0
 		lab.Size = UDim2.new(1, -16, 0, 52)
 		lab.Position = UDim2.new(0, 8, 0, 38)
-		-- Smooth non-pixel font (Arcade made counters look broken)
 		lab.Font = Enum.Font.BuilderSansBold
 		lab.TextSize = 32
 		lab.TextColor3 = color
 		lab.TextXAlignment = Enum.TextXAlignment.Center
 		lab.TextYAlignment = Enum.TextYAlignment.Center
 		lab.Text = "0"
-		lab.ZIndex = 15
+		lab.ZIndex = 16
 		lab.Parent = parent
-		-- soft readable edge (not chunky pixel stroke)
 		lab.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-		lab.TextStrokeTransparency = 0.4
+		lab.TextStrokeTransparency = 0.45
+		-- soft glow (color stays on TextColor3 — no parent UIGradient)
 		local st = Instance.new("UIStroke")
 		st.Name = "SoftGlow"
 		st.Color = glow
-		st.Thickness = 1.8
-		st.Transparency = 0.55
+		st.Thickness = 1.6
+		st.Transparency = 0.5
 		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
 		st.LineJoinMode = Enum.LineJoinMode.Round
 		st.Parent = lab
 		return lab
 	end
 
-	local function metricChip(name: string, order: number, accent: Color3, glow: Color3, fillDeep: Color3): (Frame, TextLabel)
+	local function metricChip(name: string, order: number, accent: Color3, glow: Color3): (Frame, TextLabel)
 		local chip = Instance.new("Frame")
 		chip.Name = name .. "Chip"
-		chip.BackgroundColor3 = Color3.fromRGB(18, 18, 24)
-		chip.BackgroundTransparency = 0.02
+		chip.BackgroundColor3 = MAKE_PANEL
+		chip.BackgroundTransparency = 0
 		chip.BorderSizePixel = 0
 		chip.Size = UDim2.fromOffset(180, CHIP_H)
 		chip.LayoutOrder = order
 		chip.ZIndex = 13
 		chip.Parent = bal
 		UIKit.Corner(chip, 12)
-		UIKit.Stroke(chip, accent, 2, 0.28)
-		UIKit.Gradient(chip, Color3.fromRGB(28, 28, 36), fillDeep, 90)
+		UIKit.Stroke(chip, accent, 2, 0.25)
+		-- gradient only on background child so text is NOT tinted black
+		local bg = Instance.new("Frame")
+		bg.Name = "Bg"
+		bg.BackgroundColor3 = MAKE_SECTION
+		bg.BorderSizePixel = 0
+		bg.Size = UDim2.fromScale(1, 1)
+		bg.ZIndex = 13
+		bg.Parent = chip
+		UIKit.Corner(bg, 12)
+		UIKit.Gradient(bg, MAKE_SECTION, MAKE_PANEL, 90)
 
 		local title = Instance.new("TextLabel")
 		title.Name = "Title"
@@ -257,24 +274,29 @@ function Hud.Mount(
 		title.Font = Enum.Font.GothamBold
 		title.TextSize = 14
 		title.TextColor3 = accent
-		title.TextTransparency = 0.05
 		title.Text = string.upper(name)
 		title.TextXAlignment = Enum.TextXAlignment.Center
-		title.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-		title.TextStrokeTransparency = 0.55
-		title.ZIndex = 14
+		title.ZIndex = 15
 		title.Parent = chip
 
 		local lab = softNumLabel(chip, name, accent, glow)
+		lab.ZIndex = 16
 		return chip, lab
 	end
 
-	local function iconChip(name: string, order: number, image: string, hint: string, onClick: () -> ()): ImageButton
+	local function iconChip(
+		name: string,
+		order: number,
+		image: string,
+		fallbackGlyph: string,
+		hint: string,
+		onClick: () -> ()
+	): ImageButton
 		local btn = Instance.new("ImageButton")
 		btn.Name = name
 		btn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
-		btn.BackgroundColor3 = Color3.fromRGB(24, 28, 42)
-		btn.BackgroundTransparency = 0.06
+		btn.BackgroundColor3 = MAKE_PANEL
+		btn.BackgroundTransparency = 0
 		btn.BorderSizePixel = 0
 		btn.Image = ""
 		btn.AutoButtonColor = true
@@ -282,17 +304,31 @@ function Hud.Mount(
 		btn.ZIndex = 13
 		btn.Parent = bal
 		UIKit.Corner(btn, 12)
-		UIKit.Stroke(btn, T.StrokeLight, 1.5, 0.25)
+		UIKit.Stroke(btn, MAKE_BD2, 1.5, 0.2)
+
+		-- Always-visible glyph fallback (Decals often fail to load in place)
+		local glyph = Instance.new("TextLabel")
+		glyph.Name = "Glyph"
+		glyph.BackgroundTransparency = 1
+		glyph.Size = UDim2.fromOffset(52, 52)
+		glyph.Position = UDim2.new(0.5, 0, 0, 10)
+		glyph.AnchorPoint = Vector2.new(0.5, 0)
+		glyph.Font = Enum.Font.GothamBold
+		glyph.TextSize = 34
+		glyph.Text = fallbackGlyph
+		glyph.TextColor3 = Color3.fromRGB(220, 220, 230)
+		glyph.ZIndex = 14
+		glyph.Parent = btn
 
 		local img = Instance.new("ImageLabel")
 		img.Name = "Icon"
 		img.BackgroundTransparency = 1
 		img.Size = UDim2.fromOffset(52, 52)
-		img.Position = UDim2.new(0.5, 0, 0, 12)
+		img.Position = UDim2.new(0.5, 0, 0, 10)
 		img.AnchorPoint = Vector2.new(0.5, 0)
 		img.Image = image
 		img.ScaleType = Enum.ScaleType.Fit
-		img.ZIndex = 14
+		img.ZIndex = 15
 		img.Parent = btn
 
 		local hintLab = Instance.new("TextLabel")
@@ -302,34 +338,22 @@ function Hud.Mount(
 		hintLab.Position = UDim2.new(0, 0, 1, -22)
 		hintLab.Font = Enum.Font.GothamBold
 		hintLab.TextSize = 14
-		hintLab.TextColor3 = T.TextSoft
+		hintLab.TextColor3 = Color3.fromRGB(180, 180, 190)
 		hintLab.Text = hint
 		hintLab.TextXAlignment = Enum.TextXAlignment.Center
-		hintLab.ZIndex = 14
+		hintLab.ZIndex = 15
 		hintLab.Parent = btn
 
 		btn.MouseButton1Click:Connect(onClick)
 		return btn
 	end
 
-	local qBtn = iconChip("RebirthQ", 1, ICON_REBIRTH, "Q", function()
+	local qBtn = iconChip("RebirthQ", 1, ICON_REBIRTH, "♻", "Q", function()
 		openModal("rebirth", nil)
 	end)
-	local coinChip, coinLab = metricChip(
-		"Coins",
-		2,
-		T.Gold,
-		Color3.fromRGB(255, 230, 120),
-		Color3.fromRGB(36, 28, 12)
-	)
-	local powerChip, powerLab = metricChip(
-		"Power",
-		3,
-		Color3.fromRGB(255, 120, 90),
-		Color3.fromRGB(255, 160, 130),
-		Color3.fromRGB(40, 18, 18)
-	)
-	local eBtn = iconChip("InvE", 4, ICON_INVENTORY, "E", function()
+	local coinChip, coinLab = metricChip("Coins", 2, MAKE_GOLD, MAKE_GOLD_GLOW)
+	local powerChip, powerLab = metricChip("Power", 3, MAKE_POWER, MAKE_POWER_GLOW)
+	local eBtn = iconChip("InvE", 4, ICON_INVENTORY, "🎒", "E", function()
 		store:OpenPanel("weapons")
 	end)
 	local _ = qBtn
@@ -431,9 +455,11 @@ function Hud.Mount(
 			return
 		end
 
-		-- TextLabels only — numbers (icons are separate ImageLabels on Q/E)
+		-- Force Make palette colors every refresh (never black)
 		coinLab.Text = Format.Num(st.coins)
+		coinLab.TextColor3 = MAKE_GOLD
 		powerLab.Text = Format.Num(st.damagePerClick or st.totalPower)
+		powerLab.TextColor3 = MAKE_POWER
 
 		-- rebirth progress (damage toward next R)
 		local pct = st.rebirthProgress
