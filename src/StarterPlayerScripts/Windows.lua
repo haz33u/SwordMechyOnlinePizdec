@@ -159,16 +159,20 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		for id, f in frames do
 			local sc = ensurePanelScale(f)
 			if id == active then
-				-- open: start small, bounce up
-				sc.Scale = 0.86
-				f.Visible = true
-				TweenService:Create(
-					sc,
-					TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
-					{ Scale = 1 }
-				):Play()
+				if f.Visible then
+					-- already open — do NOT re-bounce (was flashing inventory on every ProfileUpdate)
+					sc.Scale = 1
+					f.Visible = true
+				else
+					sc.Scale = 0.86
+					f.Visible = true
+					TweenService:Create(
+						sc,
+						TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+						{ Scale = 1 }
+					):Play()
+				end
 			elseif f.Visible then
-				-- close: soft shrink then hide
 				local tw = TweenService:Create(
 					sc,
 					TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
@@ -1342,15 +1346,58 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 	}
 
 	local api = {}
+	local lastInvSig = ""
+
+	local function inventorySignature(profile: any): string
+		if type(profile) ~= "table" then
+			return ""
+		end
+		local n = 0
+		local weapons = profile.weapons
+		if type(weapons) == "table" then
+			n = #weapons
+		end
+		return table.concat({
+			tostring(n),
+			tostring(profile.equippedMain),
+			tostring(profile.equippedOffhand),
+			tostring(profile.equippedAura),
+			tostring(#(profile.pets or {})),
+			tostring(#(profile.auras or {})),
+			tostring(#(profile.petTeam or {})),
+			tostring(profile.petSlots),
+		}, "|")
+	end
+
 	function api.RefreshAll()
 		local panel = store:PeekPanel()
 		if panel and panel ~= "none" and refreshers[panel] then
 			showOnly(panel)
-			refreshers[panel]()
+			-- Inventory is heavy (full rebuild). Only rebuild when bag/equip actually changes
+			-- or panel just opened — not on every combat ProfileUpdate / key path.
+			if panel == "weapons" then
+				local prof = store:PeekProfile()
+				local sig = inventorySignature(prof)
+				local invStore = store :: any
+				local forceTab = type(invStore._invTab) == "string" and invStore._invTab ~= ""
+				if forceTab or sig ~= lastInvSig then
+					lastInvSig = sig
+					refreshers[panel]()
+				end
+			else
+				refreshers[panel]()
+			end
 		else
 			showOnly("")
+			lastInvSig = ""
 		end
 	end
+
+	function api.ForceRefreshPanel()
+		lastInvSig = ""
+		api.RefreshAll()
+	end
+
 	return api
 end
 

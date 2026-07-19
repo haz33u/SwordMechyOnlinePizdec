@@ -173,168 +173,158 @@ function Hud.Mount(
 		boostRows[meta.key] = makeBoostRow(meta)
 	end
 
-	---------------------------------------------------------------- BOTTOM-CENTER balance sector
-	-- Structure (by design): 2 TextLabels (Coins, Power) + 2 ImageLabels (Rebirth, Inventory)
-	-- Icons from Creator Store free Decals (searched).
-	local ICON_REBIRTH = "rbxassetid://442097927" -- Refresh/Switch Icon/Button (Sir_Melio)
-	local ICON_INVENTORY = "rbxassetid://105019719047516" -- Inventory button
+	---------------------------------------------------------------- BOTTOM-CENTER: 4 separate chips (not one blob)
+	-- [Rebirth ImageButton] [Coins glass] [Power glass] [Inventory ImageButton]
+	local ICON_REBIRTH = "rbxassetid://442097927" -- Creator Store: Refresh/Switch Icon
+	local ICON_INVENTORY = "rbxassetid://105019719047516" -- Creator Store: Inventory button
 
-	local bal = UIKit.Glass({
-		Name = "BalanceBar",
-		Parent = root,
-		Size = UDim2.fromOffset(480, 112),
-		Position = UDim2.new(0.5, 0, 1, -20),
-		Anchor = Vector2.new(0.5, 1),
-		Radius = T.R.md,
-		Z = 12,
-		Deep = true,
-	})
-	UIKit.Stroke(bal, T.Stroke, 1.4, 0.22)
+	local BAL_H = 100
+	local CHIP_H = 88
+	local ICON_SZ = 72
+	local GAP = 12
+	local RB_H = 10
+	local AUTO_H = 42
+	local GAP_BAL_RB = 12
+	local GAP_RB_AUTO = 10
 
-	--- Soft text glow (UIStroke Contextual) — keeps same gold/power tones
-	local function metricText(name: string, parent: Instance, color: Color3, glow: Color3, y: number): TextLabel
+	-- Host: transparent row, centers the 4 chips
+	local bal = Instance.new("Frame")
+	bal.Name = "BalanceBar"
+	bal.BackgroundTransparency = 1
+	bal.BorderSizePixel = 0
+	bal.Size = UDim2.fromOffset(560, BAL_H)
+	bal.Position = UDim2.new(0.5, 0, 1, -20)
+	bal.AnchorPoint = Vector2.new(0.5, 1)
+	bal.ZIndex = 12
+	bal.Parent = root
+	local balList = Instance.new("UIListLayout")
+	balList.FillDirection = Enum.FillDirection.Horizontal
+	balList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	balList.VerticalAlignment = Enum.VerticalAlignment.Center
+	balList.Padding = UDim.new(0, GAP)
+	balList.SortOrder = Enum.SortOrder.LayoutOrder
+	balList.Parent = bal
+
+	local function softNumLabel(parent: Instance, name: string, color: Color3, glow: Color3): TextLabel
 		local lab = Instance.new("TextLabel")
 		lab.Name = name
 		lab.BackgroundTransparency = 1
 		lab.BorderSizePixel = 0
-		lab.Size = UDim2.new(1, 0, 0, 44)
-		lab.Position = UDim2.fromOffset(0, y)
-		lab.Font = T.Font.Num
-		lab.TextSize = 28
+		lab.Size = UDim2.new(1, -16, 0, 42)
+		lab.Position = UDim2.new(0, 8, 0.5, 0)
+		lab.AnchorPoint = Vector2.new(0, 0.5)
+		lab.Font = Enum.Font.Arcade
+		lab.TextSize = 30
 		lab.TextColor3 = color
 		lab.TextXAlignment = Enum.TextXAlignment.Center
 		lab.TextYAlignment = Enum.TextYAlignment.Center
 		lab.Text = "0"
 		lab.ZIndex = 15
 		lab.Parent = parent
-		-- soft outer glow
-		local glowStroke = Instance.new("UIStroke")
-		glowStroke.Name = "SoftGlow"
-		glowStroke.Color = glow
-		glowStroke.Thickness = 2.2
-		glowStroke.Transparency = 0.55
-		glowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
-		glowStroke.LineJoinMode = Enum.LineJoinMode.Round
-		glowStroke.Parent = lab
-		-- subtle dark edge for readability
 		lab.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-		lab.TextStrokeTransparency = 0.45
+		lab.TextStrokeTransparency = 0.35
+		local st = Instance.new("UIStroke")
+		st.Name = "SoftGlow"
+		st.Color = glow
+		st.Thickness = 2.4
+		st.Transparency = 0.5
+		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+		st.LineJoinMode = Enum.LineJoinMode.Round
+		st.Parent = lab
 		return lab
 	end
 
-	--- ImageButton hit area + ImageLabel icon (Creator Store art)
-	local function iconBtn(
-		name: string,
-		parent: Instance,
-		image: string,
-		side: "left" | "right",
-		onClick: () -> ()
-	): ImageButton
+	local function metricChip(name: string, order: number, accent: Color3, glow: Color3): (Frame, TextLabel)
+		local chip = Instance.new("Frame")
+		chip.Name = name .. "Chip"
+		chip.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+		chip.BackgroundTransparency = 0.08
+		chip.BorderSizePixel = 0
+		chip.Size = UDim2.fromOffset(160, CHIP_H)
+		chip.LayoutOrder = order
+		chip.ZIndex = 13
+		chip.Parent = bal
+		UIKit.Corner(chip, 10)
+		local stroke = UIKit.Stroke(chip, accent, 1.6, 0.35)
+		-- soft accent rim
+		if stroke then
+			stroke.Color = accent
+		end
+		local title = Instance.new("TextLabel")
+		title.Name = "Title"
+		title.BackgroundTransparency = 1
+		title.Size = UDim2.new(1, 0, 0, 18)
+		title.Position = UDim2.fromOffset(0, 8)
+		title.Font = Enum.Font.Arcade
+		title.TextSize = 12
+		title.TextColor3 = accent
+		title.TextTransparency = 0.15
+		title.Text = string.upper(name)
+		title.TextXAlignment = Enum.TextXAlignment.Center
+		title.ZIndex = 14
+		title.Parent = chip
+		local lab = softNumLabel(chip, name, accent, glow)
+		lab.Position = UDim2.new(0, 8, 0, 28)
+		lab.AnchorPoint = Vector2.new(0, 0)
+		lab.Size = UDim2.new(1, -16, 0, 48)
+		return chip, lab
+	end
+
+	local function iconChip(name: string, order: number, image: string, hint: string, onClick: () -> ()): ImageButton
 		local btn = Instance.new("ImageButton")
 		btn.Name = name
-		btn.Size = UDim2.fromOffset(64, 64)
-		if side == "left" then
-			btn.Position = UDim2.new(0, 14, 0.5, 0)
-			btn.AnchorPoint = Vector2.new(0, 0.5)
-		else
-			btn.Position = UDim2.new(1, -14, 0.5, 0)
-			btn.AnchorPoint = Vector2.new(1, 0.5)
-		end
-		btn.BackgroundColor3 = Color3.fromRGB(36, 40, 56)
-		btn.BackgroundTransparency = 0.25
+		btn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
+		btn.BackgroundColor3 = Color3.fromRGB(28, 32, 48)
+		btn.BackgroundTransparency = 0.12
 		btn.BorderSizePixel = 0
-		btn.Image = "" -- image lives on child ImageLabel
+		btn.Image = ""
 		btn.AutoButtonColor = true
-		btn.ZIndex = 14
-		btn.Parent = parent
-		UIKit.Corner(btn, 12)
-		UIKit.Stroke(btn, T.StrokeLight, 1.2, 0.35)
+		btn.LayoutOrder = order
+		btn.ZIndex = 13
+		btn.Parent = bal
+		UIKit.Corner(btn, 10)
+		UIKit.Stroke(btn, T.StrokeLight, 1.3, 0.3)
 
 		local img = Instance.new("ImageLabel")
 		img.Name = "Icon"
 		img.BackgroundTransparency = 1
-		img.BorderSizePixel = 0
-		img.Size = UDim2.fromScale(0.78, 0.78)
-		img.Position = UDim2.fromScale(0.5, 0.5)
-		img.AnchorPoint = Vector2.new(0.5, 0.5)
+		img.Size = UDim2.fromOffset(48, 48)
+		img.Position = UDim2.new(0.5, 0, 0, 10)
+		img.AnchorPoint = Vector2.new(0.5, 0)
 		img.Image = image
 		img.ScaleType = Enum.ScaleType.Fit
-		img.ZIndex = 15
+		img.ZIndex = 14
 		img.Parent = btn
+
+		local hintLab = Instance.new("TextLabel")
+		hintLab.Name = "KeyHint"
+		hintLab.BackgroundTransparency = 1
+		hintLab.Size = UDim2.new(1, 0, 0, 16)
+		hintLab.Position = UDim2.new(0, 0, 1, -20)
+		hintLab.Font = Enum.Font.Arcade
+		hintLab.TextSize = 13
+		hintLab.TextColor3 = T.TextMuted
+		hintLab.Text = hint
+		hintLab.TextXAlignment = Enum.TextXAlignment.Center
+		hintLab.ZIndex = 14
+		hintLab.Parent = btn
 
 		btn.MouseButton1Click:Connect(onClick)
 		return btn
 	end
 
-	-- Left: Rebirth (Q) — ImageLabel icon
-	local qBtn = iconBtn("RebirthQ", bal, ICON_REBIRTH, "left", function()
+	local qBtn = iconChip("RebirthQ", 1, ICON_REBIRTH, "Q", function()
 		openModal("rebirth", nil)
 	end)
-	-- Keybind hint under icon (small, not the main control)
-	local qHint = Instance.new("TextLabel")
-	qHint.Name = "KeyHint"
-	qHint.BackgroundTransparency = 1
-	qHint.Size = UDim2.fromOffset(64, 16)
-	qHint.Position = UDim2.new(0, 14, 1, -18)
-	qHint.Font = T.Font.Ui
-	qHint.TextSize = 12
-	qHint.TextColor3 = T.TextMuted
-	qHint.Text = "Q"
-	qHint.TextXAlignment = Enum.TextXAlignment.Center
-	qHint.ZIndex = 15
-	qHint.Parent = bal
-
-	-- Center: Coins + Power as separate TextLabels
-	local mid = Instance.new("Frame")
-	mid.Name = "Mid"
-	mid.BackgroundTransparency = 1
-	mid.Size = UDim2.fromOffset(260, 96)
-	mid.Position = UDim2.new(0.5, 0, 0.5, 0)
-	mid.AnchorPoint = Vector2.new(0.5, 0.5)
-	mid.ZIndex = 13
-	mid.Parent = bal
-
-	local coinLab = metricText(
-		"Coins",
-		mid,
-		T.Gold,
-		Color3.fromRGB(255, 220, 100),
-		4
-	)
-	local powerLab = metricText(
-		"Power",
-		mid,
-		Color3.fromRGB(255, 120, 90),
-		Color3.fromRGB(255, 150, 120),
-		50
-	)
-
-	-- Right: Inventory (E) — ImageLabel icon
-	local eBtn = iconBtn("InvE", bal, ICON_INVENTORY, "right", function()
+	local coinChip, coinLab = metricChip("Coins", 2, T.Gold, Color3.fromRGB(255, 230, 120))
+	local powerChip, powerLab = metricChip("Power", 3, Color3.fromRGB(255, 120, 90), Color3.fromRGB(255, 160, 130))
+	local eBtn = iconChip("InvE", 4, ICON_INVENTORY, "E", function()
 		store:OpenPanel("weapons")
 	end)
-	local eHint = Instance.new("TextLabel")
-	eHint.Name = "KeyHint"
-	eHint.BackgroundTransparency = 1
-	eHint.Size = UDim2.fromOffset(64, 16)
-	eHint.Position = UDim2.new(1, -78, 1, -18)
-	eHint.Font = T.Font.Ui
-	eHint.TextSize = 12
-	eHint.TextColor3 = T.TextMuted
-	eHint.Text = "E"
-	eHint.TextXAlignment = Enum.TextXAlignment.Center
-	eHint.ZIndex = 15
-	eHint.Parent = bal
 	local _ = qBtn
 	local _ = eBtn
-
-	-- Stack above balance (bottom → top): BalanceBar | rebirth bar | AUTO
-	-- Heights used by applyMetrics so nothing overlaps after layout scale
-	local BAL_H = 112
-	local RB_H = 10
-	local AUTO_H = 42
-	local GAP_BAL_RB = 12
-	local GAP_RB_AUTO = 10
+	local _ = coinChip
+	local _ = powerChip
 
 	local rbHost = Instance.new("Frame")
 	rbHost.Name = "RebirthProg"
@@ -346,7 +336,6 @@ function Hud.Mount(
 	rbHost.Parent = root
 	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, RB_H)
 
-	-- auto status chip (toggle T) — matched to large balance sector
 	local autoChip = UIKit.Button({
 		Name = "AutoChip",
 		Parent = root,
@@ -364,7 +353,6 @@ function Hud.Mount(
 		end,
 	})
 
-	-- ClickPop anchor (center of screen). Actual swing is App-wide LMB/touch.
 	local clickAnchor = Instance.new("Frame")
 	clickAnchor.Name = "ClickAnchor"
 	clickAnchor.BackgroundTransparency = 1
@@ -392,16 +380,21 @@ function Hud.Mount(
 
 		boosts.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad)
 
-		-- Large balance sector + stacked rebirth bar + AUTO (same widths, no overlap)
-		local balW = math.clamp(m.actionW * 0.95, 380, 560)
+		local rowW = math.clamp(m.actionW * 1.05, 480, 720)
 		local pad = m.pad
-		bal.Size = UDim2.fromOffset(balW, BAL_H)
+		bal.Size = UDim2.fromOffset(rowW, BAL_H)
 		bal.Position = UDim2.new(0.5, 0, 1, -pad)
 
-		rbHost.Size = UDim2.fromOffset(balW, RB_H)
+		-- scale chips with row width
+		local chipW = math.floor((rowW - GAP * 3 - ICON_SZ * 2) / 2)
+		chipW = math.clamp(chipW, 140, 220)
+		coinChip.Size = UDim2.fromOffset(chipW, CHIP_H)
+		powerChip.Size = UDim2.fromOffset(chipW, CHIP_H)
+
+		rbHost.Size = UDim2.fromOffset(math.min(rowW, 520), RB_H)
 		rbHost.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB))
 
-		autoChip.Size = UDim2.fromOffset(math.clamp(math.floor(balW * 0.32), 120, 160), AUTO_H)
+		autoChip.Size = UDim2.fromOffset(math.clamp(math.floor(rowW * 0.28), 120, 168), AUTO_H)
 		autoChip.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB + RB_H + GAP_RB_AUTO))
 		autoChip.TextSize = 18
 		local autoLab = autoChip:FindFirstChild("Label")

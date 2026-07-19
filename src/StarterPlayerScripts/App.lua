@@ -274,9 +274,24 @@ function App.Start()
 
 	pcall(function()
 		Net.Event("ProfileUpdate").OnClientEvent:Connect(function(payload)
-			if typeof(payload) == "table" then
-				store:SetData(payload.profile, payload.stats)
-				refreshAll()
+			if typeof(payload) ~= "table" then
+				return
+			end
+			store:SetData(payload.profile, payload.stats)
+			-- Always update HUD + weapon visual; windows only if panel open
+			-- (inventory full rebuild is throttled inside Windows.RefreshAll)
+			if hudApi then
+				hudApi.Refresh()
+			end
+			pcall(function()
+				WeaponVisual.Refresh(store:PeekProfile())
+			end)
+			local panel = store:PeekPanel()
+			if panel and panel ~= "none" and windowsApi then
+				windowsApi.RefreshAll()
+			end
+			if store:PeekModal() and modalsApi then
+				modalsApi.Refresh()
 			end
 		end)
 	end)
@@ -379,11 +394,19 @@ function App.Start()
 		end
 		-- Binds: Q=rebirth, E=inventory (no Space attack)
 		local invStore = store :: any
+		local function openInvTab(tab: string)
+			invStore._invTab = tab
+			if store:PeekPanel() == "weapons" and windowsApi and windowsApi.ForceRefreshPanel then
+				-- already open: switch tab without full HUD bounce / combat rebuild spam
+				windowsApi.ForceRefreshPanel()
+			else
+				store:OpenPanel("weapons")
+			end
+		end
 		if input.KeyCode == Enum.KeyCode.Q then
 			openModal("rebirth", nil)
 		elseif input.KeyCode == Enum.KeyCode.E or input.KeyCode == Enum.KeyCode.I then
-			invStore._invTab = "weapons"
-			store:OpenPanel("weapons")
+			openInvTab("weapons")
 		elseif input.KeyCode == Enum.KeyCode.T then
 			pcall(function()
 				Net.ToggleAuto()
@@ -391,21 +414,17 @@ function App.Start()
 		elseif input.KeyCode == Enum.KeyCode.R then
 			openModal("rebirth", nil)
 		elseif input.KeyCode == Enum.KeyCode.P then
-			invStore._invTab = "pets"
-			store:OpenPanel("weapons")
+			openInvTab("pets")
 		elseif input.KeyCode == Enum.KeyCode.J then
 			store:OpenPanel("quests")
 		elseif input.KeyCode == Enum.KeyCode.L then
 			store:OpenPanel("locations")
 		elseif input.KeyCode == Enum.KeyCode.C then
-			invStore._invTab = "cases"
-			store:OpenPanel("weapons")
+			openInvTab("cases")
 		elseif input.KeyCode == Enum.KeyCode.B then
-			invStore._invTab = "shop"
-			store:OpenPanel("weapons")
+			openInvTab("shop")
 		elseif input.KeyCode == Enum.KeyCode.U then
-			invStore._invTab = "profile"
-			store:OpenPanel("weapons")
+			openInvTab("profile")
 		elseif input.KeyCode == Enum.KeyCode.Escape then
 			if caseApi and caseApi.IsOpen() then
 				caseApi.Close()
@@ -414,7 +433,13 @@ function App.Start()
 			else
 				store:ClosePanel()
 			end
-			refreshAll()
+			-- only visibility/HUD — not a full inventory rebuild storm
+			if hudApi then
+				hudApi.Refresh()
+			end
+			if windowsApi then
+				windowsApi.RefreshAll()
+			end
 		end
 	end)
 

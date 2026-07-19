@@ -1020,9 +1020,33 @@ function Inventory.Bind(
 			end
 
 			local row = actionsRow()
+			-- Equip best: highest powerMult → main; 2nd → offhand if pass/unlock
+			actBtn(row, "Equip best", Color3.fromRGB(0, 110, 95), 1, function()
+				local ranked: { { uid: string, power: number, level: number } } = {}
+				for _, w in ipairs(weapons) do
+					local d = WeaponConfig.Get(w.id)
+					table.insert(ranked, {
+						uid = w.uid,
+						power = (d and d.powerMult) or 0,
+						level = w.level or 1,
+					})
+				end
+				table.sort(ranked, function(a, b)
+					if a.power ~= b.power then
+						return a.power > b.power
+					end
+					return a.level > b.level
+				end)
+				if ranked[1] then
+					Net.EquipWeapon(ranked[1].uid, "main")
+				end
+				if offUnlocked and ranked[2] and ranked[2].uid ~= ranked[1].uid then
+					Net.EquipWeapon(ranked[2].uid, "offhand")
+				end
+			end)
 			if selected then
 				local def = WeaponConfig.Get(selected.id)
-				lbl(row, (def and def.name) or WeaponConfig.GetDisplayName(selected.id), UDim2.fromOffset(120, 32), nil, 12, rarityBorder(def and def.rarity), 35)
+				lbl(row, (def and def.name) or WeaponConfig.GetDisplayName(selected.id), UDim2.fromOffset(110, 32), nil, 12, rarityBorder(def and def.rarity), 35)
 				actBtn(row, "Equip main", Color3.fromRGB(0, 90, 80), 2, function()
 					Net.EquipWeapon(selected.uid, "main")
 				end)

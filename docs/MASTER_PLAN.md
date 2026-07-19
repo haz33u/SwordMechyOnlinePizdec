@@ -110,8 +110,10 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 - [x] Theme charcoal + blue CTA + red close (SCREEENS / Cristalix-like)
 - [x] **Pixel / Minecraft-like fonts** — `Theme.Fonts` = `Enum.Font.Arcade` (Title/Body/Num/Ui). Whole UIKit labels/buttons pick this up.
 - [x] HUD: boosts top-left · **large** coins/power bottom bar (~380–560×112)  
-  - Balance sector: **2 TextLabels** (Coins, Power — soft UIStroke glow, gold/power colors) + **2 ImageLabels** (Rebirth / Inventory icons from Creator Store)  
-  - Key hints **Q** / **E** under icons; click = ImageButton hit area  
+  - Balance: **4 separate chips** in a row — Rebirth icon · Coins card · Power card · Inventory icon (not one merged rectangle)  
+  - Coins/Power = TextLabel + soft glow; Q/E = ImageLabel icons (Creator Store) + key hints  
+  - Inventory full rebuild throttled (only when bag/equip signature changes or tab switch); no bounce re-fire if already open  
+  - Weapons bar: **Equip best** (top power → main; 2nd → offhand if unlock/pass)  
   - Rule: **do not make tiny HUD metrics** (FullHD readability)
 - [x] **Attack = LMB + mobile tap** (screen-wide, not Space) — see §4
 - [x] **English locale** for UI + configs + server Notify (see §12 UI string map)
