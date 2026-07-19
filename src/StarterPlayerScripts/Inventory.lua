@@ -16,6 +16,7 @@ local UIKit = require(script.Parent.UIKit)
 local Format = require(script.Parent.Format)
 local Net = require(script.Parent.Net)
 local Rarity = require(script.Parent.Rarity)
+local Titles = require(script.Parent.Titles)
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponConfig = require(Shared.Config.WeaponConfig)
@@ -23,6 +24,7 @@ local PetConfig = require(Shared.Config.PetConfig)
 local AuraConfig = require(Shared.Config.AuraConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 local GamePassConfig = require(Shared.Config.GamePassConfig)
+local WorldConfig = require(Shared.Config.WorldConfig)
 
 local Inventory = {}
 
@@ -184,7 +186,8 @@ function Inventory.Bind(
 	local canvas: Frame
 	local titleLab: TextLabel
 	local countLab: TextLabel
-	local infoLab: TextLabel
+	local identityLab: TextLabel
+	local locLab: TextLabel
 	local main: Frame
 	local actions: Frame
 	local tip: Frame
@@ -805,40 +808,102 @@ function Inventory.Bind(
 		canvas = solid(body, "InvCanvas", UDim2.new(1, 0, 1, 0), nil, BG_PANEL, 31)
 		UIKit.Stroke(canvas, BD2, 2, 0.08)
 
-		local header = solid(canvas, "Header", UDim2.new(1, 0, 0, 48), UDim2.fromOffset(0, 0), Color3.fromRGB(18, 18, 18), 32)
+		-- Variant B: single header row — tab title left, Title|Nick + Loc chips right (no grey info strip)
+		local HEADER_H = 56
+		local header = solid(canvas, "Header", UDim2.new(1, 0, 0, HEADER_H), UDim2.fromOffset(0, 0), Color3.fromRGB(18, 18, 18), 32)
 		solid(header, "Line", UDim2.new(1, 0, 0, 2), UDim2.new(0, 0, 1, -2), BD, 33)
-		titleLab = lbl(header, "Inventory — Weapons", UDim2.new(0.55, 0, 1, 0), UDim2.fromOffset(18, 0), 15, TW, 34)
+
+		titleLab = lbl(header, "Inventory — Weapons", UDim2.new(0.38, 0, 1, 0), UDim2.fromOffset(16, 0), 16, TW, 34, Enum.Font.GothamBold)
 		titleLab.Name = "Title"
-		countLab = lbl(header, "", UDim2.new(0.28, 0, 1, 0), UDim2.new(0.52, 0, 0, 0), 12, TL, 34)
-		countLab.TextXAlignment = Enum.TextXAlignment.Right
-		countLab.Name = "Count"
+		titleLab.TextXAlignment = Enum.TextXAlignment.Left
+		titleLab.TextTruncate = Enum.TextTruncate.AtEnd
 
 		local close = Instance.new("TextButton")
 		close.Name = "Close"
-		close.Size = UDim2.fromOffset(30, 30)
+		close.Size = UDim2.fromOffset(32, 32)
 		close.Position = UDim2.new(1, -42, 0.5, 0)
 		close.AnchorPoint = Vector2.new(0, 0.5)
 		close.BackgroundColor3 = RED_CLOSE
 		close.BackgroundTransparency = 0
 		close.Text = "✕"
 		close.TextColor3 = Color3.new(1, 1, 1)
-		close.Font = Enum.Font.Arcade
+		close.Font = Enum.Font.GothamBold
 		close.TextSize = 14
 		close.AutoButtonColor = false
 		close.BorderSizePixel = 0
-		close.ZIndex = 35
+		close.ZIndex = 36
 		close.Parent = header
 		UIKit.Corner(close, 99)
 		close.MouseButton1Click:Connect(onClose)
 
-		local info = solid(canvas, "Info", UDim2.new(1, 0, 0, 32), UDim2.fromOffset(0, 48), Color3.fromRGB(16, 16, 16), 32)
-		infoLab = lbl(info, "", UDim2.new(1, -24, 1, 0), UDim2.fromOffset(18, 0), 13, TD, 34, Enum.Font.Arcade)
-		infoLab.Name = "InfoText"
+		-- Right cluster: count · Title|Nick · Loc  (before close)
+		local right = Instance.new("Frame")
+		right.Name = "HeaderRight"
+		right.BackgroundTransparency = 1
+		right.Size = UDim2.new(0.58, -56, 1, -10)
+		right.Position = UDim2.new(1, -48, 0.5, 0)
+		right.AnchorPoint = Vector2.new(1, 0.5)
+		right.ZIndex = 34
+		right.Parent = header
+		local rightList = UIKit.List(right, 8, true, Enum.HorizontalAlignment.Right)
+		rightList.VerticalAlignment = Enum.VerticalAlignment.Center
+		rightList.Padding = UDim.new(0, 8)
+
+		countLab = lbl(right, "", UDim2.fromOffset(90, 28), nil, 13, TL, 35, Enum.Font.Gotham)
+		countLab.Name = "Count"
+		countLab.LayoutOrder = 1
+		countLab.TextXAlignment = Enum.TextXAlignment.Right
+		countLab.AutomaticSize = Enum.AutomaticSize.X
+		countLab.Size = UDim2.fromOffset(0, 28)
+
+		local function headerChip(name: string, order: number, edge: Color3, w: number): (Frame, TextLabel)
+			local chip = Instance.new("Frame")
+			chip.Name = name
+			chip.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+			chip.BackgroundTransparency = 0.05
+			chip.BorderSizePixel = 0
+			chip.Size = UDim2.fromOffset(w, 34)
+			chip.AutomaticSize = Enum.AutomaticSize.X
+			chip.LayoutOrder = order
+			chip.ZIndex = 35
+			chip.Parent = right
+			UIKit.Corner(chip, 8)
+			UIKit.Stroke(chip, edge, 1.4, 0.2)
+			UIKit.Pad(chip, nil, 12, 0, 12, 0)
+
+			local lab = Instance.new("TextLabel")
+			lab.Name = "Text"
+			lab.BackgroundTransparency = 1
+			lab.Size = UDim2.fromOffset(0, 34)
+			lab.AutomaticSize = Enum.AutomaticSize.X
+			lab.Font = Titles.Font
+			lab.TextSize = 15
+			lab.TextColor3 = TW
+			lab.TextXAlignment = Enum.TextXAlignment.Center
+			lab.TextYAlignment = Enum.TextYAlignment.Center
+			lab.RichText = true
+			lab.Text = ""
+			lab.ZIndex = 36
+			lab.Parent = chip
+			return chip, lab
+		end
+
+		local _, idLab = headerChip("Identity", 2, Titles.TitleColor, 200)
+		identityLab = idLab
+		identityLab.TextSize = 16
+		identityLab.Font = Titles.Font
+
+		local _, lLab = headerChip("Loc", 3, Color3.fromRGB(90, 160, 255), 100)
+		locLab = lLab
+		locLab.Font = Enum.Font.GothamBold
+		locLab.TextSize = 14
+		locLab.TextColor3 = Color3.fromRGB(170, 210, 255)
+		locLab.RichText = false
 
 		local actionH = 68 -- room for larger Equip best / action chips
-		local contentH = 48 + 32 + actionH + 100
-		-- Full-width main content (left preview strip intentionally removed)
-		main = solid(canvas, "Main", UDim2.new(1, 0, 1, -contentH), UDim2.fromOffset(0, 80), Color3.fromRGB(20, 20, 20), 32)
+		local contentH = HEADER_H + actionH + 100
+		-- Full-width main (info strip removed — more room for slots)
+		main = solid(canvas, "Main", UDim2.new(1, 0, 1, -contentH), UDim2.fromOffset(0, HEADER_H), Color3.fromRGB(20, 20, 20), 32)
 		main.BackgroundTransparency = 0
 		main.ClipsDescendants = true
 		main.Name = "Main"
@@ -1024,17 +1089,24 @@ function Inventory.Bind(
 		titleLab.Text = titles[tab] or "Inventory"
 
 		local lp = Players.LocalPlayer
-		local showName = inspectName or (lp and lp.Name) or "Player"
-		local showStats = inspectStats or stats
+		local showNick = inspectName
+			or (lp and ((lp.DisplayName ~= "" and lp.DisplayName) or lp.Name))
+			or "Player"
+		-- Future: inspect profile.title when viewing others; for now local title only when not inspecting
+		local showTitle = if inspectName then Titles.DEFAULT else Titles.Of(profile)
 		local showLoc = inspectLocation or profile.currentLocation or 1
-		infoLab.Text = string.format(
-			"● %s  |  R%d %s   ●  Loc %s%s",
-			showName,
-			showStats and (showStats.rebirthLevel or 0) or 0,
-			showStats and Format.Mult(showStats.rebirthMult) or "x1",
-			tostring(showLoc),
-			inspectName and "  ·  VIEWING" or ""
-		)
+		local locMeta = WorldConfig.GetMeta(showLoc)
+		local locName = (locMeta and locMeta.name) or ("Loc " .. tostring(showLoc))
+
+		if identityLab then
+			identityLab.Text = Titles.Rich(showTitle, showNick)
+		end
+		if locLab then
+			locLab.Text = locName
+			if inspectName then
+				locLab.Text = locName .. " · VIEW"
+			end
+		end
 
 		local function setMini(i: number, text: string, col: Color3?)
 			local m = miniSlots[i]
@@ -1573,16 +1645,32 @@ function Inventory.Bind(
 			UIKit.Corner(bust, 12)
 			UIKit.Stroke(bust, CYAN, 2, 0.25)
 
-			lbl(headRow, inspectName or (lp and lp.DisplayName) or "Player", UDim2.new(1, -190, 0, 40), UDim2.fromOffset(184, 28), 28, TW, 36)
+			local headNick = inspectName or (lp and ((lp.DisplayName ~= "" and lp.DisplayName) or lp.Name)) or "Player"
+			local headTitle = if inspectName then Titles.DEFAULT else Titles.Of(profile)
+			local idLine = Instance.new("TextLabel")
+			idLine.Name = "TitleNick"
+			idLine.BackgroundTransparency = 1
+			idLine.Size = UDim2.new(1, -190, 0, 40)
+			idLine.Position = UDim2.fromOffset(184, 28)
+			idLine.Font = Titles.Font
+			idLine.TextSize = 26
+			idLine.TextXAlignment = Enum.TextXAlignment.Left
+			idLine.TextYAlignment = Enum.TextYAlignment.Center
+			idLine.RichText = true
+			idLine.Text = Titles.Rich(headTitle, headNick)
+			idLine.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+			idLine.TextStrokeTransparency = 0.45
+			idLine.ZIndex = 36
+			idLine.Parent = headRow
 			lbl(
 				headRow,
 				"@" .. (inspectName or (lp and lp.Name) or "player"),
 				UDim2.new(1, -190, 0, 28),
 				UDim2.fromOffset(184, 72),
-				20,
+				18,
 				CYAN,
 				36,
-				Enum.Font.Arcade
+				Enum.Font.Gotham
 			)
 			if inspectName then
 				local meBtn = Instance.new("TextButton")

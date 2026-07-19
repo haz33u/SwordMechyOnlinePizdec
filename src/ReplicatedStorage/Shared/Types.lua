@@ -56,6 +56,9 @@ export type PlayerProfile = {
 	rebirthLevel: number,
 	rebirthMult: number,
 
+	-- cosmetic title shown as "Title | Nick" (HUD + nameplate). Optional until title system.
+	title: string?,
+
 	-- character upgrades
 	upgradeLevels: { [string]: number },
 

@@ -26,6 +26,7 @@ local Toast = require(script.Parent.Toast)
 local FloatingDamage = require(script.Parent.FloatingDamage)
 local ClickPop = require(script.Parent.ClickPop)
 local WeaponVisual = require(script.Parent.WeaponVisual)
+local PlayerNameplate = require(script.Parent.PlayerNameplate)
 local T = require(script.Parent.Theme)
 
 local App = {}
@@ -152,6 +153,7 @@ function App.Start()
 	end)
 
 	local toastApi, windowsApi, modalsApi, hudApi, caseApi
+	local nameplateApi: any = nil
 	local clickPop: any = nil
 	local onCombatFx: any = nil
 
@@ -186,6 +188,9 @@ function App.Start()
 		end
 		if modalsApi then
 			modalsApi.Refresh()
+		end
+		if nameplateApi then
+			nameplateApi.Refresh()
 		end
 		pcall(function()
 			WeaponVisual.Refresh(store:PeekProfile())
@@ -242,6 +247,9 @@ function App.Start()
 		WeaponVisual.Init(function()
 			return store:PeekProfile()
 		end)
+	end)
+	step("PlayerNameplate", function()
+		nameplateApi = PlayerNameplate.Mount(store)
 	end)
 
 	-- Ferryman NPC → open world travel panel
