@@ -186,10 +186,58 @@ local function getAnimator(char: Model): Animator?
 	return animator
 end
 
-local function findMotor(char: Model, name: string): Motor6D?
-	local m = char:FindFirstChild(name, true)
-	if m and m:IsA("Motor6D") then
-		return m
+local mcWarnedNoShoulder = false
+
+--- R15: Motor6D "RightShoulder" (often under RightUpperArm). R6: "Right Shoulder" under Torso.
+local function findRightShoulder(char: Model): Motor6D?
+	-- direct common paths first
+	local paths = {
+		{ "RightUpperArm", "RightShoulder" },
+		{ "UpperTorso", "RightShoulder" },
+		{ "Torso", "Right Shoulder" },
+		{ "Torso", "RightShoulder" },
+	}
+	for _, p in paths do
+		local a = char:FindFirstChild(p[1])
+		if a then
+			local m = a:FindFirstChild(p[2])
+			if m and m:IsA("Motor6D") then
+				return m
+			end
+		end
+	end
+	-- scan all motors
+	for _, d in char:GetDescendants() do
+		if d:IsA("Motor6D") then
+			local n = string.lower(d.Name)
+			if n == "rightshoulder" or n == "right shoulder" then
+				return d
+			end
+			local p1 = d.Part1
+			local p0 = d.Part0
+			if p1 and p0 then
+				local n1, n0 = p1.Name, p0.Name
+				if (n1 == "RightUpperArm" or n1 == "Right Arm") and (n0 == "UpperTorso" or n0 == "Torso") then
+					return d
+				end
+			end
+		end
+	end
+	return nil
+end
+
+local function findWaist(char: Model): Motor6D?
+	local ut = char:FindFirstChild("UpperTorso")
+	if ut then
+		local w = ut:FindFirstChild("Waist")
+		if w and w:IsA("Motor6D") then
+			return w
+		end
+	end
+	for _, d in char:GetDescendants() do
+		if d:IsA("Motor6D") and string.lower(d.Name) == "waist" then
+			return d
+		end
 	end
 	return nil
 end
@@ -218,12 +266,36 @@ local function ensureMcSound(): Sound?
 	return s
 end
 
-local function setupMcJoints(char: Model)
-	mcShoulder = findMotor(char, "RightShoulder") or findMotor(char, "Right Shoulder")
-	mcWaist = findMotor(char, "Waist")
-	if not mcShoulder then
-		warn("[WeaponVisual] MC swing: RightShoulder Motor6D not found (need R15/R6)")
+local function setupMcJoints(char: Model): boolean
+	-- joints may appear after character stream; retry briefly
+	if not mcShoulder or not mcShoulder.Parent then
+		mcShoulder = findRightShoulder(char)
 	end
+	if not mcWaist or not mcWaist.Parent then
+		mcWaist = findWaist(char)
+	end
+	if mcShoulder then
+		mcWarnedNoShoulder = false
+		return true
+	end
+	if not mcWarnedNoShoulder then
+		mcWarnedNoShoulder = true
+		local motors = {}
+		for _, d in char:GetDescendants() do
+			if d:IsA("Motor6D") then
+				table.insert(motors, d:GetFullName())
+			end
+		end
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		local rig = if hum then tostring(hum.RigType) else "?"
+		warn(
+			"[WeaponVisual] MC swing: no RightShoulder. RigType=",
+			rig,
+			"| motors:",
+			if #motors > 0 then table.concat(motors, "; ") else "(none yet)"
+		)
+	end
+	return false
 end
 
 local function bindMcRender()
@@ -274,8 +346,24 @@ local function playMinecraftSwing()
 	if mcSwinging then
 		return -- MC-style cooldown: no re-swing mid anim
 	end
-	setupMcJoints(char)
-	if not mcShoulder then
+	if not setupMcJoints(char) then
+		-- late joints: try once after a frame (avoids spam; one retry)
+		task.defer(function()
+			local c = player.Character
+			if not c or mcSwinging then
+				return
+			end
+			if setupMcJoints(c) then
+				bindMcRender()
+				mcSwinging = true
+				mcT = 0
+				local s = ensureMcSound()
+				if s then
+					s:Play()
+				end
+				print("[WeaponVisual] PlayAttack → MinecraftSwing (deferred joints)")
+			end
+		end)
 		return
 	end
 	bindMcRender()
@@ -370,11 +458,21 @@ function WeaponVisual.Init(getProfile: () -> any?)
 		mcT = 0
 		mcShoulder = nil
 		mcWaist = nil
-		task.defer(function()
-			task.wait(0.25)
-			setupMcJoints(char)
+		mcWarnedNoShoulder = false
+		task.spawn(function()
+			-- wait for R15 stream (RightUpperArm + motor)
+			local deadline = os.clock() + 5
+			while os.clock() < deadline and char.Parent do
+				if setupMcJoints(char) then
+					break
+				end
+				task.wait(0.15)
+			end
 			if AnimationConfig.UseMinecraftSwing then
 				bindMcRender()
+				if mcShoulder then
+					print("[WeaponVisual] MC joints ready:", mcShoulder:GetFullName())
+				end
 			end
 			WeaponVisual.Refresh(getProfile())
 		end)
