@@ -27,7 +27,25 @@ https://www.figma.com/design/WhLWwV1ZttJfjbvxKhSve2/Untitled?node-id=1-122
 - **Ported** into `Windows.refreshCharacter` (panel `character`, open UP / U / K)  
 - Layout: header (title + coins + close) · 5 cards (Strength/Backpack/Speed/Crit/Multi-Crit) · footer Next Level + Price + Upgrade  
 - Data: `Power` `Backpack` `ClickSpeed` `CritChance` `MultiCrit` via `UpgradeConfig` / `BuyUpgrade`  
-- Icons: emoji placeholders (Figma PNGs in `art/icons/upgrades/` — upload to Studio → IconConfig later)
+- Icons: Figma PNGs in `art/icons/upgrades/` · wire via `UpgradeIconConfig.lua` after Studio Bulk Import
+
+### Can the agent upload rbxassetid automatically?
+**Mostly no (with current Studio MCP):**
+- `upload_image` only accepts **trusted** http(s) hosts — Figma MCP URLs, GitHub raw, localhost, tmpfiles are all **rejected**.
+- Local file paths are rejected.
+- Agent **did** download all Figma PNGs into git (`art/icons/upgrades/`).
+
+**You (2 min once):** Studio → Asset Manager → Images → **Bulk Import** → select `art/icons/upgrades/*.png` → paste Asset IDs into `UpgradeIconConfig.lua` → then UI is 1:1 with real icons.
+
+| File | Config key |
+|------|------------|
+| icon_strength.png | `Power` |
+| icon_backpack.png | `Backpack` |
+| icon_speed.png | `ClickSpeed` |
+| icon_crit.png | `CritChance` |
+| icon_multicrit.png | `MultiCrit` |
+| coin.png | `Coin` |
+| close.png | `Close` |
 
 ---
 

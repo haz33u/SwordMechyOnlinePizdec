@@ -16,6 +16,7 @@ local Layout = require(script.Parent.Layout)
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local UpgradeConfig = require(Shared.Config.UpgradeConfig)
+local UpgradeIconConfig = require(Shared.Config.UpgradeIconConfig)
 local WorldConfig = require(Shared.Config.WorldConfig)
 local QuestConfig = require(Shared.Config.QuestConfig)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
@@ -308,23 +309,41 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		coinPill.Parent = header
 		UIKit.Corner(coinPill, 3)
 		UIKit.Stroke(coinPill, Color3.fromRGB(51, 51, 51), 1, 0)
-		UIKit.Label({
-			Parent = coinPill,
-			Text = "🪙  " .. Format.Num(coins),
-			Size = UDim2.fromScale(1, 1),
-			SizePx = 12,
-			Font = T.Font.Title,
-			Color = Color3.fromRGB(255, 178, 0),
-			X = Enum.TextXAlignment.Center,
-			Z = 34,
-		})
+		local coinImgId = UpgradeIconConfig.Get("Coin")
+		if coinImgId ~= "" then
+			local cimg = Instance.new("ImageLabel")
+			cimg.BackgroundTransparency = 1
+			cimg.Image = coinImgId
+			cimg.Size = UDim2.fromOffset(18, 18)
+			cimg.Position = UDim2.fromOffset(8, 6)
+			cimg.ZIndex = 34
+			cimg.Parent = coinPill
+			UIKit.Label({
+				Parent = coinPill,
+				Text = Format.Num(coins),
+				Size = UDim2.new(1, -30, 1, 0),
+				Position = UDim2.fromOffset(28, 0),
+				SizePx = 12,
+				Font = T.Font.Title,
+				Color = Color3.fromRGB(255, 178, 0),
+				Z = 34,
+			})
+		else
+			UIKit.Label({
+				Parent = coinPill,
+				Text = "🪙  " .. Format.Num(coins),
+				Size = UDim2.fromScale(1, 1),
+				SizePx = 12,
+				Font = T.Font.Title,
+				Color = Color3.fromRGB(255, 178, 0),
+				X = Enum.TextXAlignment.Center,
+				Z = 34,
+			})
+		end
 
 		local closeBtn = Instance.new("TextButton")
 		closeBtn.Name = "Close"
-		closeBtn.Text = "✕"
-		closeBtn.Font = Enum.Font.GothamBold
-		closeBtn.TextSize = 14
-		closeBtn.TextColor3 = Color3.fromRGB(255, 220, 220)
+		closeBtn.Text = ""
 		closeBtn.AutoButtonColor = true
 		closeBtn.Size = UDim2.fromOffset(26, 26)
 		closeBtn.Position = UDim2.new(1, -36, 0.5, 0)
@@ -335,6 +354,22 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		closeBtn.Parent = header
 		UIKit.Corner(closeBtn, 3)
 		UIKit.Stroke(closeBtn, Color3.fromRGB(170, 34, 34), 1, 0)
+		local closeImgId = UpgradeIconConfig.Get("Close")
+		if closeImgId ~= "" then
+			local ximg = Instance.new("ImageLabel")
+			ximg.BackgroundTransparency = 1
+			ximg.Image = closeImgId
+			ximg.Size = UDim2.fromOffset(14, 14)
+			ximg.Position = UDim2.fromScale(0.5, 0.5)
+			ximg.AnchorPoint = Vector2.new(0.5, 0.5)
+			ximg.ZIndex = 36
+			ximg.Parent = closeBtn
+		else
+			closeBtn.Text = "✕"
+			closeBtn.Font = Enum.Font.GothamBold
+			closeBtn.TextSize = 14
+			closeBtn.TextColor3 = Color3.fromRGB(255, 220, 220)
+		end
 		closeBtn.MouseButton1Click:Connect(function()
 			store:ClosePanel()
 		end)
@@ -419,14 +454,27 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				mid.ClipsDescendants = true
 				mid.Parent = card
 				UIKit.Gradient(mid, ui.grad0, ui.grad1, 160)
-				UIKit.Label({
-					Parent = mid,
-					Text = ui.glyph,
-					Size = UDim2.fromScale(1, 1),
-					SizePx = 36,
-					X = Enum.TextXAlignment.Center,
-					Z = 35,
-				})
+				local iconAsset = UpgradeIconConfig.Get(upId)
+				if iconAsset ~= "" then
+					local img = Instance.new("ImageLabel")
+					img.BackgroundTransparency = 1
+					img.Image = iconAsset
+					img.ScaleType = Enum.ScaleType.Fit
+					img.Size = UDim2.fromOffset(64, 64)
+					img.Position = UDim2.fromScale(0.5, 0.5)
+					img.AnchorPoint = Vector2.new(0.5, 0.5)
+					img.ZIndex = 35
+					img.Parent = mid
+				else
+					UIKit.Label({
+						Parent = mid,
+						Text = ui.glyph,
+						Size = UDim2.fromScale(1, 1),
+						SizePx = 36,
+						X = Enum.TextXAlignment.Center,
+						Z = 35,
+					})
+				end
 				if not unlocked then
 					local lock = UIKit.Label({
 						Parent = mid,
