@@ -1,7 +1,7 @@
 --!strict
 --[[
 	Overhead "Title | Nick" above local player.
-	Hides default Humanoid name so we don't double-stack.
+	Fixed large pixel billboard + fixed TextSize (no TextScaled blur).
 ]]
 
 local Players = game:GetService("Players")
@@ -19,6 +19,13 @@ local function clearOld(parent: Instance)
 	end
 end
 
+local function paintLabel(lab: TextLabel, store: any)
+	local profile = store:PeekProfile()
+	local plr = Players.LocalPlayer
+	local nick = (plr and (plr.DisplayName ~= "" and plr.DisplayName or plr.Name)) or "Player"
+	lab.Text = Titles.Rich(Titles.Of(profile), nick)
+end
+
 local function attach(char: Model, store: any)
 	local head = char:FindFirstChild("Head") :: BasePart?
 	if not head then
@@ -32,51 +39,53 @@ local function attach(char: Model, store: any)
 
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum then
-		-- hide default Roblox name (we render our own)
 		hum.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 		hum.NameDisplayDistance = 0
 	end
 
+	-- Large fixed pixel canvas → stays readable for other players
 	local bb = Instance.new("BillboardGui")
 	bb.Name = TAG
-	bb.AlwaysOnTop = false
+	bb.AlwaysOnTop = true
 	bb.LightInfluence = 0
-	bb.Size = UDim2.fromOffset(280, 56)
-	bb.StudsOffsetWorldSpace = Vector3.new(0, 2.6, 0)
-	bb.MaxDistance = 90
+	bb.Size = UDim2.fromOffset(Titles.PlateW, Titles.PlateH)
+	bb.StudsOffsetWorldSpace = Vector3.new(0, Titles.PlateStudsY, 0)
+	bb.MaxDistance = Titles.PlateMaxDistance
 	bb.ResetOnSpawn = false
+	bb.ClipsDescendants = false
 	bb.Parent = head
+
+	-- Solid soft plate behind text so it doesn't melt into the world
+	local plate = Instance.new("Frame")
+	plate.Name = "Plate"
+	plate.BackgroundColor3 = Color3.fromRGB(12, 12, 18)
+	plate.BackgroundTransparency = 0.28
+	plate.BorderSizePixel = 0
+	plate.Size = UDim2.fromScale(1, 1)
+	plate.Parent = bb
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 10)
+	corner.Parent = plate
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Titles.TitleColor
+	stroke.Thickness = 2
+	stroke.Transparency = 0.35
+	stroke.Parent = plate
 
 	local lab = Instance.new("TextLabel")
 	lab.Name = "Line"
-	lab.BackgroundTransparency = 1
-	lab.Size = UDim2.fromScale(1, 1)
-	lab.Font = Titles.Font
-	lab.TextSize = 20
-	lab.TextColor3 = Titles.NickColor
-	lab.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	lab.TextStrokeTransparency = 0.35
-	lab.TextXAlignment = Enum.TextXAlignment.Center
-	lab.TextYAlignment = Enum.TextYAlignment.Center
-	lab.RichText = true
-	lab.Text = ""
-	lab.Parent = bb
+	lab.Size = UDim2.new(1, -20, 1, -8)
+	lab.Position = UDim2.fromOffset(10, 4)
+	lab.Parent = plate
+	Titles.StyleLabel(lab, Titles.PlateTextSize)
+	lab.TextTruncate = Enum.TextTruncate.AtEnd
 
-	local function paint()
-		local profile = store:PeekProfile()
-		local plr = Players.LocalPlayer
-		local nick = (plr and (plr.DisplayName ~= "" and plr.DisplayName or plr.Name)) or "Player"
-		local title = Titles.Of(profile)
-		lab.Text = Titles.Rich(title, nick)
-	end
-
-	paint()
+	paintLabel(lab, store)
 	bb:SetAttribute("SM_Ready", true)
 end
 
 function PlayerNameplate.Mount(store: any): { Refresh: (self: any) -> () }
 	local lp = Players.LocalPlayer
-	local conns: { RBXScriptConnection } = {}
 
 	local function onChar(char: Model)
 		task.defer(function()
@@ -86,7 +95,7 @@ function PlayerNameplate.Mount(store: any): { Refresh: (self: any) -> () }
 		end)
 	end
 
-	table.insert(conns, lp.CharacterAdded:Connect(onChar))
+	lp.CharacterAdded:Connect(onChar)
 	if lp.Character then
 		onChar(lp.Character)
 	end
@@ -107,10 +116,13 @@ function PlayerNameplate.Mount(store: any): { Refresh: (self: any) -> () }
 			attach(char, store)
 			return
 		end
-		local lab = bb:FindFirstChild("Line")
+		local plate = bb:FindFirstChild("Plate")
+		local lab = plate and plate:FindFirstChild("Line") or bb:FindFirstChild("Line")
 		if lab and lab:IsA("TextLabel") then
-			local nick = (lp.DisplayName ~= "" and lp.DisplayName or lp.Name)
-			lab.Text = Titles.Rich(Titles.Of(store:PeekProfile()), nick)
+			-- re-pin fixed size every refresh (nothing can force TextScaled back on)
+			lab.TextScaled = false
+			lab.TextSize = Titles.PlateTextSize
+			paintLabel(lab, store)
 		end
 	end
 
