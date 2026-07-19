@@ -279,28 +279,35 @@ function Hud.Mount(
 		Z = 14,
 	})
 
-	-- rebirth progress thin bar above balance
+	-- Stack above balance (bottom → top): BalanceBar | rebirth bar | AUTO
+	-- Heights used by applyMetrics so nothing overlaps after layout scale
+	local BAL_H = 108
+	local RB_H = 10
+	local AUTO_H = 42
+	local GAP_BAL_RB = 12
+	local GAP_RB_AUTO = 10
+
 	local rbHost = Instance.new("Frame")
 	rbHost.Name = "RebirthProg"
 	rbHost.BackgroundTransparency = 1
-	rbHost.Size = UDim2.fromOffset(440, 8)
-	rbHost.Position = UDim2.new(0.5, 0, 1, -138)
+	rbHost.Size = UDim2.fromOffset(440, RB_H)
+	rbHost.Position = UDim2.new(0.5, 0, 1, -(20 + BAL_H + GAP_BAL_RB))
 	rbHost.AnchorPoint = Vector2.new(0.5, 1)
 	rbHost.ZIndex = 11
 	rbHost.Parent = root
-	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, 6)
+	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, RB_H)
 
-	-- auto status chip (toggle still T) — small, above balance
+	-- auto status chip (toggle T) — matched to large balance sector
 	local autoChip = UIKit.Button({
 		Name = "AutoChip",
 		Parent = root,
 		Text = "AUTO",
-		Size = UDim2.fromOffset(72, 28),
-		Position = UDim2.new(0.5, 0, 1, -108),
+		Size = UDim2.fromOffset(128, AUTO_H),
+		Position = UDim2.new(0.5, 0, 1, -(20 + BAL_H + GAP_BAL_RB + RB_H + GAP_RB_AUTO)),
 		Anchor = Vector2.new(0.5, 1),
 		Color = T.AutoOff,
 		Color2 = T.AutoOffDeep,
-		SizePx = 12,
+		SizePx = 18,
 		Compact = true,
 		Z = 12,
 		OnClick = function()
@@ -336,14 +343,22 @@ function Hud.Mount(
 
 		boosts.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad)
 
-		-- Large balance sector (never tiny on FullHD)
+		-- Large balance sector + stacked rebirth bar + AUTO (same widths, no overlap)
 		local balW = math.clamp(m.actionW * 0.95, 380, 560)
-		local balH = 108
-		bal.Size = UDim2.fromOffset(balW, balH)
-		bal.Position = UDim2.new(0.5, 0, 1, -m.pad)
-		rbHost.Size = UDim2.fromOffset(balW, 8)
-		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.pad + balH + 14))
-		autoChip.Position = UDim2.new(0.5, 0, 1, -(m.pad + balH + 28))
+		local pad = m.pad
+		bal.Size = UDim2.fromOffset(balW, BAL_H)
+		bal.Position = UDim2.new(0.5, 0, 1, -pad)
+
+		rbHost.Size = UDim2.fromOffset(balW, RB_H)
+		rbHost.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB))
+
+		autoChip.Size = UDim2.fromOffset(math.clamp(math.floor(balW * 0.32), 120, 160), AUTO_H)
+		autoChip.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB + RB_H + GAP_RB_AUTO))
+		autoChip.TextSize = 18
+		local autoLab = autoChip:FindFirstChild("Label")
+		if autoLab and autoLab:IsA("TextLabel") then
+			autoLab.TextSize = 18
+		end
 	end
 
 	pcall(function()
