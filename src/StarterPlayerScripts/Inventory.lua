@@ -41,12 +41,13 @@ local GOLD = Color3.fromRGB(232, 184, 0)
 local RED_CLOSE = Color3.fromRGB(204, 34, 0)
 local GREEN = Color3.fromRGB(120, 170, 100)
 
-local SLOT_GAP = 6
+local SLOT_GAP = 12 -- more air so hover scale does not pile cells
 local COLS = 9 -- target columns; cell size fills width
 local MAX_SLOTS = 45
 local INV_CAP = 32
 local TAB_R = 64
 local HOVER_SCALE = 1.1
+local NEIGHBOR_SCALE = 0.9 -- other cells shrink when one is hovered (push-apart)
 
 --[[
 	Bottom tabs ≈ nobackground.png: rounded icon tiles, semi-transparent fill,
@@ -100,7 +101,7 @@ local function lbl(
 	if pos then
 		l.Position = pos
 	end
-	l.Font = font or Enum.Font.GothamBold
+	l.Font = font or Enum.Font.Arcade
 	l.TextSize = sizePx or 13
 	l.TextColor3 = color or TW
 	l.TextXAlignment = Enum.TextXAlignment.Left
@@ -125,7 +126,7 @@ local function keybind(parent: Instance, order: number, key: string, desc: strin
 	badge.BackgroundTransparency = 0
 	badge.BorderSizePixel = 0
 	badge.Text = key
-	badge.Font = Enum.Font.GothamBold
+	badge.Font = Enum.Font.Arcade
 	badge.TextSize = 11
 	badge.TextColor3 = TD
 	badge.Size = UDim2.fromOffset(0, 24)
@@ -138,7 +139,7 @@ local function keybind(parent: Instance, order: number, key: string, desc: strin
 	local d = Instance.new("TextLabel")
 	d.BackgroundTransparency = 1
 	d.Text = desc
-	d.Font = Enum.Font.Gotham
+	d.Font = Enum.Font.Arcade
 	d.TextSize = 13
 	d.TextColor3 = TL
 	d.Size = UDim2.fromOffset(0, 24)
@@ -315,8 +316,8 @@ function Inventory.Bind(
 		l.BorderSizePixel = 0
 		l.Size = UDim2.new(1, 0, 0, 0)
 		l.AutomaticSize = Enum.AutomaticSize.Y
-		l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
-		l.TextSize = bold and 14 or 13
+		l.Font = Enum.Font.Arcade
+		l.TextSize = bold and 15 or 13
 		l.TextColor3 = color or TW
 		l.TextXAlignment = Enum.TextXAlignment.Left
 		l.TextYAlignment = Enum.TextYAlignment.Top
@@ -397,13 +398,22 @@ function Inventory.Bind(
 		end
 	end
 
-	local function bindHover(btn: GuiObject, stroke: UIStroke?, baseStroke: Color3?)
-		local sc = Instance.new("UIScale")
-		sc.Scale = 1
-		sc.Parent = btn
+	local function ensureScale(gui: GuiObject): UIScale
+		local sc = gui:FindFirstChildOfClass("UIScale")
+		if not sc then
+			sc = Instance.new("UIScale")
+			sc.Scale = 1
+			sc.Parent = gui
+		end
+		return sc
+	end
+
+	--- Hover: grow self, shrink neighbors so cells do not stack on each other
+	local function bindHover(btn: GuiObject, stroke: UIStroke?, baseStroke: Color3?, gridParent: Instance?)
+		local sc = ensureScale(btn)
 		local baseCol = baseStroke or BD
 		btn.MouseEnter:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
 				Scale = HOVER_SCALE,
 			}):Play()
 			if stroke then
@@ -412,6 +422,14 @@ function Inventory.Bind(
 					Thickness = 2.5,
 					Transparency = 0,
 				}):Play()
+			end
+			if gridParent then
+				for _, ch in gridParent:GetChildren() do
+					if ch:IsA("GuiButton") and ch ~= btn then
+						local nsc = ensureScale(ch)
+						TweenService:Create(nsc, TweenInfo.new(0.12), { Scale = NEIGHBOR_SCALE }):Play()
+					end
+				end
 			end
 		end)
 		btn.MouseLeave:Connect(function()
@@ -424,6 +442,16 @@ function Inventory.Bind(
 					Thickness = 1.5,
 					Transparency = 0.1,
 				}):Play()
+			end
+			if gridParent then
+				for _, ch in gridParent:GetChildren() do
+					if ch:IsA("GuiButton") then
+						local nsc = ch:FindFirstChildOfClass("UIScale")
+						if nsc then
+							TweenService:Create(nsc, TweenInfo.new(0.12), { Scale = 1 }):Play()
+						end
+					end
+				end
 			end
 		end)
 	end
@@ -453,7 +481,7 @@ function Inventory.Bind(
 		plate.Parent = btn
 
 		local stroke = UIKit.Stroke(btn, edge, 1.5, 0.1)
-		bindHover(btn, stroke, edge)
+		bindHover(btn, stroke, edge, parent)
 		return btn, plate, stroke
 	end
 
@@ -543,24 +571,34 @@ function Inventory.Bind(
 		return grid
 	end
 
+	--- Cartoon-ish action chips (weapons bar): fat radius, pixel font, bright stroke
 	local function actBtn(parent: Instance, text: string, color: Color3, order: number, onClick: () -> ())
 		local b = Instance.new("TextButton")
-		b.Size = UDim2.fromOffset(0, 34)
+		b.Size = UDim2.fromOffset(0, 40)
 		b.AutomaticSize = Enum.AutomaticSize.X
 		b.BackgroundColor3 = color
 		b.BackgroundTransparency = 0
 		b.BorderSizePixel = 0
 		b.Text = text
-		b.TextColor3 = TW
-		b.Font = Enum.Font.GothamBold
-		b.TextSize = 12
+		b.TextColor3 = Color3.new(1, 1, 1)
+		b.Font = Enum.Font.Arcade
+		b.TextSize = 14
 		b.AutoButtonColor = false
 		b.LayoutOrder = order
 		b.ZIndex = 35
 		b.Parent = parent
-		UIKit.Corner(b, 5)
-		UIKit.Stroke(b, BD2, 1, 0.2)
-		UIKit.Pad(b, nil, 14, 0, 14, 0)
+		UIKit.Corner(b, 12)
+		UIKit.Stroke(b, Color3.fromRGB(255, 255, 255), 2, 0.55)
+		UIKit.Pad(b, nil, 16, 4, 16, 4)
+		local sc = ensureScale(b)
+		b.MouseEnter:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.1, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+				Scale = 1.08,
+			}):Play()
+		end)
+		b.MouseLeave:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+		end)
 		b.MouseButton1Click:Connect(onClick)
 		return b
 	end
@@ -624,7 +662,7 @@ function Inventory.Bind(
 		close.BackgroundTransparency = 0
 		close.Text = "✕"
 		close.TextColor3 = Color3.new(1, 1, 1)
-		close.Font = Enum.Font.GothamBold
+		close.Font = Enum.Font.Arcade
 		close.TextSize = 14
 		close.AutoButtonColor = false
 		close.BorderSizePixel = 0
@@ -634,7 +672,7 @@ function Inventory.Bind(
 		close.MouseButton1Click:Connect(onClose)
 
 		local info = solid(canvas, "Info", UDim2.new(1, 0, 0, 32), UDim2.fromOffset(0, 48), Color3.fromRGB(16, 16, 16), 32)
-		infoLab = lbl(info, "", UDim2.new(1, -24, 1, 0), UDim2.fromOffset(18, 0), 13, TD, 34, Enum.Font.Gotham)
+		infoLab = lbl(info, "", UDim2.new(1, -24, 1, 0), UDim2.fromOffset(18, 0), 13, TD, 34, Enum.Font.Arcade)
 		infoLab.Name = "InfoText"
 
 		local contentH = 48 + 32 + 56 + 100
@@ -693,7 +731,7 @@ function Inventory.Bind(
 			glyph.Name = "Glyph"
 			glyph.BackgroundTransparency = 1
 			glyph.Size = UDim2.fromScale(1, 1)
-			glyph.Font = Enum.Font.GothamBold
+			glyph.Font = Enum.Font.Arcade
 			glyph.TextSize = 28
 			glyph.Text = def.glyph
 			glyph.TextColor3 = Color3.fromRGB(235, 235, 240)
@@ -727,7 +765,7 @@ function Inventory.Bind(
 
 			local lab = lbl(col, def.label, UDim2.new(1, 0, 0, 16), UDim2.new(0, 0, 1, -16), 12, Color3.fromRGB(90, 90, 90), 35)
 			lab.TextXAlignment = Enum.TextXAlignment.Center
-			lab.Font = Enum.Font.GothamBold
+			lab.Font = Enum.Font.Arcade
 
 			tabButtons[def.id] = b
 			tabLabels[def.id] = lab
@@ -1101,43 +1139,45 @@ function Inventory.Bind(
 			local row = actionsRow()
 			lbl(row, "Relics are read-only (dungeon drops)", UDim2.fromOffset(300, 32), nil, 13, TL, 35)
 
-		---------------------------------------------------------------- CASES — compact rows (no stretched full-width text)
+		---------------------------------------------------------------- CASES — small fixed-width cards (not full page)
 		elseif tab == "cases" then
 			setPreviewAvatar(nil, "📦")
 			countLab.Text = ""
 			local wrap = Instance.new("Frame")
 			wrap.BackgroundTransparency = 1
-			wrap.Size = UDim2.new(1, -16, 1, -16)
-			wrap.Position = UDim2.fromOffset(8, 8)
+			wrap.Size = UDim2.fromOffset(380, 160)
+			wrap.Position = UDim2.new(0.5, 0, 0, 24)
+			wrap.AnchorPoint = Vector2.new(0.5, 0)
 			wrap.ZIndex = 34
 			wrap.Parent = main
 			UIKit.List(wrap, 10, false)
 
 			local function caseCard(order: number, title: string, kind: string, color: Color3)
-				local c = solid(wrap, kind, UDim2.new(1, 0, 0, 64), nil, BG_SECTION, 35)
+				local c = solid(wrap, kind, UDim2.new(1, 0, 0, 56), nil, BG_SECTION, 35)
 				c.LayoutOrder = order
 				UIKit.Stroke(c, color, 1.2, 0.2)
-				UIKit.Corner(c, 6)
+				UIKit.Corner(c, 10)
 
-				local icon = lbl(c, if kind == "pet" then "🐾" else "✨", UDim2.fromOffset(48, 48), UDim2.fromOffset(10, 8), 26, TW, 36)
+				local icon = lbl(c, if kind == "pet" then "🐾" else "✨", UDim2.fromOffset(44, 44), UDim2.fromOffset(8, 6), 22, TW, 36, Enum.Font.Arcade)
 				icon.TextXAlignment = Enum.TextXAlignment.Center
 
-				lbl(c, title, UDim2.new(1, -180, 1, 0), UDim2.fromOffset(64, 0), 16, TW, 36)
+				lbl(c, title, UDim2.new(1, -130, 1, 0), UDim2.fromOffset(56, 0), 16, TW, 36, Enum.Font.Arcade)
 
 				local b = Instance.new("TextButton")
-				b.Size = UDim2.fromOffset(100, 36)
-				b.Position = UDim2.new(1, -112, 0.5, 0)
+				b.Size = UDim2.fromOffset(88, 34)
+				b.Position = UDim2.new(1, -98, 0.5, 0)
 				b.AnchorPoint = Vector2.new(0, 0.5)
 				b.BackgroundColor3 = color
 				b.BackgroundTransparency = 0
 				b.Text = "Open"
 				b.TextColor3 = Color3.new(1, 1, 1)
-				b.Font = Enum.Font.GothamBold
+				b.Font = Enum.Font.Arcade
 				b.TextSize = 14
 				b.BorderSizePixel = 0
 				b.ZIndex = 37
 				b.Parent = c
-				UIKit.Corner(b, 5)
+				UIKit.Corner(b, 10)
+				UIKit.Stroke(b, Color3.new(1, 1, 1), 1.5, 0.5)
 				b.MouseButton1Click:Connect(function()
 					openModal("case", { kind = kind })
 				end)
@@ -1145,7 +1185,7 @@ function Inventory.Bind(
 			caseCard(1, "Pet Case", "pet", Color3.fromRGB(40, 120, 80))
 			caseCard(2, "Aura Case", "aura", Color3.fromRGB(100, 60, 160))
 			local row = actionsRow()
-			lbl(row, "LMB · Open case", UDim2.fromOffset(160, 32), nil, 13, TL, 35)
+			lbl(row, "LMB · Open case", UDim2.fromOffset(200, 32), nil, 14, TL, 35, Enum.Font.Arcade)
 
 		---------------------------------------------------------------- SHOP — fill whole tab with adaptive cards
 		elseif tab == "shop" then
@@ -1192,7 +1232,7 @@ function Inventory.Bind(
 					pricePill.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
 					pricePill.BackgroundTransparency = 0.12
 					pricePill.BorderSizePixel = 0
-					pricePill.Font = Enum.Font.GothamBold
+					pricePill.Font = Enum.Font.Arcade
 					pricePill.TextSize = 14
 					pricePill.TextColor3 = owned and GREEN or GOLD
 					pricePill.ZIndex = 39
@@ -1218,7 +1258,7 @@ function Inventory.Bind(
 						15,
 						owned and GREEN or GOLD,
 						36,
-						Enum.Font.GothamBold
+						Enum.Font.Arcade
 					)
 					priceLab.TextXAlignment = Enum.TextXAlignment.Center
 					if not owned then
@@ -1264,7 +1304,7 @@ function Inventory.Bind(
 			box.PlaceholderColor3 = TL
 			box.Text = inspectName and ("@" .. inspectName) or ""
 			box.TextColor3 = TW
-			box.Font = Enum.Font.Gotham
+			box.Font = Enum.Font.Arcade
 			box.TextSize = 20
 			box.TextXAlignment = Enum.TextXAlignment.Left
 			box.ClearTextOnFocus = false
@@ -1283,7 +1323,7 @@ function Inventory.Bind(
 			searchBtn.BorderSizePixel = 0
 			searchBtn.Text = "Search"
 			searchBtn.TextColor3 = TW
-			searchBtn.Font = Enum.Font.GothamBold
+			searchBtn.Font = Enum.Font.Arcade
 			searchBtn.TextSize = 18
 			searchBtn.ZIndex = 37
 			searchBtn.Parent = searchBar
@@ -1367,7 +1407,7 @@ function Inventory.Bind(
 				20,
 				CYAN,
 				36,
-				Enum.Font.Gotham
+				Enum.Font.Arcade
 			)
 			if inspectName then
 				local meBtn = Instance.new("TextButton")
@@ -1377,7 +1417,7 @@ function Inventory.Bind(
 				meBtn.BackgroundTransparency = 0
 				meBtn.Text = "Back to me"
 				meBtn.TextColor3 = TW
-				meBtn.Font = Enum.Font.GothamBold
+				meBtn.Font = Enum.Font.Arcade
 				meBtn.TextSize = 16
 				meBtn.BorderSizePixel = 0
 				meBtn.ZIndex = 37
@@ -1433,8 +1473,8 @@ function Inventory.Bind(
 				d.ZIndex = 38
 				d.Parent = line
 				UIKit.Corner(d, 99)
-				lbl(line, label, UDim2.new(0.55, -16, 1, 0), UDim2.fromOffset(22, 0), 18, TD, 38, Enum.Font.Gotham)
-				local v = lbl(line, value, UDim2.new(0.42, 0, 1, 0), UDim2.new(0.55, 0, 0, 0), 20, vcol or TW, 38, Enum.Font.GothamBold)
+				lbl(line, label, UDim2.new(0.55, -16, 1, 0), UDim2.fromOffset(22, 0), 18, TD, 38, Enum.Font.Arcade)
+				local v = lbl(line, value, UDim2.new(0.42, 0, 1, 0), UDim2.new(0.55, 0, 0, 0), 20, vcol or TW, 38, Enum.Font.Arcade)
 				v.TextXAlignment = Enum.TextXAlignment.Right
 			end
 

@@ -154,7 +154,7 @@ function PetService.OpenCase(player: Player)
 		then string.format("−%d keys", keyCost)
 		else string.format("−%s coins", tostring(coinCost))
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Pet: %s [%s]  Мощь x%.2f  (%s)", name, rarity, powerMult, costNote),
+		text = string.format("Pet: %s [%s]  Power x%.2f  (%s)", name, rarity, powerMult, costNote),
 		color = "pink",
 	})
 

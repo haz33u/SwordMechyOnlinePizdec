@@ -1,13 +1,13 @@
 # Sword Masters — полный план проекта
 
-> Living doc. Snapshot 2026-07-19 (INVETAR inventory + gamepasses + case polish).  
+> Living doc. Snapshot 2026-07-19 (inventory polish + pixel fonts + bottom-left toasts).  
 > Repo: https://github.com/haz33u/SwordMechyOnlinePizdec  
 > Place: «Искусство меча онлайн» (Team Create + Rojo)  
 > Icons: `docs/FIGMA_PROMPTS.md`  
 > Cristalix dumps: `docs/ref/cristalix/DUMP_CATALOG.md` (+ `captures/`)  
 > **World effects (eclipse/darkness/blast): PARKED — catalog only, no code yet.**  
 > Loc2 full tables + Loc1 cases 50K/49 keys inventoried — **apply to code when asked**.  
-> **Locale: English** for all player-facing strings (UI, configs, Notify). New work stays in EN.  
+> **LOCALE LOCK: English only** for every player-facing string (UI labels, buttons, Notify toasts, case result, configs shown to player). Comments in code may be RU/EN; **never ship RU text to players.**  
 > **AI handoff:** local `CONTEXT_MEPC.md` (gitignored) — copy to other agents; not in repo.
 
 ---
@@ -102,28 +102,30 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 ### UI (SCREEENS + INVETAR inventory 2026-07-18…19)
 - [x] GameUI: HUD, windows, modals — **repo-only**, no dual StarterGui
 - [x] Theme charcoal + blue CTA + red close (SCREEENS / Cristalix-like)
+- [x] **Pixel / Minecraft-like fonts** — `Theme.Fonts` = `Enum.Font.Arcade` (Title/Body/Num/Ui). Whole UIKit labels/buttons pick this up.
 - [x] HUD: boosts top-left · coins/power bottom · **Q**=rebirth · **E**=inventory
 - [x] **Attack = LMB + mobile tap** (screen-wide, not Space) — see §4
-- [x] **English locale** for UI + configs + server Notify
-- [x] CPS/DPS/clicks → **Profile** panel (not main HUD)
-- [x] **Unified inventory** (`Inventory.lua` on weapons panel) from Figma Make INVETAR
-  - Bottom tabs: weapons / pets / auras / relics / cases / shop / profile
-  - Fixed large slots (opaque plates), hover pulse, structured tooltips (refICONTOLLTIP)
-  - Near-fullscreen **responsive** size (scale 0.94×0.93 + UIScale)
-  - **No left preview strip** (removed by request)
-  - Tab **ImageButtons** (Creator Store free cartoon icons, no circle bg)
-  - Sell all unequipped swords; profile AvatarBust + @username inspect (online)
+- [x] **English locale** for UI + configs + server Notify (see §12 UI string map)
+- [x] CPS/DPS/clicks → **Profile** tab inside inventory (not main HUD)
+- [x] **Unified inventory** (`src/StarterPlayerScripts/Inventory.lua`, panel id `weapons`)
+  - Bottom tabs EN: **Weapons / Pets / Auras / Relics / Cases / Shop / Profile**
+  - Fill-width slot grid; hover **grows** cell + **shrinks neighbors** (no overlap); gap ~12px
+  - Structured tooltips (cursor edge glued); weapon action chips cartoon (fat radius + Arcade)
+  - **No left preview strip**
+  - Tab ImageButtons (soft rounded tiles + glyph fallback)
+  - Sell all unequipped; profile AvatarBust + @username inspect (online)
+  - Cases: **small fixed-width cards** (Pet Case / Aura Case), not full-page stretch
 - [x] **Donate shop gamepasses** live: `GamePassConfig` + rbxthumb + R$ + PromptGamePass
-- [x] UnlockService ownership sync + purchase → profile.unlocks / purchasedAutoClicker
-- [x] Auto-clicker after gamepass purchase fixed (`ClickConfig.IsAutoPurchased` + flags)
-- [x] Cases: spin + CaseResult; **no dark fullscreen dim**; result card **center + high Z**
+- [x] UnlockService ownership + auto-clicker purchase flags
+- [x] Case open spin: no dark dim; **result card center high Z**
+- [x] **Weapon drop does NOT toast** on every drop (ProfileUpdate only). Dust/keys/kills still Notify.
+- [x] **Toasts bottom-left** (`Toast.lua`): large Arcade ~18px, stack upward; all `Remotes.Notify`
 - [x] Teleport location grid → `SetLocation`
-- [x] Left rail only (no right-side Cristalix bind list); rail opens inv tabs via `_invTab`
-- [x] Toast nil fix (`T.TopH` removed)
+- [x] Left rail only; rail opens inv tabs via `store._invTab`
 - [ ] Floating damage / click pop polish
 - [ ] Enchant dust counter top-right
 - [ ] Boosts backend `profile.boosts` + timers
-- [ ] Replace tab icon asset IDs if any fail moderation / ownership in place
+- [ ] Own group-uploaded tab icons if free Decals fail in place
 
 ### Анимации / визуал
 - [x] CombatController: Idle/Walk/Run + sprint Shift
@@ -265,8 +267,10 @@ git add -A ; git commit ; git pull --rebase ; git push
 4. Limited not from mobs  
 5. Boss 10 min respawn — enchant dust is strong  
 6. No Keyframe/Animations inside `Shared`  
-7. **Player-facing language = English** (UI, configs, Notify, new features)  
-8. **Combat click = LMB / touch**, not Space; GUI clicks do not swing
+7. **Player-facing language = English** (UI, configs, Notify, new features) — see §12  
+8. **Combat click = LMB / touch**, not Space; GUI clicks do not swing  
+9. **Pixel font** = `Enum.Font.Arcade` in Theme (Minecraft-adjacent, built-in)  
+10. **Toasts** = bottom-left only; no per-weapon-drop spam
 
 ---
 
@@ -364,3 +368,138 @@ Then pick **one** parked idea (recommended: onboarding **or** aura tower; **Wing
 - Prompts: `docs/FIGMA_PROMPTS.md`  
 - Upload: `docs/ICON_UPLOAD.md` → IconConfig  
 - Agent can use **Figma MCP** (when connected) + local Imagine; cannot “see” your desktop Figma window as a human unless MCP/API exposes the file.
+
+---
+
+## 12. UI map for friend / Studio agent (English strings + where code lives)
+
+> Use this section to wire art, i18n, or Studio-only UI without reading the whole repo.  
+> **All labels below are English in code.** Do not reintroduce Russian player strings.
+
+### 12.1 Locale rule
+| Rule | Detail |
+|------|--------|
+| Player-facing language | **English only** |
+| Scope | Buttons, titles, tabs, tooltips, toasts (`Notify`), case result, modals, HUD chips, config `name` fields shown in UI |
+| Comments / dumps | RU notes OK in comments and docs only |
+| If you add a string | Write it in English; mirror existing tone (short, game-y) |
+
+### 12.2 Fonts
+| Token | Value | File |
+|-------|--------|------|
+| Title / Body / Num / Ui | `Enum.Font.Arcade` | `Theme.lua` → `Theme.Fonts` |
+| UIKit.Label / Button | uses `T.Font.*` | `UIKit.lua` |
+| Inventory labels/actions | Arcade | `Inventory.lua` |
+
+### 12.3 Toasts / notifications
+| Item | Value |
+|------|--------|
+| Client | `src/StarterPlayerScripts/Toast.lua` |
+| Mount | `App.lua` → `Toast.Mount(gui)` |
+| Server fire | `Remotes.Event("Notify"):FireClient(player, { text = "...", color = "green"\|"red"\|"gold"\|"orange"\|"pink"\|"cyan"\|"yellow" })` |
+| Position | **Bottom-left** of screen (`Anchor 0,1`, pad ~16,‑24), stack upward |
+| Font size | ~18 Arcade |
+| **Do not toast** | Every weapon drop (disabled on purpose in `LootService.GrantWeapon`) |
+| Still toast | Bag full, enchant dust, pet/aura keys, kills, auto on/off, case fail, unlocks, pet open result |
+
+Example server texts (EN):
+- `Weapon bag full (32) — sell or upgrade Backpack`
+- `Enchant dust +3 (total 12)`
+- `Pet key +1 (total 2)` / `Aura key +1 …`
+- `Auto-clicker: ON` / `OFF`
+- `Auto-clicker not purchased (manual CPS cap: Loc1=4, max=20)`
+- `Pet: Name [Rarity]  Power x1.25  (−1 keys)`
+- `Aura: Name +12% power  (keys left: 3)`
+- Kill line: `{mobName} ✕  +{power} power  +{coins} coins`
+
+### 12.4 Inventory shell (`Inventory.lua`, panel `weapons`)
+| UI name (EN) | Role | Notes |
+|--------------|------|--------|
+| **Inventory — Weapons** | Header title weapons tab | Also Pets/Auras/Relics/Cases; Shop = **Donate Shop**; Profile = **Player Profile** |
+| Count `N OF 32` | Bag fill | Cap from Backpack upgrade |
+| Info bar | `● {Name} \| R{n} x{mult} ● Loc {id}` | Live stats |
+| Close **✕** | Closes panel | |
+| **Weapons** tab | Grid of swords | Icons via `IconConfig.GetWeaponImage` |
+| **Pets** tab | Pet slots | Equip / Unequip |
+| **Auras** tab | Aura slots | Equip |
+| **Relics** tab | Read-only | Dungeon drops |
+| **Cases** tab | Pet Case / Aura Case | Small cards, button **Open** |
+| **Shop** tab | Gamepasses | Image + **R$** / **OWNED** |
+| **Profile** tab | Stats + search | AvatarBust; `@username` search online |
+| Tooltip | Title, Rarity, Power/Sell/Level, Equipped | Cursor edge glue |
+| Actions | **Equip main**, **Equip off** / **Off 🔒**, **Enchant**, **Sell**, **Sell all unequipped** | Cartoon chips |
+| Cases open | Opens `CaseOpening` modal | Not a separate window id |
+
+**Hotkeys → inventory tab** (`App.lua` / rail `Hud.lua`):
+| Key / rail | Tab |
+|------------|-----|
+| E / I | weapons |
+| P | pets |
+| C | cases |
+| B | shop |
+| U | profile |
+| Rail weapons/pets/auras/relics/cases/shop/character | same shell via `_invTab` |
+
+### 12.5 Other windows (`Windows.lua` titles)
+| Panel id | Title (EN) | Notes |
+|----------|------------|--------|
+| character | Profile | Legacy window still exists; primary profile is inv **Profile** tab |
+| weapons | Inventory | INVETAR shell (chrome header hidden) |
+| pets / auras / cases / relics | Pets / Auras / Cases / Relics | May still refresh stubs; prefer inv tabs |
+| quests | Quests | |
+| locations | Teleport | |
+| dungeons | Dungeons | |
+| shop | Donate Shop | Standalone also has gamepass grid |
+
+### 12.6 HUD (`Hud.lua`)
+| Element | EN / meaning |
+|---------|----------------|
+| Rail icons | Open panels / inv tabs |
+| Coins / Power chips | Currency + strength |
+| Q rebirth | Opens rebirth modal |
+| Boosts row | Top-left (backend boosts still TODO) |
+
+### 12.7 Case opening (`CaseOpening.lua`)
+| UI | EN |
+|----|-----|
+| Title | Pet Case / Aura Case |
+| Subtitle | Opening… / Drop received! |
+| Result | You got! · name · RARITY · sub stats |
+| Buttons | Claim · ✕ close |
+| Dim | Transparent (no dark overlay) |
+| Result position | Center screen, high Z |
+
+### 12.8 Gamepasses (`GamePassConfig.lua` titles shown in Shop)
+| key | Title (EN) |
+|-----|------------|
+| offhand | Second sword slot |
+| paidPetSlot | 1 pet slot |
+| relicSlot | 1 relic slot |
+| autoClicker | AutoClicker |
+| teleporter | Teleporter |
+| openChest3 | Open 3 chest |
+| openChest5 | Open 5 chest |
+
+### 12.9 Key files (friend wiring)
+| Concern | File |
+|---------|------|
+| Fonts / colors | `StarterPlayerScripts/Theme.lua` |
+| Labels / buttons primitives | `StarterPlayerScripts/UIKit.lua` |
+| Toasts | `StarterPlayerScripts/Toast.lua` |
+| Inventory | `StarterPlayerScripts/Inventory.lua` |
+| All windows | `StarterPlayerScripts/Windows.lua` |
+| HUD / rail | `StarterPlayerScripts/Hud.lua` |
+| Case spin | `StarterPlayerScripts/CaseOpening.lua` |
+| Mount + hotkeys | `StarterPlayerScripts/App.lua` |
+| Notify from server | any Service + `Remotes.Event("Notify")` |
+| Drop no-toast | `ServerScriptService/Services/LootService.lua` `GrantWeapon` |
+
+### 12.10 Recent UI decisions (do not reverse without ask)
+1. English only for players  
+2. Arcade pixel font globally  
+3. Toasts **bottom-left**, not top-center  
+4. No toast spam on weapon drop  
+5. Inventory left strip removed  
+6. Hover slots push neighbors; larger gap  
+7. Case cards compact fixed width  
+8. Unified inventory on `weapons` panel only for main bag UX

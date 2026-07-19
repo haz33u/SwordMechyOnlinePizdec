@@ -90,14 +90,8 @@ function LootService.GrantWeapon(player: Player, profile: any, def: any)
 		profile.equippedMain = wuid
 	end
 
-	Remotes.Event("Notify"):FireClient(player, {
-		text = "Drop: " .. def.name .. " (" .. def.rarity .. ")",
-		color = if def.rarity == "Secret" or def.rarity == "Limited"
-			then "gold"
-			elseif def.rarity == "Mythic" or def.rarity == "Legendary"
-			then "orange"
-			else "gold",
-	})
+	-- No toast on every weapon drop (clutters UI). Inventory updates via ProfileUpdate.
+	-- Bag-full / dust / keys still Notify.
 end
 
 local function rollExactDropTable(dropTable: { [string]: number }, profile: any): any?
