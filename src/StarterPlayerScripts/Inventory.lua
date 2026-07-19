@@ -439,15 +439,16 @@ function Inventory.Bind(
 		end
 	end
 
-	local function applyHoverVisual(btn: GuiObject, stroke: UIStroke?, baseZ: number)
+	local function applyHoverVisual(btn: GuiObject, stroke: UIStroke?, baseZ: number, baseCol: Color3)
 		local sc = ensureScale(btn)
 		TweenService:Create(sc, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 			Scale = HOVER_SCALE,
 		}):Play()
 		if stroke then
-			stroke.Thickness = SLOT_STROKE_THICK
+			-- Keep rarity color; only tighten transparency + slight thickness for hover
+			stroke.Thickness = SLOT_STROKE_THICK + 0.5
 			TweenService:Create(stroke, TweenInfo.new(0.16), {
-				Color = CYAN,
+				Color = baseCol,
 				Transparency = 0.02,
 			}):Play()
 		end
@@ -468,12 +469,13 @@ function Inventory.Bind(
 		end
 	end
 
-	--- Soft highlight + slight neighbor shrink; leave is delayed for seamless handoff
+	--- Soft scale + rarity stroke; leave clears visual so nothing stays "selected"
 	local function bindHover(btn: GuiObject, stroke: UIStroke?, baseStroke: Color3?, gridParent: Instance?)
 		ensureScale(btn)
 		local baseCol = baseStroke or BD
 		local baseZ = btn.ZIndex
 		if stroke then
+			stroke.Color = baseCol
 			stroke.Thickness = SLOT_STROKE_THICK
 			stroke.Transparency = 0.08
 		end
@@ -481,7 +483,7 @@ function Inventory.Bind(
 		btn.MouseEnter:Connect(function()
 			hoverGen += 1
 			activeHover = btn
-			applyHoverVisual(btn, stroke, baseZ)
+			applyHoverVisual(btn, stroke, baseZ, baseCol)
 			setNeighborsScale(gridParent, btn, NEIGHBOR_SCALE)
 		end)
 
@@ -952,17 +954,10 @@ function Inventory.Bind(
 				end
 				local def = WeaponConfig.Get(w.id)
 				local edge = rarityBorder(def and def.rarity)
-				local isSel = w.uid == selectedWeaponUid
-				local btn, plate = makeItemSlot(scroll, i, isSel and CYAN or edge)
+				-- Always rarity stroke (idle + hover). No sticky cyan "selected" border.
+				local btn, plate = makeItemSlot(scroll, i, edge)
 				plate.BackgroundColor3 = BG_SLOT
 				btn.Name = "W_" .. w.uid
-				if isSel then
-					local st = btn:FindFirstChildOfClass("UIStroke")
-					if st then
-						st.Color = CYAN
-						st.Thickness = 2.5
-					end
-				end
 
 				local img = Instance.new("ImageLabel")
 				img.BackgroundColor3 = BG_SLOT
@@ -980,7 +975,8 @@ function Inventory.Bind(
 					local dot = Instance.new("Frame")
 					dot.Size = UDim2.fromOffset(8, 8)
 					dot.Position = UDim2.fromOffset(5, 5)
-					dot.BackgroundColor3 = CYAN
+					-- Equipped marker uses rarity edge, not cyan selection
+					dot.BackgroundColor3 = edge
 					dot.BackgroundTransparency = 0
 					dot.BorderSizePixel = 0
 					dot.ZIndex = 38
@@ -1006,6 +1002,7 @@ function Inventory.Bind(
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
 				btn.MouseButton1Click:Connect(function()
+					-- Logical pick for action bar only — no grid recolor / sticky border
 					selectedWeaponUid = w.uid
 					api:Refresh()
 				end)
@@ -1103,7 +1100,8 @@ function Inventory.Bind(
 						break
 					end
 				end
-				local btn = makeItemSlot(scroll, i, rarityBorder(rar))
+				local edge = rarityBorder(rar)
+				local btn = makeItemSlot(scroll, i, edge)
 				btn.Name = "P_" .. tostring(p.uid)
 				local glyph = lbl(btn, "🐾", UDim2.fromScale(1, 0.75), UDim2.fromScale(0, 0.08), 28, TW, 37)
 				glyph.TextXAlignment = Enum.TextXAlignment.Center
@@ -1111,7 +1109,7 @@ function Inventory.Bind(
 					local dot = Instance.new("Frame")
 					dot.Size = UDim2.fromOffset(8, 8)
 					dot.Position = UDim2.fromOffset(5, 5)
-					dot.BackgroundColor3 = CYAN
+					dot.BackgroundColor3 = edge
 					dot.BorderSizePixel = 0
 					dot.ZIndex = 38
 					dot.Parent = btn
@@ -1156,7 +1154,8 @@ function Inventory.Bind(
 				local name = (def and def.name) or a.name or a.id
 				local rar = (def and def.rarity) or a.rarity or "Common"
 				local active = profile.equippedAura == a.uid
-				local btn = makeItemSlot(scroll, i, rarityBorder(rar))
+				local edge = rarityBorder(rar)
+				local btn = makeItemSlot(scroll, i, edge)
 				btn.Name = "A_" .. tostring(a.uid)
 				local glyph = lbl(btn, "✨", UDim2.fromScale(1, 0.75), UDim2.fromScale(0, 0.08), 28, TW, 37)
 				glyph.TextXAlignment = Enum.TextXAlignment.Center
@@ -1164,7 +1163,7 @@ function Inventory.Bind(
 					local dot = Instance.new("Frame")
 					dot.Size = UDim2.fromOffset(8, 8)
 					dot.Position = UDim2.fromOffset(5, 5)
-					dot.BackgroundColor3 = CYAN
+					dot.BackgroundColor3 = edge
 					dot.BorderSizePixel = 0
 					dot.ZIndex = 38
 					dot.Parent = btn
@@ -1176,7 +1175,7 @@ function Inventory.Bind(
 						rar,
 						def and string.format("Power: +%d%%", math.floor(def.powerPct or 0)) or nil,
 						active and "● Active" or nil,
-						rarityBorder(rar)
+						edge
 					)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
