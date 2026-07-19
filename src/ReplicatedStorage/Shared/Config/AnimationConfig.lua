@@ -1,33 +1,27 @@
 --!strict
 --[[
-	Official Roblox public animation IDs only (no private / duplicated assets).
+	Attack animation = published asset 95040065182870 (user).
 
-	Do NOT "Duplicate" animations in Creator Dashboard — that creates a NEW
-	asset you own that can be empty/private. Just paste rbxassetid://NUMBER.
-
-	All IDs below are Roblox default R15 Animate-script assets (load for everyone).
+	Character: default Roblox Player.Character (R15 from Avatar).
+	Not a custom model in git — Place/Avatar settings.
+	Swing: WeaponVisual loads AnimationId onto character Humanoid.Animator.
 ]]
 
--- Primary attack candidates (first that loads wins). Alternate clicks can rotate.
-local TOOL_SLASH = "rbxassetid://522635514" -- default R15 tool slash
-local TOOL_LUNGE = "rbxassetid://522638767" -- default R15 tool lunge
-local TOOL_NONE = "rbxassetid://507768375" -- default R15 tool hold (weak fallback)
--- Same assets, alternate URL form (some Studio builds resolve one better)
-local TOOL_SLASH_HTTP = "http://www.roblox.com/asset/?id=522635514"
-local TOOL_LUNGE_HTTP = "http://www.roblox.com/asset/?id=522638767"
+local USER_ATTACK = "rbxassetid://95040065182870"
+
+-- Public R15 fallbacks if user asset fails permission/load
+local TOOL_LUNGE = "rbxassetid://522638767"
+local TOOL_SLASH = "rbxassetid://522635514"
 
 local AnimationConfig = {
-	-- Prefer lunge first if slash flaked after "duplicate" experiments
-	AttackMain = TOOL_LUNGE,
-	AttackAlt = TOOL_SLASH,
+	AttackMain = USER_ATTACK,
+	AttackAlt = USER_ATTACK,
 
-	-- Ordered list tried by WeaponVisual until LoadAnimation succeeds
 	AttackCandidates = {
+		USER_ATTACK,
+		"http://www.roblox.com/asset/?id=95040065182870",
 		TOOL_LUNGE,
 		TOOL_SLASH,
-		TOOL_LUNGE_HTTP,
-		TOOL_SLASH_HTTP,
-		TOOL_NONE,
 	},
 
 	PreferPublishedAttack = true,
@@ -38,11 +32,11 @@ local AnimationConfig = {
 	Swing1Name = "Swing1",
 	Swing2Name = "Swing2",
 
-	AttackMainFallback = TOOL_SLASH,
-	AttackAltFallback = TOOL_LUNGE,
+	AttackMainFallback = TOOL_LUNGE,
+	AttackAltFallback = TOOL_SLASH,
 	ToolHold = "rbxassetid://522696694",
 
-	AlternateDual = true, -- lunge ↔ slash each click
+	AlternateDual = false,
 
 	Locomotion = {
 		Idle = "rbxassetid://507766666",
@@ -53,8 +47,6 @@ local AnimationConfig = {
 	BannedAssetIds = {
 		["12741376562"] = true,
 		["rbxassetid://12741376562"] = true,
-		-- user's published Attack2 if it flakes without permission (keep playable)
-		-- ["134636926386401"] = true, -- uncomment if still errors
 	},
 
 	SwordLength = 2.4,
@@ -76,26 +68,24 @@ function AnimationConfig.IsBannedId(id: string?): boolean
 	return false
 end
 
-function AnimationConfig.GetAttackId(isAlt: boolean?): string
-	if isAlt then
-		return AnimationConfig.AttackAlt
-	end
+function AnimationConfig.GetAttackId(_isAlt: boolean?): string
 	return AnimationConfig.AttackMain
 end
 
-function AnimationConfig.GetAttackCandidateList(preferAlt: boolean?): { string }
-	local primary = AnimationConfig.GetAttackId(preferAlt == true)
-	local list = { primary }
+function AnimationConfig.GetAttackCandidateList(_preferAlt: boolean?): { string }
+	local list = {}
 	for _, id in AnimationConfig.AttackCandidates do
-		local dup = false
-		for _, e in list do
-			if e == id then
-				dup = true
-				break
+		if not AnimationConfig.IsBannedId(id) then
+			local dup = false
+			for _, e in list do
+				if e == id then
+					dup = true
+					break
+				end
 			end
-		end
-		if not dup and not AnimationConfig.IsBannedId(id) then
-			table.insert(list, id)
+			if not dup then
+				table.insert(list, id)
+			end
 		end
 	end
 	return list

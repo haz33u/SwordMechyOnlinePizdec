@@ -2,21 +2,19 @@
 
 ## Атака (сейчас)
 
-| Роль | ID | Что это |
-|------|-----|---------|
-| **Main (prefer)** | `rbxassetid://522638767` | R15 **Tool Lunge** |
-| **Alt (toggle)** | `rbxassetid://522635514` | R15 **Tool Slash** |
-| Fallback same | `http://www.roblox.com/asset/?id=…` | тот же asset, другой URL |
-| Last resort | `rbxassetid://507768375` | Tool None (hold) |
+| | |
+|--|--|
+| **Attack** | `rbxassetid://95040065182870` |
+| Fallbacks | `522638767` lunge, `522635514` slash |
+| Код | `src/ReplicatedStorage/Shared/Config/AnimationConfig.lua` |
+| Плеер | `WeaponVisual.PlayAttack` → `character.Humanoid.Animator` |
 
-Код: `AnimationConfig.AttackCandidates` → `WeaponVisual` пробует **по списку**, пока LoadAnimation не успеет.  
-`AlternateDual = true` → клики чередуют lunge / slash.
+### Где «персонаж»
+Не в git. **Player.Character** = стандартный R15 аватар Roblox (Place Avatar settings).  
+Анимация атаки **не** лежит на модели меча — на **Animator** персонажа.
 
-### НЕ делай «Duplicate» в Creator / Toolbox
-Дубликат = **новый** asset, часто **пустой** или private → «пропал / не работает».  
-Нужен только **голый id** в строке `rbxassetid://ЧИСЛО`, без копирования asset.
-
-Мечи main/offhand на grips — визуал; анимация одна на Humanoid (официальный tool swing).
+### НЕ делай «Duplicate» в Creator
+Только строка `rbxassetid://95040065182870`. Asset должен быть **твоим / group place** + access.
 
 ## Запрещённый id (не грузить)
 
