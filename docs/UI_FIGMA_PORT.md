@@ -41,11 +41,14 @@ https://www.figma.com/design/WhLWwV1ZttJfjbvxKhSve2/Untitled?node-id=1-122
 |------|------------|-------|
 | icon_strength.png | `Power` | `rbxassetid://93071491476836` |
 | icon_backpack.png | `Backpack` | `rbxassetid://113695116998745` |
-| icon_speed.png | `ClickSpeed` | `rbxassetid://101300421089207` |
+| icon_speed.png | `ClickSpeed` / `WalkSpeed` | `rbxassetid://101300421089207` |
 | icon_crit.png | `CritChance` | `rbxassetid://94418234037518` |
 | icon_multicrit.png | `MultiCrit` | `rbxassetid://75432680898371` |
 | coin.png | `Coin` | `rbxassetid://80023959014102` |
 | close.png | `Close` | `rbxassetid://94627396642381` |
+| shop.png | `Shop` | `rbxassetid://133565026221740` |
+
+Also mirrored in **`docs/MASTER_PLAN.md` §8.1 UI Asset Registry**.
 
 ---
 

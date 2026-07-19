@@ -160,7 +160,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Loc2–4 мобы/контент | stubs |
 | Реальные 3D модели мечей | placeholder Parts |
 | Иконки Loc2+ weapons | пустые id → FIGMA_PROMPTS |
-| Character Upgrade icons | ✅ `UpgradeIconConfig` (strength/bag/speed/crit/multicrit/coin/close) |
+| Character Upgrade icons | ✅ `UpgradeIconConfig` + **§8.1** (strength/bag/speed/crit/multicrit/coin/close/**shop**) |
 | Питомцы / ауры / кейсы economy | keys + CaseResult (v0.5.4); roster still thin |
 | CaseResult remote (spin accuracy) | ✅ `CaseResult` + profile fallback |
 | Данжи Easy/Mid/Hard | timer AFK complete, не бой |
@@ -265,10 +265,42 @@ Do not start BP implementation until inventory Figma pass is testable.
 | `UI_BRIEF_FOR_STUDIO_AGENT.md` | UI для агента/друга |
 | `ANIMATIONS.md` | Атаки / grips |
 | `ROJO_STUDIO.md` | Rojo vs Place |
-| `ICON_UPLOAD.md` | rbxassetid иконок |
+| `ICON_UPLOAD.md` | rbxassetid иконок оружия |
+| **§8.1 this file** | **UI Asset Registry** (upgrade/HUD icons) |
 | `FIGMA_PROMPTS.md` | промпты AI/Figma + tracking иконок |
 | `COLLAB.md` | Git + Team Create |
 | **§13 this file** | Figma UI order + Roblox worlds/teleport design |
+
+### 8.1 UI Asset Registry (LOCKED — remember & reuse)
+
+Canonical rbxassetid for Figma UI icons. **Code source of truth:**  
+`src/ReplicatedStorage/Shared/Config/UpgradeIconConfig.lua`  
+PNG sources: `art/icons/upgrades/` · upload via Studio Asset Manager (see `ICON_UPLOAD.md` pattern).
+
+| Key (config) | File / note | rbxassetid |
+|--------------|-------------|------------|
+| `Power` | icon_strength | `rbxassetid://93071491476836` |
+| `Backpack` | icon_backpack | `rbxassetid://113695116998745` |
+| `ClickSpeed` / `WalkSpeed` | icon_speed | `rbxassetid://101300421089207` |
+| `CritChance` | icon_crit | `rbxassetid://94418234037518` |
+| `MultiCrit` | icon_multicrit | `rbxassetid://75432680898371` |
+| `Coin` | coin | `rbxassetid://80023959014102` |
+| `Close` | close | `rbxassetid://94627396642381` |
+| `Shop` | shop | `rbxassetid://133565026221740` |
+
+```lua
+-- paste-ready (UpgradeIconConfig)
+Power = "rbxassetid://93071491476836",      -- icon_strength
+Backpack = "rbxassetid://113695116998745",   -- icon_backpack
+WalkSpeed = "rbxassetid://101300421089207", -- icon_speed (also ClickSpeed)
+CritChance = "rbxassetid://94418234037518", -- icon_crit
+MultiCrit = "rbxassetid://75432680898371",  -- icon_multicrit
+Coin = "rbxassetid://80023959014102",
+Close = "rbxassetid://94627396642381",
+Shop = "rbxassetid://133565026221740",
+```
+
+**Agent rule:** when wiring Character Upgrade / HUD / Shop chrome, **use these IDs** via `UpgradeIconConfig.Get(key)` — do not invent placeholders or Creator Store free decals for these keys.
 
 ---
 
