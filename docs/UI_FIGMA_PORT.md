@@ -19,19 +19,15 @@ Backend already live (`UpgradeService` / `UpgradeConfig`).
 
 This is the **existing code UI** for testing buys. Full Figma look comes next (layout/tokens), same remotes.
 
-### Figma source (user link)
+### Figma source (live)
 
-https://www.figma.com/design/caEi1mtAqOKINnxEDFfcTe/HeroUI-Figma-Kit--Community---Community-?node-id=5034-3188  
+https://www.figma.com/design/WhLWwV1ZttJfjbvxKhSve2/Untitled?node-id=1-122  
 
-- File: **HeroUI Figma Kit (Community)**  
-- Node: `5034:3188`  
-- **MCP blocked:** no edit access on Community files → agent cannot `get_design_context` until:
-
-**Option A (best):** Duplicate the kit into *your* Figma (Drafts) → Share with edit / “Anyone with link can edit” → send **your** file URL.  
-**Option B:** Export PNG/PDF of the Character Upgrade frame + list components.  
-**Option C:** Select the frame in Figma Desktop with MCP “link selection” if your account has access.
-
-Without A/B we only keep the functional upgrades panel; cannot pixel-match HeroUI.
+- Frame: **MainCharacterUpgrader** (`1:122`)  
+- **Ported** into `Windows.refreshCharacter` (panel `character`, open UP / U / K)  
+- Layout: header (title + coins + close) · 5 cards (Strength/Backpack/Speed/Crit/Multi-Crit) · footer Next Level + Price + Upgrade  
+- Data: `Power` `Backpack` `ClickSpeed` `CritChance` `MultiCrit` via `UpgradeConfig` / `BuyUpgrade`  
+- Icons: emoji placeholders (Figma PNGs in `art/icons/upgrades/` — upload to Studio → IconConfig later)
 
 ---
 

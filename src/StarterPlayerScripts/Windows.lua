@@ -130,6 +130,13 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				root.Size = UDim2.fromScale(0.88, 0.88)
 				root.Position = UDim2.fromScale(0.5, 0.5)
 				root.AnchorPoint = Vector2.new(0.5, 0.5)
+			elseif id == "character" then
+				-- Figma MainCharacterUpgrader ~900×336
+				local cam = workspace.CurrentCamera
+				local vw = if cam then cam.ViewportSize.X else 1280
+				root.Size = UDim2.fromOffset(math.min(920, math.floor(vw * 0.92)), 360)
+				root.Position = UDim2.fromScale(0.5, 0.5)
+				root.AnchorPoint = Vector2.new(0.5, 0.5)
 			else
 				root.Size = UDim2.fromScale(ww, wh)
 			end
@@ -195,213 +202,416 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 	end
 
-	---------------------------------------------------------------- Character = profile stats + upgrades
+	---------------------------------------------------------------- Character Upgrade — Figma MainCharacterUpgrader (1:122)
+	-- Cards: Strength / Backpack / Speed / Crit / Multi-Crit · footer Upgrade for selection
+	local selectedUpgradeId = "ClickSpeed" -- Figma default selected = Speed
+
+	-- Figma display names + border + mid gradient accents
+	local UPGRADE_UI = {
+		Power = {
+			title = "Strength",
+			statLabel = "Power",
+			edge = Color3.fromRGB(232, 20, 20),
+			grad0 = Color3.fromRGB(110, 21, 21),
+			grad1 = Color3.fromRGB(254, 16, 16),
+			glyph = "⚔",
+		},
+		Backpack = {
+			title = "Backpack",
+			statLabel = "Slots",
+			edge = Color3.fromRGB(1, 162, 30),
+			grad0 = Color3.fromRGB(20, 82, 20),
+			grad1 = Color3.fromRGB(45, 184, 45),
+			glyph = "🎒",
+		},
+		ClickSpeed = {
+			title = "Speed",
+			statLabel = "Speed",
+			edge = Color3.fromRGB(232, 184, 0),
+			grad0 = Color3.fromRGB(90, 70, 10),
+			grad1 = Color3.fromRGB(200, 160, 20),
+			glyph = "👟",
+		},
+		CritChance = {
+			title = "Crit",
+			statLabel = "Chance",
+			edge = Color3.fromRGB(51, 51, 51),
+			grad0 = Color3.fromRGB(40, 40, 48),
+			grad1 = Color3.fromRGB(80, 80, 90),
+			glyph = "◎",
+		},
+		MultiCrit = {
+			title = "Multi-Crit",
+			statLabel = "Chance",
+			edge = Color3.fromRGB(51, 51, 51),
+			grad0 = Color3.fromRGB(40, 40, 48),
+			grad1 = Color3.fromRGB(80, 80, 90),
+			glyph = "✦",
+		},
+	}
+	local UPGRADE_ORDER = { "Power", "Backpack", "ClickSpeed", "CritChance", "MultiCrit" }
+
 	local function refreshCharacter()
 		local body = bodies.character
 		UIKit.Clear(body)
-		UIKit.List(body, px(8), false)
 		local stats = store:PeekStats()
 		local profile = store:PeekProfile()
 		if not stats or not profile then
 			return
 		end
 
-		-- Full stats list (moved from HUD: CPS/DPS/Clicks + more)
-		sectionLabel(body, "PROFILE / STATS", 1)
-		local statsScroll = UIKit.Scroll(body, UDim2.new(1, 0, 0, px(200)))
-		statsScroll.LayoutOrder = 2
-		local rows = {
-			{ "Power (click)", Format.Num(stats.damagePerClick or stats.totalPower) },
-			{ "CPS", string.format("%.2f", stats.cps or 0) },
-			{ "DPS", Format.Num(stats.dps) },
-			{ "Clicks", Format.Num(stats.totalClicks) },
-			{ "Coins", Format.Num(stats.coins) },
-			{ "Crit chance", Format.Pct(stats.crit) },
-			{ "Luck", Format.Pct(stats.luck) },
-			{ "Rebirth", string.format("R%d  %s", stats.rebirthLevel or 0, Format.Mult(stats.rebirthMult)) },
-			{ "Lifetime damage", Format.Num(stats.lifetimeDamage or 0) },
-			{ "Location", tostring(stats.location or profile.currentLocation or 1) },
-			{ "Swing CD", string.format("%.2fs", stats.swingCd or 1) },
-			{ "Auto", stats.autoClicker and "ON" or "OFF" },
-		}
-		for i, r in ipairs(rows) do
-			local line = Instance.new("Frame")
-			line.BackgroundTransparency = 1
-			line.Size = UDim2.new(1, -4, 0, px(22))
-			line.LayoutOrder = i
-			line.ZIndex = 33
-			line.Parent = statsScroll
-			UIKit.Label({
-				Parent = line,
-				Text = r[1],
-				Size = UDim2.new(0.55, 0, 1, 0),
-				SizePx = px(13),
-				Color = T.TextMuted,
-				Z = 34,
-			})
-			UIKit.Label({
-				Parent = line,
-				Text = r[2],
-				Size = UDim2.new(0.45, 0, 1, 0),
-				Position = UDim2.new(0.55, 0, 0, 0),
-				SizePx = px(13),
-				Font = T.Font.Title,
-				Color = T.Text,
-				X = Enum.TextXAlignment.Right,
-				Z = 34,
-			})
+		-- Hide default window chrome title; Figma has its own header
+		local root = frames.character
+		local hdr = root:FindFirstChild("Header")
+		if hdr and hdr:IsA("GuiObject") then
+			hdr.Visible = false
 		end
-
-		sectionLabel(body, "UPGRADES", 3)
-
-		-- horizontal upgrade cards like UIУлучшений
-		local rowHost = Instance.new("ScrollingFrame")
-		rowHost.Name = "UpgradesRow"
-		rowHost.BackgroundTransparency = 1
-		rowHost.BorderSizePixel = 0
-		rowHost.Size = UDim2.new(1, 0, 0, px(260))
-		rowHost.LayoutOrder = 4
-		rowHost.ScrollBarThickness = 4
-		rowHost.ScrollBarImageColor3 = T.StrokeLight
-		rowHost.CanvasSize = UDim2.new(0, 0, 0, 0)
-		rowHost.AutomaticCanvasSize = Enum.AutomaticSize.X
-		rowHost.ScrollingDirection = Enum.ScrollingDirection.X
-		rowHost.ZIndex = 32
-		rowHost.Parent = body
-		local rowList = UIKit.List(rowHost, px(10), true)
-		rowList.VerticalAlignment = Enum.VerticalAlignment.Top
-		UIKit.Pad(rowHost, 2)
+		body.Size = UDim2.new(1, 0, 1, 0)
+		body.Position = UDim2.fromOffset(0, 0)
+		root.BackgroundColor3 = Color3.fromRGB(17, 17, 17)
+		UIKit.Stroke(root, Color3.fromRGB(51, 51, 51), 2, 0)
 
 		local coins = stats.coins or 0
-		local cardW = px(148)
-		for i, upId in UpgradeConfig.Order do
-			local def = UpgradeConfig.Defs[upId]
-			if def then
-				local lvl = (profile.upgradeLevels and profile.upgradeLevels[upId]) or 0
-				local cost = UpgradeConfig.GetCost(upId, lvl + 1)
-				local unlocked, lockReason = UpgradeConfig.IsUnlocked(profile, upId)
-				local canBuy = unlocked and lvl < def.maxLevel and coins >= cost
-				local maxed = lvl >= def.maxLevel
-				local icon = (T.UpgradeIcon and T.UpgradeIcon[upId]) or "◆"
-				local col = (T.UpgradeColor and T.UpgradeColor[upId]) or T.Accent
 
-				-- effect preview text
-				local effectLine = ""
-				if not unlocked then
-					effectLine = lockReason or "Locked"
-				elseif def.effectType == "mult_add" then
-					local per = math.floor((def.effectPerLevel or 0) * 100 + 0.5)
-					local total = per * lvl
-					effectLine = if lvl > 0
-						then string.format("+%d%% total (+%d%%/lv)", total, per)
-						else string.format("+%d%% per level", per)
-				elseif def.statKey == "bagSlots" then
-					local cap = UpgradeConfig.GetBagCap(profile)
-					effectLine = string.format("%d / bag (+1 each)", cap)
-				elseif def.statKey == "critChance" or def.statKey == "multiCritChance" then
-					local per = math.floor((def.effectPerLevel or 0) * 100 + 0.5)
-					effectLine = string.format("+%d%% (%d%% total)", per, per * lvl)
-				else
-					effectLine = string.format("+%s", Format.Num((def.effectPerLevel or 0) * lvl))
+		-- ===== Header =====
+		local header = Instance.new("Frame")
+		header.Name = "CU_Header"
+		header.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+		header.BorderSizePixel = 0
+		header.Size = UDim2.new(1, 0, 0, 52)
+		header.ZIndex = 32
+		header.Parent = body
+		local hStroke = Instance.new("UIStroke")
+		hStroke.Color = Color3.fromRGB(51, 51, 51)
+		hStroke.Thickness = 1
+		hStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		hStroke.Parent = header
+
+		UIKit.Label({
+			Parent = header,
+			Text = "Character Upgrade",
+			Size = UDim2.new(0.5, 0, 1, 0),
+			Position = UDim2.fromOffset(14, 0),
+			SizePx = 14,
+			Font = T.Font.Title,
+			Color = Color3.fromRGB(204, 204, 204),
+			Z = 34,
+		})
+
+		local coinPill = Instance.new("Frame")
+		coinPill.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+		coinPill.BorderSizePixel = 0
+		coinPill.Size = UDim2.fromOffset(110, 30)
+		coinPill.Position = UDim2.new(1, -150, 0.5, 0)
+		coinPill.AnchorPoint = Vector2.new(0, 0.5)
+		coinPill.ZIndex = 33
+		coinPill.Parent = header
+		UIKit.Corner(coinPill, 3)
+		UIKit.Stroke(coinPill, Color3.fromRGB(51, 51, 51), 1, 0)
+		UIKit.Label({
+			Parent = coinPill,
+			Text = "🪙  " .. Format.Num(coins),
+			Size = UDim2.fromScale(1, 1),
+			SizePx = 12,
+			Font = T.Font.Title,
+			Color = Color3.fromRGB(255, 178, 0),
+			X = Enum.TextXAlignment.Center,
+			Z = 34,
+		})
+
+		local closeBtn = Instance.new("TextButton")
+		closeBtn.Name = "Close"
+		closeBtn.Text = "✕"
+		closeBtn.Font = Enum.Font.GothamBold
+		closeBtn.TextSize = 14
+		closeBtn.TextColor3 = Color3.fromRGB(255, 220, 220)
+		closeBtn.AutoButtonColor = true
+		closeBtn.Size = UDim2.fromOffset(26, 26)
+		closeBtn.Position = UDim2.new(1, -36, 0.5, 0)
+		closeBtn.AnchorPoint = Vector2.new(0, 0.5)
+		closeBtn.BackgroundColor3 = Color3.fromRGB(180, 20, 20)
+		closeBtn.BorderSizePixel = 0
+		closeBtn.ZIndex = 35
+		closeBtn.Parent = header
+		UIKit.Corner(closeBtn, 3)
+		UIKit.Stroke(closeBtn, Color3.fromRGB(170, 34, 34), 1, 0)
+		closeBtn.MouseButton1Click:Connect(function()
+			store:ClosePanel()
+		end)
+
+		-- ===== Cards row =====
+		local cardsRow = Instance.new("Frame")
+		cardsRow.Name = "Cards"
+		cardsRow.BackgroundTransparency = 1
+		cardsRow.Size = UDim2.new(1, -28, 0, 180)
+		cardsRow.Position = UDim2.fromOffset(14, 66)
+		cardsRow.ZIndex = 32
+		cardsRow.Parent = body
+		local cardList = UIKit.List(cardsRow, 8, true)
+		cardList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		cardList.VerticalAlignment = Enum.VerticalAlignment.Top
+
+		local function statValueText(upId: string, def: any, lvl: number): string
+			if not def then
+				return "0"
+			end
+			if upId == "Backpack" then
+				return tostring(UpgradeConfig.GetBagCap(profile))
+			end
+			if def.effectType == "mult_add" or def.statKey == "critChance" or def.statKey == "multiCritChance" then
+				local pct = math.floor((def.effectPerLevel or 0) * 100 * lvl + 0.5)
+				return pct .. "%"
+			end
+			return Format.Num((def.effectPerLevel or 0) * lvl)
+		end
+
+		for i, upId in ipairs(UPGRADE_ORDER) do
+			local def = UpgradeConfig.Defs[upId]
+			local ui = UPGRADE_UI[upId]
+			if def and ui then
+				local lvl = (profile.upgradeLevels and profile.upgradeLevels[upId]) or 0
+				local unlocked = select(1, UpgradeConfig.IsUnlocked(profile, upId))
+				local selected = selectedUpgradeId == upId
+				local edge = if selected then ui.edge else Color3.fromRGB(51, 51, 51)
+				if selected and upId == "ClickSpeed" then
+					edge = Color3.fromRGB(232, 184, 0)
 				end
 
-				local card = Instance.new("Frame")
+				local card = Instance.new("TextButton")
 				card.Name = upId
-				card.BackgroundColor3 = Color3.new(1, 1, 1)
+				card.Text = ""
+				card.AutoButtonColor = false
+				card.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 				card.BorderSizePixel = 0
-				card.Size = UDim2.fromOffset(cardW, px(268))
+				card.Size = UDim2.fromOffset(167, 180)
 				card.LayoutOrder = i
 				card.ZIndex = 33
 				card.ClipsDescendants = true
-				card.Parent = rowHost
-				UIKit.Corner(card, T.R.sm)
-				UIKit.Stroke(card, T.Stroke, 1.1, 0.15)
-				UIKit.Gradient(card, T.Surface2, T.Surface, 105)
+				card.Parent = cardsRow
+				UIKit.Corner(card, 4)
+				UIKit.Stroke(card, edge, selected and 2.5 or 2, 0)
 
-				-- title
+				-- title bar
+				local titleBar = Instance.new("Frame")
+				titleBar.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+				titleBar.BorderSizePixel = 0
+				titleBar.Size = UDim2.new(1, 0, 0, 36)
+				titleBar.ZIndex = 34
+				titleBar.Parent = card
 				UIKit.Label({
-					Parent = card,
-					Text = def.name,
-					Size = UDim2.new(1, -8, 0, px(24)),
-					Position = UDim2.fromOffset(4, px(6)),
-					SizePx = px(13),
-					Font = T.Font.Title,
-					Color = T.Text,
-					X = Enum.TextXAlignment.Center,
-					Z = 34,
-				})
-
-				-- colored icon block
-				local iconBox = Instance.new("Frame")
-				iconBox.BackgroundColor3 = col
-				iconBox.BorderSizePixel = 0
-				iconBox.Size = UDim2.new(1, -16, 0, px(88))
-				iconBox.Position = UDim2.fromOffset(8, px(34))
-				iconBox.ZIndex = 34
-				iconBox.Parent = card
-				UIKit.Corner(iconBox, T.R.sm)
-				UIKit.Label({
-					Parent = iconBox,
-					Text = icon,
+					Parent = titleBar,
+					Text = ui.title,
 					Size = UDim2.fromScale(1, 1),
-					SizePx = px(40),
+					SizePx = 11,
+					Font = T.Font.Title,
+					Color = Color3.fromRGB(204, 204, 204),
 					X = Enum.TextXAlignment.Center,
 					Z = 35,
 				})
 
-				-- level / effect
+				-- icon area with gradient
+				local mid = Instance.new("Frame")
+				mid.BackgroundColor3 = Color3.new(1, 1, 1)
+				mid.BorderSizePixel = 0
+				mid.Size = UDim2.new(1, 0, 0, 100)
+				mid.Position = UDim2.fromOffset(0, 36)
+				mid.ZIndex = 34
+				mid.ClipsDescendants = true
+				mid.Parent = card
+				UIKit.Gradient(mid, ui.grad0, ui.grad1, 160)
 				UIKit.Label({
-					Parent = card,
-					Text = string.format("Level  %d / %d", lvl, def.maxLevel),
-					Size = UDim2.new(1, -12, 0, px(18)),
-					Position = UDim2.fromOffset(6, px(130)),
-					SizePx = px(12),
-					Color = T.TextMuted,
-					Z = 34,
+					Parent = mid,
+					Text = ui.glyph,
+					Size = UDim2.fromScale(1, 1),
+					SizePx = 36,
+					X = Enum.TextXAlignment.Center,
+					Z = 35,
+				})
+				if not unlocked then
+					local lock = UIKit.Label({
+						Parent = mid,
+						Text = "LOCKED",
+						Size = UDim2.new(1, 0, 0, 16),
+						Position = UDim2.new(0, 0, 1, -18),
+						SizePx = 9,
+						Color = Color3.fromRGB(255, 120, 120),
+						X = Enum.TextXAlignment.Center,
+						Z = 36,
+					})
+					lock.BackgroundTransparency = 1
+				end
+
+				-- stats footer on card
+				local foot = Instance.new("Frame")
+				foot.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+				foot.BorderSizePixel = 0
+				foot.Size = UDim2.new(1, 0, 0, 44)
+				foot.Position = UDim2.new(0, 0, 1, -44)
+				foot.ZIndex = 34
+				foot.Parent = card
+				UIKit.Label({
+					Parent = foot,
+					Text = "Level",
+					Size = UDim2.new(0.5, -8, 0, 14),
+					Position = UDim2.fromOffset(8, 6),
+					SizePx = 10,
+					Color = Color3.fromRGB(119, 119, 119),
+					Z = 35,
 				})
 				UIKit.Label({
-					Parent = card,
-					Text = effectLine,
-					Size = UDim2.new(1, -12, 0, px(18)),
-					Position = UDim2.fromOffset(6, px(148)),
-					SizePx = px(13),
-					Color = T.TextSoft,
-					Z = 34,
+					Parent = foot,
+					Text = tostring(lvl),
+					Size = UDim2.new(0.5, -8, 0, 14),
+					Position = UDim2.new(0.5, 0, 0, 6),
+					SizePx = 10,
+					Color = Color3.fromRGB(204, 204, 204),
+					X = Enum.TextXAlignment.Right,
+					Z = 35,
 				})
 				UIKit.Label({
-					Parent = card,
-					Text = if not unlocked
-						then "LOCKED"
-						elseif maxed
-						then "MAX"
-						else ("Cost  " .. Format.Num(cost) .. " 🪙"),
-					Size = UDim2.new(1, -12, 0, px(18)),
-					Position = UDim2.fromOffset(6, px(172)),
-					SizePx = px(13),
-					Color = (not unlocked or maxed) and T.TextMuted or T.Gold,
-					Font = T.Font.Title,
-					Z = 34,
+					Parent = foot,
+					Text = ui.statLabel,
+					Size = UDim2.new(0.5, -8, 0, 14),
+					Position = UDim2.fromOffset(8, 22),
+					SizePx = 10,
+					Color = Color3.fromRGB(119, 119, 119),
+					Z = 35,
+				})
+				UIKit.Label({
+					Parent = foot,
+					Text = statValueText(upId, def, lvl),
+					Size = UDim2.new(0.5, -8, 0, 14),
+					Position = UDim2.new(0.5, 0, 0, 22),
+					SizePx = 10,
+					Color = Color3.fromRGB(204, 204, 204),
+					X = Enum.TextXAlignment.Right,
+					Z = 35,
 				})
 
-				UIKit.Button({
-					Parent = card,
-					Text = if not unlocked then "Locked" elseif maxed then "MAX" else "Upgrade",
-					Size = UDim2.new(1, -16, 0, px(36)),
-					Position = UDim2.new(0, 8, 1, -px(44)),
-					Color = maxed and T.Disabled or (canBuy and T.Accent or T.Disabled),
-					Color2 = maxed and (T.Colors and T.Colors.DisabledDeep)
-						or (canBuy and T.AccentDeep or (T.Colors and T.Colors.DisabledDeep)),
-					Primary = canBuy and not maxed,
-					Disabled = maxed or not canBuy or not unlocked,
-					SizePx = px(14),
-					Z = 35,
-					OnClick = function()
-						if canBuy and not maxed and unlocked then
-							Net.BuyUpgrade(upId)
-						end
-					end,
-				})
+				card.MouseButton1Click:Connect(function()
+					selectedUpgradeId = upId
+					refreshCharacter()
+				end)
 			end
+		end
+
+		-- ===== Bottom bar: Next Level + Price + Upgrade =====
+		local bar = Instance.new("Frame")
+		bar.Name = "UpgradeBar"
+		bar.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
+		bar.BorderSizePixel = 0
+		bar.Size = UDim2.new(1, -32, 0, 62)
+		bar.Position = UDim2.new(0, 16, 1, -78)
+		bar.ZIndex = 32
+		bar.Parent = body
+		UIKit.Corner(bar, 4)
+		UIKit.Stroke(bar, Color3.fromRGB(51, 51, 51), 1, 0)
+
+		local selId = selectedUpgradeId
+		local selDef = UpgradeConfig.Defs[selId]
+		local selUi = UPGRADE_UI[selId]
+		local selLvl = (profile.upgradeLevels and profile.upgradeLevels[selId]) or 0
+		local nextLvl = selLvl + 1
+		local cost = if selDef then UpgradeConfig.GetCost(selId, nextLvl) else 0
+		local unlocked = false
+		local lockReason: string? = "—"
+		if selDef then
+			unlocked, lockReason = UpgradeConfig.IsUnlocked(profile, selId)
+		end
+		local maxed = selDef ~= nil and selLvl >= (selDef.maxLevel or 0)
+		local canBuy = unlocked and not maxed and coins >= cost
+
+		local nextStat = "—"
+		if selDef and selUi then
+			if selId == "Backpack" then
+				nextStat = tostring((UpgradeConfig.GetBagCap(profile) or 32) + 1)
+			elseif selDef.effectType == "mult_add" or selDef.statKey == "critChance" or selDef.statKey == "multiCritChance" then
+				local per = math.floor((selDef.effectPerLevel or 0) * 100 + 0.5)
+				nextStat = per .. "%"
+			else
+				nextStat = Format.Num(selDef.effectPerLevel or 0)
+			end
+		end
+
+		UIKit.Label({
+			Parent = bar,
+			Text = "Next Level",
+			Size = UDim2.fromOffset(120, 14),
+			Position = UDim2.fromOffset(16, 12),
+			SizePx = 11,
+			Color = Color3.fromRGB(119, 119, 119),
+			Z = 34,
+		})
+		UIKit.Label({
+			Parent = bar,
+			Text = maxed and "MAX" or tostring(nextLvl),
+			Size = UDim2.fromOffset(80, 14),
+			Position = UDim2.fromOffset(520, 12),
+			SizePx = 11,
+			Color = Color3.fromRGB(204, 204, 204),
+			X = Enum.TextXAlignment.Right,
+			Z = 34,
+		})
+		UIKit.Label({
+			Parent = bar,
+			Text = selUi and selUi.statLabel or "Stat",
+			Size = UDim2.fromOffset(120, 14),
+			Position = UDim2.fromOffset(16, 32),
+			SizePx = 11,
+			Color = Color3.fromRGB(119, 119, 119),
+			Z = 34,
+		})
+		UIKit.Label({
+			Parent = bar,
+			Text = if not unlocked then (lockReason or "Locked") else nextStat,
+			Size = UDim2.fromOffset(120, 14),
+			Position = UDim2.fromOffset(480, 32),
+			SizePx = 11,
+			Color = Color3.fromRGB(204, 204, 204),
+			X = Enum.TextXAlignment.Right,
+			Z = 34,
+		})
+
+		UIKit.Label({
+			Parent = bar,
+			Text = "Price",
+			Size = UDim2.fromOffset(50, 12),
+			Position = UDim2.new(1, -200, 0, 12),
+			SizePx = 10,
+			Color = Color3.fromRGB(119, 119, 119),
+			Z = 34,
+		})
+		UIKit.Label({
+			Parent = bar,
+			Text = "🪙 " .. (if maxed then "—" else Format.Num(cost)),
+			Size = UDim2.fromOffset(90, 14),
+			Position = UDim2.new(1, -210, 0, 28),
+			SizePx = 12,
+			Font = T.Font.Title,
+			Color = Color3.fromRGB(255, 178, 0),
+			Z = 34,
+		})
+
+		local upBtn = Instance.new("TextButton")
+		upBtn.Name = "UpgradeBtn"
+		upBtn.Text = if not unlocked then "Locked" elseif maxed then "MAX" else "Upgrade"
+		upBtn.Font = Enum.Font.GothamBold
+		upBtn.TextSize = 13
+		upBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		upBtn.AutoButtonColor = canBuy
+		upBtn.Size = UDim2.fromOffset(92, 35)
+		upBtn.Position = UDim2.new(1, -108, 0.5, 0)
+		upBtn.AnchorPoint = Vector2.new(0, 0.5)
+		upBtn.BackgroundColor3 = if canBuy then Color3.fromRGB(40, 40, 48) else Color3.fromRGB(40, 40, 40)
+		upBtn.BorderSizePixel = 0
+		upBtn.ZIndex = 35
+		upBtn.Parent = bar
+		UIKit.Corner(upBtn, 4)
+		UIKit.Stroke(upBtn, if canBuy then Color3.fromRGB(80, 80, 90) else Color3.fromRGB(50, 50, 50), 1, 0)
+		if canBuy then
+			upBtn.MouseButton1Click:Connect(function()
+				Net.BuyUpgrade(selId)
+			end)
 		end
 	end
 
