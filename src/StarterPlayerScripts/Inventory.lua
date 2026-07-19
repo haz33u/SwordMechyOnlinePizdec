@@ -41,13 +41,15 @@ local GOLD = Color3.fromRGB(232, 184, 0)
 local RED_CLOSE = Color3.fromRGB(204, 34, 0)
 local GREEN = Color3.fromRGB(120, 170, 100)
 
-local SLOT_GAP = 12 -- more air so hover scale does not pile cells
+local SLOT_GAP = 14 -- room so mild hover scale does not clip strokes
 local COLS = 9 -- target columns; cell size fills width
 local MAX_SLOTS = 45
 local INV_CAP = 32
 local TAB_R = 64
-local HOVER_SCALE = 1.1
-local NEIGHBOR_SCALE = 0.9 -- other cells shrink when one is hovered (push-apart)
+-- Mild hover (strong scale was breaking UIStrokes + flickering on slot change)
+local HOVER_SCALE = 1.06
+local NEIGHBOR_SCALE = 0.97
+local HOVER_LEAVE_DELAY = 0.07
 
 --[[
 	Bottom tabs ≈ nobackground.png: rounded icon tiles, semi-transparent fill,
@@ -408,51 +410,89 @@ function Inventory.Bind(
 		return sc
 	end
 
-	--- Hover: grow self, shrink neighbors so cells do not stack on each other
-	local function bindHover(btn: GuiObject, stroke: UIStroke?, baseStroke: Color3?, gridParent: Instance?)
-		local sc = ensureScale(btn)
-		local baseCol = baseStroke or BD
-		btn.MouseEnter:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-				Scale = HOVER_SCALE,
-			}):Play()
-			if stroke then
-				TweenService:Create(stroke, TweenInfo.new(0.12), {
-					Color = CYAN,
-					Thickness = 2.5,
-					Transparency = 0,
-				}):Play()
-			end
-			if gridParent then
-				for _, ch in gridParent:GetChildren() do
-					if ch:IsA("GuiButton") and ch ~= btn then
-						local nsc = ensureScale(ch)
-						TweenService:Create(nsc, TweenInfo.new(0.12), { Scale = NEIGHBOR_SCALE }):Play()
-					end
-				end
-			end
-		end)
-		btn.MouseLeave:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+	-- Shared hover state so moving between slots does not flash reset→highlight
+	local hoverGen = 0
+	local activeHover: GuiObject? = nil
+
+	local function resetSlotVisual(btn: GuiObject, stroke: UIStroke?, baseCol: Color3, baseZ: number)
+		local sc = btn:FindFirstChildOfClass("UIScale")
+		if sc then
+			TweenService:Create(sc, TweenInfo.new(0.14, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 				Scale = 1,
 			}):Play()
-			if stroke then
-				TweenService:Create(stroke, TweenInfo.new(0.12), {
-					Color = baseCol,
-					Thickness = 1.5,
-					Transparency = 0.1,
+		end
+		if stroke then
+			-- keep thickness stable — only color/transparency (avoids stroke "break" glitch)
+			TweenService:Create(stroke, TweenInfo.new(0.14), {
+				Color = baseCol,
+				Transparency = 0.12,
+			}):Play()
+		end
+		if btn:IsA("GuiObject") then
+			btn.ZIndex = baseZ
+		end
+	end
+
+	local function applyHoverVisual(btn: GuiObject, stroke: UIStroke?, baseZ: number)
+		local sc = ensureScale(btn)
+		TweenService:Create(sc, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+			Scale = HOVER_SCALE,
+		}):Play()
+		if stroke then
+			stroke.Thickness = 2 -- fixed, not tweened thickness (tweening thickness glitches UIStroke)
+			TweenService:Create(stroke, TweenInfo.new(0.16), {
+				Color = CYAN,
+				Transparency = 0.05,
+			}):Play()
+		end
+		btn.ZIndex = baseZ + 8
+	end
+
+	local function setNeighborsScale(gridParent: Instance?, except: GuiObject?, scale: number)
+		if not gridParent then
+			return
+		end
+		for _, ch in gridParent:GetChildren() do
+			if ch:IsA("GuiButton") and ch ~= except then
+				local nsc = ensureScale(ch)
+				TweenService:Create(nsc, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+					Scale = scale,
 				}):Play()
 			end
-			if gridParent then
-				for _, ch in gridParent:GetChildren() do
-					if ch:IsA("GuiButton") then
-						local nsc = ch:FindFirstChildOfClass("UIScale")
-						if nsc then
-							TweenService:Create(nsc, TweenInfo.new(0.12), { Scale = 1 }):Play()
-						end
-					end
+		end
+	end
+
+	--- Soft highlight + slight neighbor shrink; leave is delayed for seamless handoff
+	local function bindHover(btn: GuiObject, stroke: UIStroke?, baseStroke: Color3?, gridParent: Instance?)
+		ensureScale(btn)
+		local baseCol = baseStroke or BD
+		local baseZ = btn.ZIndex
+		if stroke then
+			stroke.Thickness = 1.5
+			stroke.Transparency = 0.12
+		end
+
+		btn.MouseEnter:Connect(function()
+			hoverGen += 1
+			activeHover = btn
+			applyHoverVisual(btn, stroke, baseZ)
+			setNeighborsScale(gridParent, btn, NEIGHBOR_SCALE)
+		end)
+
+		btn.MouseLeave:Connect(function()
+			local gen = hoverGen
+			-- delay clear: if pointer enters another slot quickly, skip flash
+			task.delay(HOVER_LEAVE_DELAY, function()
+				if hoverGen ~= gen then
+					return
 				end
-			end
+				if activeHover ~= btn then
+					return
+				end
+				activeHover = nil
+				resetSlotVisual(btn, stroke, baseCol, baseZ)
+				setNeighborsScale(gridParent, nil, 1)
+			end)
 		end)
 	end
 
@@ -466,7 +506,8 @@ function Inventory.Bind(
 		btn.BorderSizePixel = 0
 		btn.Text = ""
 		btn.AutoButtonColor = false
-		btn.ClipsDescendants = true
+		-- false so scaled hover/stroke are not clipped mid-edge
+		btn.ClipsDescendants = false
 		btn.LayoutOrder = order
 		btn.ZIndex = 35
 		btn.Parent = parent
@@ -480,7 +521,8 @@ function Inventory.Bind(
 		plate.ZIndex = 35
 		plate.Parent = btn
 
-		local stroke = UIKit.Stroke(btn, edge, 1.5, 0.1)
+		local stroke = UIKit.Stroke(btn, edge, 1.5, 0.12)
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		bindHover(btn, stroke, edge, parent)
 		return btn, plate, stroke
 	end
@@ -514,9 +556,10 @@ function Inventory.Bind(
 		scroll.ScrollBarThickness = 8
 		scroll.ScrollBarImageColor3 = BD2
 		scroll.ZIndex = 34
+		-- clip canvas content but leave a little pad so mild hover scale is not cut off
 		scroll.ClipsDescendants = true
 		scroll.Parent = parent
-		local pad = 8
+		local pad = 12
 		UIKit.Pad(scroll, pad)
 		local grid = Instance.new("UIGridLayout")
 		grid.CellPadding = UDim2.fromOffset(SLOT_GAP, SLOT_GAP)

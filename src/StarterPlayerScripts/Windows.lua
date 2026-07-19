@@ -5,6 +5,7 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local T = require(script.Parent.Theme)
 local UIKit = require(script.Parent.UIKit)
@@ -140,9 +141,53 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		store:ClosePanel()
 	end)
 
+	-- Panel open/close: slight bounce (scale pop)
+	local panelAnimGen = 0
+	local function ensurePanelScale(f: Frame): UIScale
+		local sc = f:FindFirstChildOfClass("UIScale")
+		if not sc then
+			sc = Instance.new("UIScale")
+			sc.Scale = 1
+			sc.Parent = f
+		end
+		return sc
+	end
+
 	local function showOnly(active: string)
+		panelAnimGen += 1
+		local gen = panelAnimGen
 		for id, f in frames do
-			f.Visible = id == active
+			local sc = ensurePanelScale(f)
+			if id == active then
+				-- open: start small, bounce up
+				sc.Scale = 0.86
+				f.Visible = true
+				TweenService:Create(
+					sc,
+					TweenInfo.new(0.28, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+					{ Scale = 1 }
+				):Play()
+			elseif f.Visible then
+				-- close: soft shrink then hide
+				local tw = TweenService:Create(
+					sc,
+					TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.In),
+					{ Scale = 0.9 }
+				)
+				tw:Play()
+				tw.Completed:Connect(function()
+					if panelAnimGen ~= gen then
+						return
+					end
+					if id ~= active then
+						f.Visible = false
+						sc.Scale = 1
+					end
+				end)
+			else
+				f.Visible = false
+				sc.Scale = 1
+			end
 		end
 	end
 

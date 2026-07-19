@@ -109,14 +109,16 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 - [x] GameUI: HUD, windows, modals — **repo-only**, no dual StarterGui
 - [x] Theme charcoal + blue CTA + red close (SCREEENS / Cristalix-like)
 - [x] **Pixel / Minecraft-like fonts** — `Theme.Fonts` = `Enum.Font.Arcade` (Title/Body/Num/Ui). Whole UIKit labels/buttons pick this up.
-- [x] HUD: boosts top-left · coins/power bottom · **Q**=rebirth · **E**=inventory
+- [x] HUD: boosts top-left · **large** coins/power bottom bar (~380–560×108) · **Q**=rebirth · **E**=inventory  
+  - Rule: **do not make tiny HUD metrics** (FullHD readability)
 - [x] **Attack = LMB + mobile tap** (screen-wide, not Space) — see §4
 - [x] **English locale** for UI + configs + server Notify (see §12 UI string map)
 - [x] CPS/DPS/clicks → **Profile** tab inside inventory (not main HUD)
 - [x] **Unified inventory** (`src/StarterPlayerScripts/Inventory.lua`, panel id `weapons`)
   - Bottom tabs EN: **Weapons / Pets / Auras / Relics / Cases / Shop / Profile**
-  - Fill-width slot grid; hover **grows** cell + **shrinks neighbors** (no overlap); gap ~12px
+  - Fill-width slot grid; **soft hover** (scale ~1.06, neighbors ~0.97, delayed leave = no flash); gap ~14px
   - Structured tooltips (cursor edge glued); weapon action chips cartoon (fat radius + Arcade)
+  - Panel open/close **bounce scale** on window frames
   - **No left preview strip**
   - Tab ImageButtons (soft rounded tiles + glyph fallback)
   - Sell all unequipped; profile AvatarBust + @username inspect (online)
@@ -278,7 +280,9 @@ git add … ; git commit -m "…" ; git pull --rebase ; git push
 7. **Player-facing language = English** (UI, configs, Notify, new features) — see §12  
 8. **Combat click = LMB / touch**, not Space; GUI clicks do not swing  
 9. **Pixel font** = `Enum.Font.Arcade` in Theme (Minecraft-adjacent, built-in)  
-10. **Toasts** = bottom-left only; no per-weapon-drop spam
+10. **Toasts** = bottom-left only; no per-weapon-drop spam  
+11. **No tiny UI** — primary metrics (coins/power), slots, toasts stay large on FullHD  
+12. Inventory hover: soft scale only; never thrash UIStroke thickness (breaks outlines)
 
 ---
 

@@ -173,31 +173,31 @@ function Hud.Mount(
 		boostRows[meta.key] = makeBoostRow(meta)
 	end
 
-	---------------------------------------------------------------- BOTTOM-CENTER: Q | coins/power | E
+	---------------------------------------------------------------- BOTTOM-CENTER: Q | coins/power | E  (large — FullHD readable)
 	local bal = UIKit.Glass({
 		Name = "BalanceBar",
 		Parent = root,
-		Size = UDim2.fromOffset(280, 72),
-		Position = UDim2.new(0.5, 0, 1, -18),
+		Size = UDim2.fromOffset(440, 108),
+		Position = UDim2.new(0.5, 0, 1, -20),
 		Anchor = Vector2.new(0.5, 1),
 		Radius = T.R.md,
 		Z = 12,
 		Deep = true,
 	})
-	UIKit.Stroke(bal, T.Stroke, 1.2, 0.25)
+	UIKit.Stroke(bal, T.Stroke, 1.4, 0.22)
 
 	-- Q = rebirth (left)
 	local qBtn = UIKit.Button({
 		Name = "RebirthQ",
 		Parent = bal,
 		Text = "Q",
-		Size = UDim2.fromOffset(40, 40),
-		Position = UDim2.new(0, 10, 0.5, 0),
+		Size = UDim2.fromOffset(56, 56),
+		Position = UDim2.new(0, 14, 0.5, 0),
 		Anchor = Vector2.new(0, 0.5),
 		Color = Color3.fromRGB(70, 90, 160),
 		Color2 = Color3.fromRGB(40, 55, 110),
 		Primary = true,
-		SizePx = 16,
+		SizePx = 22,
 		Compact = true,
 		Radius = T.R.sm,
 		Z = 14,
@@ -208,18 +208,18 @@ function Hud.Mount(
 	UIKit.Label({
 		Parent = bal,
 		Text = "♻",
-		Size = UDim2.fromOffset(18, 18),
-		Position = UDim2.new(0, 52, 0.5, -16),
-		SizePx = 12,
+		Size = UDim2.fromOffset(28, 28),
+		Position = UDim2.new(0, 76, 0.5, -22),
+		SizePx = 18,
 		Color = T.Accent,
 		Z = 14,
 	})
 
-	-- center metrics
+	-- center metrics (big numbers)
 	local mid = Instance.new("Frame")
 	mid.Name = "Mid"
 	mid.BackgroundTransparency = 1
-	mid.Size = UDim2.fromOffset(130, 56)
+	mid.Size = UDim2.fromOffset(220, 88)
 	mid.Position = UDim2.new(0.5, 0, 0.5, 0)
 	mid.AnchorPoint = Vector2.new(0.5, 0.5)
 	mid.ZIndex = 13
@@ -229,9 +229,9 @@ function Hud.Mount(
 		Name = "Coins",
 		Parent = mid,
 		Text = "🪙  0",
-		Size = UDim2.new(1, 0, 0, 24),
-		Position = UDim2.fromOffset(0, 2),
-		SizePx = 16,
+		Size = UDim2.new(1, 0, 0, 40),
+		Position = UDim2.fromOffset(0, 4),
+		SizePx = 26,
 		Font = T.Font.Num,
 		Color = T.Gold,
 		X = Enum.TextXAlignment.Center,
@@ -241,9 +241,9 @@ function Hud.Mount(
 		Name = "Power",
 		Parent = mid,
 		Text = "⚔  0",
-		Size = UDim2.new(1, 0, 0, 24),
-		Position = UDim2.fromOffset(0, 28),
-		SizePx = 16,
+		Size = UDim2.new(1, 0, 0, 40),
+		Position = UDim2.fromOffset(0, 44),
+		SizePx = 26,
 		Font = T.Font.Num,
 		Color = Color3.fromRGB(255, 120, 90),
 		X = Enum.TextXAlignment.Center,
@@ -255,13 +255,13 @@ function Hud.Mount(
 		Name = "InvE",
 		Parent = bal,
 		Text = "E",
-		Size = UDim2.fromOffset(40, 40),
-		Position = UDim2.new(1, -10, 0.5, 0),
+		Size = UDim2.fromOffset(56, 56),
+		Position = UDim2.new(1, -14, 0.5, 0),
 		Anchor = Vector2.new(1, 0.5),
 		Color = Color3.fromRGB(70, 90, 160),
 		Color2 = Color3.fromRGB(40, 55, 110),
 		Primary = true,
-		SizePx = 16,
+		SizePx = 22,
 		Compact = true,
 		Radius = T.R.sm,
 		Z = 14,
@@ -272,9 +272,9 @@ function Hud.Mount(
 	UIKit.Label({
 		Parent = bal,
 		Text = "🎒",
-		Size = UDim2.fromOffset(18, 18),
-		Position = UDim2.new(1, -70, 0.5, -16),
-		SizePx = 12,
+		Size = UDim2.fromOffset(28, 28),
+		Position = UDim2.new(1, -100, 0.5, -22),
+		SizePx = 18,
 		Color = T.TextSoft,
 		Z = 14,
 	})
@@ -283,8 +283,8 @@ function Hud.Mount(
 	local rbHost = Instance.new("Frame")
 	rbHost.Name = "RebirthProg"
 	rbHost.BackgroundTransparency = 1
-	rbHost.Size = UDim2.fromOffset(280, 6)
-	rbHost.Position = UDim2.new(0.5, 0, 1, -96)
+	rbHost.Size = UDim2.fromOffset(440, 8)
+	rbHost.Position = UDim2.new(0.5, 0, 1, -138)
 	rbHost.AnchorPoint = Vector2.new(0.5, 1)
 	rbHost.ZIndex = 11
 	rbHost.Parent = root
@@ -336,12 +336,14 @@ function Hud.Mount(
 
 		boosts.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad)
 
-		local balW = math.clamp(m.actionW * 0.72, 240, 320)
-		bal.Size = UDim2.fromOffset(balW, 68)
+		-- Large balance sector (never tiny on FullHD)
+		local balW = math.clamp(m.actionW * 0.95, 380, 560)
+		local balH = 108
+		bal.Size = UDim2.fromOffset(balW, balH)
 		bal.Position = UDim2.new(0.5, 0, 1, -m.pad)
-		rbHost.Size = UDim2.fromOffset(balW, 6)
-		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.pad + 78))
-		autoChip.Position = UDim2.new(0.5, 0, 1, -(m.pad + 90))
+		rbHost.Size = UDim2.fromOffset(balW, 8)
+		rbHost.Position = UDim2.new(0.5, 0, 1, -(m.pad + balH + 14))
+		autoChip.Position = UDim2.new(0.5, 0, 1, -(m.pad + balH + 28))
 	end
 
 	pcall(function()
