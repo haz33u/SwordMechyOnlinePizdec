@@ -1,10 +1,8 @@
 --!strict
 --[[
-	Inventory (INVETAR layout + live data):
-	  - near-fullscreen responsive shell (no left preview strip)
-	  - compact structured tooltips (refICONTOLLTIP style)
-	  - bottom ImageButton tabs (Creator Store free cartoon icons)
-	  - opaque slots, hover pulse, sell-all, gamepass shop, profile search
+	Inventory UI from Figma Make INVETAR + live game data.
+	Large slots, opaque item plates, cursor tooltips, hover pulse,
+	gamepass prices, profile AvatarBust + @username inspect, sell-all swords.
 ]]
 
 local GuiService = game:GetService("GuiService")
@@ -25,76 +23,45 @@ local PetConfig = require(Shared.Config.PetConfig)
 local AuraConfig = require(Shared.Config.AuraConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 local GamePassConfig = require(Shared.Config.GamePassConfig)
-local Formulas = require(Shared.Formulas)
 
 local Inventory = {}
 
+-- Larger readable design tokens
 local BG_PANEL = Color3.fromRGB(24, 24, 24)
 local BG_SECTION = Color3.fromRGB(32, 32, 32)
 local BG_SLOT = Color3.fromRGB(34, 34, 34)
 local BG_SLOT_MT = Color3.fromRGB(22, 22, 22)
 local BD = Color3.fromRGB(48, 48, 48)
 local BD2 = Color3.fromRGB(62, 62, 62)
-local TW = Color3.fromRGB(220, 220, 220)
-local TD = Color3.fromRGB(150, 150, 150)
-local TL = Color3.fromRGB(100, 100, 100)
+local TW = Color3.fromRGB(204, 204, 204)
+local TD = Color3.fromRGB(118, 118, 118)
+local TL = Color3.fromRGB(72, 72, 72)
 local CYAN = Color3.fromRGB(0, 255, 224)
 local GOLD = Color3.fromRGB(232, 184, 0)
 local RED_CLOSE = Color3.fromRGB(204, 34, 0)
 local GREEN = Color3.fromRGB(120, 170, 100)
-local STAT_BLUE = Color3.fromRGB(90, 160, 230)
 
--- Base design px; scaled by UIScale from AbsoluteSize
-local SLOT = 72
+local SLOT = 76
 local SLOT_GAP = 6
-local COLS = 10
-local HOVER_SCALE = 1.12
-local TAB_ICON = 58
+local COLS = 9
+local MAX_SLOTS = 45
+local INV_CAP = 32
+local TAB_R = 68
+local HOVER_SCALE = 1.1
 
--- Free Creator Store cartoon icons (Decal/Image)
-local TAB_ICONS: { [string]: string } = {
-	weapons = "rbxassetid://114848036963361", -- medieval-sword-cartoon-icon
-	pets = "rbxassetid://92327170909498", -- pet_button_icon
-	auras = "rbxassetid://133879685799043", -- light/sparkle
-	relics = "rbxassetid://9650296120", -- gem
-	cases = "rbxassetid://7181747872", -- chest-icon
-	shop = "rbxassetid://16009435598", -- coin
-	profile = "rbxassetid://7492903668", -- user icon
-}
-
+-- Bottom section tabs: ImageButton icons (no circle plate). Free Creator Store IDs.
 local TABS = {
-	{ id = "weapons", label = "Weapons" },
-	{ id = "pets", label = "Pets" },
-	{ id = "auras", label = "Auras" },
-	{ id = "relics", label = "Relics" },
-	{ id = "cases", label = "Cases" },
-	{ id = "shop", label = "Shop" },
-	{ id = "profile", label = "Profile" },
+	{ id = "weapons", glyph = "⚔", label = "Weapons", image = "rbxassetid://114848036963361" },
+	{ id = "pets", glyph = "🐾", label = "Pets", image = "rbxassetid://92327170909498" },
+	{ id = "auras", glyph = "✨", label = "Auras", image = "rbxassetid://133879685799043" },
+	{ id = "relics", glyph = "💎", label = "Relics", image = "rbxassetid://9650296120" },
+	{ id = "cases", glyph = "📦", label = "Cases", image = "rbxassetid://7181747872" },
+	{ id = "shop", glyph = "🪙", label = "Shop", image = "rbxassetid://16009435598" },
+	{ id = "profile", glyph = "👤", label = "Profile", image = "rbxassetid://7492903668" },
 }
 
 local function rarityBorder(r: string?): Color3
 	return Rarity.Of(r)
-end
-
---- Normalize weapons/pets arrays (ipairs-safe after DataStore quirks)
-local function asArray(list: any): { any }
-	if type(list) ~= "table" then
-		return {}
-	end
-	local out: { any } = {}
-	for _, v in ipairs(list) do
-		if type(v) == "table" then
-			table.insert(out, v)
-		end
-	end
-	if #out == 0 then
-		for _, v in pairs(list) do
-			if type(v) == "table" and (v.uid or v.id) then
-				table.insert(out, v)
-			end
-		end
-	end
-	return out
 end
 
 local function solid(parent: Instance, name: string, size: UDim2, pos: UDim2?, bg: Color3?, z: number?): Frame
@@ -140,6 +107,43 @@ local function lbl(
 	return l
 end
 
+local function keybind(parent: Instance, order: number, key: string, desc: string)
+	local wrap = Instance.new("Frame")
+	wrap.BackgroundTransparency = 1
+	wrap.Size = UDim2.fromOffset(0, 32)
+	wrap.AutomaticSize = Enum.AutomaticSize.X
+	wrap.LayoutOrder = order
+	wrap.ZIndex = 35
+	wrap.Parent = parent
+	UIKit.List(wrap, 6, true)
+
+	local badge = Instance.new("TextLabel")
+	badge.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+	badge.BackgroundTransparency = 0
+	badge.BorderSizePixel = 0
+	badge.Text = key
+	badge.Font = Enum.Font.GothamBold
+	badge.TextSize = 11
+	badge.TextColor3 = TD
+	badge.Size = UDim2.fromOffset(0, 24)
+	badge.AutomaticSize = Enum.AutomaticSize.X
+	badge.ZIndex = 36
+	badge.Parent = wrap
+	UIKit.Pad(badge, nil, 8, 3, 8, 3)
+	UIKit.Stroke(badge, BD2, 1, 0.15)
+
+	local d = Instance.new("TextLabel")
+	d.BackgroundTransparency = 1
+	d.Text = desc
+	d.Font = Enum.Font.Gotham
+	d.TextSize = 13
+	d.TextColor3 = TL
+	d.Size = UDim2.fromOffset(0, 24)
+	d.AutomaticSize = Enum.AutomaticSize.X
+	d.ZIndex = 36
+	d.Parent = wrap
+end
+
 local function avatarBustUrl(userId: number): string
 	return string.format("rbxthumb://type=AvatarBust&id=%d&w=420&h=420", userId)
 end
@@ -164,6 +168,7 @@ function Inventory.Bind(
 	local priceCache: { [number]: string } = {}
 	local pricesReady = false
 
+	-- Profile inspect (other online player)
 	local inspectName: string? = nil
 	local inspectUserId: number? = nil
 	local inspectStats: any? = nil
@@ -177,8 +182,10 @@ function Inventory.Bind(
 	local main: Frame
 	local actions: Frame
 	local tip: Frame
-	local tipLayout: UIListLayout
-	local scaleObj: UIScale
+	-- Left preview strip removed (user request) — keep stubs so refresh calls stay safe
+	local previewLab: TextLabel? = nil
+	local previewImg: ImageLabel? = nil
+	local miniSlots: { Frame } = {}
 	local tabButtons: { [string]: ImageButton } = {}
 	local tabLabels: { [string]: TextLabel } = {}
 
@@ -226,52 +233,6 @@ function Inventory.Bind(
 		end)
 	end
 
-	local function clearTipRows()
-		for _, c in tip:GetChildren() do
-			if c:IsA("TextLabel") or c:IsA("Frame") then
-				if c.Name ~= "Pad" then
-					c:Destroy()
-				end
-			end
-		end
-	end
-
-	local function tipLine(order: number, left: string, right: string?, leftCol: Color3?, rightCol: Color3?)
-		local row = Instance.new("Frame")
-		row.Name = "R" .. order
-		row.BackgroundTransparency = 1
-		row.Size = UDim2.new(1, 0, 0, 18)
-		row.AutomaticSize = Enum.AutomaticSize.Y
-		row.LayoutOrder = order
-		row.ZIndex = 91
-		row.Parent = tip
-
-		local l = Instance.new("TextLabel")
-		l.BackgroundTransparency = 1
-		l.Size = UDim2.new(if right then 0.48 else 1, 0, 0, 18)
-		l.Font = Enum.Font.Gotham
-		l.TextSize = 14
-		l.TextColor3 = leftCol or TD
-		l.TextXAlignment = Enum.TextXAlignment.Left
-		l.Text = left
-		l.ZIndex = 92
-		l.Parent = row
-
-		if right then
-			local r = Instance.new("TextLabel")
-			r.BackgroundTransparency = 1
-			r.Size = UDim2.new(0.52, 0, 0, 18)
-			r.Position = UDim2.new(0.48, 0, 0, 0)
-			r.Font = Enum.Font.GothamBold
-			r.TextSize = 14
-			r.TextColor3 = rightCol or TW
-			r.TextXAlignment = Enum.TextXAlignment.Left
-			r.Text = right
-			r.ZIndex = 92
-			r.Parent = row
-		end
-	end
-
 	local function placeTooltip()
 		if not tip.Visible or not canvas then
 			return
@@ -283,13 +244,15 @@ function Inventory.Bind(
 		local abs = canvas.AbsolutePosition
 		local canvasSz = canvas.AbsoluteSize
 		local tipSz = tip.AbsoluteSize
-		if tipSz.X < 4 then
-			tipSz = Vector2.new(220, 120)
+		if tipSz.X < 2 then
+			tipSz = Vector2.new(240, 130)
 		end
-		local gap = 12
+		local gap = 14
+		-- Prefer right of cursor
 		local localX = (screenX - abs.X) + gap
-		local localY = (screenY - abs.Y) + 4
+		local localY = (screenY - abs.Y) + gap
 		if localX + tipSz.X > canvasSz.X - 6 then
+			-- flip to left of cursor
 			localX = (screenX - abs.X) - tipSz.X - gap
 		end
 		if localY + tipSz.Y > canvasSz.Y - 6 then
@@ -300,54 +263,25 @@ function Inventory.Bind(
 		tip.Position = UDim2.fromOffset(localX, localY)
 	end
 
-	--- Compact tooltip like refICONTOLLTIP: title + labeled stats, minimal empty space
-	local function setTooltip(opts: {
-		title: string,
-		rarity: string?,
-		power: string?,
-		sell: string?,
-		level: string?,
-		extra: string?,
-		border: Color3?,
-	})
-		clearTipRows()
-		local order = 1
-		tipLine(order, opts.title, nil, opts.border or TW, nil)
-		order += 1
-		if opts.rarity then
-			tipLine(order, "Rarity:", opts.rarity, TD, rarityBorder(opts.rarity))
-			order += 1
-		end
-		-- spacer
-		local sp = Instance.new("Frame")
-		sp.BackgroundTransparency = 1
-		sp.Size = UDim2.new(1, 0, 0, 6)
-		sp.LayoutOrder = order
-		sp.ZIndex = 91
-		sp.Parent = tip
-		order += 1
-		if opts.power then
-			tipLine(order, "Power:", opts.power, TD, STAT_BLUE)
-			order += 1
-		end
-		if opts.sell then
-			tipLine(order, "Sell:", opts.sell, TD, STAT_BLUE)
-			order += 1
-		end
-		if opts.level then
-			tipLine(order, "Level:", opts.level, TD, STAT_BLUE)
-			order += 1
-		end
-		if opts.extra and opts.extra ~= "" then
-			tipLine(order, opts.extra, nil, CYAN, nil)
-		end
+	--- Compact labeled tooltip (title + rarity + stats lines — less empty space)
+	local function setTooltip(title: string, rarity: string?, desc: string?, extra: string?, borderCol: Color3?)
+		local tLab = tip:FindFirstChild("Title") :: TextLabel
+		local rLab = tip:FindFirstChild("Rarity") :: TextLabel
+		local dLab = tip:FindFirstChild("Desc") :: TextLabel
+		local eLab = tip:FindFirstChild("Extra") :: TextLabel
+		tLab.Text = title
+		rLab.Text = rarity and ("Rarity: " .. rarity) or ""
+		rLab.TextColor3 = borderCol or rarityBorder(rarity)
+		dLab.Text = desc or ""
+		eLab.Text = extra or ""
 		local st = tip:FindFirstChildOfClass("UIStroke")
 		if st then
-			st.Color = opts.border or rarityBorder(opts.rarity) or BD2
+			st.Color = borderCol or rarityBorder(rarity) or BD2
 		end
+		-- tighter fixed height when lines empty
+		local lines = 1 + (rarity and 1 or 0) + ((desc and desc ~= "") and 2 or 0) + ((extra and extra ~= "") and 1 or 0)
+		tip.Size = UDim2.fromOffset(220, math.clamp(18 + lines * 20, 70, 140))
 		tip.Visible = true
-		-- next frame so AutomaticSize settles
-		task.defer(placeTooltip)
 		placeTooltip()
 	end
 
@@ -372,30 +306,33 @@ function Inventory.Bind(
 		sc.Parent = btn
 		local baseCol = baseStroke or BD
 		btn.MouseEnter:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+			TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
 				Scale = HOVER_SCALE,
 			}):Play()
 			if stroke then
-				TweenService:Create(stroke, TweenInfo.new(0.1), {
+				TweenService:Create(stroke, TweenInfo.new(0.12), {
 					Color = CYAN,
-					Thickness = 2.4,
+					Thickness = 2.5,
 					Transparency = 0,
 				}):Play()
 			end
 		end)
 		btn.MouseLeave:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+			TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+				Scale = 1,
+			}):Play()
 			if stroke then
-				TweenService:Create(stroke, TweenInfo.new(0.1), {
+				TweenService:Create(stroke, TweenInfo.new(0.12), {
 					Color = baseCol,
-					Thickness = 1.4,
-					Transparency = 0.12,
+					Thickness = 1.5,
+					Transparency = 0.1,
 				}):Play()
 			end
 		end)
 	end
 
-	local function makeItemSlot(parent: Instance, order: number, edge: Color3): (TextButton, UIStroke)
+	--- Opaque filled slot (prevents inventory bg showing through icons)
+	local function makeItemSlot(parent: Instance, order: number, edge: Color3): (TextButton, Frame, UIStroke)
 		local btn = Instance.new("TextButton")
 		btn.Name = "Slot" .. order
 		btn.Size = UDim2.fromOffset(SLOT, SLOT)
@@ -409,6 +346,7 @@ function Inventory.Bind(
 		btn.ZIndex = 35
 		btn.Parent = parent
 
+		-- full opaque plate under any transparent icon pixels
 		local plate = Instance.new("Frame")
 		plate.Name = "Plate"
 		plate.Size = UDim2.fromScale(1, 1)
@@ -418,9 +356,9 @@ function Inventory.Bind(
 		plate.ZIndex = 35
 		plate.Parent = btn
 
-		local stroke = UIKit.Stroke(btn, edge, 1.4, 0.12)
+		local stroke = UIKit.Stroke(btn, edge, 1.5, 0.1)
 		bindHover(btn, stroke, edge)
-		return btn, stroke
+		return btn, plate, stroke
 	end
 
 	local function emptySlot(parent: Instance, order: number)
@@ -436,19 +374,19 @@ function Inventory.Bind(
 		btn.LayoutOrder = order
 		btn.ZIndex = 35
 		btn.Parent = parent
-		UIKit.Stroke(btn, BD, 1, 0.35)
+		UIKit.Stroke(btn, BD, 1, 0.3)
 	end
 
 	local function makeSlotGrid(parent: Instance): ScrollingFrame
 		local scroll = Instance.new("ScrollingFrame")
-		scroll.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
+		scroll.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 		scroll.BackgroundTransparency = 0
 		scroll.BorderSizePixel = 0
-		scroll.Size = UDim2.new(1, -12, 1, -12)
-		scroll.Position = UDim2.fromOffset(6, 6)
+		scroll.Size = UDim2.new(1, -10, 1, -10)
+		scroll.Position = UDim2.fromOffset(5, 5)
 		scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 		scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
-		scroll.ScrollBarThickness = 8
+		scroll.ScrollBarThickness = 6
 		scroll.ScrollBarImageColor3 = BD2
 		scroll.ZIndex = 34
 		scroll.ClipsDescendants = true
@@ -459,13 +397,13 @@ function Inventory.Bind(
 		grid.SortOrder = Enum.SortOrder.LayoutOrder
 		grid.FillDirectionMaxCells = COLS
 		grid.Parent = scroll
-		UIKit.Pad(scroll, 10)
+		UIKit.Pad(scroll, 8)
 		return scroll
 	end
 
 	local function actBtn(parent: Instance, text: string, color: Color3, order: number, onClick: () -> ())
 		local b = Instance.new("TextButton")
-		b.Size = UDim2.fromOffset(0, 36)
+		b.Size = UDim2.fromOffset(0, 34)
 		b.AutomaticSize = Enum.AutomaticSize.X
 		b.BackgroundColor3 = color
 		b.BackgroundTransparency = 0
@@ -473,7 +411,7 @@ function Inventory.Bind(
 		b.Text = text
 		b.TextColor3 = TW
 		b.Font = Enum.Font.GothamBold
-		b.TextSize = 13
+		b.TextSize = 12
 		b.AutoButtonColor = false
 		b.LayoutOrder = order
 		b.ZIndex = 35
@@ -496,17 +434,19 @@ function Inventory.Bind(
 		return row
 	end
 
-	local function updateScale()
-		if not canvas then
-			return
+	local function setPreviewAvatar(userId: number?, glyphFallback: string)
+		-- Left strip removed — avatar only on Profile tab body (if built)
+		if previewImg and previewLab then
+			if userId and userId > 0 then
+				previewImg.Image = avatarBustUrl(userId)
+				previewImg.Visible = true
+				previewLab.Visible = false
+			else
+				previewImg.Visible = false
+				previewLab.Visible = true
+				previewLab.Text = glyphFallback
+			end
 		end
-		local w = canvas.AbsoluteSize.X
-		if w < 50 then
-			return
-		end
-		-- design reference ~1200px wide → scale so UI stays big on large screens
-		local s = math.clamp(w / 1180, 0.9, 1.25)
-		scaleObj.Scale = s
 	end
 
 	local api: Api
@@ -524,27 +464,26 @@ function Inventory.Bind(
 
 		canvas = solid(body, "InvCanvas", UDim2.new(1, 0, 1, 0), nil, BG_PANEL, 31)
 		UIKit.Stroke(canvas, BD2, 2, 0.08)
-		scaleObj = Instance.new("UIScale")
-		scaleObj.Scale = 1
-		scaleObj.Parent = canvas
-		canvas:GetPropertyChangedSignal("AbsoluteSize"):Connect(updateScale)
 
-		local header = solid(canvas, "Header", UDim2.new(1, 0, 0, 50), UDim2.fromOffset(0, 0), Color3.fromRGB(16, 16, 16), 32)
+		local header = solid(canvas, "Header", UDim2.new(1, 0, 0, 48), UDim2.fromOffset(0, 0), Color3.fromRGB(18, 18, 18), 32)
 		solid(header, "Line", UDim2.new(1, 0, 0, 2), UDim2.new(0, 0, 1, -2), BD, 33)
-		titleLab = lbl(header, "Inventory — Weapons", UDim2.new(0.55, 0, 1, 0), UDim2.fromOffset(20, 0), 16, TW, 34)
-		countLab = lbl(header, "", UDim2.new(0.28, 0, 1, 0), UDim2.new(0.52, 0, 0, 0), 13, TL, 34)
+		titleLab = lbl(header, "Inventory — Weapons", UDim2.new(0.55, 0, 1, 0), UDim2.fromOffset(18, 0), 15, TW, 34)
+		titleLab.Name = "Title"
+		countLab = lbl(header, "", UDim2.new(0.28, 0, 1, 0), UDim2.new(0.52, 0, 0, 0), 12, TL, 34)
 		countLab.TextXAlignment = Enum.TextXAlignment.Right
+		countLab.Name = "Count"
 
 		local close = Instance.new("TextButton")
-		close.Size = UDim2.fromOffset(32, 32)
-		close.Position = UDim2.new(1, -44, 0.5, 0)
+		close.Name = "Close"
+		close.Size = UDim2.fromOffset(30, 30)
+		close.Position = UDim2.new(1, -42, 0.5, 0)
 		close.AnchorPoint = Vector2.new(0, 0.5)
 		close.BackgroundColor3 = RED_CLOSE
 		close.BackgroundTransparency = 0
 		close.Text = "✕"
 		close.TextColor3 = Color3.new(1, 1, 1)
 		close.Font = Enum.Font.GothamBold
-		close.TextSize = 15
+		close.TextSize = 14
 		close.AutoButtonColor = false
 		close.BorderSizePixel = 0
 		close.ZIndex = 35
@@ -552,24 +491,27 @@ function Inventory.Bind(
 		UIKit.Corner(close, 99)
 		close.MouseButton1Click:Connect(onClose)
 
-		local info = solid(canvas, "Info", UDim2.new(1, 0, 0, 30), UDim2.fromOffset(0, 50), Color3.fromRGB(14, 14, 14), 32)
-		infoLab = lbl(info, "", UDim2.new(1, -24, 1, 0), UDim2.fromOffset(20, 0), 13, TD, 34, Enum.Font.Gotham)
+		local info = solid(canvas, "Info", UDim2.new(1, 0, 0, 32), UDim2.fromOffset(0, 48), Color3.fromRGB(16, 16, 16), 32)
+		infoLab = lbl(info, "", UDim2.new(1, -24, 1, 0), UDim2.fromOffset(18, 0), 13, TD, 34, Enum.Font.Gotham)
+		infoLab.Name = "InfoText"
 
-		-- Full width content (NO left strip)
-		local contentH = 50 + 30 + 56 + 96
-		main = solid(canvas, "Main", UDim2.new(1, 0, 1, -contentH), UDim2.fromOffset(0, 80), Color3.fromRGB(18, 18, 18), 32)
+		local contentH = 48 + 32 + 56 + 100
+		-- Full-width main content (left preview strip intentionally removed)
+		main = solid(canvas, "Main", UDim2.new(1, 0, 1, -contentH), UDim2.fromOffset(0, 80), Color3.fromRGB(20, 20, 20), 32)
 		main.BackgroundTransparency = 0
 		main.ClipsDescendants = true
+		main.Name = "Main"
 
-		actions = solid(canvas, "Actions", UDim2.new(1, 0, 0, 56), UDim2.new(0, 0, 1, -(56 + 96)), Color3.fromRGB(14, 14, 14), 32)
+		actions = solid(canvas, "Actions", UDim2.new(1, 0, 0, 56), UDim2.new(0, 0, 1, -(56 + 100)), Color3.fromRGB(16, 16, 16), 32)
+		actions.Name = "Actions"
 		solid(actions, "Line", UDim2.new(1, 0, 0, 2), UDim2.fromOffset(0, 0), BD, 33)
 
-		local tabs = solid(canvas, "Tabs", UDim2.new(1, 0, 0, 96), UDim2.new(0, 0, 1, -96), Color3.fromRGB(12, 12, 12), 32)
+		local tabs = solid(canvas, "Tabs", UDim2.new(1, 0, 0, 100), UDim2.new(0, 0, 1, -100), Color3.fromRGB(12, 12, 12), 32)
 		solid(tabs, "Line", UDim2.new(1, 0, 0, 2), UDim2.fromOffset(0, 0), BD, 33)
 		local tabRow = Instance.new("Frame")
 		tabRow.BackgroundTransparency = 1
-		tabRow.Size = UDim2.new(1, -12, 1, -8)
-		tabRow.Position = UDim2.fromOffset(6, 6)
+		tabRow.Size = UDim2.new(1, -16, 1, -12)
+		tabRow.Position = UDim2.fromOffset(8, 10)
 		tabRow.ZIndex = 33
 		tabRow.Parent = tabs
 		UIKit.List(tabRow, 14, true, Enum.HorizontalAlignment.Center)
@@ -578,37 +520,39 @@ function Inventory.Bind(
 			local col = Instance.new("Frame")
 			col.Name = def.id .. "Col"
 			col.BackgroundTransparency = 1
-			col.Size = UDim2.fromOffset(TAB_ICON + 12, 84)
+			col.Size = UDim2.fromOffset(TAB_R + 10, 86)
 			col.ZIndex = 34
 			col.Parent = tabRow
 
+			-- ImageButton only — no circle/plate background (sits on tab frame)
 			local b = Instance.new("ImageButton")
 			b.Name = def.id
-			b.Size = UDim2.fromOffset(TAB_ICON, TAB_ICON)
+			b.Size = UDim2.fromOffset(TAB_R, TAB_R)
 			b.Position = UDim2.new(0.5, 0, 0, 0)
 			b.AnchorPoint = Vector2.new(0.5, 0)
-			b.BackgroundTransparency = 1 -- no circle / plate — pure icon on frame
+			b.BackgroundTransparency = 1
 			b.BorderSizePixel = 0
-			b.Image = TAB_ICONS[def.id] or ""
+			b.Image = def.image
 			b.ScaleType = Enum.ScaleType.Fit
 			b.AutoButtonColor = false
 			b.ZIndex = 35
 			b.Parent = col
 
-			local sc = Instance.new("UIScale")
-			sc.Scale = 1
-			sc.Parent = b
+			local hoverScale = Instance.new("UIScale")
+			hoverScale.Scale = 1
+			hoverScale.Parent = b
 			b.MouseEnter:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-					Scale = 1.18,
+				TweenService:Create(hoverScale, TweenInfo.new(0.12, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
+					Scale = 1.16,
 				}):Play()
 			end)
 			b.MouseLeave:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+				TweenService:Create(hoverScale, TweenInfo.new(0.1), { Scale = 1 }):Play()
 			end)
 
-			local lab = lbl(col, def.label, UDim2.new(1, 0, 0, 16), UDim2.new(0, 0, 1, -16), 11, Color3.fromRGB(90, 90, 90), 35)
+			local lab = lbl(col, def.label, UDim2.new(1, 0, 0, 16), UDim2.new(0, 0, 1, -16), 11, Color3.fromRGB(74, 74, 74), 35)
 			lab.TextXAlignment = Enum.TextXAlignment.Center
+			lab.Font = Enum.Font.GothamBold
 
 			tabButtons[def.id] = b
 			tabLabels[def.id] = lab
@@ -618,25 +562,18 @@ function Inventory.Bind(
 			end)
 		end
 
-		-- Compact tooltip (auto-size, structured rows)
-		tip = solid(canvas, "Tooltip", UDim2.fromOffset(200, 0), UDim2.fromOffset(0, 0), Color3.fromRGB(36, 36, 40), 95)
+		tip = solid(canvas, "Tooltip", UDim2.fromOffset(250, 130), UDim2.fromOffset(0, 0), Color3.fromRGB(12, 12, 12), 90)
 		tip.Visible = false
-		tip.AutomaticSize = Enum.AutomaticSize.XY
-		tip.BackgroundTransparency = 0.05
-		UIKit.Stroke(tip, BD2, 1.2, 0.15)
-		UIKit.Pad(tip, 10)
-		local tipPad = tip:FindFirstChildOfClass("UIPadding")
-		if tipPad then
-			tipPad.Name = "Pad"
-		end
-		tipLayout = Instance.new("UIListLayout")
-		tipLayout.SortOrder = Enum.SortOrder.LayoutOrder
-		tipLayout.Padding = UDim.new(0, 2)
-		tipLayout.Parent = tip
-		local tipConstraint = Instance.new("UISizeConstraint")
-		tipConstraint.MinSize = Vector2.new(180, 40)
-		tipConstraint.MaxSize = Vector2.new(280, 220)
-		tipConstraint.Parent = tip
+		tip.BackgroundTransparency = 0
+		UIKit.Stroke(tip, BD2, 1.5, 0.05)
+		UIKit.Pad(tip, 12)
+		lbl(tip, "", UDim2.new(1, 0, 0, 20), UDim2.fromOffset(0, 0), 13, TW, 91).Name = "Title"
+		lbl(tip, "", UDim2.new(1, 0, 0, 18), UDim2.fromOffset(0, 24), 13, TD, 91, Enum.Font.Gotham).Name = "Rarity"
+		local td = lbl(tip, "", UDim2.new(1, 0, 0, 48), UDim2.fromOffset(0, 46), 13, TD, 91, Enum.Font.Gotham)
+		td.Name = "Desc"
+		td.TextWrapped = true
+		td.TextYAlignment = Enum.TextYAlignment.Top
+		lbl(tip, "", UDim2.new(1, 0, 0, 18), UDim2.fromOffset(0, 100), 13, GOLD, 91, Enum.Font.Gotham).Name = "Extra"
 
 		if mouseMove then
 			mouseMove:Disconnect()
@@ -646,8 +583,6 @@ function Inventory.Bind(
 				placeTooltip()
 			end
 		end)
-
-		task.defer(updateScale)
 	end
 
 	api = {} :: Api
@@ -676,14 +611,13 @@ function Inventory.Bind(
 		clearMainAndActions()
 		hideTooltip()
 		preloadPrices()
-		updateScale()
 
 		for id, b in tabButtons do
 			local on = id == tab
-			b.ImageTransparency = on and 0 or 0.25
+			b.ImageTransparency = on and 0 or 0.28
 			local lab = tabLabels[id]
 			if lab then
-				lab.TextColor3 = on and CYAN or Color3.fromRGB(90, 90, 90)
+				lab.TextColor3 = on and CYAN or Color3.fromRGB(74, 74, 74)
 			end
 		end
 
@@ -711,39 +645,56 @@ function Inventory.Bind(
 			inspectName and "  ·  VIEWING" or ""
 		)
 
+		local function setMini(i: number, text: string, col: Color3?)
+			local m = miniSlots[i]
+			if not m then
+				return
+			end
+			local icon = m:FindFirstChild("Icon")
+			if icon and icon:IsA("TextLabel") then
+				icon.Text = text
+				icon.TextColor3 = col or TL
+			end
+		end
+		setMini(1, "M", CYAN)
+		setMini(2, "O", profile.unlocks and profile.unlocks.offhand and GOLD or TL)
+		setMini(3, "A", profile.equippedAura and GREEN or TL)
+
 		---------------------------------------------------------------- WEAPONS
 		if tab == "weapons" then
-			local weapons = asArray(profile.weapons)
-			local bagCap = 32
-			pcall(function()
-				bagCap = Formulas.GetWeaponBagCap(profile)
-			end)
-			if bagCap < 8 then
-				bagCap = 32
-			end
-			countLab.Text = string.format("%d OF %d", #weapons, bagCap)
+			setPreviewAvatar(nil, "⚔")
+			local weapons = profile.weapons or {}
+			countLab.Text = string.format("%d OF %d", #weapons, INV_CAP)
 
 			local scroll = makeSlotGrid(main)
 			local offUnlocked = (stats and stats.offhandUnlocked) == true
 				or (profile.unlocks and profile.unlocks.offhand) == true
 
-			for i, w in ipairs(weapons) do
+			local function makeWeaponSlot(i: number, w: any?)
+				if not w then
+					emptySlot(scroll, i)
+					return
+				end
 				local def = WeaponConfig.Get(w.id)
 				local edge = rarityBorder(def and def.rarity)
 				local isSel = w.uid == selectedWeaponUid
-				local btn, stroke = makeItemSlot(scroll, i, isSel and CYAN or edge)
-				btn.Name = "W_" .. tostring(w.uid)
-				if isSel and stroke then
-					stroke.Color = CYAN
-					stroke.Thickness = 2.4
+				local btn, plate = makeItemSlot(scroll, i, isSel and CYAN or edge)
+				plate.BackgroundColor3 = BG_SLOT
+				btn.Name = "W_" .. w.uid
+				if isSel then
+					local st = btn:FindFirstChildOfClass("UIStroke")
+					if st then
+						st.Color = CYAN
+						st.Thickness = 2.5
+					end
 				end
 
 				local img = Instance.new("ImageLabel")
 				img.BackgroundColor3 = BG_SLOT
 				img.BackgroundTransparency = 0
 				img.BorderSizePixel = 0
-				img.Size = UDim2.fromScale(0.8, 0.8)
-				img.Position = UDim2.fromScale(0.5, 0.5)
+				img.Size = UDim2.fromScale(0.78, 0.78)
+				img.Position = UDim2.fromScale(0.5, 0.48)
 				img.AnchorPoint = Vector2.new(0.5, 0.5)
 				img.Image = IconConfig.GetWeaponImage(w.id)
 				img.ScaleType = Enum.ScaleType.Fit
@@ -752,32 +703,23 @@ function Inventory.Bind(
 
 				if profile.equippedMain == w.uid or profile.equippedOffhand == w.uid then
 					local dot = Instance.new("Frame")
-					dot.Size = UDim2.fromOffset(9, 9)
+					dot.Size = UDim2.fromOffset(8, 8)
 					dot.Position = UDim2.fromOffset(5, 5)
 					dot.BackgroundColor3 = CYAN
+					dot.BackgroundTransparency = 0
 					dot.BorderSizePixel = 0
 					dot.ZIndex = 38
 					dot.Parent = btn
 					UIKit.Corner(dot, 99)
 				end
 
-				local name = (def and def.name) or tostring(w.id)
+				local name = (def and def.name) or w.id
 				local rar = (def and def.rarity) or "Common"
 				local mult = (def and def.powerMult) or 1
-				local sell = (def and def.sellPrice) or 5
-				local level = w.level or 1
 				btn.MouseEnter:Connect(function()
-					local extra = profile.equippedMain == w.uid and "● Equipped main"
+					local eq = profile.equippedMain == w.uid and "● Equipped main"
 						or (profile.equippedOffhand == w.uid and "● Equipped off" or nil)
-					setTooltip({
-						title = name,
-						rarity = rar,
-						power = string.format("×%.2f", mult),
-						sell = tostring(sell),
-						level = tostring(level),
-						extra = extra,
-						border = edge,
-					})
+					setTooltip(name, rar, string.format("Power mult ×%.2f", mult), eq, edge)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
 				btn.MouseButton1Click:Connect(function()
@@ -786,9 +728,11 @@ function Inventory.Bind(
 				end)
 			end
 
-			local padTo = math.max(bagCap, COLS * 3)
-			for i = #weapons + 1, padTo do
-				emptySlot(scroll, i)
+			for i, w in ipairs(weapons) do
+				makeWeaponSlot(i, w)
+			end
+			for i = #weapons + 1, MAX_SLOTS do
+				makeWeaponSlot(i, nil)
 			end
 
 			local selected = nil
@@ -806,7 +750,7 @@ function Inventory.Bind(
 			local row = actionsRow()
 			if selected then
 				local def = WeaponConfig.Get(selected.id)
-				lbl(row, (def and def.name) or selected.id, UDim2.fromOffset(130, 34), nil, 13, rarityBorder(def and def.rarity), 35)
+				lbl(row, (def and def.name) or selected.id, UDim2.fromOffset(120, 32), nil, 12, rarityBorder(def and def.rarity), 35)
 				actBtn(row, "Equip main", Color3.fromRGB(0, 90, 80), 2, function()
 					Net.EquipWeapon(selected.uid, "main")
 				end)
@@ -827,6 +771,8 @@ function Inventory.Bind(
 				actBtn(row, "Sell", Color3.fromRGB(120, 30, 30), 5, function()
 					openModal("sell", selected)
 				end)
+			else
+				keybind(row, 1, "LMB", "Select weapon")
 			end
 			actBtn(row, "Sell all unequipped", Color3.fromRGB(140, 40, 40), 10, function()
 				Net.SellAllWeapons()
@@ -834,9 +780,11 @@ function Inventory.Bind(
 
 		---------------------------------------------------------------- PETS
 		elseif tab == "pets" then
-			local pets = asArray(profile.pets)
+			setPreviewAvatar(nil, "🐾")
+			local pets = profile.pets or {}
 			countLab.Text = string.format("%d / %d team", #(profile.petTeam or {}), profile.petSlots or 3)
 			local scroll = makeSlotGrid(main)
+
 			for i, p in ipairs(pets) do
 				local def = PetConfig.Get(p.id)
 				local name = (def and def.name) or p.name or p.id
@@ -849,11 +797,12 @@ function Inventory.Bind(
 					end
 				end
 				local btn = makeItemSlot(scroll, i, rarityBorder(rar))
-				local glyph = lbl(btn, "🐾", UDim2.fromScale(1, 0.8), UDim2.fromScale(0, 0.1), 30, TW, 37)
+				btn.Name = "P_" .. tostring(p.uid)
+				local glyph = lbl(btn, "🐾", UDim2.fromScale(1, 0.75), UDim2.fromScale(0, 0.08), 28, TW, 37)
 				glyph.TextXAlignment = Enum.TextXAlignment.Center
 				if inTeam then
 					local dot = Instance.new("Frame")
-					dot.Size = UDim2.fromOffset(9, 9)
+					dot.Size = UDim2.fromOffset(8, 8)
 					dot.Position = UDim2.fromOffset(5, 5)
 					dot.BackgroundColor3 = CYAN
 					dot.BorderSizePixel = 0
@@ -863,13 +812,7 @@ function Inventory.Bind(
 				end
 				btn.MouseEnter:Connect(function()
 					local power = def and def.powerPct or p.powerPct or 0
-					setTooltip({
-						title = name,
-						rarity = rar,
-						power = string.format("+%d%%", math.floor(power)),
-						extra = inTeam and "● On team" or "LMB equip",
-						border = rarityBorder(rar),
-					})
+					setTooltip(name, rar, string.format("+%d%% power", math.floor(power)), inTeam and "● On team" or "LMB equip/unequip", rarityBorder(rar))
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
 				btn.MouseButton1Click:Connect(function()
@@ -880,17 +823,19 @@ function Inventory.Bind(
 					end
 				end)
 			end
-			for i = #pets + 1, math.max(30, #pets + 10) do
+			for i = #pets + 1, MAX_SLOTS do
 				emptySlot(scroll, i)
 			end
 			local row = actionsRow()
-			actBtn(row, "Open pet case", Color3.fromRGB(0, 90, 80), 1, function()
+			keybind(row, 1, "LMB", "Equip / Unequip")
+			actBtn(row, "Open pet case", Color3.fromRGB(0, 90, 80), 2, function()
 				openModal("case", { kind = "pet" })
 			end)
 
 		---------------------------------------------------------------- AURAS
 		elseif tab == "auras" then
-			local auras = asArray(profile.auras)
+			setPreviewAvatar(nil, "✨")
+			local auras = profile.auras or {}
 			countLab.Text = string.format("%d auras", #auras)
 			local scroll = makeSlotGrid(main)
 			for i, a in ipairs(auras) do
@@ -899,74 +844,87 @@ function Inventory.Bind(
 				local rar = (def and def.rarity) or a.rarity or "Common"
 				local active = profile.equippedAura == a.uid
 				local btn = makeItemSlot(scroll, i, rarityBorder(rar))
-				local glyph = lbl(btn, "✨", UDim2.fromScale(1, 0.8), UDim2.fromScale(0, 0.1), 30, TW, 37)
+				btn.Name = "A_" .. tostring(a.uid)
+				local glyph = lbl(btn, "✨", UDim2.fromScale(1, 0.75), UDim2.fromScale(0, 0.08), 28, TW, 37)
 				glyph.TextXAlignment = Enum.TextXAlignment.Center
+				if active then
+					local dot = Instance.new("Frame")
+					dot.Size = UDim2.fromOffset(8, 8)
+					dot.Position = UDim2.fromOffset(5, 5)
+					dot.BackgroundColor3 = CYAN
+					dot.BorderSizePixel = 0
+					dot.ZIndex = 38
+					dot.Parent = btn
+					UIKit.Corner(dot, 99)
+				end
 				btn.MouseEnter:Connect(function()
-					setTooltip({
-						title = name,
-						rarity = rar,
-						power = def and string.format("+%d%%", math.floor(def.powerPct or 0)) or nil,
-						extra = active and "● Active" or "LMB equip",
-						border = rarityBorder(rar),
-					})
+					setTooltip(
+						name,
+						rar,
+						def and string.format("+%d%% power", math.floor(def.powerPct or 0)) or nil,
+						active and "● Active" or "LMB equip",
+						rarityBorder(rar)
+					)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
 				btn.MouseButton1Click:Connect(function()
 					Net.EquipAura(a.uid)
 				end)
 			end
-			for i = #auras + 1, math.max(30, #auras + 10) do
+			for i = #auras + 1, MAX_SLOTS do
 				emptySlot(scroll, i)
 			end
 			local row = actionsRow()
-			actBtn(row, "Open aura case", Color3.fromRGB(80, 50, 120), 1, function()
+			keybind(row, 1, "LMB", "Equip aura")
+			actBtn(row, "Open aura case", Color3.fromRGB(80, 50, 120), 2, function()
 				openModal("case", { kind = "aura" })
 			end)
 
 		---------------------------------------------------------------- RELICS
 		elseif tab == "relics" then
-			local relics = asArray(profile.relics)
+			setPreviewAvatar(nil, "💎")
+			local relics = profile.relics or {}
 			countLab.Text = string.format("%d relics", #relics)
 			local scroll = makeSlotGrid(main)
 			for i, r in ipairs(relics) do
 				local btn = makeItemSlot(scroll, i, BD)
-				local glyph = lbl(btn, "💎", UDim2.fromScale(1, 0.7), nil, 28, TW, 37)
+				btn.Name = "R" .. i
+				local glyph = lbl(btn, "💎", UDim2.fromScale(1, 0.65), nil, 26, TW, 37)
 				glyph.TextXAlignment = Enum.TextXAlignment.Center
+				local stars = lbl(btn, "★" .. tostring(r.stars or 1), UDim2.new(1, 0, 0, 14), UDim2.new(0, 0, 1, -16), 11, GOLD, 37)
+				stars.TextXAlignment = Enum.TextXAlignment.Center
 				btn.MouseEnter:Connect(function()
-					setTooltip({
-						title = tostring(r.name or r.id),
-						level = tostring(r.stars or 1),
-						extra = "Dungeon drop",
-					})
+					setTooltip(tostring(r.name or r.id), nil, "Dungeon drop", "★" .. tostring(r.stars or 1))
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
 			end
-			for i = #relics + 1, 30 do
+			for i = #relics + 1, MAX_SLOTS do
 				emptySlot(scroll, i)
 			end
 			local row = actionsRow()
-			lbl(row, "Relics are read-only", UDim2.fromOffset(220, 34), nil, 13, TL, 35)
+			lbl(row, "Relics are read-only (dungeon drops)", UDim2.fromOffset(300, 32), nil, 13, TL, 35)
 
 		---------------------------------------------------------------- CASES
 		elseif tab == "cases" then
+			setPreviewAvatar(nil, "📦")
 			countLab.Text = ""
-			local scroll = UIKit.Scroll(main, UDim2.new(1, -12, 1, -12))
-			scroll.Position = UDim2.fromOffset(6, 6)
+			local scroll = UIKit.Scroll(main, UDim2.new(1, -10, 1, -10))
+			scroll.Position = UDim2.fromOffset(5, 5)
 			local function caseCard(order: number, title: string, kind: string, color: Color3)
-				local c = solid(scroll, kind, UDim2.new(1, -8, 0, 110), nil, BG_SECTION, 35)
+				local c = solid(scroll, kind, UDim2.new(1, -8, 0, 100), nil, BG_SECTION, 35)
 				c.LayoutOrder = order
 				UIKit.Stroke(c, color, 1.5, 0.2)
-				UIKit.Pad(c, 14)
-				lbl(c, title, UDim2.new(1, 0, 0, 30), nil, 18, TW, 36)
+				UIKit.Pad(c, 12)
+				lbl(c, title, UDim2.new(1, 0, 0, 28), nil, 16, TW, 36)
 				local b = Instance.new("TextButton")
-				b.Size = UDim2.new(1, 0, 0, 40)
-				b.Position = UDim2.new(0, 0, 1, -40)
+				b.Size = UDim2.new(1, 0, 0, 38)
+				b.Position = UDim2.new(0, 0, 1, -38)
 				b.BackgroundColor3 = color
 				b.BackgroundTransparency = 0
 				b.Text = "Open"
 				b.TextColor3 = Color3.new(1, 1, 1)
 				b.Font = Enum.Font.GothamBold
-				b.TextSize = 15
+				b.TextSize = 14
 				b.BorderSizePixel = 0
 				b.ZIndex = 37
 				b.Parent = c
@@ -978,41 +936,43 @@ function Inventory.Bind(
 			caseCard(1, "🐾  Pet Case", "pet", Color3.fromRGB(40, 120, 80))
 			caseCard(2, "✨  Aura Case", "aura", Color3.fromRGB(100, 60, 160))
 			local row = actionsRow()
-			lbl(row, "LMB open case", UDim2.fromOffset(160, 34), nil, 13, TL, 35)
+			keybind(row, 1, "LMB", "Open case")
 
 		---------------------------------------------------------------- SHOP
 		elseif tab == "shop" then
+			setPreviewAvatar(nil, "🪙")
 			countLab.Text = "Gamepasses"
-			local scroll = UIKit.Scroll(main, UDim2.new(1, -12, 1, -12))
-			scroll.Position = UDim2.fromOffset(6, 6)
+			local scroll = UIKit.Scroll(main, UDim2.new(1, -10, 1, -10))
+			scroll.Position = UDim2.fromOffset(5, 5)
 			for _, ch in scroll:GetChildren() do
 				if ch:IsA("UIListLayout") then
 					ch:Destroy()
 				end
 			end
 			local grid = Instance.new("UIGridLayout")
-			grid.CellSize = UDim2.fromOffset(180, 220)
-			grid.CellPadding = UDim2.fromOffset(14, 14)
+			grid.CellSize = UDim2.fromOffset(168, 210)
+			grid.CellPadding = UDim2.fromOffset(12, 12)
 			grid.SortOrder = Enum.SortOrder.LayoutOrder
-			grid.FillDirectionMaxCells = 5
+			grid.FillDirectionMaxCells = 4
 			grid.Parent = scroll
-			UIKit.Pad(scroll, 10)
+			UIKit.Pad(scroll, 8)
 
 			local unlocks = profile.unlocks or {}
 			for i, key in ipairs(GamePassConfig.Order) do
 				local def = GamePassConfig.Get(key)
 				if def then
-					local owned = (def.feature and unlocks[def.feature] == true)
-						or (def.feature == "autoClicker" and profile.purchasedAutoClicker == true)
-					local card = solid(scroll, key, UDim2.fromOffset(180, 220), nil, BG_SECTION, 35)
+					local owned = def.feature and unlocks[def.feature] == true
+					local card = solid(scroll, key, UDim2.fromOffset(168, 210), nil, BG_SECTION, 35)
 					card.LayoutOrder = i
-					UIKit.Stroke(card, owned and GREEN or BD2, 1.5, 0.1)
+					card.BackgroundTransparency = 0
+					UIKit.Stroke(card, owned and GREEN or BD2, 1.5, owned and 0.05 or 0.12)
 
 					local imgBtn = Instance.new("ImageButton")
-					imgBtn.Size = UDim2.fromOffset(136, 136)
-					imgBtn.Position = UDim2.new(0.5, 0, 0, 12)
+					imgBtn.Name = "Buy"
+					imgBtn.Size = UDim2.fromOffset(128, 128)
+					imgBtn.Position = UDim2.new(0.5, 0, 0, 10)
 					imgBtn.AnchorPoint = Vector2.new(0.5, 0)
-					imgBtn.BackgroundColor3 = Color3.fromRGB(16, 16, 16)
+					imgBtn.BackgroundColor3 = Color3.fromRGB(18, 18, 18)
 					imgBtn.BackgroundTransparency = 0
 					imgBtn.BorderSizePixel = 0
 					imgBtn.Image = GamePassConfig.ThumbUrl(def.gamePassId, 150)
@@ -1021,19 +981,22 @@ function Inventory.Bind(
 					imgBtn.ZIndex = 36
 					imgBtn.Parent = card
 					UIKit.Corner(imgBtn, 8)
-					bindHover(imgBtn, nil, nil)
+					UIKit.Stroke(imgBtn, BD, 1, 0.15)
+					bindHover(imgBtn, imgBtn:FindFirstChildOfClass("UIStroke"), BD)
 
+					-- price pill on image (always visible)
 					local pricePill = Instance.new("TextLabel")
-					pricePill.Size = UDim2.new(1, -10, 0, 24)
-					pricePill.Position = UDim2.new(0.5, 0, 1, -28)
+					pricePill.Name = "PricePill"
+					pricePill.Size = UDim2.new(1, -8, 0, 22)
+					pricePill.Position = UDim2.new(0.5, 0, 1, -26)
 					pricePill.AnchorPoint = Vector2.new(0.5, 0)
 					pricePill.BackgroundColor3 = Color3.fromRGB(8, 8, 8)
-					pricePill.BackgroundTransparency = 0.1
+					pricePill.BackgroundTransparency = 0.15
 					pricePill.BorderSizePixel = 0
 					pricePill.Font = Enum.Font.GothamBold
-					pricePill.TextSize = 14
+					pricePill.TextSize = 13
 					pricePill.TextColor3 = owned and GREEN or GOLD
-					pricePill.ZIndex = 40
+					pricePill.ZIndex = 39
 					pricePill.Parent = imgBtn
 					UIKit.Corner(pricePill, 4)
 					if owned then
@@ -1044,15 +1007,16 @@ function Inventory.Bind(
 						fetchPrice(def.gamePassId, pricePill)
 					end
 
-					local titleL = lbl(card, def.title, UDim2.new(1, -10, 0, 22), UDim2.fromOffset(5, 154), 12, TW, 36)
+					local titleL = lbl(card, def.title, UDim2.new(1, -10, 0, 22), UDim2.fromOffset(5, 144), 12, TW, 36)
 					titleL.TextXAlignment = Enum.TextXAlignment.Center
 					titleL.TextTruncate = Enum.TextTruncate.AtEnd
+
 					local priceLab = lbl(
 						card,
 						owned and "Owned" or (priceCache[def.gamePassId] or "…"),
-						UDim2.new(1, -10, 0, 24),
-						UDim2.fromOffset(5, 182),
-						15,
+						UDim2.new(1, -10, 0, 22),
+						UDim2.fromOffset(5, 172),
+						14,
 						owned and GREEN or GOLD,
 						36,
 						Enum.Font.GothamBold
@@ -1060,6 +1024,17 @@ function Inventory.Bind(
 					priceLab.TextXAlignment = Enum.TextXAlignment.Center
 					if not owned then
 						fetchPrice(def.gamePassId, priceLab)
+						-- keep pill in sync when cache fills
+						task.spawn(function()
+							for _ = 1, 20 do
+								task.wait(0.15)
+								if priceCache[def.gamePassId] and pricePill.Parent then
+									pricePill.Text = priceCache[def.gamePassId]
+									priceLab.Text = priceCache[def.gamePassId]
+									break
+								end
+							end
+						end)
 					end
 
 					imgBtn.MouseButton1Click:Connect(function()
@@ -1068,51 +1043,54 @@ function Inventory.Bind(
 						end
 					end)
 					imgBtn.MouseEnter:Connect(function()
-						setTooltip({
-							title = def.title,
-							extra = owned and "● Owned" or (priceCache[def.gamePassId] or "LMB buy"),
-							power = def.desc,
-						})
+						setTooltip(def.title, nil, def.desc, owned and "● Already owned" or (priceCache[def.gamePassId] or "LMB purchase"))
 					end)
 					imgBtn.MouseLeave:Connect(hideTooltip)
 				end
 			end
 			local row = actionsRow()
-			lbl(row, "LMB purchase gamepass", UDim2.fromOffset(220, 34), nil, 13, TL, 35)
+			keybind(row, 1, "LMB", "Purchase")
+			lbl(row, "Roblox gamepasses", UDim2.fromOffset(180, 32), nil, 13, TL, 35)
 
 		---------------------------------------------------------------- PROFILE
 		else
 			local viewUserId = inspectUserId or (lp and lp.UserId) or 0
+			setPreviewAvatar(viewUserId, "👤")
 			countLab.Text = inspectName and ("@" .. inspectName) or "You"
-			local scroll = UIKit.Scroll(main, UDim2.new(1, -12, 1, -12))
-			scroll.Position = UDim2.fromOffset(6, 6)
+			local scroll = UIKit.Scroll(main, UDim2.new(1, -10, 1, -10))
+			scroll.Position = UDim2.fromOffset(5, 5)
 
-			local searchBar = solid(scroll, "Search", UDim2.new(1, -8, 0, 50), nil, BG_SECTION, 35)
+			-- Search bar
+			local searchBar = solid(scroll, "Search", UDim2.new(1, -8, 0, 48), nil, BG_SECTION, 35)
 			searchBar.LayoutOrder = 0
+			searchBar.BackgroundTransparency = 0
 			UIKit.Stroke(searchBar, BD2, 1, 0.15)
 			UIKit.Pad(searchBar, 8)
 
 			local box = Instance.new("TextBox")
+			box.Name = "UserSearch"
 			box.Size = UDim2.new(1, -100, 1, 0)
-			box.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+			box.Position = UDim2.fromOffset(0, 0)
+			box.BackgroundColor3 = Color3.fromRGB(14, 14, 14)
 			box.BackgroundTransparency = 0
 			box.BorderSizePixel = 0
-			box.PlaceholderText = "@username (online)"
+			box.PlaceholderText = "@username (online players)"
 			box.PlaceholderColor3 = TL
 			box.Text = inspectName and ("@" .. inspectName) or ""
 			box.TextColor3 = TW
 			box.Font = Enum.Font.Gotham
-			box.TextSize = 15
+			box.TextSize = 14
 			box.TextXAlignment = Enum.TextXAlignment.Left
 			box.ClearTextOnFocus = false
 			box.ZIndex = 37
 			box.Parent = searchBar
 			UIKit.Corner(box, 4)
-			UIKit.Pad(box, nil, 12, 0, 12, 0)
+			UIKit.Pad(box, nil, 10, 0, 10, 0)
+			UIKit.Stroke(box, BD, 1, 0.2)
 
 			local searchBtn = Instance.new("TextButton")
-			searchBtn.Size = UDim2.fromOffset(90, 34)
-			searchBtn.Position = UDim2.new(1, -90, 0.5, 0)
+			searchBtn.Size = UDim2.fromOffset(88, 32)
+			searchBtn.Position = UDim2.new(1, -88, 0.5, 0)
 			searchBtn.AnchorPoint = Vector2.new(0, 0.5)
 			searchBtn.BackgroundColor3 = Color3.fromRGB(0, 90, 80)
 			searchBtn.BackgroundTransparency = 0
@@ -1120,20 +1098,12 @@ function Inventory.Bind(
 			searchBtn.Text = "Search"
 			searchBtn.TextColor3 = TW
 			searchBtn.Font = Enum.Font.GothamBold
-			searchBtn.TextSize = 13
+			searchBtn.TextSize = 12
 			searchBtn.ZIndex = 37
 			searchBtn.Parent = searchBar
 			UIKit.Corner(searchBtn, 4)
 
-			local statusLab = lbl(
-				scroll,
-				inspectStatus or "Your stats or search an online player",
-				UDim2.new(1, -8, 0, 22),
-				nil,
-				12,
-				inspectStatus and GOLD or TL,
-				35
-			)
+			local statusLab = lbl(scroll, inspectStatus or "View your stats or search an online player", UDim2.new(1, -8, 0, 22), nil, 12, inspectStatus and GOLD or TL, 35)
 			statusLab.LayoutOrder = 1
 
 			local function doSearch()
@@ -1174,12 +1144,15 @@ function Inventory.Bind(
 				end
 			end)
 
-			local headRow = solid(scroll, "HeadRow", UDim2.new(1, -8, 0, 130), nil, BG_SECTION, 35)
+			-- Avatar + name row
+			local headRow = solid(scroll, "HeadRow", UDim2.new(1, -8, 0, 120), nil, BG_SECTION, 35)
 			headRow.LayoutOrder = 2
+			headRow.BackgroundTransparency = 0
 			UIKit.Stroke(headRow, BD, 1, 0.15)
 
 			local bust = Instance.new("ImageLabel")
-			bust.Size = UDim2.fromOffset(110, 110)
+			bust.Name = "Bust"
+			bust.Size = UDim2.fromOffset(100, 100)
 			bust.Position = UDim2.fromOffset(12, 10)
 			bust.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
 			bust.BackgroundTransparency = 0
@@ -1189,14 +1162,14 @@ function Inventory.Bind(
 			bust.ZIndex = 36
 			bust.Parent = headRow
 			UIKit.Corner(bust, 8)
-			UIKit.Stroke(bust, CYAN, 1.5, 0.25)
+			UIKit.Stroke(bust, CYAN, 1.5, 0.3)
 
-			lbl(headRow, inspectName or (lp and lp.DisplayName) or "Player", UDim2.new(1, -140, 0, 30), UDim2.fromOffset(136, 18), 20, TW, 36)
-			lbl(headRow, "@" .. (inspectName or (lp and lp.Name) or "player"), UDim2.new(1, -140, 0, 22), UDim2.fromOffset(136, 52), 14, CYAN, 36, Enum.Font.Gotham)
+			lbl(headRow, inspectName or (lp and lp.DisplayName) or "Player", UDim2.new(1, -130, 0, 28), UDim2.fromOffset(124, 20), 18, TW, 36)
+			lbl(headRow, "@" .. (inspectName or (lp and lp.Name) or "player"), UDim2.new(1, -130, 0, 22), UDim2.fromOffset(124, 50), 13, CYAN, 36, Enum.Font.Gotham)
 			if inspectName then
 				local meBtn = Instance.new("TextButton")
-				meBtn.Size = UDim2.fromOffset(120, 30)
-				meBtn.Position = UDim2.fromOffset(136, 84)
+				meBtn.Size = UDim2.fromOffset(110, 28)
+				meBtn.Position = UDim2.fromOffset(124, 78)
 				meBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
 				meBtn.BackgroundTransparency = 0
 				meBtn.Text = "Back to me"
@@ -1229,6 +1202,7 @@ function Inventory.Bind(
 			local function colPanel(name: string, order: number): Frame
 				local p = solid(cols, name, UDim2.new(0.5, -8, 1, 0), nil, BG_SECTION, 36)
 				p.LayoutOrder = order
+				p.BackgroundTransparency = 0
 				UIKit.Stroke(p, BD, 1, 0.15)
 				UIKit.Pad(p, 12)
 				local list = Instance.new("UIListLayout")
@@ -1237,6 +1211,7 @@ function Inventory.Bind(
 				list.Parent = p
 				return p
 			end
+
 			local leftCol = colPanel("Mods", 1)
 			local rightCol = colPanel("Combat", 2)
 			lbl(leftCol, "MODIFIERS", UDim2.new(1, 0, 0, 18), nil, 11, TL, 37).LayoutOrder = 0
@@ -1255,24 +1230,25 @@ function Inventory.Bind(
 				d.ZIndex = 38
 				d.Parent = line
 				UIKit.Corner(d, 99)
-				lbl(line, label, UDim2.new(0.58, -12, 1, 0), UDim2.fromOffset(14, 0), 13, TD, 38, Enum.Font.Gotham)
+				lbl(line, label, UDim2.new(0.58, -12, 1, 0), UDim2.fromOffset(14, 0), 12, TD, 38, Enum.Font.Gotham)
 				local v = lbl(line, value, UDim2.new(0.42, 0, 1, 0), UDim2.new(0.58, 0, 0, 0), 13, vcol or TW, 38, Enum.Font.GothamBold)
 				v.TextXAlignment = Enum.TextXAlignment.Right
 			end
 
 			statLine(leftCol, 1, "Click power", Format.Num(s and (s.damagePerClick or s.totalPower) or 0), Color3.fromRGB(204, 68, 68), TW)
 			statLine(leftCol, 2, "CPS", string.format("%.2f", s and s.cps or 0), GREEN, GREEN)
-			statLine(leftCol, 3, "Crit", Format.Pct(s and s.crit or 0), GOLD, GOLD)
+			statLine(leftCol, 3, "Crit chance", Format.Pct(s and s.crit or 0), GOLD, GOLD)
 			statLine(leftCol, 4, "Luck", Format.Pct(s and s.luck or 0), CYAN, GREEN)
 			statLine(leftCol, 5, "Rebirth", string.format("R%d %s", s and (s.rebirthLevel or 0) or 0, s and Format.Mult(s.rebirthMult) or "x1"), GOLD, GOLD)
+
 			statLine(rightCol, 1, "DPS", Format.Num(s and s.dps or 0), Color3.fromRGB(204, 68, 68), TW)
 			statLine(rightCol, 2, "Coins", Format.Num(s and s.coins or 0), GOLD, GOLD)
-			statLine(rightCol, 3, "Clicks", Format.Num(s and s.totalClicks or 0), GREEN, TW)
-			statLine(rightCol, 4, "Life dmg", Format.Num(s and s.lifetimeDamage or 0), Color3.fromRGB(144, 112, 192), TW)
+			statLine(rightCol, 3, "Total clicks", Format.Num(s and s.totalClicks or 0), GREEN, TW)
+			statLine(rightCol, 4, "Lifetime dmg", Format.Num(s and s.lifetimeDamage or 0), Color3.fromRGB(144, 112, 192), TW)
 			statLine(rightCol, 5, "Location", tostring(inspectLocation or profile.currentLocation or 1), CYAN, CYAN)
 
 			local row = actionsRow()
-			lbl(row, inspectName and ("Viewing @" .. inspectName) or "Your live profile", UDim2.fromOffset(260, 34), nil, 13, TL, 35)
+			lbl(row, inspectName and ("Viewing @" .. inspectName) or "Your live profile", UDim2.fromOffset(240, 32), nil, 13, TL, 35)
 		end
 	end
 
