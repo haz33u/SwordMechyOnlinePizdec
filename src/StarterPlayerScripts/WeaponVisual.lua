@@ -197,21 +197,12 @@ local function loadTrack(animator: Animator, id: string): AnimationTrack?
 end
 
 local function getAttackId(): string
-	-- PreferPublishedAttack: only AnimationConfig (no Place Swing / old toolslash)
-	if AnimationConfig.PreferPublishedAttack ~= false then
-		return AnimationConfig.GetAttackId(false)
+	-- Always use AnimationConfig slash — never Place Swing (often banned 12741376562)
+	local id = AnimationConfig.GetAttackId(false)
+	if AnimationConfig.IsBannedId(id) then
+		return "rbxassetid://522635514"
 	end
-	local anims = ReplicatedStorage:FindFirstChild(AnimationConfig.ExtraAnimsFolder or "Animations")
-	if anims then
-		local swing = anims:FindFirstChild("Swing")
-		if swing and swing:IsA("Animation") then
-			local id = swing.AnimationId
-			if type(id) == "string" and id ~= "" and id ~= "rbxassetid://0" then
-				return id
-			end
-		end
-	end
-	return AnimationConfig.GetAttackId(false)
+	return id
 end
 
 function WeaponVisual.PlayAttack(_forceAlt: boolean?)

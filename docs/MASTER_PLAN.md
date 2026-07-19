@@ -142,7 +142,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 ### Анимации / визуал
 - [x] CombatController: Idle/Walk/Run + sprint Shift
 - [x] WeaponVisual: мечи на Right/Left grip
-- [x] Attack id `134636926386401` (Attack2 only)
+- [x] Attack id `522635514` (Tool Slash; banned Place id 12741376562 sanitized)
 - [x] Rojo не сносит Place Animations (meta + папки вне Shared)
 
 ### Документы
@@ -200,7 +200,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 ### P0 — stabilization (sprint 1) ✅/→
 1. ~~Toast nil~~  
 2. ~~English locale + LMB/touch attack~~  
-3. Confirm attack anim `134636926386401` (Attack2) in Play  
+3. Confirm attack anim `522635514` (tool slash) in Play  
 4. Playtest Loc1: kill → drop → inventory → enchant dust → rebirth  
 5. Save place + git sync (`COLLAB.md`)  
 6. `FIGMA_PROMPTS.md` + first UI icon batch  
