@@ -91,7 +91,8 @@ function Hud.Mount(
 			OnClick = function()
 				if INV_TABS[item.id] then
 					local tab = item.id == "character" and "profile" or item.id
-					(store :: any)._invTab = tab
+					local s = store :: any
+					s._invTab = tab
 					store:OpenPanel("weapons")
 				else
 					store:OpenPanel(item.id)

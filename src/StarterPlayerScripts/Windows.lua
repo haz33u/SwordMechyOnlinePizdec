@@ -342,10 +342,11 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 	---------------------------------------------------------------- Inventory (INVETAR Make) — E key
 	local function refreshWeapons()
 		-- tab can be set by rail: store._invTab
-		local t = (store :: any)._invTab
+		local invStore = store :: any
+		local t = invStore._invTab
 		if type(t) == "string" and t ~= "" then
 			invApi:SetTab(t)
-			(store :: any)._invTab = nil
+			invStore._invTab = nil
 		end
 		invApi:Refresh()
 	end
