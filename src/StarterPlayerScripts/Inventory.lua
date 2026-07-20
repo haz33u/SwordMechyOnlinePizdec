@@ -25,7 +25,6 @@ local AuraConfig = require(Shared.Config.AuraConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 local GamePassConfig = require(Shared.Config.GamePassConfig)
 local WorldConfig = require(Shared.Config.WorldConfig)
-local WeaponModels = require(script.Parent.WeaponModels)
 
 local Inventory = {}
 
@@ -1190,22 +1189,25 @@ function Inventory.Bind(
 				local btn, plate = makeItemSlot(scroll, i, edge)
 				plate.BackgroundColor3 = BG_SLOT
 				btn.Name = "W_" .. w.uid
+				-- Keep slot clickable above any future overlays
+				btn.Active = true
+				btn.Selectable = true
 
-				-- Prefer live 3D model preview when Place has WeaponModels entry
-				local usedViewport = WeaponModels.FillViewport(btn, w.id, 36) ~= nil
-				if not usedViewport then
-					local img = Instance.new("ImageLabel")
-					img.BackgroundColor3 = BG_SLOT
-					img.BackgroundTransparency = 0
-					img.BorderSizePixel = 0
-					img.Size = UDim2.fromScale(0.78, 0.78)
-					img.Position = UDim2.fromScale(0.5, 0.48)
-					img.AnchorPoint = Vector2.new(0.5, 0.5)
-					img.Image = IconConfig.GetWeaponImage(w.id)
-					img.ScaleType = Enum.ScaleType.Fit
-					img.ZIndex = 36
-					img.Parent = btn
-				end
+				-- Icons = IconConfig Decals (Loc1 uploaded). Viewport 3D was breaking
+				-- equip UI (empty previews + errors mid-refresh) — do not use in slots.
+				local img = Instance.new("ImageLabel")
+				img.Name = "Icon"
+				img.BackgroundColor3 = BG_SLOT
+				img.BackgroundTransparency = 1
+				img.BorderSizePixel = 0
+				img.Size = UDim2.fromScale(0.78, 0.78)
+				img.Position = UDim2.fromScale(0.5, 0.48)
+				img.AnchorPoint = Vector2.new(0.5, 0.5)
+				img.Image = IconConfig.GetWeaponImage(w.id)
+				img.ScaleType = Enum.ScaleType.Fit
+				img.ZIndex = 36
+				img.Active = false -- clicks go to slot button
+				img.Parent = btn
 
 				if profile.equippedMain == w.uid or profile.equippedOffhand == w.uid then
 					local dot = Instance.new("Frame")
@@ -1216,6 +1218,7 @@ function Inventory.Bind(
 					dot.BackgroundTransparency = 0
 					dot.BorderSizePixel = 0
 					dot.ZIndex = 38
+					dot.Active = false
 					dot.Parent = btn
 					UIKit.Corner(dot, 99)
 				end
@@ -1237,11 +1240,20 @@ function Inventory.Bind(
 					)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
-				btn.MouseButton1Click:Connect(function()
-					-- Logical pick for action bar only — no grid recolor / sticky border
-					selectedWeaponUid = w.uid
-					api:Refresh()
-				end)
+				do
+					local lastClick = 0
+					btn.MouseButton1Click:Connect(function()
+						local now = os.clock()
+						local double = (now - lastClick) < 0.35 and selectedWeaponUid == w.uid
+						lastClick = now
+						-- Single click: select for action bar. Double: equip main.
+						selectedWeaponUid = w.uid
+						if double then
+							Net.EquipWeapon(w.uid, "main")
+						end
+						api:Refresh()
+					end)
+				end
 			end
 
 			for i, w in ipairs(weapons) do
@@ -1289,14 +1301,15 @@ function Inventory.Bind(
 				end
 			end)
 			if selected then
+				local selUid = selected.uid
 				local def = WeaponConfig.Get(selected.id)
 				lbl(row, (def and def.name) or WeaponConfig.GetDisplayName(selected.id), UDim2.fromOffset(110, 32), nil, 12, rarityBorder(def and def.rarity), 35)
 				actBtn(row, "Equip main", Color3.fromRGB(0, 90, 80), 2, function()
-					Net.EquipWeapon(selected.uid, "main")
+					Net.EquipWeapon(selUid, "main")
 				end)
 				actBtn(row, offUnlocked and "Equip off" or "Off 🔒", Color3.fromRGB(50, 50, 50), 3, function()
 					if offUnlocked then
-						Net.EquipWeapon(selected.uid, "offhand")
+						Net.EquipWeapon(selUid, "offhand")
 					else
 						local gp = GamePassConfig.Get("offhand")
 						if gp then
@@ -1305,14 +1318,14 @@ function Inventory.Bind(
 					end
 				end)
 				actBtn(row, "Enchant", Color3.fromRGB(70, 40, 100), 4, function()
-					Net.EnchantWeapon(selected.uid)
+					Net.EnchantWeapon(selUid)
 					openModal("enchant", selected)
 				end)
 				actBtn(row, "Sell", Color3.fromRGB(120, 30, 30), 5, function()
 					openModal("sell", selected)
 				end)
 			else
-				keybind(row, 1, "LMB", "Select weapon")
+				keybind(row, 1, "LMB", "Select · double = Equip")
 			end
 			actBtn(row, "Sell all unequipped", Color3.fromRGB(140, 40, 40), 10, function()
 				Net.SellAllWeapons()

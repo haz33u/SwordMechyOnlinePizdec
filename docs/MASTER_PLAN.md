@@ -160,8 +160,8 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Тема | Статус |
 |------|--------|
 | Loc2–4 мобы/контент | stubs |
-| Реальные 3D модели мечей | **6 Loc1 wired** via `WeaponModels` + `WeaponModelConfig` (Place folder). Top 3 Loc1 + Loc2 empty until art |
-| Иконки weapons | Loc1 6: **ViewportFrame** 3D preview in inventory; rest IconConfig / Loc2 empty |
+| Реальные 3D модели мечей | **6 Loc1 wired** on character via `WeaponModels` + `WeaponModelConfig` (Place). Inventory slots use **IconConfig** Decals (Viewport removed — broke equip UI) |
+| Иконки weapons | Loc1 dump ids have IconConfig rbxassetids; Loc2 empty → fallback |
 | Character Upgrade icons | ✅ `UpgradeIconConfig` + **§8.1** (strength/bag/speed/crit/multicrit/coin/close/**shop**) |
 | Quest + CoinShop 1–5 icons | ✅ `UiIconConfig` + **§8.3** |
 | Питомцы / ауры / кейсы economy | keys + CaseResult (v0.5.4); roster still thin |

@@ -135,13 +135,28 @@ local function findGripAttachment(char: Model, side: string): Attachment?
 end
 
 local function equipSide(char: Model, parent: Folder, side: string, name: string, weaponId: string?, def: any?): Model?
-	if weaponId and WeaponModels.HasVisual(weaponId) then
-		local model, grip = WeaponModels.PrepareClone(weaponId)
-		if model then
+	-- Place mesh models (optional). Any error → placeholder so inventory equip never looks "dead".
+	if weaponId then
+		local ok, modelOrErr, grip = pcall(function()
+			if not WeaponModels.HasVisual(weaponId) then
+				return nil, CFrame.new()
+			end
+			return WeaponModels.PrepareClone(weaponId)
+		end)
+		if ok and modelOrErr and typeof(modelOrErr) == "Instance" and modelOrErr:IsA("Model") then
+			local model = modelOrErr :: Model
 			model.Name = name
 			model.Parent = parent
-			WeaponModels.AttachToHand(model, char, side, grip)
-			return model
+			local gripCf = if typeof(grip) == "CFrame" then grip else CFrame.new()
+			local attOk = pcall(function()
+				WeaponModels.AttachToHand(model, char, side, gripCf)
+			end)
+			if attOk then
+				return model
+			end
+			model:Destroy()
+		elseif not ok then
+			warn("[WeaponVisual] PrepareClone failed for", weaponId, modelOrErr)
 		end
 	end
 
