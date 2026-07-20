@@ -17,6 +17,7 @@ local PetVisual = {}
 local player = Players.LocalPlayer
 local active: { [string]: Model } = {} -- uid → model
 local lastSig = ""
+local lastProfile: any = nil
 local renderConn: RBXScriptConnection? = nil
 local charConn: RBXScriptConnection? = nil
 
@@ -324,9 +325,11 @@ end
 
 function PetVisual.Refresh(profile: any?)
 	if not profile then
+		lastProfile = nil
 		clearAll()
 		return
 	end
+	lastProfile = profile
 	local ok, err = pcall(function()
 		rebuild(profile)
 	end)
@@ -352,7 +355,9 @@ function PetVisual.Init()
 				end
 				active[uid] = nil
 			end
-			-- App.ProfileUpdate / refreshAll will call Refresh; if not, wait one frame
+			if lastProfile then
+				PetVisual.Refresh(lastProfile)
+			end
 		end)
 	end
 
