@@ -58,11 +58,11 @@ local WeaponModelConfig = {
 
 	--[[
 		Palm tilt (degrees, CFrame.Angles(rx, ry, rz) on palm attachment).
-		  X = pitch · Y = yaw (toward camera / “our side”) · Z = roll (edge plane)
-		Was Z=±55 — too “inside-out”. Softened roll + yaw toward viewer (2026-07-20).
+		  X = pitch · Y = yaw · Z = roll around grip
+		Top-down shot 214526: flat of blade faced up (slap) → Z ~±90 so EDGE leads the cut.
 	]]
-	PalmTiltRight = Vector3.new(8, 22, -22),
-	PalmTiltLeft = Vector3.new(8, -22, 22),
+	PalmTiltRight = Vector3.new(6, 12, -90),
+	PalmTiltLeft = Vector3.new(6, -12, 90),
 
 	-- Fraction of half-length back from tip-axis end → sit on handle (0.85–0.95 = near pommel)
 	HiltEndBias = 0.92,
