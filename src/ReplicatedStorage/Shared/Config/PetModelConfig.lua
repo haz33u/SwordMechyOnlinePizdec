@@ -8,7 +8,7 @@ local PetModelConfig = {
 	FolderName = "PetModels",
 	DefaultScale = 0.55,
 
-	-- Behind player (studs, local HRP space: -Z = behind)
+	-- Behind player (studs, local HRP space: +Z = behind LookVector on Roblox)
 	FollowBack = 4.2,
 	FollowHeight = 2.35,
 	FollowSpread = 1.65,

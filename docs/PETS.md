@@ -32,6 +32,23 @@
 2. Models named as in `PetModelConfig.ModelByPetId` (Woodling, Lurk, …)  
 3. Or rely on auto-placeholders  
 
+### Test free meshes (temp)
+
+Inserted free Creator Store models into `PetModels` for Loc1 testing (replace later with final art):
+
+| Model name | Role |
+|------------|------|
+| Woodling / Lurk / Forestling / Hekata / Stiko | Loc1_500 map |
+| Charon…Grommash | from free pet pack (50k-ish tiers) |
+
+**Save the Place** after insert — assets live in Studio place, not git.
+
+### Icons
+
+- **World follow + inventory 3D slots** use the same meshes in `PetModels`.  
+- No separate PNG required for testing.  
+- Final polish: optional 512² `Image` uploads later (like weapons).  
+
 ## DEV
 
 `DebugCommand`:

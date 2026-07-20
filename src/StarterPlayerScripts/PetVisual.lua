@@ -246,7 +246,8 @@ local function rebuild(profile: any)
 				model:SetAttribute("PetId", petId)
 				model.Parent = folder
 				pcall(function()
-					model:PivotTo(hrp.CFrame * CFrame.new(0, 2, -3))
+					-- Roblox CFrame: +Z is behind LookVector (behind the character)
+					model:PivotTo(hrp.CFrame * CFrame.new(0, 2, 3.5))
 				end)
 				active[uid] = model
 			end
@@ -255,12 +256,13 @@ local function rebuild(profile: any)
 end
 
 local function slotOffset(index: number, total: number): Vector3
+	-- Roblox object space: LookVector = -Z, so +Z is BEHIND the character.
 	local back = PetModelConfig.FollowBack or 4.2
 	local height = PetModelConfig.FollowHeight or 2.35
 	local spread = PetModelConfig.FollowSpread or 1.65
 	local mid = (total + 1) / 2
 	local x = (index - mid) * spread
-	return Vector3.new(x, height, -back)
+	return Vector3.new(x, height, back)
 end
 
 local function stepFollow(_dt: number)
@@ -377,6 +379,69 @@ function PetVisual.Destroy()
 		charConn = nil
 	end
 	clearAll()
+end
+
+--- Inventory slot: 3D preview of pet mesh (same PetModels as world). Returns true if shown.
+function PetVisual.TryFillInventoryIcon(parent: GuiObject, petId: string, zIndex: number?): boolean
+	local ok, result = pcall(function()
+		local existing = parent:FindFirstChild("PetViewport")
+		if existing then
+			existing:Destroy()
+		end
+		local clone = clonePetModel(petId)
+		if not clone then
+			return false
+		end
+		-- strip billboard for clean icon
+		for _, d in clone:GetDescendants() do
+			if d:IsA("BillboardGui") then
+				d:Destroy()
+			end
+		end
+
+		local vf = Instance.new("ViewportFrame")
+		vf.Name = "PetViewport"
+		vf.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
+		vf.BackgroundTransparency = 0.2
+		vf.BorderSizePixel = 0
+		vf.Size = UDim2.fromScale(0.78, 0.68)
+		vf.Position = UDim2.fromScale(0.5, 0.4)
+		vf.AnchorPoint = Vector2.new(0.5, 0.5)
+		vf.ZIndex = zIndex or 40
+		vf.Active = false
+		vf.Ambient = Color3.fromRGB(200, 200, 210)
+		vf.LightColor = Color3.fromRGB(255, 255, 255)
+		vf.LightDirection = Vector3.new(-1, -1, -0.5)
+		vf.Parent = parent
+
+		local world = Instance.new("WorldModel")
+		world.Parent = vf
+		clone.Parent = world
+		pcall(function()
+			clone:PivotTo(CFrame.new())
+		end)
+		local okBox, bbCf, bbSize = pcall(function()
+			return clone:GetBoundingBox()
+		end)
+		local extent = 1.2
+		if okBox and typeof(bbCf) == "CFrame" and typeof(bbSize) == "Vector3" then
+			pcall(function()
+				clone:TranslateBy(-(bbCf :: CFrame).Position)
+			end)
+			extent = math.max(bbSize.X, bbSize.Y, bbSize.Z, 0.4)
+		end
+		pcall(function()
+			clone:PivotTo(CFrame.Angles(0, math.rad(-30), 0) * clone:GetPivot())
+		end)
+		local cam = Instance.new("Camera")
+		cam.Parent = vf
+		vf.CurrentCamera = cam
+		local dist = math.clamp(extent * 1.9, 1.2, 12)
+		cam.FieldOfView = 30
+		cam.CFrame = CFrame.new(Vector3.new(dist * 0.45, dist * 0.35, dist * 0.85), Vector3.zero)
+		return true
+	end)
+	return ok and result == true
 end
 
 return PetVisual

@@ -26,6 +26,7 @@ local IconConfig = require(Shared.Config.IconConfig)
 local GamePassConfig = require(Shared.Config.GamePassConfig)
 local WorldConfig = require(Shared.Config.WorldConfig)
 local WeaponModels = require(script.Parent.WeaponModels)
+local PetVisual = require(script.Parent.PetVisual)
 
 local Inventory = {}
 
@@ -1390,21 +1391,26 @@ function Inventory.Bind(
 				local edge = rarityBorder(rar)
 				local btn = makeItemSlot(scroll, i, edge)
 				btn.Name = "P_" .. tostring(p.uid)
-				-- Rarity plate (3D world pets use PetVisual; slot = colored card)
-				local plate = Instance.new("Frame")
-				plate.Name = "PetPlate"
-				plate.BackgroundColor3 = edge
-				plate.BackgroundTransparency = 0.55
-				plate.BorderSizePixel = 0
-				plate.Size = UDim2.fromScale(0.72, 0.62)
-				plate.Position = UDim2.fromScale(0.5, 0.42)
-				plate.AnchorPoint = Vector2.new(0.5, 0.5)
-				plate.ZIndex = 36
-				plate.Active = false
-				plate.Parent = btn
-				UIKit.Corner(plate, 12)
-				local glyph = lbl(btn, "🐾", UDim2.fromScale(1, 0.55), UDim2.fromScale(0, 0.12), 26, TW, 37)
-				glyph.TextXAlignment = Enum.TextXAlignment.Center
+				local used3d = false
+				pcall(function()
+					used3d = PetVisual.TryFillInventoryIcon(btn, p.id, 40)
+				end)
+				if not used3d then
+					local plate = Instance.new("Frame")
+					plate.Name = "PetPlate"
+					plate.BackgroundColor3 = edge
+					plate.BackgroundTransparency = 0.55
+					plate.BorderSizePixel = 0
+					plate.Size = UDim2.fromScale(0.72, 0.62)
+					plate.Position = UDim2.fromScale(0.5, 0.42)
+					plate.AnchorPoint = Vector2.new(0.5, 0.5)
+					plate.ZIndex = 36
+					plate.Active = false
+					plate.Parent = btn
+					UIKit.Corner(plate, 12)
+					local glyph = lbl(btn, "🐾", UDim2.fromScale(1, 0.55), UDim2.fromScale(0, 0.12), 26, TW, 37)
+					glyph.TextXAlignment = Enum.TextXAlignment.Center
+				end
 				local lvLab = lbl(
 					btn,
 					"Lv " .. tostring(p.level or 1),
