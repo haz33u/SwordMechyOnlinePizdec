@@ -65,6 +65,7 @@ function Remotes.InitAll()
 	Remotes.Event("BanDrop")
 	Remotes.Event("FeedPet")
 	Remotes.Event("DebugSpawnDummy") -- debug: spawn training dummy
+	Remotes.Event("DebugCommand") -- DevTools panel (Studio / GameConfig.DEBUG)
 	-- paid unlocks (stub until gamepass): "offhand" | "paidPetSlot"
 	Remotes.Event("UnlockPaidFeature")
 

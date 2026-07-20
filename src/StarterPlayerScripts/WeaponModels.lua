@@ -458,11 +458,18 @@ local function prepareIconClone(weaponId: string): Model?
 		end)
 	end
 
-	-- Per-model icon tip flip (hand grip uses flipTip separately)
+	-- Per-model icon tip flip (hand uses flipTip; icon uses iconFlip axis)
 	local ov = WeaponModelConfig.GetOverride(template.Name)
 	if ov and ov.iconFlip then
+		local axis = ov.iconFlip
+		local rot = CFrame.Angles(math.rad(180), 0, 0) -- default X
+		if axis == "y" then
+			rot = CFrame.Angles(0, math.rad(180), 0)
+		elseif axis == "z" then
+			rot = CFrame.Angles(0, 0, math.rad(180))
+		end
 		pcall(function()
-			clone:PivotTo(CFrame.Angles(math.rad(180), 0, 0) * clone:GetPivot())
+			clone:PivotTo(rot * clone:GetPivot())
 		end)
 	end
 

@@ -128,14 +128,35 @@ function CombatService.GetMobsForClient(locationId: number?): { any }
 	return list
 end
 
-local function hitRange(): number
-	return (GameConfig.HIT_RANGE or 10) + (GameConfig.HIT_RANGE_EPSILON or 0)
+local function hitRange(isAuto: boolean?): number
+	local base = if isAuto then (GameConfig.AUTO_HIT_RANGE or GameConfig.HIT_RANGE or 12) else (GameConfig.HIT_RANGE or 10)
+	return base + (GameConfig.HIT_RANGE_EPSILON or 0)
 end
 
-local function pickTarget(player: Player, targetMobUid: string?, locId: number): any?
-	local maxRange = hitRange()
+--- true if mob is roughly in front of the character (flat look cone).
+local function inFrontCone(hrp: BasePart, mobPos: Vector3, coneCos: number): boolean
+	local origin = hrp.Position
+	local toMob = mobPos - origin
+	local flat = Vector3.new(toMob.X, 0, toMob.Z)
+	if flat.Magnitude < 0.05 then
+		return true -- on top of player
+	end
+	local look = hrp.CFrame.LookVector
+	local flatLook = Vector3.new(look.X, 0, look.Z)
+	if flatLook.Magnitude < 0.05 then
+		return true
+	end
+	return flat.Unit:Dot(flatLook.Unit) >= coneCos
+end
 
-	-- explicit target (manual click on mob) — still must be in range
+local function pickTarget(player: Player, targetMobUid: string?, locId: number, isAuto: boolean?): any?
+	local maxRange = hitRange(isAuto)
+	local coneCos = GameConfig.HIT_CONE_COS
+	if type(coneCos) ~= "number" then
+		coneCos = 0.35
+	end
+
+	-- explicit target (manual click on mob) — still must be in range (full circle OK)
 	local mob = targetMobUid and CombatService._mobs[targetMobUid] or nil
 	if mob and mob.alive then
 		local char = player.Character
@@ -152,7 +173,6 @@ local function pickTarget(player: Player, targetMobUid: string?, locId: number):
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not hrp then
-		-- no character → cannot melee (no map-wide auto)
 		return nil
 	end
 	local origin = hrp.Position
@@ -161,12 +181,13 @@ local function pickTarget(player: Player, targetMobUid: string?, locId: number):
 	local bestDist = math.huge
 	local dummyInRange = nil
 
+	-- Free-aim / AUTO: only mobs in a forward cone (area in front of facing)
 	for _, m in CombatService._mobs do
 		if m.alive then
 			local sameLoc = m.locationId == locId or m.isDebug
 			if sameLoc then
 				local d = (m.position - origin).Magnitude
-				if d <= maxRange then
+				if d <= maxRange and inFrontCone(hrp, m.position, coneCos) then
 					if m.isDebug then
 						dummyInRange = m
 					elseif d < bestDist then
@@ -203,19 +224,19 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	CombatService._lastSwing[player.UserId] = now
 
 	local locId = profile.currentLocation or 1
-	local mob = pickTarget(player, targetMobUid, locId)
+	local mob = pickTarget(player, targetMobUid, locId, isAuto)
 	if not mob or not mob.alive then
 		return
 	end
 
-	-- Melee range (manual + auto). No kill-aura.
+	-- Melee range (manual + auto). Cone already applied for free-aim/auto.
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not hrp then
 		return
 	end
 	local dist = (mob.position - hrp.Position).Magnitude
-	if dist > hitRange() then
+	if dist > hitRange(isAuto) then
 		return
 	end
 

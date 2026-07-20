@@ -6,7 +6,7 @@
 
 local GameConfig = {
 	DISPLAY_NAME = "Sword Masters",
-	VERSION = "0.5.14-melee-range-roster",
+	VERSION = "0.5.15-front-cone-devtools",
 
 	-- combat
 	-- With Loc1 weapon "Сила" as powerMult (1–150), BASE≈250 → starter kills 1K HP goblin in ~4 hits (~2s at 2 CPS)
@@ -20,6 +20,13 @@ local GameConfig = {
 	]]
 	HIT_RANGE = 10,
 	HIT_RANGE_EPSILON = 0.75, -- server lag / part size slack
+	--[[
+		Forward cone for auto / free-aim swings (LookVector, flattened Y).
+		cos(halfAngle): 0.5 ≈ 60° half-cone, 0.35 ≈ 70°, 0.0 = full hemisphere.
+	]]
+	HIT_CONE_COS = 0.35,
+	-- Auto can reach slightly farther in the front cone (still not map-wide)
+	AUTO_HIT_RANGE = 12,
 
 	-- inventory — pet slots in ProgressConfig (max 8)
 	START_PET_SLOTS = 3,
