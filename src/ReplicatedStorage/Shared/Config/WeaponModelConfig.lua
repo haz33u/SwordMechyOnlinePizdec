@@ -1,22 +1,20 @@
 --!strict
 --[[
-	Weapon 3D models (Place) + hold contract.
-
-	Grip: SM_Hilt on PrimaryPart at HANDLE end.
-	Runtime: RigidConstraint hand grip ↔ SM_Hilt (+ BladeRoll).
+	Weapon 3D models + hold / inventory icon contract.
 	See docs/WEAPON_HOLD.md
 ]]
 
 export type HiltOverride = {
-	-- Absolute tip direction along longest local axis: +1 or -1 (preferred over flipTip)
+	-- Absolute tip along longest axis: +1 or -1. Palm at opposite end.
 	tipSign: number?,
-	-- Relative invert of computed tipSign (legacy)
-	flipTip: boolean?,
-	-- 0.5 = center, 0.98 = near geometric end (handle/pommel). Higher = farther from mid-blade.
-	hiltBias: number?,
-	-- Inventory Viewport: extra Euler degrees (X,Y,Z) after framing — fix upside-down / on-side
+	flipTip: boolean?, -- relative invert (avoid if tipSign set)
+	hiltBias: number?, -- 0.55–0.995, default ~0.94; higher = closer to geometric end
+	-- Absolute local hilt position on PrimaryPart (overrides tipSign/bias if set)
+	hiltPosition: Vector3?,
+	-- Tip direction for attachment +Y (defaults to -hiltPosition.Unit)
+	tipDirection: Vector3?,
+	-- Inventory: applied AFTER camera framing (must not be wiped by PivotTo)
 	iconEuler: Vector3?,
-	-- Legacy icon 180 flip: true|"x"|"y"|"z"
 	iconFlip: (boolean | string)?,
 }
 
@@ -47,32 +45,33 @@ local WeaponModelConfig = {
 
 	DefaultScale = 0.52,
 	IconScale = 0.7,
+	HiltEndBias = 0.94,
 
 	--[[
-		Per Model.Name — QA 2026-07-20:
-		  Ardite / Forest: were gripping BLADE → force tipSign opposite + high hiltBias
-		  Icons: explicit iconEuler (not random flip axes)
+		QA locks 2026-07-20 (re-tested until correct):
+		  tipSign +1 put palm on BLADE for Ardite/Forest → use -1 + high bias.
+		  Icons: euler applied AFTER framing (see WeaponModels.frameModelInViewport).
 	]]
 	HiltOverrides = {
 		-- Old Sword: hand OK; icon upside-down
 		IronSword = {
 			iconEuler = Vector3.new(180, 0, 0),
 		},
-		-- Double-Edged: icon only
+		-- Double-Edged: icon upside-down
 		RubySword = {
 			iconEuler = Vector3.new(180, 0, 0),
 		},
-		-- Forest Sword: was gripping blade with flipTip/-1 → force +end + high bias
+		-- Forest Sword (Y-long ~4.73): absolute palm at +Y end = handle
 		SupeSport = {
-			tipSign = 1,
-			hiltBias = 0.985,
-			iconEuler = Vector3.new(180, 0, 0), -- upright tip-up in icon
+			hiltPosition = Vector3.new(0, 2.30, 0),
+			tipDirection = Vector3.new(0, -1, 0),
+			iconEuler = Vector3.new(180, 0, 0),
 		},
-		-- Ardite (long Z): same — palm at geometric handle end, not mid-blade
+		-- Ardite (Z-long ~5.60): absolute palm at +Z end = handle
 		KawashimaSword = {
-			tipSign = 1,
-			hiltBias = 0.985,
-			iconEuler = Vector3.new(90, 0, 0), -- was on side → pitch up
+			hiltPosition = Vector3.new(0, 0, 2.70),
+			tipDirection = Vector3.new(0, 0, -1),
+			iconEuler = Vector3.new(0, 0, -90),
 		},
 	} :: { [string]: HiltOverride },
 
@@ -80,11 +79,8 @@ local WeaponModelConfig = {
 	PalmOffsetLeft = Vector3.new(-0.04, 0.08, 0.04),
 	PalmTiltRight = Vector3.zero,
 	PalmTiltLeft = Vector3.zero,
-
 	BladeRollRight = 90,
 	BladeRollLeft = -90,
-
-	HiltEndBias = 0.94,
 }
 
 function WeaponModelConfig.GetModelName(weaponId: string): string?
@@ -109,14 +105,12 @@ function WeaponModelConfig.GetOverride(modelName: string): HiltOverride?
 	return nil
 end
 
---- Resolve override from template name or Weapon_<id> clone name.
 function WeaponModelConfig.ResolveOverride(modelOrCloneName: string): HiltOverride?
 	local name = string.gsub(modelOrCloneName, "^Weapon_", "")
 	local o = WeaponModelConfig.GetOverride(name)
 	if o then
 		return o
 	end
-	-- name may be weapon id (ardite)
 	local mapped = WeaponModelConfig.GetModelName(name)
 	if mapped then
 		return WeaponModelConfig.GetOverride(mapped)

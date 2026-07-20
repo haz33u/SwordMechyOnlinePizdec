@@ -113,10 +113,21 @@ local function longestLocalAxis(part: BasePart): (Vector3, number)
 	return Vector3.zAxis, s.Z
 end
 
+local function orientHiltAttachment(att: Attachment, hiltLocal: Vector3, tipDir: Vector3)
+	local tip = tipDir.Unit
+	local arb = if math.abs(tip:Dot(Vector3.xAxis)) < 0.9 then Vector3.xAxis else Vector3.zAxis
+	local right = tip:Cross(arb)
+	if right.Magnitude < 1e-4 then
+		right = tip:Cross(Vector3.zAxis)
+	end
+	right = right.Unit
+	local back = right:Cross(tip).Unit
+	att.CFrame = CFrame.fromMatrix(hiltLocal, right, tip, back)
+end
+
 --[[
-	Bake / ensure SM_Hilt on PrimaryPart.
-	Always recomputes CFrame (Place SM_Hilt + overrides tipSign / hiltBias / flipTip).
-	Palm sits at HANDLE end; tip along +Y of attachment.
+	Bake / ensure SM_Hilt on PrimaryPart. Always recomputes CFrame.
+	Palm = handle end; attachment +Y = tip.
 ]]
 function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, modelName: string?): Attachment?
 	local handle = model.PrimaryPart or findHandlePart(model)
@@ -143,10 +154,20 @@ function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, mode
 		att.Parent = handle
 	end
 
+	local ov = WeaponModelConfig.ResolveOverride(modelName or model.Name)
 	local axis, length = longestLocalAxis(handle)
 	local half = length * 0.5
 
-	local ov = WeaponModelConfig.ResolveOverride(modelName or model.Name)
+	-- Absolute local position wins (surgical per-mesh fix)
+	if ov and typeof(ov.hiltPosition) == "Vector3" then
+		local hiltLocal = ov.hiltPosition
+		local tipDir = if ov.tipDirection and typeof(ov.tipDirection) == "Vector3" and ov.tipDirection.Magnitude > 0.01
+			then ov.tipDirection.Unit
+			else (-hiltLocal).Unit
+		orientHiltAttachment(att, hiltLocal, tipDir)
+		model:SetAttribute("SM_HiltBaked", true)
+		return att
+	end
 
 	local tipSign = 1
 	if ov and type(ov.tipSign) == "number" and ov.tipSign ~= 0 then
@@ -165,21 +186,20 @@ function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, mode
 	end
 	local along = half * bias
 
-	-- Palm on handle end (opposite tip)
+	-- Palm on handle end (opposite tip direction)
 	local tipAxis = axis * tipSign
 	local hiltLocal = -tipAxis * along
-	local tip = tipAxis.Unit
-	local arb = if math.abs(tip:Dot(Vector3.xAxis)) < 0.9 then Vector3.xAxis else Vector3.zAxis
-	local right = tip:Cross(arb)
-	if right.Magnitude < 1e-4 then
-		right = tip:Cross(Vector3.zAxis)
-	end
-	right = right.Unit
-	local back = right:Cross(tip).Unit
-	att.CFrame = CFrame.fromMatrix(hiltLocal, right, tip, back)
+	orientHiltAttachment(att, hiltLocal, tipAxis)
 
 	model:SetAttribute("SM_HiltBaked", true)
 	model:SetAttribute("SM_TipSign", tipSign)
+	print(string.format(
+		"[WeaponModels] SM_Hilt %s tipSign=%d bias=%.3f hiltLocal=%s",
+		modelName or model.Name,
+		tipSign,
+		bias,
+		tostring(hiltLocal)
+	))
 	return att
 end
 
@@ -450,34 +470,37 @@ local function prepareIconClone(weaponId: string): Model?
 		end)
 	end
 
-	-- Per-model icon orientation (iconEuler preferred; iconFlip legacy)
-	local ov = WeaponModelConfig.ResolveOverride(template.Name)
-	if ov then
-		local rot: CFrame? = nil
-		if typeof(ov.iconEuler) == "Vector3" then
-			local e = ov.iconEuler
-			rot = CFrame.Angles(math.rad(e.X), math.rad(e.Y), math.rad(e.Z))
-		elseif ov.iconFlip then
-			local axis = ov.iconFlip
-			rot = CFrame.Angles(math.rad(180), 0, 0)
-			if axis == "y" then
-				rot = CFrame.Angles(0, math.rad(180), 0)
-			elseif axis == "z" then
-				rot = CFrame.Angles(0, 0, math.rad(180))
-			end
-		end
-		if rot then
-			pcall(function()
-				clone:PivotTo(rot * clone:GetPivot())
-			end)
-		end
-	end
-
+	-- Do NOT apply iconEuler here — frameModelInViewport used to wipe it with PivotTo(rot).
+	clone:SetAttribute("IconTemplateName", template.Name)
 	return clone
 end
 
+local function iconExtraRotation(templateName: string?): CFrame
+	if not templateName then
+		return CFrame.new()
+	end
+	local ov = WeaponModelConfig.ResolveOverride(templateName)
+	if not ov then
+		return CFrame.new()
+	end
+	if typeof(ov.iconEuler) == "Vector3" then
+		local e = ov.iconEuler
+		return CFrame.Angles(math.rad(e.X), math.rad(e.Y), math.rad(e.Z))
+	end
+	if ov.iconFlip then
+		local axis = ov.iconFlip
+		if axis == "y" then
+			return CFrame.Angles(0, math.rad(180), 0)
+		elseif axis == "z" then
+			return CFrame.Angles(0, 0, math.rad(180))
+		end
+		return CFrame.Angles(math.rad(180), 0, 0)
+	end
+	return CFrame.new()
+end
+
 local function frameModelInViewport(clone: Model, cam: Camera)
-	-- 1) Bounding box center → origin (Place models often keep huge RS WorldPivots)
+	-- 1) Bounding box center → origin
 	local okBox, bbCf, bbSize = pcall(function()
 		return clone:GetBoundingBox()
 	end)
@@ -496,21 +519,31 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		extent = math.max(s.X, s.Y, s.Z, 0.4)
 	end
 
-	-- 2) Showcase orientation at origin (hero 3/4 view)
-	local rot = CFrame.Angles(0, math.rad(-42), 0) * CFrame.Angles(math.rad(22), 0, 0)
+	-- 2) Hero angle THEN per-model iconEuler (order matters — euler last)
+	local showcase = CFrame.Angles(0, math.rad(-42), 0) * CFrame.Angles(math.rad(22), 0, 0)
+	local templateName = clone:GetAttribute("IconTemplateName")
+	if type(templateName) ~= "string" then
+		templateName = nil
+	end
+	local extra = iconExtraRotation(templateName)
 	pcall(function()
-		clone:PivotTo(rot)
+		clone:PivotTo(showcase * extra)
 	end)
 
-	-- 3) Re-measure after pivot (size only)
-	local ok2, _cf2, size2 = pcall(function()
+	-- 3) Re-center after rotation (iconEuler can shift bbox)
+	local ok2, bb2, size2 = pcall(function()
 		return clone:GetBoundingBox()
 	end)
+	if ok2 and typeof(bb2) == "CFrame" then
+		pcall(function()
+			clone:TranslateBy(-(bb2 :: CFrame).Position)
+		end)
+	end
 	if ok2 and typeof(size2) == "Vector3" then
 		extent = math.max(size2.X, size2.Y, size2.Z, 0.4)
 	end
 
-	-- 4) Camera always looks at origin
+	-- 4) Camera looks at origin
 	local dist = math.clamp(extent * 2.1, 1.5, 48)
 	cam.FieldOfView = 32
 	cam.CFrame = CFrame.new(Vector3.new(dist * 0.55, dist * 0.35, dist * 0.9), Vector3.zero)
