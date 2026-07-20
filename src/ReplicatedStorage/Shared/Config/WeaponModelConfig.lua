@@ -48,12 +48,11 @@ local WeaponModelConfig = {
 		  iconFlip = inventory Viewport 180°: true|"x"|"y"|"z" (axis of flip)
 	]]
 	HiltOverrides = {
-		-- Old Sword: hand OK, icon still tip-wrong after X-flip → use Y
-		IronSword = { iconFlip = "y" },
-		-- Forest Sword
-		SupeSport = { iconFlip = true, flipTip = true },
-		-- Ardite: hand + icon inverted
-		KawashimaSword = { flipTip = true, iconFlip = true },
+		-- QA 2026-07-20
+		IronSword = { iconFlip = "z" }, -- Old Sword: icon only (hand OK)
+		RubySword = { iconFlip = true }, -- Double-Edged: icon only
+		SupeSport = { flipTip = true, iconFlip = true }, -- Forest Sword: hand + icon
+		KawashimaSword = { flipTip = true, iconFlip = true }, -- Ardite: hand + icon
 	} :: { [string]: { flipTip: boolean?, iconFlip: (boolean | string)? } },
 
 	--[[

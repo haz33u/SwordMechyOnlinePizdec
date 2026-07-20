@@ -115,8 +115,7 @@ end
 
 --[[
 	Bake / ensure SM_Hilt on PrimaryPart.
-	Hilt = end of long axis nearest Tool.Grip (if any), else opposite of "up" bias.
-	Attachment CFrame: origin at hilt, LookVector / axes so +Y of attachment ≈ tip direction.
+	Always recomputes CFrame so HiltOverrides.flipTip applies even if Place already has SM_Hilt.
 ]]
 function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, modelName: string?): Attachment?
 	local handle = model.PrimaryPart or findHandlePart(model)
@@ -125,15 +124,22 @@ function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, mode
 	end
 	model.PrimaryPart = handle
 
+	local att: Attachment? = nil
 	local existing = handle:FindFirstChild(HILT_NAME)
 	if existing and existing:IsA("Attachment") then
-		return existing
-	end
-	-- Also search descendants (baked under nested part)
-	for _, d in model:GetDescendants() do
-		if d:IsA("Attachment") and d.Name == HILT_NAME then
-			return d
+		att = existing
+	else
+		for _, d in model:GetDescendants() do
+			if d:IsA("Attachment") and d.Name == HILT_NAME then
+				att = d
+				break
+			end
 		end
+	end
+	if not att then
+		att = Instance.new("Attachment")
+		att.Name = HILT_NAME
+		att.Parent = handle
 	end
 
 	local axis, length = longestLocalAxis(handle)
@@ -141,40 +147,36 @@ function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, mode
 	local bias = WeaponModelConfig.HiltEndBias or 0.92
 	local along = half * bias
 
-	-- Tip direction along ±axis. Prefer Tool.Grip: grip is near hand → hilt is that end.
 	local tipSign = 1
 	if toolGrip and toolGrip.Position.Magnitude > 0.01 then
-		-- Grip position in tool space is roughly on handle; project onto long axis of part
-		-- Tool.Grip.Position is relative to handle when Tool was equipped; after unwrap still useful sign of Y/X/Z
 		local g = toolGrip.Position
 		local proj = g:Dot(axis)
-		-- Hilt is toward grip from center → tip is opposite grip
 		if proj > 0 then
-			tipSign = -1 -- grip on +axis side → tip on -axis
+			tipSign = -1
 		else
 			tipSign = 1
 		end
-	else
-		-- Default: tip toward +axis (many free swords blade on +Y)
-		tipSign = 1
 	end
 
 	local overrideName = modelName or model.Name
-	-- Strip Weapon_ prefix from clones
 	overrideName = string.gsub(overrideName, "^Weapon_", "")
+	-- Map weaponId-style names to Model.Name via reverse lookup not needed if modelName is template.Name
 	local ov = WeaponModelConfig.GetOverride(overrideName)
+	if not ov then
+		-- clone name may be Weapon_ardite — resolve template name from config
+		local WeaponConfig = require(Shared.Config.WeaponConfig)
+		local wid = string.gsub(model.Name, "^Weapon_", "")
+		local mapped = WeaponModelConfig.GetModelName(wid)
+		if mapped then
+			ov = WeaponModelConfig.GetOverride(mapped)
+		end
+	end
 	if ov and ov.flipTip then
 		tipSign = -tipSign
 	end
 
 	local tipAxis = axis * tipSign
-	-- Hilt is opposite tip end
 	local hiltLocal = -tipAxis * along
-
-	local att = Instance.new("Attachment")
-	att.Name = HILT_NAME
-	-- Orient so Attachment.WorldCFrame.UpVector ≈ tip (use Y as blade axis on attachment)
-	-- CFrame.lookAt builds -Z forward; we want +Y = tip
 	local tip = tipAxis.Unit
 	local arb = if math.abs(tip:Dot(Vector3.xAxis)) < 0.9 then Vector3.xAxis else Vector3.zAxis
 	local right = tip:Cross(arb)
@@ -183,9 +185,7 @@ function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, mode
 	end
 	right = right.Unit
 	local back = right:Cross(tip).Unit
-	-- fromMatrix(pos, vX, vY, vZ) columns
 	att.CFrame = CFrame.fromMatrix(hiltLocal, right, tip, back)
-	att.Parent = handle
 
 	model:SetAttribute("SM_HiltBaked", true)
 	return att
