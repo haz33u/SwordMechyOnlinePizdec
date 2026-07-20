@@ -144,6 +144,8 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 ### Анимации / визуал
 - [x] CombatController: Idle/Walk/Run + sprint Shift
 - [x] WeaponVisual: мечи на Right/Left grip
+- [x] **WeaponModels Place folder** + ladder map (6 free swords → bottom Loc1 rarities); Tool.Grip weld; fallback placeholder Part
+- [x] Inventory weapon slots: ViewportFrame when model exists, else IconConfig
 - [x] Attack id `522635514` (Tool Slash; banned Place id 12741376562 sanitized)
 - [x] Rojo не сносит Place Animations (meta + папки вне Shared)
 
@@ -158,8 +160,8 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Тема | Статус |
 |------|--------|
 | Loc2–4 мобы/контент | stubs |
-| Реальные 3D модели мечей | placeholder Parts |
-| Иконки Loc2+ weapons | пустые id → FIGMA_PROMPTS |
+| Реальные 3D модели мечей | **6 Loc1 wired** via `WeaponModels` + `WeaponModelConfig` (Place folder). Top 3 Loc1 + Loc2 empty until art |
+| Иконки weapons | Loc1 6: **ViewportFrame** 3D preview in inventory; rest IconConfig / Loc2 empty |
 | Character Upgrade icons | ✅ `UpgradeIconConfig` + **§8.1** (strength/bag/speed/crit/multicrit/coin/close/**shop**) |
 | Quest + CoinShop 1–5 icons | ✅ `UiIconConfig` + **§8.3** |
 | Питомцы / ауры / кейсы economy | keys + CaseResult (v0.5.4); roster still thin |

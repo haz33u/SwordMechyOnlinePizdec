@@ -25,6 +25,7 @@ local AuraConfig = require(Shared.Config.AuraConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 local GamePassConfig = require(Shared.Config.GamePassConfig)
 local WorldConfig = require(Shared.Config.WorldConfig)
+local WeaponModels = require(script.Parent.WeaponModels)
 
 local Inventory = {}
 
@@ -1190,17 +1191,21 @@ function Inventory.Bind(
 				plate.BackgroundColor3 = BG_SLOT
 				btn.Name = "W_" .. w.uid
 
-				local img = Instance.new("ImageLabel")
-				img.BackgroundColor3 = BG_SLOT
-				img.BackgroundTransparency = 0
-				img.BorderSizePixel = 0
-				img.Size = UDim2.fromScale(0.78, 0.78)
-				img.Position = UDim2.fromScale(0.5, 0.48)
-				img.AnchorPoint = Vector2.new(0.5, 0.5)
-				img.Image = IconConfig.GetWeaponImage(w.id)
-				img.ScaleType = Enum.ScaleType.Fit
-				img.ZIndex = 36
-				img.Parent = btn
+				-- Prefer live 3D model preview when Place has WeaponModels entry
+				local usedViewport = WeaponModels.FillViewport(btn, w.id, 36) ~= nil
+				if not usedViewport then
+					local img = Instance.new("ImageLabel")
+					img.BackgroundColor3 = BG_SLOT
+					img.BackgroundTransparency = 0
+					img.BorderSizePixel = 0
+					img.Size = UDim2.fromScale(0.78, 0.78)
+					img.Position = UDim2.fromScale(0.5, 0.48)
+					img.AnchorPoint = Vector2.new(0.5, 0.5)
+					img.Image = IconConfig.GetWeaponImage(w.id)
+					img.ScaleType = Enum.ScaleType.Fit
+					img.ZIndex = 36
+					img.Parent = btn
+				end
 
 				if profile.equippedMain == w.uid or profile.equippedOffhand == w.uid then
 					local dot = Instance.new("Frame")

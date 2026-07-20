@@ -13,6 +13,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AnimationConfig = require(Shared.Config.AnimationConfig)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local Rarity = require(script.Parent.Rarity)
+local WeaponModels = require(script.Parent.WeaponModels)
 
 local WeaponVisual = {}
 
@@ -62,7 +63,8 @@ local function clearSword(model: Model?)
 	end
 end
 
-local function makeSword(name: string, def: any?, parent: Folder): Model
+--- Fallback placeholder when Place has no model for this weapon id.
+local function makePlaceholderSword(name: string, def: any?, parent: Folder): Model
 	local m = Instance.new("Model")
 	m.Name = name
 	local rarity = (def and def.rarity) or "Common"
@@ -103,7 +105,7 @@ local function makeSword(name: string, def: any?, parent: Folder): Model
 	return m
 end
 
-local function attachToGrip(model: Model, grip: Attachment)
+local function attachPlaceholderToGrip(model: Model, grip: Attachment)
 	local handle = model.PrimaryPart
 	if not handle then
 		return
@@ -123,13 +125,33 @@ local function attachToGrip(model: Model, grip: Attachment)
 	rigid.Parent = handle
 end
 
-local function findGrip(char: Model, side: string): Attachment?
+local function findGripAttachment(char: Model, side: string): Attachment?
 	if side == "left" then
 		local hand = char:FindFirstChild("LeftHand")
 		return hand and hand:FindFirstChild("LeftGripAttachment") :: Attachment?
 	end
 	local hand = char:FindFirstChild("RightHand")
 	return hand and hand:FindFirstChild("RightGripAttachment") :: Attachment?
+end
+
+local function equipSide(char: Model, parent: Folder, side: string, name: string, weaponId: string?, def: any?): Model?
+	if weaponId and WeaponModels.HasVisual(weaponId) then
+		local model, grip = WeaponModels.PrepareClone(weaponId)
+		if model then
+			model.Name = name
+			model.Parent = parent
+			WeaponModels.AttachToHand(model, char, side, grip)
+			return model
+		end
+	end
+
+	local gripAtt = findGripAttachment(char, side)
+	if not gripAtt then
+		return nil
+	end
+	local placeholder = makePlaceholderSword(name, def or { rarity = "Common" }, parent)
+	attachPlaceholderToGrip(placeholder, gripAtt)
+	return placeholder
 end
 
 local function resolveWeaponDef(profile: any, uid: string?): any?
@@ -160,16 +182,30 @@ function WeaponVisual.Refresh(profile: any?)
 
 	local mainDef = resolveWeaponDef(profile, profile.equippedMain)
 	local offDef = resolveWeaponDef(profile, profile.equippedOffhand)
-	local rightGrip = findGrip(char, "right")
-	local leftGrip = findGrip(char, "left")
 
-	if rightGrip then
-		mainModel = makeSword("MainSword", mainDef or { rarity = "Common" }, folder)
-		attachToGrip(mainModel, rightGrip)
+	local mainId: string? = nil
+	if profile.equippedMain and profile.weapons then
+		for _, w in profile.weapons do
+			if w.uid == profile.equippedMain then
+				mainId = w.id
+				break
+			end
+		end
 	end
-	if offDef and leftGrip then
-		offModel = makeSword("OffSword", offDef, folder)
-		attachToGrip(offModel, leftGrip)
+	local offId: string? = nil
+	if profile.equippedOffhand and profile.weapons then
+		for _, w in profile.weapons do
+			if w.uid == profile.equippedOffhand then
+				offId = w.id
+				break
+			end
+		end
+	end
+
+	-- Always show main (starter / equipped); offhand only when equipped
+	mainModel = equipSide(char, folder, "right", "MainSword", mainId or (mainDef and mainDef.id), mainDef or { rarity = "Common" })
+	if offDef and offId then
+		offModel = equipSide(char, folder, "left", "OffSword", offId, offDef)
 	end
 end
 
