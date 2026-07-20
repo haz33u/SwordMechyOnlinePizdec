@@ -331,8 +331,11 @@ function App.Start()
 			if onCombatFx then
 				onCombatFx(payload)
 			end
-			-- sword slash on successful hit
+			-- sword slash on successful hit (skip if AUTO already drives the same combo loop)
 			pcall(function()
+				if WeaponVisual.IsAutoAttack and WeaponVisual.IsAutoAttack() then
+					return
+				end
 				WeaponVisual.PlayAttack()
 			end)
 		end)
@@ -355,10 +358,22 @@ function App.Start()
 		end
 	end)
 
+	-- AUTO: damage on swingCd; sword anims loop right→left via WeaponVisual.SetAutoAttack
 	local accum = 0
+	local lastAutoFlag = false
 	RunService.Heartbeat:Connect(function(dt)
 		local stats = store:PeekStats()
-		if not stats or not stats.autoClicker then
+		local autoOn = stats ~= nil and stats.autoClicker == true
+		if autoOn ~= lastAutoFlag then
+			lastAutoFlag = autoOn
+			pcall(function()
+				WeaponVisual.SetAutoAttack(autoOn)
+			end)
+			if not autoOn then
+				accum = 0
+			end
+		end
+		if not autoOn then
 			return
 		end
 		local cd = stats.swingCd or 1

@@ -25,6 +25,8 @@ local tracks: { [string]: AnimationTrack } = {}
 local lastPlay = 0
 local lastPlayedId: string? = nil
 local comboBusy = false -- true while right→left combo is running (spam LMB ignored)
+local autoAttackOn = false
+local autoAttackToken = 0
 
 -- Minecraft-style procedural swing state
 local mcShoulder: Motor6D? = nil
@@ -688,7 +690,18 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	print("[WeaponVisual] PlayAttack RIGHT →", id, "len=", track.Length, "offhand=", hasOff, "offId=", offId)
 
 	if not hasOff then
-		track:Play(0.05, 1, 1.0)
+		-- Still mark busy so AUTO waits for the full swing before looping
+		comboBusy = true
+		task.spawn(function()
+			local ok, err = pcall(function()
+				track:Play(0.05, 1, 1.0)
+				task.wait(rightAttackDuration(track))
+			end)
+			if not ok then
+				warn("[WeaponVisual] single attack error:", err)
+			end
+			comboBusy = false
+		end)
 		if lastPlayedId ~= id then
 			lastPlayedId = id
 		end
@@ -704,6 +717,50 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	if lastPlayedId ~= id then
 		lastPlayedId = id
 	end
+end
+
+--- AUTO: loop the same right→left (or right) combo until SetAutoAttack(false).
+function WeaponVisual.SetAutoAttack(enabled: boolean)
+	enabled = enabled == true
+	if enabled == autoAttackOn then
+		return
+	end
+	autoAttackOn = enabled
+	autoAttackToken += 1
+	local token = autoAttackToken
+	if not enabled then
+		print("[WeaponVisual] auto attack OFF")
+		return
+	end
+	print("[WeaponVisual] auto attack ON (loop until disabled)")
+	task.spawn(function()
+		while autoAttackOn and token == autoAttackToken do
+			local char = player.Character
+			if char and char.Parent then
+				if not comboBusy then
+					WeaponVisual.PlayAttack()
+				end
+				-- Wait for current combo to finish
+				while autoAttackOn and token == autoAttackToken and comboBusy do
+					task.wait(0.03)
+				end
+				-- Small gap between combos (same feel as manual cadence)
+				if autoAttackOn and token == autoAttackToken then
+					task.wait(0.06)
+				end
+			else
+				task.wait(0.2)
+			end
+		end
+	end)
+end
+
+function WeaponVisual.IsAutoAttack(): boolean
+	return autoAttackOn
+end
+
+function WeaponVisual.IsComboBusy(): boolean
+	return comboBusy
 end
 
 function WeaponVisual.Init(getProfile: () -> any?)
@@ -722,6 +779,7 @@ function WeaponVisual.Init(getProfile: () -> any?)
 		tracks = {}
 		lastPlayedId = nil
 		comboBusy = false
+		-- keep autoAttackOn across respawn; loop continues
 		mcSwinging = false
 		mcT = 0
 		offSwinging = false
