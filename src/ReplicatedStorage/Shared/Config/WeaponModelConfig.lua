@@ -15,17 +15,18 @@ local WeaponModelConfig = {
 	HiltAttachmentName = "SM_Hilt",
 
 	ModelByWeaponId = {
+		-- Loc1 ladder (weak → strong), meshes in ReplicatedStorage.WeaponModels
 		starter_weapon = "StarterSword",
 		old_sword = "IronSword",
 		bone_dagger = "PixelIronSword",
 		wooden_mace = "GoldSword",
 		double_edged_sword = "RubySword",
 		forest_spirit_staff = "DiamondSword",
+		ardite = "KawashimaSword", -- Legendary
+		forest_sword = "SupeSport", -- Mythic (blue rose)
+		forest_shadow = "LastSword", -- Secret
 
-		ardite = "",
-		forest_sword = "",
-		forest_shadow = "",
-
+		-- Loc2 — models TBD
 		pirate_hook = "",
 		pirate_hammer = "",
 		pirate_saber = "",

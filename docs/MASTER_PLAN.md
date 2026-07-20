@@ -160,7 +160,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Тема | Статус |
 |------|--------|
 | Loc2–4 мобы/контент | stubs |
-| Реальные 3D модели мечей | **6 Loc1** + systematic **`SM_Hilt`** attach (`docs/WEAPON_HOLD.md`); MC raised-arm READY + swing |
+| Реальные 3D модели мечей | **9 Loc1** meshes + **`SM_Hilt`** / BladeRoll (`docs/WEAPON_HOLD.md`); Loc2 still empty |
 | Иконки weapons | Loc1 IconConfig Decals; pipeline `docs/ICON_UPLOAD.md`. Loc2 empty → fallback |
 | Character Upgrade icons | ✅ `UpgradeIconConfig` + **§8.1** (strength/bag/speed/crit/multicrit/coin/close/**shop**) |
 | Quest + CoinShop 1–5 icons | ✅ `UiIconConfig` + **§8.3** |

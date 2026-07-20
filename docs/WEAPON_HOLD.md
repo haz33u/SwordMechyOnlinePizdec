@@ -73,6 +73,20 @@ Algorithm:
 
 ---
 
+## Loc1 mesh map (2026-07-20)
+
+| weaponId | Model.Name | Rarity |
+|----------|------------|--------|
+| starter_weapon | StarterSword | Common |
+| old_sword | IronSword | Common |
+| bone_dagger | PixelIronSword | Common |
+| wooden_mace | GoldSword | Rare |
+| double_edged_sword | RubySword | Epic |
+| forest_spirit_staff | DiamondSword | Epic |
+| ardite | **KawashimaSword** | Legendary |
+| forest_sword | **SupeSport** | Mythic |
+| forest_shadow | **LastSword** | Secret |
+
 ## New sword checklist
 
 1. Put Model in `ReplicatedStorage.WeaponModels.MySword`  
