@@ -160,7 +160,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Тема | Статус |
 |------|--------|
 | Loc2–4 мобы/контент | stubs |
-| Реальные 3D модели мечей | **6 Loc1** on character; grip = R15 palm hold + scale 0.45 (free Tools no longer clip torso). Offhand gets procedural left-arm swing |
+| Реальные 3D модели мечей | **6 Loc1** + systematic **`SM_Hilt`** attach (`docs/WEAPON_HOLD.md`); MC raised-arm READY + swing |
 | Иконки weapons | Loc1 IconConfig Decals; pipeline `docs/ICON_UPLOAD.md`. Loc2 empty → fallback |
 | Character Upgrade icons | ✅ `UpgradeIconConfig` + **§8.1** (strength/bag/speed/crit/multicrit/coin/close/**shop**) |
 | Quest + CoinShop 1–5 icons | ✅ `UiIconConfig` + **§8.3** |

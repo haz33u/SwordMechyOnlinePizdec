@@ -1,8 +1,14 @@
 --!strict
 --[[
-	Client helpers: resolve Place models, strip Tool junk, attach to hand, inventory viewport.
-	Source of truth for names: Shared.Config.WeaponModelConfig
-	Assets live in ReplicatedStorage.WeaponModels (Studio / Team Create only).
+	Place weapon models + systematic hilt attach.
+
+	Contract:
+	  Attachment "SM_Hilt" on PrimaryPart = palm on HANDLE (not mid-blade).
+	  Axis of SM_Hilt: WorldAxis that points toward blade TIP.
+	  Hand: RightGripAttachment / LeftGripAttachment
+	  Link: RigidConstraint
+
+	If SM_Hilt missing → EnsureHiltAttachment() bakes it (longest axis + Tool.Grip heuristic).
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13,6 +19,7 @@ local WeaponConfig = require(Shared.Config.WeaponConfig)
 
 local WeaponModels = {}
 
+local HILT_NAME = WeaponModelConfig.HiltAttachmentName or "SM_Hilt"
 local folderCache: Folder? = nil
 
 local function getFolder(): Folder?
@@ -47,19 +54,156 @@ function WeaponModels.HasVisual(weaponId: string): boolean
 	return WeaponModels.GetTemplate(weaponId) ~= nil
 end
 
---- Clone free Tool/Model into a clean weld-ready Model. Returns model + Tool.Grip (or identity).
+local function findHandlePart(root: Instance): BasePart?
+	local named = root:FindFirstChild("Handle", true)
+	if named and named:IsA("BasePart") then
+		return named
+	end
+	local best: BasePart? = nil
+	local bestVol = -1
+	for _, d in root:GetDescendants() do
+		if d:IsA("BasePart") then
+			local s = d.Size
+			local vol = s.X * s.Y * s.Z
+			if vol > bestVol then
+				bestVol = vol
+				best = d
+			end
+		end
+	end
+	return best
+end
+
+local function weldLooseParts(handle: BasePart, root: Instance)
+	for _, d in root:GetDescendants() do
+		if d:IsA("BasePart") and d ~= handle then
+			local welded = false
+			for _, c in d:GetChildren() do
+				if c:IsA("WeldConstraint") or c:IsA("Weld") or c:IsA("Motor6D") or c:IsA("RigidConstraint") then
+					welded = true
+					break
+				end
+			end
+			if not welded then
+				for _, c in handle:GetChildren() do
+					if (c:IsA("WeldConstraint") or c:IsA("Weld")) and ((c :: any).Part1 == d or (c :: any).Part0 == d) then
+						welded = true
+						break
+					end
+				end
+			end
+			if not welded then
+				local w = Instance.new("WeldConstraint")
+				w.Part0 = handle
+				w.Part1 = d
+				w.Parent = d
+			end
+		end
+	end
+end
+
+--- Longest local axis of a part as unit Vector3 in part space.
+local function longestLocalAxis(part: BasePart): (Vector3, number)
+	local s = part.Size
+	if s.Y >= s.X and s.Y >= s.Z then
+		return Vector3.yAxis, s.Y
+	elseif s.X >= s.Y and s.X >= s.Z then
+		return Vector3.xAxis, s.X
+	end
+	return Vector3.zAxis, s.Z
+end
+
+--[[
+	Bake / ensure SM_Hilt on PrimaryPart.
+	Hilt = end of long axis nearest Tool.Grip (if any), else opposite of "up" bias.
+	Attachment CFrame: origin at hilt, LookVector / axes so +Y of attachment ≈ tip direction.
+]]
+function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, modelName: string?): Attachment?
+	local handle = model.PrimaryPart or findHandlePart(model)
+	if not handle then
+		return nil
+	end
+	model.PrimaryPart = handle
+
+	local existing = handle:FindFirstChild(HILT_NAME)
+	if existing and existing:IsA("Attachment") then
+		return existing
+	end
+	-- Also search descendants (baked under nested part)
+	for _, d in model:GetDescendants() do
+		if d:IsA("Attachment") and d.Name == HILT_NAME then
+			return d
+		end
+	end
+
+	local axis, length = longestLocalAxis(handle)
+	local half = length * 0.5
+	local bias = WeaponModelConfig.HiltEndBias or 0.92
+	local along = half * bias
+
+	-- Tip direction along ±axis. Prefer Tool.Grip: grip is near hand → hilt is that end.
+	local tipSign = 1
+	if toolGrip and toolGrip.Position.Magnitude > 0.01 then
+		-- Grip position in tool space is roughly on handle; project onto long axis of part
+		-- Tool.Grip.Position is relative to handle when Tool was equipped; after unwrap still useful sign of Y/X/Z
+		local g = toolGrip.Position
+		local proj = g:Dot(axis)
+		-- Hilt is toward grip from center → tip is opposite grip
+		if proj > 0 then
+			tipSign = -1 -- grip on +axis side → tip on -axis
+		else
+			tipSign = 1
+		end
+	else
+		-- Default: tip toward +axis (many free swords blade on +Y)
+		tipSign = 1
+	end
+
+	local overrideName = modelName or model.Name
+	-- Strip Weapon_ prefix from clones
+	overrideName = string.gsub(overrideName, "^Weapon_", "")
+	local ov = WeaponModelConfig.GetOverride(overrideName)
+	if ov and ov.flipTip then
+		tipSign = -tipSign
+	end
+
+	local tipAxis = axis * tipSign
+	-- Hilt is opposite tip end
+	local hiltLocal = -tipAxis * along
+
+	local att = Instance.new("Attachment")
+	att.Name = HILT_NAME
+	-- Orient so Attachment.WorldCFrame.UpVector ≈ tip (use Y as blade axis on attachment)
+	-- CFrame.lookAt builds -Z forward; we want +Y = tip
+	local tip = tipAxis.Unit
+	local arb = if math.abs(tip:Dot(Vector3.xAxis)) < 0.9 then Vector3.xAxis else Vector3.zAxis
+	local right = tip:Cross(arb)
+	if right.Magnitude < 1e-4 then
+		right = tip:Cross(Vector3.zAxis)
+	end
+	right = right.Unit
+	local back = right:Cross(tip).Unit
+	-- fromMatrix(pos, vX, vY, vZ) columns
+	att.CFrame = CFrame.fromMatrix(hiltLocal, right, tip, back)
+	att.Parent = handle
+
+	model:SetAttribute("SM_HiltBaked", true)
+	return att
+end
+
+--- Clone free Tool/Model into a clean weld-ready Model. Returns model + original Tool.Grip (scaled).
 function WeaponModels.PrepareClone(weaponId: string): (Model?, CFrame)
 	local template = WeaponModels.GetTemplate(weaponId)
 	if not template then
 		return nil, CFrame.new()
 	end
 
+	local modelName = template.Name
 	local clone = template:Clone()
 	clone.Name = "Weapon_" .. WeaponConfig.ResolveId(weaponId)
 
 	local grip = CFrame.new()
 
-	-- Free swords are usually Model → Tool → Handle/Unions
 	local tool = clone:FindFirstChildWhichIsA("Tool", true)
 	if tool and tool:IsA("Tool") then
 		grip = tool.Grip
@@ -86,62 +230,22 @@ function WeaponModels.PrepareClone(weaponId: string): (Model?, CFrame)
 		end
 	end
 
-	-- Drop empty leftover folders / Accoutrements
 	for _, ch in clone:GetChildren() do
 		if ch:IsA("Folder") and #ch:GetChildren() == 0 then
 			ch:Destroy()
 		end
 	end
 
-	local handle: BasePart? = nil
-	local named = clone:FindFirstChild("Handle", true)
-	if named and named:IsA("BasePart") then
-		handle = named
-	else
-		for _, d in clone:GetDescendants() do
-			if d:IsA("BasePart") then
-				handle = d
-				break
-			end
-		end
-	end
-
+	local handle = findHandlePart(clone)
 	if not handle then
 		clone:Destroy()
 		return nil, grip
 	end
-
 	if handle.Name ~= "Handle" then
 		handle.Name = "Handle"
 	end
 	clone.PrimaryPart = handle
-
-	-- Ensure non-handle parts stay glued (some free assets only use loose unions under Tool)
-	for _, d in clone:GetDescendants() do
-		if d:IsA("BasePart") and d ~= handle then
-			local welded = false
-			for _, c in d:GetChildren() do
-				if c:IsA("WeldConstraint") or c:IsA("Weld") or c:IsA("Motor6D") or c:IsA("RigidConstraint") then
-					welded = true
-					break
-				end
-			end
-			if not welded then
-				for _, c in handle:GetChildren() do
-					if (c:IsA("WeldConstraint") or c:IsA("Weld")) and ((c :: any).Part1 == d or (c :: any).Part0 == d) then
-						welded = true
-						break
-					end
-				end
-			end
-			if not welded then
-				local w = Instance.new("WeldConstraint")
-				w.Part0 = handle
-				w.Part1 = d
-				w.Parent = d
-			end
-		end
-	end
+	weldLooseParts(handle, clone)
 
 	local scale = WeaponModelConfig.DefaultScale
 	if type(scale) == "number" and scale > 0 and scale ~= 1 then
@@ -149,16 +253,13 @@ function WeaponModels.PrepareClone(weaponId: string): (Model?, CFrame)
 			(clone :: any):ScaleTo(scale)
 		end)
 		if okScale then
-			-- Tool.Grip was authored pre-scale — shrink translation with the mesh
 			local p = grip.Position * scale
 			grip = CFrame.new(p) * (grip - grip.Position)
 		end
 	end
 
-	-- Stash scaled grip for attach
-	clone:SetAttribute("SM_GripPX", grip.X)
-	clone:SetAttribute("SM_GripPY", grip.Y)
-	clone:SetAttribute("SM_GripPZ", grip.Z)
+	-- Bake hilt on this clone (uses scaled mesh + scaled grip)
+	WeaponModels.EnsureHiltAttachment(clone, grip, modelName)
 
 	return clone, grip
 end
@@ -195,84 +296,9 @@ local function findHandGripAttachment(hand: BasePart, side: string): Attachment?
 	return nil
 end
 
-local function degAngles(v: Vector3): CFrame
-	return CFrame.Angles(math.rad(v.X), math.rad(v.Y), math.rad(v.Z))
-end
-
---- Rotation that maps vector `from` → `to` (both directions).
-local function mapVector(from: Vector3, to: Vector3): CFrame
-	from = from.Unit
-	to = to.Unit
-	local dot = from:Dot(to)
-	if dot > 0.9999 then
-		return CFrame.new()
-	end
-	if dot < -0.9999 then
-		local orth = if math.abs(from.X) < 0.9 then Vector3.xAxis else Vector3.yAxis
-		local axis = from:Cross(orth)
-		if axis.Magnitude < 1e-4 then
-			axis = from:Cross(Vector3.zAxis)
-		end
-		return CFrame.fromAxisAngle(axis.Unit, math.pi)
-	end
-	return CFrame.fromAxisAngle(from:Cross(to).Unit, math.acos(math.clamp(dot, -1, 1)))
-end
-
---- Classic sim: blade forward/up when arms hang.
-local function forwardHoldC1(handle: BasePart, side: string): CFrame
-	local size = handle.Size
-	local long = math.max(size.X, size.Y, size.Z)
-	local hiltFactor = WeaponModelConfig.ForwardHiltFactor or 0.32
-	local hilt = long * hiltFactor
-	local deg = if side == "left"
-		then (WeaponModelConfig.ForwardLeftAngles or Vector3.new(-90, -90, 0))
-		else (WeaponModelConfig.ForwardRightAngles or Vector3.new(-90, 90, 0))
-	return CFrame.new(0, hilt, 0) * degAngles(deg)
-end
-
---[[
-	Minecraft hold C1 (weapon-local):
-	  - Orient long axis so TIP follows BladeDir
-	  - Place PALM on the HILT (pommel end), not mid-blade
-	    localHilt = -meshTip * (long * HiltFactor)
-]]
-local function minecraftHoldC1(handle: BasePart, side: string): CFrame
-	local size = handle.Size
-	local long = math.max(size.X, size.Y, size.Z)
-	local hiltFactor = WeaponModelConfig.MinecraftHiltFactor or 0.42
-	local isLeft = side == "left"
-
-	local dir = if isLeft
-		then (WeaponModelConfig.MinecraftBladeDirLeft or Vector3.new(-0.2, 0.9, -1))
-		else (WeaponModelConfig.MinecraftBladeDirRight or Vector3.new(0.2, 0.9, -1))
-	if dir.Magnitude < 1e-3 then
-		dir = Vector3.new(0, 1, -0.5)
-	end
-	dir = dir.Unit
-
-	local flip = if isLeft then WeaponModelConfig.MinecraftFlipBladeLeft else WeaponModelConfig.MinecraftFlipBladeRight
-	local meshTip = if flip then -Vector3.yAxis else Vector3.yAxis
-
-	-- C1 maps dir → meshTip; palm sits on hilt (opposite tip along long axis)
-	local rot = mapVector(dir, meshTip)
-	local localHilt = -meshTip * (long * hiltFactor)
-	return rot * CFrame.new(localHilt)
-end
-
-local function minecraftHandOffset(side: string): CFrame
-	local off = if side == "left"
-		then (WeaponModelConfig.MinecraftLeftOffset or Vector3.zero)
-		else (WeaponModelConfig.MinecraftRightOffset or Vector3.zero)
-	return CFrame.new(off)
-end
-
---[[
-	Weld like Roblox Tools on R15:
-	  Part0 = Hand, C0 = GripAttachment * forward nudge
-	  Part1 = Handle, C1 = hilt + blade orientation
-]]
+--- Attach prepared model: palm GripAttachment ↔ SM_Hilt (RigidConstraint).
 function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip: CFrame)
-	local handle = model.PrimaryPart
+	local handle = model.PrimaryPart or findHandlePart(model)
 	if not handle then
 		return
 	end
@@ -281,47 +307,47 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 		return
 	end
 
+	-- Clean old links
 	for _, c in handle:GetChildren() do
-		if c.Name == "SM_WeaponWeld" then
-			c:Destroy()
-		elseif c:IsA("Weld") and (c :: Weld).Part0 == hand then
+		if c.Name == "SM_WeaponWeld" or c.Name == "SM_WeaponRigid" then
 			c:Destroy()
 		end
 	end
 
+	local hilt = WeaponModels.EnsureHiltAttachment(model, grip, model.Name)
+	if not hilt then
+		warn("[WeaponModels] no SM_Hilt for", model.Name)
+		return
+	end
+
 	local gripAtt = findHandGripAttachment(hand, side)
-	local isLeft = side == "left"
-	local tune = if isLeft then WeaponModelConfig.HoldTuneLeft else WeaponModelConfig.HoldTuneRight
-	if typeof(tune) ~= "CFrame" then
-		tune = CFrame.new()
+	if not gripAtt then
+		gripAtt = Instance.new("Attachment")
+		gripAtt.Name = if side == "left" then "LeftGripAttachment" else "RightGripAttachment"
+		gripAtt.Position = Vector3.new(0, -0.1, 0)
+		gripAtt.Parent = hand
 	end
 
-	local weld = Instance.new("Weld")
-	weld.Name = "SM_WeaponWeld"
-	weld.Part0 = hand
-	weld.Part1 = handle
-
-	local mode = WeaponModelConfig.HoldMode or "minecraft"
-
-	-- C0: palm point + push sword FORWARD of the fist (not into torso)
-	local baseC0 = if gripAtt then gripAtt.CFrame else CFrame.new(0, -0.15, 0)
-	if mode == "minecraft" then
-		weld.C0 = baseC0 * minecraftHandOffset(side)
-	else
-		weld.C0 = baseC0
+	-- Shared palm nudge (forward of fist). Clean previous offsets on this hand.
+	for _, c in hand:GetChildren() do
+		if c:IsA("Attachment") and c.Name == "SM_PalmOffset" then
+			c:Destroy()
+		end
 	end
-
-	local c1: CFrame
-	local hasToolGrip = typeof(grip) == "CFrame" and grip.Position.Magnitude > 0.05
-	if mode == "tool" and hasToolGrip then
-		c1 = grip
-	elseif mode == "forward" then
-		c1 = forwardHoldC1(handle, side)
-	else
-		c1 = minecraftHoldC1(handle, side)
+	local off = if side == "left" then WeaponModelConfig.PalmOffsetLeft else WeaponModelConfig.PalmOffsetRight
+	if typeof(off) ~= "Vector3" then
+		off = Vector3.zero
 	end
-	weld.C1 = c1 * tune
-	weld.Parent = handle
+	local palmAtt = Instance.new("Attachment")
+	palmAtt.Name = "SM_PalmOffset"
+	palmAtt.CFrame = gripAtt.CFrame * CFrame.new(off)
+	palmAtt.Parent = hand
+
+	local rigid = Instance.new("RigidConstraint")
+	rigid.Name = "SM_WeaponRigid"
+	rigid.Attachment0 = palmAtt
+	rigid.Attachment1 = hilt
+	rigid.Parent = handle
 end
 
 --- Fill a parent GuiObject with a ViewportFrame preview of the weapon model.
@@ -353,7 +379,6 @@ function WeaponModels.FillViewport(parent: GuiObject, weaponId: string, zIndex: 
 	world.Parent = vf
 	clone.Parent = world
 
-	-- Center model at origin, camera on a soft 3/4 angle
 	local okBox, bbCf, bbSize = pcall(function()
 		return clone:GetBoundingBox()
 	end)

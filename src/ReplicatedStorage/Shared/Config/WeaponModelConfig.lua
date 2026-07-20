@@ -1,15 +1,18 @@
 --!strict
 --[[
-	Maps WeaponConfig ids → Model names under ReplicatedStorage.WeaponModels.
+	Weapon 3D models (Place) + hold contract.
 
-	Minecraft-style hold (target look):
-	  - Arm raised (WeaponVisual READY pose) — not hanging at hip
-	  - Blade leaves the FIST up/diagonal (can clip through hand mesh like MC)
-	  - Must NOT originate from shoulder / stick out of the elbow sideways
+	Grip system (systematic):
+	  Each sword gets Attachment "SM_Hilt" on PrimaryPart at the HANDLE end.
+	  Runtime: RigidConstraint hand GripAttachment ↔ SM_Hilt.
+	  See docs/WEAPON_HOLD.md
+
+	Do NOT tune per-mesh hilt with one global factor — bake/find SM_Hilt instead.
 ]]
 
 local WeaponModelConfig = {
 	FolderName = "WeaponModels",
+	HiltAttachmentName = "SM_Hilt",
 
 	ModelByWeaponId = {
 		starter_weapon = "StarterSword",
@@ -33,67 +36,26 @@ local WeaponModelConfig = {
 		sea_dagger = "",
 	} :: { [string]: string },
 
-	-- Slightly larger than 0.45 — MC swords read better when chunky
-	DefaultScale = 0.55,
+	-- Uniform scale for free Toolbox swords (~5–7 stud → hand size)
+	DefaultScale = 0.52,
 
 	--[[
-		HoldMode:
-		  "minecraft" — blade from fist up/diagonal (with arm READY pose)
-		  "forward"   — classic sim side/forward hold
-		  "tool"      — free asset Tool.Grip
+		Rare per-MODEL overrides (Model.Name keys). Used only when auto-hilt
+		picks the wrong tip end. flipTip = reverse blade axis after Tool.Grip heuristic.
 	]]
-	HoldMode = "minecraft",
-
-	HoldTuneRight = CFrame.new(),
-	HoldTuneLeft = CFrame.new(),
-
-	-- Shared hilt: small factor = more blade "through" the hand (MC-like clip)
-	ForwardHiltFactor = 0.18,
-	ForwardRightAngles = Vector3.new(-90, 90, 0),
-	ForwardLeftAngles = Vector3.new(-90, -90, 0),
+	HiltOverrides = {
+		-- Example: GoldSword = { flipTip = true },
+	} :: { [string]: { flipTip: boolean? } },
 
 	--[[
-		Minecraft mode — WHERE TO TUNE (this file only):
-
-		  src/ReplicatedStorage/Shared/Config/WeaponModelConfig.lua
-
-		Blade direction is in **grip-attachment space** (not world):
-		  X = right of palm · Y = out of knuckles / “up” of grip · Z = into/out of palm
-		We point the mesh long axis (+Y on free swords) along MinecraftBladeDir*.
-
-		If tip goes INTO the torso → more +Y / less toward body (see values below).
-		If tip too vertical → add a bit of -Z (forward).
-		If tip too far from body → lower |X|.
+		Shared palm offset in hand-grip space (both hands). NOT hilt placement.
+		-Z ≈ forward of fist (Minecraft-like item sits slightly out of the hand).
 	]]
-	--[[
-		WHERE the palm sits on the mesh (fraction of longest axis from CENTER).
-		  0.12 ≈ mid-blade  (bad — “holding the edge”)
-		  0.40–0.48 ≈ hilt / pommel end (hold the HANDLE)
-		Tip is opposite that end along the long axis.
-	]]
-	MinecraftHiltFactor = 0.42,
+	PalmOffsetRight = Vector3.new(0.05, 0.02, -0.12),
+	PalmOffsetLeft = Vector3.new(-0.05, 0.02, -0.12),
 
-	--[[
-		Blade TIP direction from the fist (grip space):
-		  +X outward (right) · +Y up · -Z forward (out of knuckles)
-	]]
-	MinecraftBladeDirRight = Vector3.new(0.2, 0.9, -1.0),
-	MinecraftBladeDirLeft = Vector3.new(-0.2, 0.9, -1.0),
-
-	-- true = free mesh tip is opposite local +Y
-	MinecraftFlipBladeRight = true,
-	MinecraftFlipBladeLeft = false,
-
-	--[[
-		Push the whole sword in grip space (studs). Applied on the HAND side (C0)
-		so position is “in front of the fist”, not along the blade into the chest.
-		  -Z = forward  ·  ±X = away from torso
-	]]
-	MinecraftRightOffset = Vector3.new(0.1, 0.05, -0.55),
-	MinecraftLeftOffset = Vector3.new(-0.1, 0.05, -0.55),
-
-	MinecraftRightAngles = Vector3.new(0, 0, 0),
-	MinecraftLeftAngles = Vector3.new(0, 0, 0),
+	-- Fraction of half-length back from tip-axis end → sit on handle (0.85–0.95 = near pommel)
+	HiltEndBias = 0.92,
 }
 
 function WeaponModelConfig.GetModelName(weaponId: string): string?
@@ -108,6 +70,14 @@ end
 
 function WeaponModelConfig.HasModel(weaponId: string): boolean
 	return WeaponModelConfig.GetModelName(weaponId) ~= nil
+end
+
+function WeaponModelConfig.GetOverride(modelName: string): { flipTip: boolean? }?
+	local o = WeaponModelConfig.HiltOverrides[modelName]
+	if type(o) == "table" then
+		return o
+	end
+	return nil
 end
 
 return WeaponModelConfig
