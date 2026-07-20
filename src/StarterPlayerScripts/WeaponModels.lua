@@ -562,63 +562,96 @@ local function resolveIconOverride(clone: Model): any
 	return WeaponModelConfig.ResolveOverride(templateName)
 end
 
---- Camera only — safe to call twice (idempotent). Zoom via iconScaleMult.
-local function applyIconCamera(clone: Model, cam: Camera, extent: number)
-	local zoom = 1
-	local ov = resolveIconOverride(clone)
-	if ov and type(ov.iconScaleMult) == "number" and ov.iconScaleMult > 0 then
-		-- iconScaleMult = inventory camera zoom (closer = larger on screen).
-		-- Do NOT ScaleTo then move camera by extent — that cancels out.
-		zoom = ov.iconScaleMult
+local function getIconBbSize(clone: Model): (number, number)
+	-- Returns height (Y), width (max X/Z) for fit-to-slot. Falls back to attributes.
+	local hAttr = clone:GetAttribute("IconFitH")
+	local wAttr = clone:GetAttribute("IconFitW")
+	if type(hAttr) == "number" and type(wAttr) == "number" and hAttr > 0 and wAttr > 0 then
+		return hAttr, wAttr
 	end
-	local dist = math.clamp((extent * 1.65) / zoom, 0.9, 12)
-	-- Slight FOV pull-in for thin blades so they don't vanish as a hairline
-	cam.FieldOfView = if zoom > 1.01 then math.clamp(28 / math.sqrt(zoom), 18, 28) else 28
-	cam.CFrame = CFrame.new(Vector3.new(dist * 0.5, dist * 0.28, dist * 0.8), Vector3.zero)
+	local ok, _, size = pcall(function()
+		return clone:GetBoundingBox()
+	end)
+	if ok and typeof(size) == "Vector3" then
+		local h = math.max(size.Y, 0.2)
+		local w = math.max(size.X, size.Z, 0.05)
+		return h, w
+	end
+	return 1.5, 0.4
+end
+
+--[[
+	ONE icon standard: same camera math for every sword.
+	dist chosen so projected height ≈ IconFillHeight of the view,
+	and projected width ≥ IconMinWidth (thin blades pull camera closer).
+]]
+local function applyIconCamera(clone: Model, cam: Camera)
+	local height, width = getIconBbSize(clone)
+
+	local fov = WeaponModelConfig.IconFov or 28
+	local fillH = WeaponModelConfig.IconFillHeight or 0.80
+	local minW = WeaponModelConfig.IconMinWidth or 0.22
+	local dMin = WeaponModelConfig.IconDistMin or 0.55
+	local dMax = WeaponModelConfig.IconDistMax or 14
+
+	fillH = math.clamp(fillH, 0.35, 0.95)
+	minW = math.clamp(minW, 0.08, 0.6)
+
+	local halfTan = math.tan(math.rad(fov * 0.5))
+	if halfTan < 1e-4 then
+		halfTan = 0.25
+	end
+
+	-- full visible span at origin ≈ 2 * dist * tan(fov/2)  (square VF, aspect≈1)
+	-- want: height = fillH * span  →  dist = height / (2 * fillH * tan)
+	local distForHeight = height / (2 * fillH * halfTan)
+	-- want: width >= minW * span  →  dist <= width / (2 * minW * tan)
+	local distForWidth = width / (2 * minW * halfTan)
+
+	-- Closer of the two satisfies both (height target + min width floor)
+	local dist = math.min(distForHeight, distForWidth)
+	dist = math.clamp(dist, dMin, dMax)
+
+	local dir = WeaponModelConfig.IconCamDir
+	if typeof(dir) ~= "Vector3" or dir.Magnitude < 0.01 then
+		dir = Vector3.new(0.5, 0.28, 0.8)
+	end
+	dir = dir.Unit
+
+	cam.FieldOfView = fov
+	cam.CFrame = CFrame.new(dir * dist, Vector3.zero)
 end
 
 local function frameModelInViewport(clone: Model, cam: Camera)
-	-- Idempotent guard: re-entry used to re-apply invert/yaw and cancel them (X180 twice = 0)
+	-- Idempotent: re-entry only rebinds camera (never re-applies invert/yaw)
 	if clone:GetAttribute("IconFramed") == true then
-		local extent = 1.5
-		local okE, _, sizeE = pcall(function()
-			return clone:GetBoundingBox()
-		end)
-		if okE and typeof(sizeE) == "Vector3" then
-			extent = math.max(sizeE.X, sizeE.Y, sizeE.Z, 0.35)
-		end
-		applyIconCamera(clone, cam, extent)
+		applyIconCamera(clone, cam)
 		return
 	end
 
 	-- 1) Center at origin
-	local okBox, bbCf, bbSize = pcall(function()
+	local okBox, bbCf, _bbSize = pcall(function()
 		return clone:GetBoundingBox()
 	end)
-	local extent = 1.5
-	if okBox and typeof(bbCf) == "CFrame" and typeof(bbSize) == "Vector3" then
+	if okBox and typeof(bbCf) == "CFrame" then
 		pcall(function()
 			clone:TranslateBy(-(bbCf :: CFrame).Position)
 		end)
-		extent = math.max(bbSize.X, bbSize.Y, bbSize.Z, 0.35)
 	elseif clone.PrimaryPart then
 		pcall(function()
 			clone:TranslateBy(-clone.PrimaryPart.Position)
 		end)
-		local s = clone.PrimaryPart.Size
-		extent = math.max(s.X, s.Y, s.Z, 0.35)
 	end
 
-	-- 2) Tip-up (hiltEnd / Tool.Grip — not "higher end")
+	-- 2) Tip-up (hiltEnd / Tool.Grip)
 	pcall(function()
 		orientTipUp(clone)
 	end)
 
-	-- 3) iconInvert / iconEuler AFTER tip-up (hand grip does not use these)
+	-- 3) Rare flip overrides (inventory only)
 	local ov = resolveIconOverride(clone)
 	if ov then
 		if ov.iconInvert then
-			-- 180° around X → tip and handle swap in inventory
 			pcall(function()
 				clone:PivotTo(CFrame.Angles(math.rad(180), 0, 0) * clone:GetPivot())
 			end)
@@ -631,12 +664,13 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		end
 	end
 
-	-- 4) Showcase yaw
+	-- 4) Fixed showcase yaw (same for every sword)
+	local yaw = WeaponModelConfig.IconYawDeg or -35
 	pcall(function()
-		clone:PivotTo(CFrame.Angles(0, math.rad(-35), 0) * clone:GetPivot())
+		clone:PivotTo(CFrame.Angles(0, math.rad(yaw), 0) * clone:GetPivot())
 	end)
 
-	-- 5) Re-center only — NO global IconTargetExtent normalize (kept normal swords as before)
+	-- 5) Re-center + store fit dimensions
 	local ok2, bb2, size2 = pcall(function()
 		return clone:GetBoundingBox()
 	end)
@@ -646,13 +680,14 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		end)
 	end
 	if ok2 and typeof(size2) == "Vector3" then
-		extent = math.max(size2.X, size2.Y, size2.Z, 0.35)
+		clone:SetAttribute("IconFitH", math.max(size2.Y, 0.2))
+		clone:SetAttribute("IconFitW", math.max(size2.X, size2.Z, 0.05))
 	end
 
 	clone:SetAttribute("IconFramed", true)
 
-	-- 6) Camera: natural framing; thin swords only get zoom via iconScaleMult
-	applyIconCamera(clone, cam, extent)
+	-- 6) Fit-to-slot camera (one standard for all)
+	applyIconCamera(clone, cam)
 end
 
 --[[

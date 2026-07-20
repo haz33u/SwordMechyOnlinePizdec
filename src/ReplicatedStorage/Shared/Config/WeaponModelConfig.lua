@@ -5,6 +5,9 @@
 
 	IMPORTANT: hiltEnd is evaluated AFTER DefaultScale on the live part Size.
 	Do NOT store absolute stud offsets from unscaled Toolbox sizes (they break after ScaleTo).
+
+	Inventory icons use ONE fit-to-slot standard (see Icon* fields). Per-model
+	overrides are ONLY for grip (hiltEnd) and rare flip (iconInvert) — never size.
 ]]
 
 export type HiltOverride = {
@@ -17,12 +20,11 @@ export type HiltOverride = {
 	tipDirection: Vector3?,
 	tipSign: number?, -- legacy
 	flipTip: boolean?,
-	-- Inventory: flip 180° after tip-up (upside-down icons when hand is already OK)
+	-- Inventory only: 180° after tip-up when mesh still looks upside-down
 	iconInvert: boolean?,
 	iconEuler: Vector3?,
 	iconFlip: (boolean | string)?,
-	-- Inventory camera zoom only (1 = default; 1.8 = ~80% closer / larger on screen).
-	-- Does NOT scale the world mesh. Use for thin blades that look like hairlines.
+	-- DEPRECATED: size is global fit-to-slot. Kept optional for one-off debug.
 	iconScaleMult: number?,
 }
 
@@ -52,43 +54,47 @@ local WeaponModelConfig = {
 	} :: { [string]: string },
 
 	DefaultScale = 0.52,
-	-- Base scale (unused for fill; kept for compatibility)
+
+	--[[
+		ONE icon standard for every weapon ViewportFrame:
+		  tip up → fixed yaw → fit projected height + min width to the slot.
+		Thin blades get a closer camera automatically (min width rule).
+		Do not add per-sword zoom lists — change these knobs only.
+	]]
+	IconYawDeg = -35,
+	IconFov = 28,
+	-- Target: sword height fills this fraction of the vertical view
+	IconFillHeight = 0.80,
+	-- Target: blade width fills at least this fraction (stops hairline icons)
+	IconMinWidth = 0.22,
+	IconCamDir = Vector3.new(0.5, 0.28, 0.8),
+	IconDistMin = 0.55,
+	IconDistMax = 14,
+
+	-- Legacy fields (unused by fit-to-slot; kept so old requires don't nil)
 	IconScale = 1,
-	-- Disabled: global normalize fattened every icon. Thin blades use iconScaleMult zoom instead.
 	IconTargetExtent = 0,
 
 	HiltEndBias = 0.96,
 
 	--[[
-		hiltEnd: +1 = positive local long-axis end is HANDLE, -1 = negative end.
-		iconInvert: inventory-only 180° after tip-up (hand uses hiltEnd / Tool.Grip).
-		iconScaleMult: inventory camera zoom for thin meshes only.
+		hiltEnd: hand grip which geometric end is HANDLE (+1 / -1).
+		iconInvert: inventory flip only when tip-up still looks wrong.
 	]]
 	HiltOverrides = {
-		-- Old Sword: tip-up follows Tool.Grip; inventory still needs X-flip vs hand pose.
-		-- Root cause of "fixes never stuck": FillViewport deferred a second full frame
-		-- which applied iconInvert twice (360°) and cancelled it.
 		IronSword = { iconInvert = true },
-		-- Double-Edged
 		RubySword = { iconInvert = true },
-		-- Forest Sword (thin) — zoom so blade is visible
 		SupeSport = {
 			hiltEnd = -1,
 			hiltBias = 0.98,
 			iconInvert = true,
-			iconScaleMult = 1.85,
 		},
-		-- Ardite (very thin) — strongest zoom
 		KawashimaSword = {
 			hiltEnd = -1,
 			hiltBias = 0.98,
 			iconInvert = true,
-			iconScaleMult = 2.0,
 		},
-		-- Forest Shadow (thin profile)
-		LastSword = {
-			iconScaleMult = 1.7,
-		},
+		-- LastSword: grip tip-up only; size comes from global fit
 	} :: { [string]: HiltOverride },
 
 	PalmOffsetRight = Vector3.new(0.04, 0.08, 0.04),
