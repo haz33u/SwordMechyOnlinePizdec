@@ -376,7 +376,7 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 	rigid.Parent = handle
 end
 
---- Lightweight clone for UI icons only (no ScaleTo / hilt bake — more reliable in ViewportFrame).
+--- Lightweight clone for UI icons (no hilt bake). Resets world pose so RS pivot is not at -200,0,0.
 local function prepareIconClone(weaponId: string): Model?
 	local template = WeaponModels.GetTemplate(weaponId)
 	if not template then
@@ -385,7 +385,7 @@ local function prepareIconClone(weaponId: string): Model?
 	local clone = template:Clone()
 	clone.Name = "Icon_" .. weaponId
 
-	-- Flatten Tool wrappers into the model
+	-- Flatten Tool wrappers
 	local tools = {}
 	for _, d in clone:GetDescendants() do
 		if d:IsA("Tool") then
@@ -397,6 +397,20 @@ local function prepareIconClone(weaponId: string): Model?
 			ch.Parent = clone
 		end
 		tool:Destroy()
+	end
+
+	-- Flatten one level of nested Models (e.g. SupeSport → blue rose)
+	local nested = {}
+	for _, ch in clone:GetChildren() do
+		if ch:IsA("Model") then
+			table.insert(nested, ch)
+		end
+	end
+	for _, nest in nested do
+		for _, ch in nest:GetChildren() do
+			ch.Parent = clone
+		end
+		nest:Destroy()
 	end
 
 	for _, d in clone:GetDescendants() do
@@ -413,9 +427,10 @@ local function prepareIconClone(weaponId: string): Model?
 	clone.PrimaryPart = handle
 	weldLooseParts(handle, clone)
 
+	-- Unanchor briefly so we can re-pivot from RS world coords, then re-anchor
 	for _, d in clone:GetDescendants() do
 		if d:IsA("BasePart") then
-			d.Anchored = true
+			d.Anchored = false
 			d.CanCollide = false
 			d.CanQuery = false
 			d.CanTouch = false
@@ -424,8 +439,19 @@ local function prepareIconClone(weaponId: string): Model?
 		end
 	end
 
-	-- Soft icon scale (independent of hand DefaultScale)
-	local iconScale = WeaponModelConfig.IconScale or 0.65
+	-- CRITICAL: Place models often sit at huge WorldPivots; put pivot at origin first
+	pcall(function()
+		clone:PivotTo(CFrame.new())
+	end)
+
+	for _, d in clone:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = true
+		end
+	end
+
+	-- Optional icon scale
+	local iconScale = WeaponModelConfig.IconScale or 0.7
 	if type(iconScale) == "number" and iconScale > 0 and iconScale ~= 1 then
 		pcall(function()
 			(clone :: any):ScaleTo(iconScale)
@@ -433,6 +459,46 @@ local function prepareIconClone(weaponId: string): Model?
 	end
 
 	return clone
+end
+
+local function frameModelInViewport(clone: Model, cam: Camera)
+	-- 1) Bounding box center → origin (Place models often keep huge RS WorldPivots)
+	local okBox, bbCf, bbSize = pcall(function()
+		return clone:GetBoundingBox()
+	end)
+	local extent = 1.5
+	if okBox and typeof(bbCf) == "CFrame" and typeof(bbSize) == "Vector3" then
+		local center = (bbCf :: CFrame).Position
+		pcall(function()
+			clone:TranslateBy(-center)
+		end)
+		extent = math.max(bbSize.X, bbSize.Y, bbSize.Z, 0.4)
+	elseif clone.PrimaryPart then
+		pcall(function()
+			clone:TranslateBy(-clone.PrimaryPart.Position)
+		end)
+		local s = clone.PrimaryPart.Size
+		extent = math.max(s.X, s.Y, s.Z, 0.4)
+	end
+
+	-- 2) Showcase orientation at origin (hero 3/4 view)
+	local rot = CFrame.Angles(0, math.rad(-42), 0) * CFrame.Angles(math.rad(22), 0, 0)
+	pcall(function()
+		clone:PivotTo(rot)
+	end)
+
+	-- 3) Re-measure after pivot (size only)
+	local ok2, _cf2, size2 = pcall(function()
+		return clone:GetBoundingBox()
+	end)
+	if ok2 and typeof(size2) == "Vector3" then
+		extent = math.max(size2.X, size2.Y, size2.Z, 0.4)
+	end
+
+	-- 4) Camera always looks at origin
+	local dist = math.clamp(extent * 2.1, 1.5, 48)
+	cam.FieldOfView = 32
+	cam.CFrame = CFrame.new(Vector3.new(dist * 0.55, dist * 0.35, dist * 0.9), Vector3.zero)
 end
 
 --[[
@@ -458,17 +524,19 @@ function WeaponModels.FillViewport(parent: GuiObject, weaponId: string, zIndex: 
 
 		local vf = Instance.new("ViewportFrame")
 		vf.Name = "WeaponViewport"
-		vf.BackgroundTransparency = 1
+		vf.BackgroundColor3 = Color3.fromRGB(28, 28, 32)
+		vf.BackgroundTransparency = 0.15 -- slight plate so empty vs filled is obvious while tuning
 		vf.BorderSizePixel = 0
-		vf.Size = UDim2.fromScale(0.9, 0.9)
+		vf.Size = UDim2.fromScale(0.92, 0.92)
 		vf.Position = UDim2.fromScale(0.5, 0.5)
 		vf.AnchorPoint = Vector2.new(0.5, 0.5)
-		vf.ZIndex = zIndex or 36
+		vf.ZIndex = zIndex or 40
 		vf.Active = false
 		vf.Selectable = false
-		vf.Ambient = Color3.fromRGB(170, 175, 190)
-		vf.LightColor = Color3.fromRGB(255, 252, 245)
-		vf.LightDirection = Vector3.new(-0.55, -1, -0.45)
+		vf.Ambient = Color3.fromRGB(200, 200, 210)
+		vf.LightColor = Color3.fromRGB(255, 255, 255)
+		vf.LightDirection = Vector3.new(-1, -1, -0.5)
+		vf:SetAttribute("WeaponId", weaponId)
 		vf.Parent = parent
 
 		local world = Instance.new("WorldModel")
@@ -476,34 +544,23 @@ function WeaponModels.FillViewport(parent: GuiObject, weaponId: string, zIndex: 
 		world.Parent = vf
 		clone.Parent = world
 
-		local handle = clone.PrimaryPart
-		local extent = 1.2
-
-		-- Center bounding box at origin
-		local okBox, bbCf, bbSize = pcall(function()
-			return clone:GetBoundingBox()
-		end)
-		if okBox and typeof(bbCf) == "CFrame" and typeof(bbSize) == "Vector3" then
-			local center = (bbCf :: CFrame).Position
-			local pivot = clone:GetPivot()
-			clone:PivotTo(pivot * CFrame.new(pivot:PointToObjectSpace(center)).Inverse())
-			extent = math.max(bbSize.X, bbSize.Y, bbSize.Z, 0.35)
-		elseif handle then
-			local pivot = clone:GetPivot()
-			clone:PivotTo(pivot * CFrame.new(pivot:PointToObjectSpace(handle.Position)).Inverse())
-			extent = math.max(handle.Size.X, handle.Size.Y, handle.Size.Z, 0.35)
-		end
-
-		-- Showcase angle for inventory icons
-		clone:PivotTo(CFrame.Angles(0, math.rad(-38), 0) * CFrame.Angles(math.rad(20), 0, 0) * clone:GetPivot())
-
 		local cam = Instance.new("Camera")
 		cam.Name = "IconCamera"
 		cam.Parent = vf
 		vf.CurrentCamera = cam
-		local dist = extent * 1.7
-		cam.FieldOfView = 30
-		cam.CFrame = CFrame.new(Vector3.new(dist * 0.5, dist * 0.32, dist * 0.75), Vector3.zero)
+
+		frameModelInViewport(clone, cam)
+
+		-- Re-apply camera next frame (fixes rare first-frame empty ViewportFrame)
+		task.defer(function()
+			if not vf.Parent or not clone.Parent then
+				return
+			end
+			vf.CurrentCamera = cam
+			pcall(function()
+				frameModelInViewport(clone, cam)
+			end)
+		end)
 
 		return vf
 	end)
@@ -523,7 +580,7 @@ function WeaponModels.TryFillInventoryIcon(parent: GuiObject, weaponId: string, 
 	if not WeaponModels.HasVisual(weaponId) then
 		return false
 	end
-	local vf = WeaponModels.FillViewport(parent, weaponId, zIndex)
+	local vf = WeaponModels.FillViewport(parent, weaponId, zIndex or 40)
 	if vf then
 		return true
 	end

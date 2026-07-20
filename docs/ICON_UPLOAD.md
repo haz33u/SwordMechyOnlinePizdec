@@ -4,15 +4,18 @@
 
 ```
 WeaponModels has mesh for weaponId?
-  YES → ViewportFrame 3D (WeaponModels.TryFillInventoryIcon)  ← auto for new swords
-  NO  → IconConfig Decal PNG
-  empty → FallbackWeapon generic
+  YES → ViewportFrame 3D (WeaponModels.TryFillInventoryIcon)
+        fail → "?" glyph (not legacy Cristalix PNG)
+  NO  → IconConfig Decal / FallbackWeapon
 ```
 
-Код: `Inventory.lua` weapons tab · `WeaponModels.FillViewport`.  
-Viewport **Active=false** — клики слота (equip) не перехватываются.
+Код: `Inventory.lua` · `WeaponModels.FillViewport` (resets Place WorldPivot, frames camera).  
+Viewport **Active=false**, ZIndex 40 — клики equip ок.
 
-3D в руке = тот же mesh (`WeaponVisual`); иконка = превью того же asset.
+### Debug
+- Success: slot shows 3D sword (slight dark plate behind mesh while tuning).  
+- Fail: `?` + Output `[WeaponModels] 3D icon failed for <id>`.  
+- Old pink/grey PNGs only if `IconConfig.PreferLegacyDecals = true`.
 
 ---
 

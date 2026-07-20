@@ -1202,15 +1202,25 @@ function Inventory.Bind(
 				local used3d = false
 				if hasMesh then
 					local ok3d, res3d = pcall(function()
-						return WeaponModels.TryFillInventoryIcon(btn, w.id, 36)
+						return WeaponModels.TryFillInventoryIcon(btn, w.id, 40)
 					end)
 					used3d = ok3d and res3d == true
 					if not used3d then
 						warn("[Inventory] 3D icon failed for", w.id, "ok=", ok3d, "res=", res3d)
+						local fail = Instance.new("TextLabel")
+						fail.Name = "IconFail"
+						fail.BackgroundTransparency = 1
+						fail.Size = UDim2.fromScale(1, 1)
+						fail.Font = Enum.Font.Arcade
+						fail.TextSize = 18
+						fail.TextColor3 = TD
+						fail.Text = "?"
+						fail.ZIndex = 40
+						fail.Active = false
+						fail.Parent = btn
 					end
 				end
-				if not used3d then
-					-- Never show wrong legacy art when a mesh exists but viewport failed
+				if not used3d and not hasMesh then
 					local img = Instance.new("ImageLabel")
 					img.Name = "Icon"
 					img.BackgroundTransparency = 1
@@ -1221,11 +1231,7 @@ function Inventory.Bind(
 					img.ScaleType = Enum.ScaleType.Fit
 					img.ZIndex = 36
 					img.Active = false
-					if hasMesh then
-						img.Image = "" -- empty; rarity stroke still shows slot
-					else
-						img.Image = IconConfig.GetWeaponImage(w.id)
-					end
+					img.Image = IconConfig.GetWeaponImage(w.id)
 					img.Parent = btn
 				end
 
