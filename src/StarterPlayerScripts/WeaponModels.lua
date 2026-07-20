@@ -144,11 +144,21 @@ function WeaponModels.PrepareClone(weaponId: string): (Model?, CFrame)
 	end
 
 	local scale = WeaponModelConfig.DefaultScale
-	if type(scale) == "number" and scale > 0 and scale ~= 1 and clone.ScaleTo then
-		pcall(function()
-			clone:ScaleTo(scale)
+	if type(scale) == "number" and scale > 0 and scale ~= 1 then
+		local okScale = pcall(function()
+			(clone :: any):ScaleTo(scale)
 		end)
+		if okScale then
+			-- Tool.Grip was authored pre-scale — shrink translation with the mesh
+			local p = grip.Position * scale
+			grip = CFrame.new(p) * (grip - grip.Position)
+		end
 	end
+
+	-- Stash scaled grip for attach
+	clone:SetAttribute("SM_GripPX", grip.X)
+	clone:SetAttribute("SM_GripPY", grip.Y)
+	clone:SetAttribute("SM_GripPZ", grip.Z)
 
 	return clone, grip
 end
@@ -176,7 +186,16 @@ local function findHand(char: Model, side: string): BasePart?
 	return nil
 end
 
---- Weld prepared model to character hand using original Tool.Grip (C1).
+local function findHandGripAttachment(hand: BasePart, side: string): Attachment?
+	local name = if side == "left" then "LeftGripAttachment" else "RightGripAttachment"
+	local a = hand:FindFirstChild(name)
+	if a and a:IsA("Attachment") then
+		return a
+	end
+	return nil
+end
+
+--- Weld prepared model into R15 palm (grip attachment + tuned hold).
 function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip: CFrame)
 	local handle = model.PrimaryPart
 	if not handle then
@@ -188,20 +207,42 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 	end
 
 	for _, c in handle:GetChildren() do
-		if c:IsA("Weld") or c:IsA("WeldConstraint") or c:IsA("RigidConstraint") or c:IsA("Motor6D") then
-			if c.Name == "SM_WeaponWeld" or (c:IsA("Weld") and (c :: Weld).Part0 == hand) then
-				c:Destroy()
-			end
+		if c.Name == "SM_WeaponWeld" then
+			c:Destroy()
+		elseif c:IsA("Weld") and (c :: Weld).Part0 == hand then
+			c:Destroy()
 		end
+	end
+
+	local gripAtt = findHandGripAttachment(hand, side)
+	local isLeft = side == "left"
+	local tune = if isLeft then WeaponModelConfig.HoldTuneLeft else WeaponModelConfig.HoldTuneRight
+	if typeof(tune) ~= "CFrame" then
+		tune = CFrame.new()
+	end
+	local palm = if isLeft then WeaponModelConfig.PalmHoldLeft else WeaponModelConfig.PalmHoldRight
+	if typeof(palm) ~= "CFrame" then
+		palm = CFrame.new()
 	end
 
 	local weld = Instance.new("Weld")
 	weld.Name = "SM_WeaponWeld"
 	weld.Part0 = hand
 	weld.Part1 = handle
-	-- Match classic Tool equip: Grip is handle offset relative to hand
-	weld.C0 = CFrame.new()
-	weld.C1 = grip
+	-- C0: sit at the avatar grip attachment (true palm point on R15)
+	if gripAtt then
+		weld.C0 = gripAtt.CFrame
+	else
+		weld.C0 = CFrame.new(0, -0.1, 0)
+	end
+
+	-- C1: free Tool.Grip is often R6-scale and puts the blade through the torso.
+	-- PreferPalmHold uses a calibrated palm pose; optional grip blend for fine tune.
+	if WeaponModelConfig.PreferPalmHold then
+		weld.C1 = palm * tune
+	else
+		weld.C1 = grip * tune
+	end
 	weld.Parent = handle
 end
 

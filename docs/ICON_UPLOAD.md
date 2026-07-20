@@ -1,82 +1,102 @@
-# Как загрузить иконки мечей в игру (Roblox)
+# Как создавать иконки мечей (IconConfig)
 
-Исходники: `art/icons/weapons/W1_*.png` (15 штук Loc1).  
-Код смотрит на: `Shared.Config.IconConfig.WeaponAssetIds`.
+Инвентарь **не** рисует 3D-модель в слоте.  
+Слот = **картинка** `ImageLabel` → `IconConfig.GetWeaponImage(weaponId)`.
 
-Rojo **не** превращает PNG в рабочие `Image` для published place — нужен **upload → rbxassetid**.
+3D в `ReplicatedStorage.WeaponModels` = только **в руке** (`WeaponVisual`).
 
 ---
 
-## Способ A — Asset Manager (рекомендуется)
+## Цепочка
 
-1. Открой Place в **Roblox Studio**
-2. **View → Asset Manager** (или Toolbox → Creations → Images)
-3. **Bulk Import** / перетащи все `W1_*.png` из  
-   `D:\RobloxProject\САО БРАТ\art\icons\weapons\`
-4. Дождись загрузки (статус Completed)
-5. ПКМ по картинке → **Copy Id** (число)
-6. Вставь в `src/ReplicatedStorage/Shared/Config/IconConfig.lua`:
+```
+1. PNG 256–512 (прозрачный фон, меч по центру)
+2. Studio → Asset Manager → Bulk Import (Images)
+3. ПКМ → Copy Id  →  rbxassetid://ЧИСЛО
+4. Вписать в IconConfig.WeaponAssetIds[weaponId]
+5. git commit + push  (тиммейтам upload не нужен)
+6. rojo serve → Play → слот Weapons
+```
+
+Rojo **не** публикует PNG сам — только `rbxassetid` из git.
+
+---
+
+## Куда писать id
+
+Файл: `src/ReplicatedStorage/Shared/Config/IconConfig.lua`
+
+Ключ = **dump weapon id** (snake_case), не имя модели Studio:
+
+| weaponId (код / IconConfig) | Model в WeaponModels (3D) | Иконка сейчас |
+|-----------------------------|---------------------------|---------------|
+| `starter_weapon` | StarterSword | ✅ rbxassetid |
+| `old_sword` | IronSword | ✅ |
+| `bone_dagger` | PixelIronSword | ✅ |
+| `wooden_mace` | GoldSword | ✅ |
+| `double_edged_sword` | RubySword | ✅ |
+| `forest_spirit_staff` | DiamondSword | ✅ |
+| `ardite` | *(позже)* | ✅ (старый арт) |
+| `forest_sword` | *(позже)* | ✅ |
+| `forest_shadow` | *(позже)* | ✅ |
+| Loc2 `pirate_*` … | — | ❌ пусто → FallbackWeapon |
+
+Новый меч:
 
 ```lua
 WeaponAssetIds = {
-  W1_C1 = "rbxassetid://1234567890", -- id из Studio
-  W1_C2 = "rbxassetid://...",
+  starter_weapon = "rbxassetid://116982617153585",
   -- ...
+  my_new_blade = "rbxassetid://НОВОЕ_ЧИСЛО",
 }
 ```
 
-7. `git pull` у тиммейтов → `rojo serve` → Connect  
-8. Play → окно **Мечи** — иконки на карточках
-
-Имя файла = id меча (`W1_R1.png` → ключ `W1_R1`).
+И **тот же** id в `WeaponConfig` + (если есть 3D) `WeaponModelConfig.ModelByWeaponId`.
 
 ---
 
-## Способ B — один файл через Game Explorer
+## Как сделать PNG
 
-1. В Explorer: `ReplicatedStorage` → добавить Folder `DevIcons` (опционально)
-2. Import each image as Decal/Image  
-3. Всё равно скопируй **asset id** в `IconConfig` — клиент читает только оттуда
+| Способ | Как | Когда |
+|--------|-----|--------|
+| **A. AI / Figma** | Промпт в `docs/FIGMA_PROMPTS.md`, стиль как `art/icons/weapons/` | красивый единый стиль |
+| **B. Скрин 3D** | Studio: модель на нейтральном фоне → скрин → вырезать фон | 1:1 с мечом в руке |
+| **C. Viewport export** | Не в runtime-слоте; оффлайн скрин Viewport | ок для черновика |
+| **D. Fallback** | Пустой id → `FallbackWeapon` generic | временно |
+
+Рекомендация для **новых 6 free-мечей**:  
+старые Loc1 иконки в IconConfig **уже есть** (Cristalix-style арт).  
+Если хочешь иконку **точно как free mesh** — сделай скрин каждого из `WeaponModels` и перезапиши id.
+
+Имя файла удобно = weaponId: `starter_weapon.png`, `old_sword.png`, …
+
+---
+
+## Studio upload (детали)
+
+1. Place открыт, ты/группа = владелец  
+2. **View → Asset Manager → Images → Bulk Import**  
+3. Дождись Completed  
+4. Copy Id → в `IconConfig`  
+5. Permissions: asset usable in experiences (обычно авто для creator)
 
 ---
 
 ## Проверка
 
-| Шаг | Ожидание |
-|-----|----------|
-| `IconConfig.WeaponAssetIds.W1_C1` пустой | generic меч (fallback) |
-| id заполнен | твоя PNG на карточке |
-| Publish place | иконки видны всем (asset must be **Creator of place** / group) |
-
-Если id с **другого** аккаунта — поставь permissions **Use in experiences** / загружай с владельца place.
-
----
-
-## Список Loc1 для paste
-
-```
-W1_C1  W1_C2
-W1_U1  W1_U2
-W1_R1  W1_R2
-W1_E1  W1_E2
-W1_L1  W1_L2
-W1_M1  W1_M2
-W1_S1  W1_S2
-W1_X1
-```
-
-Переген PNG:
-```powershell
-powershell -ExecutionPolicy Bypass -File tools/gen_loc1_sword_icons.ps1
-```
+| Симптом | Причина |
+|---------|---------|
+| Generic меч в слоте | id пустой / опечатка в ключе |
+| Картинка не грузится | id чужого аккаунта / не Image |
+| 3D в руке ок, слот другой | нормально: разные пайплайны |
+| Rojo Connect, id в git, слот пустой | Ctrl+Shift+R rejoin / asset moderation |
 
 ---
 
-## Почему не «просто Rojo»?
+## Не путать
 
-| Rojo sync | Картинки |
-|-----------|----------|
-| `.lua` → scripts | да |
-| `.png` → live Image для всех игроков | **нет** (нужен CDN asset id) |
-
-После upload id **в git** — тиммейтам upload не нужен, только pull.
+| Вещь | Где |
+|------|-----|
+| Иконка UI | `IconConfig` + Decal |
+| 3D в руке | `WeaponModels` + `WeaponModelConfig` |
+| Баланс / дроп | `WeaponConfig` |

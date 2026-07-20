@@ -5,34 +5,26 @@
 	Place folder (not in git):
 	  ReplicatedStorage.WeaponModels.<ModelName>
 
-	Naming: Studio models are free-set PascalCase (StarterSword, …).
-	Code weapon ids stay dump snake_case (starter_weapon, …).
-
-	Ladder Loc1 (weak → strong). First 6 models wired; last 3 empty until art added.
+	Hold: free Tools use huge meshes + R6-ish Tool.Grip. We scale down and apply
+	HoldTune so the handle sits in the R15 palm instead of through the torso.
 ]]
 
 local WeaponModelConfig = {
 	FolderName = "WeaponModels",
 
-	--[[
-		weaponId → Model.Name in WeaponModels
-		Empty / missing = placeholder Part in WeaponVisual + IconConfig image in UI.
-	]]
 	ModelByWeaponId = {
-		-- Loc1 rarity ladder bottom → top (6 free models, 2026-07-20)
-		starter_weapon = "StarterSword", -- wooden / weakest
+		-- Loc1 rarity ladder bottom → top (6 free models)
+		starter_weapon = "StarterSword",
 		old_sword = "IronSword",
 		bone_dagger = "PixelIronSword",
-		wooden_mace = "GoldSword", -- Rare
-		double_edged_sword = "RubySword", -- Epic
-		forest_spirit_staff = "DiamondSword", -- Epic (best of current 6)
+		wooden_mace = "GoldSword",
+		double_edged_sword = "RubySword",
+		forest_spirit_staff = "DiamondSword",
 
-		-- Loc1 top 3 — add models later
 		ardite = "",
 		forest_sword = "",
 		forest_shadow = "",
 
-		-- Loc2 — later
 		pirate_hook = "",
 		pirate_hammer = "",
 		pirate_saber = "",
@@ -43,8 +35,24 @@ local WeaponModelConfig = {
 		sea_dagger = "",
 	} :: { [string]: string },
 
-	-- Optional uniform scale after clone (1 = keep free-asset size). Tune in Play.
-	DefaultScale = 0.85,
+	-- Free Toolbox swords are ~5–7 studs; ~0.45 keeps them hand-sized on R15.
+	DefaultScale = 0.45,
+
+	--[[
+		Extra CFrame on top of (scaled) Tool.Grip when welding to hand.
+		Tune in Play if a blade still clips the arm.
+		Right: slight pitch so blade sits along the forearm / up.
+	]]
+	HoldTuneRight = CFrame.new(0, 0.05, 0.02) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0)),
+	HoldTuneLeft = CFrame.new(0, 0.05, 0.02) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0)),
+
+	-- If Tool.Grip still looks broken for a set, ignore it and use palm hold only.
+	PreferPalmHold = true,
+
+	-- Palm hold when PreferPalmHold (or no usable grip). Attachment-local CFrame.
+	-- Handle long axis is usually +Y on free swords; grip near bottom of mesh.
+	PalmHoldRight = CFrame.new(0, 0.9, 0) * CFrame.Angles(math.rad(90), math.rad(90), 0),
+	PalmHoldLeft = CFrame.new(0, 0.9, 0) * CFrame.Angles(math.rad(90), math.rad(-90), 0),
 }
 
 function WeaponModelConfig.GetModelName(weaponId: string): string?

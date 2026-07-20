@@ -160,8 +160,8 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Тема | Статус |
 |------|--------|
 | Loc2–4 мобы/контент | stubs |
-| Реальные 3D модели мечей | **6 Loc1 wired** on character via `WeaponModels` + `WeaponModelConfig` (Place). Inventory slots use **IconConfig** Decals (Viewport removed — broke equip UI) |
-| Иконки weapons | Loc1 dump ids have IconConfig rbxassetids; Loc2 empty → fallback |
+| Реальные 3D модели мечей | **6 Loc1** on character; grip = R15 palm hold + scale 0.45 (free Tools no longer clip torso). Offhand gets procedural left-arm swing |
+| Иконки weapons | Loc1 IconConfig Decals; pipeline `docs/ICON_UPLOAD.md`. Loc2 empty → fallback |
 | Character Upgrade icons | ✅ `UpgradeIconConfig` + **§8.1** (strength/bag/speed/crit/multicrit/coin/close/**shop**) |
 | Quest + CoinShop 1–5 icons | ✅ `UiIconConfig` + **§8.3** |
 | Питомцы / ауры / кейсы economy | keys + CaseResult (v0.5.4); roster still thin |

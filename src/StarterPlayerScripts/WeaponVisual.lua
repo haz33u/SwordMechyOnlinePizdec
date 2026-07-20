@@ -27,13 +27,17 @@ local lastPlayedId: string? = nil
 
 -- Minecraft-style procedural swing state
 local mcShoulder: Motor6D? = nil
+local mcLeftShoulder: Motor6D? = nil
 local mcWaist: Motor6D? = nil
 local mcSwinging = false
 local mcT = 0
+local offSwinging = false
+local offT = 0
 local mcBound: RBXScriptConnection? = nil
 local mcSlash: Sound? = nil
 
 local READY = CFrame.Angles(math.rad(-90), 0, math.rad(-15))
+local READY_LEFT = CFrame.Angles(math.rad(-90), 0, math.rad(15))
 
 local RARITY_COLOR = {
 	Common = Color3.fromRGB(170, 175, 185),
@@ -239,15 +243,22 @@ end
 
 local mcWarnedNoShoulder = false
 
---- R15: Motor6D "RightShoulder" (often under RightUpperArm). R6: "Right Shoulder" under Torso.
-local function findRightShoulder(char: Model): Motor6D?
-	-- direct common paths first
-	local paths = {
-		{ "RightUpperArm", "RightShoulder" },
-		{ "UpperTorso", "RightShoulder" },
-		{ "Torso", "Right Shoulder" },
-		{ "Torso", "RightShoulder" },
-	}
+--- R15 shoulder motors (Right / Left). R6: "Right Shoulder" under Torso.
+local function findShoulder(char: Model, side: string): Motor6D?
+	local isLeft = side == "left"
+	local paths = if isLeft
+		then {
+			{ "LeftUpperArm", "LeftShoulder" },
+			{ "UpperTorso", "LeftShoulder" },
+			{ "Torso", "Left Shoulder" },
+			{ "Torso", "LeftShoulder" },
+		}
+		else {
+			{ "RightUpperArm", "RightShoulder" },
+			{ "UpperTorso", "RightShoulder" },
+			{ "Torso", "Right Shoulder" },
+			{ "Torso", "RightShoulder" },
+		}
 	for _, p in paths do
 		local a = char:FindFirstChild(p[1])
 		if a then
@@ -257,24 +268,31 @@ local function findRightShoulder(char: Model): Motor6D?
 			end
 		end
 	end
-	-- scan all motors
+	local want = if isLeft then "leftshoulder" else "rightshoulder"
+	local wantSp = if isLeft then "left shoulder" else "right shoulder"
+	local arm = if isLeft then "LeftUpperArm" else "RightUpperArm"
+	local arm6 = if isLeft then "Left Arm" else "Right Arm"
 	for _, d in char:GetDescendants() do
 		if d:IsA("Motor6D") then
 			local n = string.lower(d.Name)
-			if n == "rightshoulder" or n == "right shoulder" then
+			if n == want or n == wantSp then
 				return d
 			end
 			local p1 = d.Part1
 			local p0 = d.Part0
 			if p1 and p0 then
 				local n1, n0 = p1.Name, p0.Name
-				if (n1 == "RightUpperArm" or n1 == "Right Arm") and (n0 == "UpperTorso" or n0 == "Torso") then
+				if (n1 == arm or n1 == arm6) and (n0 == "UpperTorso" or n0 == "Torso") then
 					return d
 				end
 			end
 		end
 	end
 	return nil
+end
+
+local function findRightShoulder(char: Model): Motor6D?
+	return findShoulder(char, "right")
 end
 
 local function findWaist(char: Model): Motor6D?
@@ -322,6 +340,9 @@ local function setupMcJoints(char: Model): boolean
 	if not mcShoulder or not mcShoulder.Parent then
 		mcShoulder = findRightShoulder(char)
 	end
+	if not mcLeftShoulder or not mcLeftShoulder.Parent then
+		mcLeftShoulder = findShoulder(char, "left")
+	end
 	if not mcWaist or not mcWaist.Parent then
 		mcWaist = findWaist(char)
 	end
@@ -354,39 +375,84 @@ local function bindMcRender()
 		return
 	end
 	mcBound = RunService.RenderStepped:Connect(function(dt)
-		if not mcShoulder or not mcShoulder.Parent then
-			return
-		end
 		local cfg = AnimationConfig.MinecraftSwing or {}
 		local swingTime = cfg.SwingTime or 0.3
 		local raisePower = cfg.RaisePower or 1.2
 		local rollPower = cfg.RollPower or 0.4
 		local swingDir = cfg.SwingDir or -1
 
-		if mcSwinging then
-			mcT += dt / swingTime
-			if mcT >= 1 then
-				mcSwinging = false
-				mcT = 0
-				mcShoulder.Transform = READY
-				if mcWaist and mcWaist.Parent then
-					mcWaist.Transform = CFrame.new()
+		-- Right arm: full MC swing when UseMinecraftSwing, else idle ready only if MC mode
+		if mcShoulder and mcShoulder.Parent then
+			if mcSwinging then
+				mcT += dt / swingTime
+				if mcT >= 1 then
+					mcSwinging = false
+					mcT = 0
+					mcShoulder.Transform = READY
+					if mcWaist and mcWaist.Parent then
+						mcWaist.Transform = CFrame.new()
+					end
+				else
+					local raise, roll, body = mcCurve(mcT)
+					mcShoulder.Transform = READY
+						* CFrame.Angles(swingDir * raise * raisePower, body * 2, -roll * rollPower)
+					if mcWaist and mcWaist.Parent then
+						mcWaist.Transform = CFrame.Angles(0, body, 0)
+					end
 				end
-				return
-			end
-			local raise, roll, body = mcCurve(mcT)
-			mcShoulder.Transform = READY
-				* CFrame.Angles(swingDir * raise * raisePower, body * 2, -roll * rollPower)
-			if mcWaist and mcWaist.Parent then
-				mcWaist.Transform = CFrame.Angles(0, body, 0)
-			end
-		else
-			-- hold ready pose while equipped swords exist
-			if mainModel and mainModel.Parent then
+			elseif AnimationConfig.UseMinecraftSwing and mainModel and mainModel.Parent then
 				mcShoulder.Transform = READY
 			end
 		end
+
+		-- Left arm: offhand always gets a procedural mirror swing (published anim is right-only)
+		if mcLeftShoulder and mcLeftShoulder.Parent then
+			if offSwinging then
+				offT += dt / swingTime
+				if offT >= 1 then
+					offSwinging = false
+					offT = 0
+					if offModel and offModel.Parent then
+						mcLeftShoulder.Transform = READY_LEFT
+					else
+						mcLeftShoulder.Transform = CFrame.new()
+					end
+				else
+					local raise, roll, body = mcCurve(offT)
+					-- Mirror roll / yaw for left side
+					mcLeftShoulder.Transform = READY_LEFT
+						* CFrame.Angles(swingDir * raise * raisePower, -body * 2, roll * rollPower)
+				end
+			elseif offModel and offModel.Parent then
+				mcLeftShoulder.Transform = READY_LEFT
+			else
+				mcLeftShoulder.Transform = CFrame.new()
+			end
+		end
 	end)
+end
+
+--- Offhand slash: published AttackMain only moves the right arm.
+local function playOffhandSwing()
+	if not offModel or not offModel.Parent then
+		return
+	end
+	if offSwinging then
+		return
+	end
+	local char = player.Character
+	if not char then
+		return
+	end
+	if not mcLeftShoulder or not mcLeftShoulder.Parent then
+		mcLeftShoulder = findShoulder(char, "left")
+	end
+	if not mcLeftShoulder then
+		return
+	end
+	bindMcRender()
+	offSwinging = true
+	offT = 0
 end
 
 local function playMinecraftSwing()
@@ -462,6 +528,7 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 
 	if AnimationConfig.UseMinecraftSwing then
 		playMinecraftSwing()
+		playOffhandSwing()
 		return
 	end
 
@@ -469,6 +536,12 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	if not char then
 		return
 	end
+	-- Ensure left shoulder resolved for dual-wield even in published-anim mode
+	if not mcLeftShoulder or not mcLeftShoulder.Parent then
+		mcLeftShoulder = findShoulder(char, "left")
+	end
+	bindMcRender()
+
 	local animator = getAnimator(char)
 	if not animator then
 		warn("[WeaponVisual] no Animator")
@@ -489,9 +562,10 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 		end
 	end
 	track:Play(0.05, 1, 1.15)
+	playOffhandSwing()
 	if lastPlayedId ~= id then
 		lastPlayedId = id
-		print("[WeaponVisual] PlayAttack →", id)
+		print("[WeaponVisual] PlayAttack →", id, if offModel then "+offhandSwing" else "")
 	end
 end
 
@@ -507,7 +581,10 @@ function WeaponVisual.Init(getProfile: () -> any?)
 		lastPlayedId = nil
 		mcSwinging = false
 		mcT = 0
+		offSwinging = false
+		offT = 0
 		mcShoulder = nil
+		mcLeftShoulder = nil
 		mcWaist = nil
 		mcWarnedNoShoulder = false
 		task.spawn(function()
@@ -519,11 +596,10 @@ function WeaponVisual.Init(getProfile: () -> any?)
 				end
 				task.wait(0.15)
 			end
-			if AnimationConfig.UseMinecraftSwing then
-				bindMcRender()
-				if mcShoulder then
-					print("[WeaponVisual] MC joints ready:", mcShoulder:GetFullName())
-				end
+			-- Always bind so offhand ready pose + swing work in published-anim mode
+			bindMcRender()
+			if mcShoulder then
+				print("[WeaponVisual] joints ready R:", mcShoulder:GetFullName(), "L:", mcLeftShoulder and mcLeftShoulder:GetFullName() or "nil")
 			end
 			WeaponVisual.Refresh(getProfile())
 		end)
@@ -533,8 +609,10 @@ function WeaponVisual.Init(getProfile: () -> any?)
 			folder = nil
 			tracks = {}
 			mcShoulder = nil
+			mcLeftShoulder = nil
 			mcWaist = nil
 			mcSwinging = false
+			offSwinging = false
 		end)
 	end
 
