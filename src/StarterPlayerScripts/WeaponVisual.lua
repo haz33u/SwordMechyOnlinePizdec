@@ -24,7 +24,7 @@ local offModel: Model? = nil
 local tracks: { [string]: AnimationTrack } = {}
 local lastPlay = 0
 local lastPlayedId: string? = nil
-local attackSeq = 0 -- cancel pending left swing if a new attack starts
+local comboBusy = false -- true while right→left combo is running (spam LMB ignored)
 
 -- Minecraft-style procedural swing state
 local mcShoulder: Motor6D? = nil
@@ -439,13 +439,14 @@ local function bindMcRender()
 end
 
 --- Offhand slash: published AttackOffhand anim, else procedural left shoulder.
-local function playOffhandSwing()
+local function playOffhandSwing(): number
+	-- returns approximate duration of left attack (for combo lock)
 	if not offModel or not offModel.Parent then
-		return
+		return 0
 	end
 	local char = player.Character
 	if not char then
-		return
+		return 0
 	end
 
 	local offId = AnimationConfig.GetAttackOffhandId()
@@ -454,74 +455,62 @@ local function playOffhandSwing()
 		if animator then
 			local track = loadTrack(animator, offId)
 			if track then
+				-- Stop right track so left anim is visible (sequential combo)
+				local rightId = AnimationConfig.GetAttackId(false)
+				local rightT = tracks[rightId]
+				if rightT and rightT.IsPlaying then
+					pcall(function()
+						rightT:Stop(0.08)
+					end)
+				end
 				track:Play(0.05, 1, 1.15)
-				print("[WeaponVisual] PlayAttack offhand →", offId)
-				return
+				local len = track.Length
+				if len <= 0 then
+					-- Length sometimes 0 until first frames
+					task.wait()
+					len = track.Length
+				end
+				local dur = if len > 0 then len / 1.15 else 0.35
+				print("[WeaponVisual] PlayAttack LEFT →", offId, "len=", len)
+				return dur
 			end
 		end
 		warn("[WeaponVisual] offhand anim failed, procedural fallback:", offId)
 	end
 
 	if offSwinging then
-		return
+		return 0.28
 	end
 	if not mcLeftShoulder or not mcLeftShoulder.Parent then
 		mcLeftShoulder = findShoulder(char, "left")
 	end
 	if not mcLeftShoulder then
-		return
+		return 0
 	end
 	bindMcRender()
 	offSwinging = true
 	offT = 0
+	local cfg = AnimationConfig.MinecraftSwing or {}
+	return cfg.SwingTime or 0.28
 end
 
---- After right finishes (or MC right swing ends), play left. Cancelled if a new attack starts.
-local function scheduleOffhandAfterRight(seq: number, rightTrack: AnimationTrack?, char: Model)
-	if not offModel or not offModel.Parent then
-		return
+local function rightAttackDuration(rightTrack: AnimationTrack?): number
+	local speed = 1.15
+	if rightTrack then
+		local len = rightTrack.Length
+		if len <= 0 then
+			task.wait()
+			len = rightTrack.Length
+		end
+		if len > 0 then
+			return math.clamp(len / speed, 0.12, 1.2)
+		end
 	end
-	task.spawn(function()
-		local speed = 1.15
-		local maxWait = 0.45
-		if rightTrack and rightTrack.Length > 0 then
-			maxWait = (rightTrack.Length / speed) + 0.08
-		elseif AnimationConfig.UseMinecraftSwing then
-			local cfg = AnimationConfig.MinecraftSwing or {}
-			maxWait = (cfg.SwingTime or 0.28) + 0.05
-		end
-		local t0 = os.clock()
-		if rightTrack then
-			while rightTrack.IsPlaying and (os.clock() - t0) < maxWait and char.Parent do
-				if seq ~= attackSeq then
-					return
-				end
-				task.wait()
-			end
-		else
-			while (os.clock() - t0) < maxWait and char.Parent do
-				if seq ~= attackSeq then
-					return
-				end
-				if AnimationConfig.UseMinecraftSwing and not mcSwinging then
-					break
-				end
-				task.wait()
-			end
-		end
-		-- tiny gap so it reads as two hits: right → left
-		task.wait(0.04)
-		if seq ~= attackSeq then
-			return
-		end
-		if player.Character ~= char then
-			return
-		end
-		if not offModel or not offModel.Parent then
-			return
-		end
-		playOffhandSwing()
-	end)
+	if AnimationConfig.UseMinecraftSwing then
+		local cfg = AnimationConfig.MinecraftSwing or {}
+		return cfg.SwingTime or 0.28
+	end
+	return 0.32 -- safe default stagger if Length unknown
 end
 
 local function playMinecraftSwing()
@@ -589,28 +578,45 @@ local function loadTrack(animator: Animator, id: string): AnimationTrack?
 end
 
 function WeaponVisual.PlayAttack(_forceAlt: boolean?)
+	-- Dual combo lock: spam LMB used to cancel the scheduled LEFT swing forever
+	if comboBusy then
+		return
+	end
 	local now = os.clock()
 	if now - lastPlay < 0.08 then
 		return
 	end
 	lastPlay = now
-	attackSeq += 1
-	local seq = attackSeq
-
-	-- Minecraft path: right procedural first, then left after swing ends
-	if AnimationConfig.UseMinecraftSwing then
-		playMinecraftSwing()
-		local char = player.Character
-		if char and offModel then
-			scheduleOffhandAfterRight(seq, nil, char)
-		end
-		return
-	end
 
 	local char = player.Character
 	if not char then
 		return
 	end
+
+	local hasOff = offModel ~= nil and offModel.Parent ~= nil
+	local offId = AnimationConfig.GetAttackOffhandId()
+
+	-- Minecraft path: right procedural, then left
+	if AnimationConfig.UseMinecraftSwing then
+		if hasOff then
+			comboBusy = true
+		end
+		playMinecraftSwing()
+		if hasOff then
+			task.spawn(function()
+				task.wait(rightAttackDuration(nil))
+				if player.Character ~= char then
+					comboBusy = false
+					return
+				end
+				local leftDur = playOffhandSwing()
+				task.wait(math.max(leftDur, 0.15))
+				comboBusy = false
+			end)
+		end
+		return
+	end
+
 	if not mcLeftShoulder or not mcLeftShoulder.Parent then
 		mcLeftShoulder = findShoulder(char, "left")
 	end
@@ -626,13 +632,12 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	end
 
 	local id = AnimationConfig.GetAttackId(false)
-	local offId = AnimationConfig.GetAttackOffhandId()
 	local track = loadTrack(animator, id)
 	if not track then
 		warn("[WeaponVisual] PlayAttack FAILED — id", id)
 		return
 	end
-	-- Stop lingering attack tracks (new combo starts clean)
+
 	for _, t in tracks do
 		if t.IsPlaying then
 			pcall(function()
@@ -640,19 +645,39 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 			end)
 		end
 	end
-	-- 1) Right hand first
+
+	-- 1) RIGHT first
 	track:Play(0.05, 1, 1.15)
-	-- 2) Left hand after right finishes (only if offhand equipped)
-	if offModel then
-		scheduleOffhandAfterRight(seq, track, char)
+	print("[WeaponVisual] PlayAttack RIGHT →", id, "offhand=", hasOff, "offId=", offId)
+
+	if not hasOff then
+		if lastPlayedId ~= id then
+			lastPlayedId = id
+		end
+		return
 	end
+
+	-- 2) LEFT after right duration — locked so spam cannot cancel
+	comboBusy = true
+	task.spawn(function()
+		local waitRight = rightAttackDuration(track)
+		task.wait(waitRight)
+		if player.Character ~= char then
+			comboBusy = false
+			return
+		end
+		if not offModel or not offModel.Parent then
+			print("[WeaponVisual] skip LEFT — no offhand equipped")
+			comboBusy = false
+			return
+		end
+		local leftDur = playOffhandSwing()
+		task.wait(math.max(leftDur, 0.12))
+		comboBusy = false
+	end)
+
 	if lastPlayedId ~= id then
 		lastPlayedId = id
-		print(
-			"[WeaponVisual] PlayAttack →",
-			id,
-			if offModel and offId ~= "" then ("then " .. offId) elseif offModel then "then offhandProc" else ""
-		)
 	end
 end
 
@@ -671,7 +696,7 @@ function WeaponVisual.Init(getProfile: () -> any?)
 	local function onChar(char: Model)
 		tracks = {}
 		lastPlayedId = nil
-		attackSeq += 1 -- cancel any pending left-hand follow-up
+		comboBusy = false
 		mcSwinging = false
 		mcT = 0
 		offSwinging = false
