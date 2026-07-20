@@ -48,21 +48,27 @@ local WeaponModelConfig = {
 	} :: { [string]: { flipTip: boolean? } },
 
 	--[[
-		Shared palm offset in hand-grip space (both hands). NOT per-mesh hilt.
-		  X = side · Y = along knuckles / "up" of grip · Z = into-out of palm
-		Slight +Y and small Z push = hilt sits in the palm (clips hand a bit = OK).
+		Palm OFFSET only (position in hand-grip space). Do NOT use this to spin the blade.
+		  X = side · Y = along grip · Z = into palm
 	]]
-	-- 2026-07-20: pull hilts slightly into palm, less outward X
-	PalmOffsetRight = Vector3.new(0.02, 0.06, 0.05),
-	PalmOffsetLeft = Vector3.new(-0.02, 0.06, 0.05),
+	PalmOffsetRight = Vector3.new(0.04, 0.08, 0.04),
+	PalmOffsetLeft = Vector3.new(-0.04, 0.08, 0.04),
 
 	--[[
-		Palm tilt (degrees, CFrame.Angles(rx, ry, rz) on palm attachment).
-		  X = pitch · Y = yaw · Z = roll around grip
-		Top-down shot 214526: flat of blade faced up (slap) → Z ~±90 so EDGE leads the cut.
+		PalmTilt — KEEP NEAR ZERO. Pitch/yaw of the whole hand attach.
+		Wrong knob for “edge vs flat”; that is BladeRoll below.
 	]]
-	PalmTiltRight = Vector3.new(6, 12, -90),
-	PalmTiltLeft = Vector3.new(6, -12, 90),
+	PalmTiltRight = Vector3.zero,
+	PalmTiltLeft = Vector3.zero,
+
+	--[[
+		BladeRoll — THE correct knob for “режет / плашмя”.
+		Degrees around the SWORD long axis (SM_Hilt local +Y = tip).
+		  +90 / -90 ≈ edge-on (cut) for most free meshes; flip sign if still flat.
+		This is CFrame.Angles(0, rad(BladeRoll), 0) on the hilt attachment — NOT palm XYZ.
+	]]
+	BladeRollRight = 90,
+	BladeRollLeft = -90,
 
 	-- Fraction of half-length back from tip-axis end → sit on handle (0.85–0.95 = near pommel)
 	HiltEndBias = 0.92,

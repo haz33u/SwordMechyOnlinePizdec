@@ -61,13 +61,15 @@ Algorithm:
 |-------|------|
 | `ModelByWeaponId` | weaponId → Model name |
 | `DefaultScale` | free sword size |
-| `PalmOffsetRight/Left` | shared palm position (Y/Z into hand) |
-| `PalmTiltRight/Left` | degrees — roll (Z) fixes “flat plank”; pitch (X) tip angle |
+| `PalmOffsetRight/Left` | position only (into palm) |
+| `PalmTiltRight/Left` | keep ~0 — do **not** use for edge vs flat |
+| **`BladeRollRight/Left`** | **rotate around sword long axis** (cut vs slap). Default ±90 |
 | `HiltEndBias` | how close to pommel end |
 | `HiltOverrides.GoldSword.flipTip` | only if auto tip is inverted |
 
-**Tune cutting angle:** only `PalmTilt*` / `PalmOffset*` in config — applies to all swords.
-**Tune one sword’s handle point:** move that model’s `SM_Hilt` only.
+**Edge vs flat (режет / плашмя):** change **`BladeRollRight` / `BladeRollLeft`** only (±90 flip if wrong way).  
+**One sword’s handle point:** move that model’s `SM_Hilt` only.  
+**Do not** keep tweaking PalmTilt XYZ for blade spin — that was the wrong knob.
 
 ---
 

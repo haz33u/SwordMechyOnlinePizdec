@@ -328,12 +328,18 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 		gripAtt.Parent = hand
 	end
 
-	-- Palm offset + tilt (cutting angle). Clean previous offsets on this hand.
+	-- Clean previous attach helpers
 	for _, c in hand:GetChildren() do
 		if c:IsA("Attachment") and c.Name == "SM_PalmOffset" then
 			c:Destroy()
 		end
 	end
+	for _, c in handle:GetChildren() do
+		if c:IsA("Attachment") and c.Name == "SM_HiltRoll" then
+			c:Destroy()
+		end
+	end
+
 	local isLeft = side == "left"
 	local off = if isLeft then WeaponModelConfig.PalmOffsetLeft else WeaponModelConfig.PalmOffsetRight
 	if typeof(off) ~= "Vector3" then
@@ -343,19 +349,30 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 	if typeof(tilt) ~= "Vector3" then
 		tilt = Vector3.zero
 	end
-	-- Position first, then roll/pitch so blade is edge-on (not a flat board)
-	local palmCf = gripAtt.CFrame
-		* CFrame.new(off)
-		* CFrame.Angles(math.rad(tilt.X), math.rad(tilt.Y), math.rad(tilt.Z))
+	local bladeRoll = if isLeft then WeaponModelConfig.BladeRollLeft else WeaponModelConfig.BladeRollRight
+	if type(bladeRoll) ~= "number" then
+		bladeRoll = 0
+	end
+
+	-- 1) Palm: position (+ optional tiny tilt). NOT for spinning the blade flat/edge.
 	local palmAtt = Instance.new("Attachment")
 	palmAtt.Name = "SM_PalmOffset"
-	palmAtt.CFrame = palmCf
+	palmAtt.CFrame = gripAtt.CFrame
+		* CFrame.new(off)
+		* CFrame.Angles(math.rad(tilt.X), math.rad(tilt.Y), math.rad(tilt.Z))
 	palmAtt.Parent = hand
+
+	-- 2) Blade roll around SWORD axis: SM_Hilt +Y = tip → rotate around local Y only.
+	--    Studio “Rotate” around the blade = this slider (BladeRollRight / Left).
+	local hiltRoll = Instance.new("Attachment")
+	hiltRoll.Name = "SM_HiltRoll"
+	hiltRoll.CFrame = hilt.CFrame * CFrame.Angles(0, math.rad(bladeRoll), 0)
+	hiltRoll.Parent = handle
 
 	local rigid = Instance.new("RigidConstraint")
 	rigid.Name = "SM_WeaponRigid"
 	rigid.Attachment0 = palmAtt
-	rigid.Attachment1 = hilt
+	rigid.Attachment1 = hiltRoll
 	rigid.Parent = handle
 end
 
