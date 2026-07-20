@@ -568,9 +568,17 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 	end
 
 	local target = WeaponModelConfig.IconTargetExtent or 2.4
+	-- Per-model boost (thin swords look larger in slot)
+	local templateName2 = clone:GetAttribute("IconTemplateName")
+	if type(templateName2) == "string" then
+		local ov2 = WeaponModelConfig.ResolveOverride(templateName2)
+		if ov2 and type(ov2.iconScaleMult) == "number" and ov2.iconScaleMult > 0 then
+			target = target * ov2.iconScaleMult
+		end
+	end
 	if extent > 0.01 and math.abs(extent - target) > 0.05 then
 		local factor = target / extent
-		factor = math.clamp(factor, 0.25, 4)
+		factor = math.clamp(factor, 0.25, 5)
 		pcall(function()
 			local cur = 1
 			pcall(function()
@@ -594,10 +602,10 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		end
 	end
 
-	-- 6) Camera
-	local dist = math.clamp(extent * 1.85, 1.8, 12)
-	cam.FieldOfView = 30
-	cam.CFrame = CFrame.new(Vector3.new(dist * 0.5, dist * 0.3, dist * 0.85), Vector3.zero)
+	-- 6) Camera (slightly closer = bigger on screen)
+	local dist = math.clamp(extent * 1.65, 1.5, 10)
+	cam.FieldOfView = 28
+	cam.CFrame = CFrame.new(Vector3.new(dist * 0.5, dist * 0.28, dist * 0.8), Vector3.zero)
 end
 
 --[[

@@ -21,6 +21,8 @@ export type HiltOverride = {
 	iconInvert: boolean?,
 	iconEuler: Vector3?,
 	iconFlip: (boolean | string)?,
+	-- Extra size in inventory only (1 = default fill; 1.4 = 40% larger)
+	iconScaleMult: number?,
 }
 
 local WeaponModelConfig = {
@@ -61,18 +63,26 @@ local WeaponModelConfig = {
 		Screenshot 231434: previous +offsets still blade → use -1 for Ardite/Forest.
 	]]
 	HiltOverrides = {
-		-- Hand OK after hiltEnd fix; icons still upside-down → iconInvert
-		IronSword = { iconInvert = true }, -- Old Sword
-		RubySword = { iconInvert = true }, -- Double-Edged
+		-- Old Sword: hand OK; icon still wrong after X-invert → flip Y instead
+		IronSword = {
+			iconInvert = false,
+			iconEuler = Vector3.new(0, 180, 0),
+		},
+		-- Double-Edged: was fixed with X invert
+		RubySword = { iconInvert = true },
+		-- Forest Sword: hand OK; larger + upright icon
 		SupeSport = {
 			hiltEnd = -1,
 			hiltBias = 0.98,
-			iconInvert = true, -- Forest Sword
+			iconInvert = true,
+			iconScaleMult = 1.45,
 		},
+		-- Ardite: hand OK; larger + upright icon
 		KawashimaSword = {
 			hiltEnd = -1,
 			hiltBias = 0.98,
-			iconInvert = true, -- Ardite
+			iconInvert = true,
+			iconScaleMult = 1.45,
 		},
 	} :: { [string]: HiltOverride },
 
