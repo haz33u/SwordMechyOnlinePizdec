@@ -47,7 +47,12 @@ Inserted free Creator Store models into `PetModels` for Loc1 testing (replace la
 
 - **World follow + inventory 3D slots** use the same meshes in `PetModels`.  
 - No separate PNG required for testing.  
-- Final polish: optional 512² `Image` uploads later (like weapons).  
+- Final polish: optional 512² `Image` uploads later (like weapons).
+
+### Uniform size
+
+All pets are scaled so max bounding-box extent ≈ `PetModelConfig.TargetExtent` (**2.0** studs).  
+Free pack models no longer spawn 4× character size.  
 
 ## DEV
 

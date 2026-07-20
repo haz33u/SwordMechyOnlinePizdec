@@ -27,6 +27,7 @@ local GamePassConfig = require(Shared.Config.GamePassConfig)
 local WorldConfig = require(Shared.Config.WorldConfig)
 local WeaponModels = require(script.Parent.WeaponModels)
 local PetVisual = require(script.Parent.PetVisual)
+local AuraVisual = require(script.Parent.AuraVisual)
 
 local Inventory = {}
 
@@ -1497,8 +1498,14 @@ function Inventory.Bind(
 				local edge = rarityBorder(rar)
 				local btn = makeItemSlot(scroll, i, edge)
 				btn.Name = "A_" .. tostring(a.uid)
-				local glyph = lbl(btn, "✨", UDim2.fromScale(1, 0.75), UDim2.fromScale(0, 0.08), 28, TW, 37)
-				glyph.TextXAlignment = Enum.TextXAlignment.Center
+				local used3d = false
+				pcall(function()
+					used3d = AuraVisual.TryFillInventoryIcon(btn, a.id, 40)
+				end)
+				if not used3d then
+					local glyph = lbl(btn, "✨", UDim2.fromScale(1, 0.75), UDim2.fromScale(0, 0.08), 28, TW, 37)
+					glyph.TextXAlignment = Enum.TextXAlignment.Center
+				end
 				if active then
 					local dot = Instance.new("Frame")
 					dot.Size = UDim2.fromOffset(8, 8)
@@ -1513,8 +1520,15 @@ function Inventory.Bind(
 					setTooltip(
 						name,
 						rar,
-						def and string.format("Power: +%d%%", math.floor(def.powerPct or 0)) or nil,
-						active and "● Active" or nil,
+						def
+								and string.format(
+									"Power +%d%% · Dmg +%d%% · Coins +%d%%",
+									math.floor(def.powerPct or 0),
+									math.floor(def.damagePct or 0),
+									math.floor(def.coinPct or 0)
+								)
+							or nil,
+						active and "● Active (click to unequip)" or "Click to equip",
 						edge
 					)
 				end)
@@ -1527,9 +1541,12 @@ function Inventory.Bind(
 				emptySlot(scroll, i)
 			end
 			local row = actionsRow()
-			keybind(row, 1, "LMB", "Equip aura")
+			keybind(row, 1, "LMB", "Equip / toggle")
 			actBtn(row, "Open aura case", Color3.fromRGB(80, 50, 120), 2, function()
 				openModal("case", { kind = "aura" })
+			end)
+			actBtn(row, "Unequip", Color3.fromRGB(90, 50, 50), 3, function()
+				Net.UnequipAura()
 			end)
 
 		---------------------------------------------------------------- RELICS

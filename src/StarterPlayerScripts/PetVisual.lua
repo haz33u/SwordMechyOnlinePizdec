@@ -124,11 +124,37 @@ local function clonePetModel(petId: string): Model?
 			if handle then
 				clone.PrimaryPart = handle
 			end
-			local scale = PetModelConfig.DefaultScale or 0.55
-			if type(scale) == "number" and scale > 0 and scale ~= 1 then
+			local pre = PetModelConfig.DefaultScale or 1
+			if type(pre) == "number" and pre > 0 and pre ~= 1 then
 				pcall(function()
-					(clone :: any):ScaleTo(scale)
+					(clone :: any):ScaleTo(pre)
 				end)
+			end
+			-- Uniform size: force max bbox ≈ TargetExtent (all pets like slime scale)
+			local target = PetModelConfig.TargetExtent or 2.0
+			if type(target) == "number" and target > 0.1 then
+				local okBb, _cf, size = pcall(function()
+					return clone:GetBoundingBox()
+				end)
+				if okBb and typeof(size) == "Vector3" then
+					local maxDim = math.max(size.X, size.Y, size.Z, 0.05)
+					local factor = target / maxDim
+					local fMin = PetModelConfig.TargetExtentMinFactor or 0.04
+					local fMax = PetModelConfig.TargetExtentMaxFactor or 25
+					factor = math.clamp(factor, fMin, fMax)
+					if math.abs(factor - 1) > 0.02 then
+						pcall(function()
+							local cur = 1
+							pcall(function()
+								cur = (clone :: any):GetScale()
+							end)
+							if type(cur) ~= "number" or cur <= 0 then
+								cur = 1
+							end
+							(clone :: any):ScaleTo(cur * factor)
+						end)
+					end
+				end
 			end
 			sanitizeParts(clone)
 			return clone

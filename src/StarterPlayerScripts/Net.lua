@@ -81,6 +81,10 @@ function Net.EquipAura(uid: string)
 	Net.Event("EquipAura"):FireServer(uid)
 end
 
+function Net.UnequipAura()
+	Net.Event("UnequipAura"):FireServer()
+end
+
 function Net.ClaimQuest(id: string)
 	Net.Event("ClaimQuest"):FireServer(id)
 end

@@ -15,6 +15,9 @@ function AuraService.Init()
 	Remotes.Event("EquipAura").OnServerEvent:Connect(function(player, auraUid)
 		AuraService.Equip(player, auraUid)
 	end)
+	Remotes.Event("UnequipAura").OnServerEvent:Connect(function(player)
+		AuraService.Unequip(player)
+	end)
 end
 
 local function fireCaseFail(player: Player, reason: string, needKeys: number?, needCoins: number?)
@@ -112,12 +115,18 @@ function AuraService.Open(player: Player)
 	ProfileService.Push(player)
 end
 
-function AuraService.Equip(player: Player, auraUid: string)
+function AuraService.Equip(player: Player, auraUid: any)
 	local profile = ProfileService.Get(player)
-	if not profile then
+	if not profile or type(auraUid) ~= "string" then
 		return
 	end
-	for _, a in profile.auras do
+	-- toggle off if already equipped
+	if profile.equippedAura == auraUid then
+		profile.equippedAura = nil
+		ProfileService.Push(player)
+		return
+	end
+	for _, a in profile.auras or {} do
 		if a.uid == auraUid then
 			profile.equippedAura = auraUid
 			ProfileService.Push(player)
@@ -126,11 +135,33 @@ function AuraService.Equip(player: Player, auraUid: string)
 	end
 end
 
+function AuraService.Unequip(player: Player)
+	local profile = ProfileService.Get(player)
+	if not profile then
+		return
+	end
+	profile.equippedAura = nil
+	ProfileService.Push(player)
+end
+
 function AuraService.GrantKeys(profile: any, amount: number)
 	if amount <= 0 then
 		return
 	end
 	profile.auraKeys = (profile.auraKeys or 0) + amount
+end
+
+function AuraService.GrantAura(player: Player, profile: any, auraId: string): string?
+	if not AuraConfig.Get(auraId) then
+		return nil
+	end
+	profile.auras = profile.auras or {}
+	local auid = ProfileService.NewUid()
+	table.insert(profile.auras, { uid = auid, id = auraId, level = 1 })
+	if not profile.equippedAura then
+		profile.equippedAura = auid
+	end
+	return auid
 end
 
 return AuraService

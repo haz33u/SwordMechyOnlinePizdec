@@ -6,7 +6,12 @@
 
 local PetModelConfig = {
 	FolderName = "PetModels",
-	DefaultScale = 0.55,
+	-- Optional pre-scale before normalize (usually leave 1)
+	DefaultScale = 1,
+	-- ALL pets forced to this max bbox extent (studs) — slime-sized, no giants
+	TargetExtent = 2.0,
+	TargetExtentMinFactor = 0.04,
+	TargetExtentMaxFactor = 25,
 
 	-- Behind player (studs, local HRP space: +Z = behind LookVector on Roblox)
 	FollowBack = 4.2,

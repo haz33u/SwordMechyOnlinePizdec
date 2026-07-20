@@ -11,11 +11,13 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local GameConfig = require(Shared.Config.GameConfig)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local PetConfig = require(Shared.Config.PetConfig)
+local AuraConfig = require(Shared.Config.AuraConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 local LootService = require(script.Parent.LootService)
 local CombatService = require(script.Parent.CombatService)
 local PetService = require(script.Parent.PetService)
+local AuraService = require(script.Parent.AuraService)
 
 local DebugService = {}
 
@@ -117,6 +119,31 @@ function DebugService.Run(player: Player, action: string, payload: any)
 			notify(player, "Dev: pet " .. ((def and def.name) or id), "green")
 		else
 			notify(player, "Dev: pet grant failed (bag full?)", "red")
+		end
+		ProfileService.Push(player)
+		return
+	end
+
+	if action == "giveAllAuras" then
+		local n = 0
+		for id in AuraConfig.Auras do
+			if AuraService.GrantAura(player, profile, id) then
+				n += 1
+			end
+		end
+		notify(player, string.format("Dev: granted %d auras", n), "green")
+		ProfileService.Push(player)
+		return
+	end
+
+	if action == "giveAura" then
+		local id = if type(payload) == "string" then payload else "A_E1"
+		local uid = AuraService.GrantAura(player, profile, id)
+		if uid then
+			local def = AuraConfig.Get(id)
+			notify(player, "Dev: aura " .. ((def and def.name) or id), "green")
+		else
+			notify(player, "Dev: aura grant failed", "red")
 		end
 		ProfileService.Push(player)
 		return
