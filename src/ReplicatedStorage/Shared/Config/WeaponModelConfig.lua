@@ -65,25 +65,32 @@ local WeaponModelConfig = {
 		If tip too vertical → add a bit of -Z (forward).
 		If tip too far from body → lower |X|.
 	]]
-	MinecraftHiltFactor = 0.12,
+	--[[
+		WHERE the palm sits on the mesh (fraction of longest axis from CENTER).
+		  0.12 ≈ mid-blade  (bad — “holding the edge”)
+		  0.40–0.48 ≈ hilt / pommel end (hold the HANDLE)
+		Tip is opposite that end along the long axis.
+	]]
+	MinecraftHiltFactor = 0.42,
 
 	--[[
-		Blade tip direction from the fist (grip space):
-		  +X outward (right hand) · +Y up · -Z forward (out of knuckles)
-		2026-07-20 tune from screenshots:
-		  - Right was tip-BACKWARD → FlipBladeRight + more -Z
-		  - Left needs a bit more forward (-Z)
+		Blade TIP direction from the fist (grip space):
+		  +X outward (right) · +Y up · -Z forward (out of knuckles)
 	]]
-	MinecraftBladeDirRight = Vector3.new(0.22, 0.95, -0.95),
-	MinecraftBladeDirLeft = Vector3.new(-0.22, 0.95, -0.95),
+	MinecraftBladeDirRight = Vector3.new(0.2, 0.9, -1.0),
+	MinecraftBladeDirLeft = Vector3.new(-0.2, 0.9, -1.0),
 
-	-- true = free mesh tip is opposite local +Y (right hand was pommel-forward)
+	-- true = free mesh tip is opposite local +Y
 	MinecraftFlipBladeRight = true,
 	MinecraftFlipBladeLeft = false,
 
-	-- Nudge fist: X away from chest, Z negative = forward
-	MinecraftRightOffset = Vector3.new(0.14, 0.0, -0.18),
-	MinecraftLeftOffset = Vector3.new(-0.14, 0.0, -0.22),
+	--[[
+		Push the whole sword in grip space (studs). Applied on the HAND side (C0)
+		so position is “in front of the fist”, not along the blade into the chest.
+		  -Z = forward  ·  ±X = away from torso
+	]]
+	MinecraftRightOffset = Vector3.new(0.1, 0.05, -0.55),
+	MinecraftLeftOffset = Vector3.new(-0.1, 0.05, -0.55),
 
 	MinecraftRightAngles = Vector3.new(0, 0, 0),
 	MinecraftLeftAngles = Vector3.new(0, 0, 0),

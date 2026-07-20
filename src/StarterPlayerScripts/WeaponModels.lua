@@ -231,44 +231,45 @@ local function forwardHoldC1(handle: BasePart, side: string): CFrame
 end
 
 --[[
-	Minecraft third-person item hold:
-	  Arm raised (READY). Point free-sword long axis (+Y) along BladeDir in grip space
-	  so the tip goes UP/OUT — not into the chest (see screenshot 193836).
+	Minecraft hold C1 (weapon-local):
+	  - Orient long axis so TIP follows BladeDir
+	  - Place PALM on the HILT (pommel end), not mid-blade
+	    localHilt = -meshTip * (long * HiltFactor)
 ]]
 local function minecraftHoldC1(handle: BasePart, side: string): CFrame
 	local size = handle.Size
 	local long = math.max(size.X, size.Y, size.Z)
-	local hiltFactor = WeaponModelConfig.MinecraftHiltFactor or 0.12
-	local hilt = long * hiltFactor
+	local hiltFactor = WeaponModelConfig.MinecraftHiltFactor or 0.42
 	local isLeft = side == "left"
 
 	local dir = if isLeft
-		then (WeaponModelConfig.MinecraftBladeDirLeft or Vector3.new(-0.25, 1, -0.55))
-		else (WeaponModelConfig.MinecraftBladeDirRight or Vector3.new(0.25, 1, -0.55))
+		then (WeaponModelConfig.MinecraftBladeDirLeft or Vector3.new(-0.2, 0.9, -1))
+		else (WeaponModelConfig.MinecraftBladeDirRight or Vector3.new(0.2, 0.9, -1))
 	if dir.Magnitude < 1e-3 then
-		dir = Vector3.new(0, 1, -0.4)
+		dir = Vector3.new(0, 1, -0.5)
 	end
 	dir = dir.Unit
 
-	local off = if isLeft
-		then (WeaponModelConfig.MinecraftLeftOffset or Vector3.zero)
-		else (WeaponModelConfig.MinecraftRightOffset or Vector3.zero)
-
-	-- Free meshes: tip usually +Y; FlipBlade* reverses (tip was backward on right hand)
 	local flip = if isLeft then WeaponModelConfig.MinecraftFlipBladeLeft else WeaponModelConfig.MinecraftFlipBladeRight
 	local meshTip = if flip then -Vector3.yAxis else Vector3.yAxis
 
-	-- C1:Inverse() maps meshTip → dir  ⇒  C1 maps dir → meshTip
+	-- C1 maps dir → meshTip; palm sits on hilt (opposite tip along long axis)
 	local rot = mapVector(dir, meshTip)
-	-- Hilt offset along mesh tip axis (into the handle)
-	local hiltOffset = meshTip * hilt
-	return CFrame.new(off) * CFrame.new(hiltOffset) * rot
+	local localHilt = -meshTip * (long * hiltFactor)
+	return rot * CFrame.new(localHilt)
+end
+
+local function minecraftHandOffset(side: string): CFrame
+	local off = if side == "left"
+		then (WeaponModelConfig.MinecraftLeftOffset or Vector3.zero)
+		else (WeaponModelConfig.MinecraftRightOffset or Vector3.zero)
+	return CFrame.new(off)
 end
 
 --[[
 	Weld like Roblox Tools on R15:
-	  Part0 = Hand, C0 = Right/LeftGripAttachment.CFrame
-	  Part1 = Handle, C1 = hold pose
+	  Part0 = Hand, C0 = GripAttachment * forward nudge
+	  Part1 = Handle, C1 = hilt + blade orientation
 ]]
 function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip: CFrame)
 	local handle = model.PrimaryPart
@@ -300,13 +301,16 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 	weld.Part0 = hand
 	weld.Part1 = handle
 
-	if gripAtt then
-		weld.C0 = gripAtt.CFrame
+	local mode = WeaponModelConfig.HoldMode or "minecraft"
+
+	-- C0: palm point + push sword FORWARD of the fist (not into torso)
+	local baseC0 = if gripAtt then gripAtt.CFrame else CFrame.new(0, -0.15, 0)
+	if mode == "minecraft" then
+		weld.C0 = baseC0 * minecraftHandOffset(side)
 	else
-		weld.C0 = CFrame.new(0, -0.15, 0)
+		weld.C0 = baseC0
 	end
 
-	local mode = WeaponModelConfig.HoldMode or "minecraft"
 	local c1: CFrame
 	local hasToolGrip = typeof(grip) == "CFrame" and grip.Position.Magnitude > 0.05
 	if mode == "tool" and hasToolGrip then
@@ -314,7 +318,6 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 	elseif mode == "forward" then
 		c1 = forwardHoldC1(handle, side)
 	else
-		-- default minecraft
 		c1 = minecraftHoldC1(handle, side)
 	end
 	weld.C1 = c1 * tune
