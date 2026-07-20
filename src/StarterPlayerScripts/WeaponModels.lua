@@ -115,7 +115,8 @@ end
 
 --[[
 	Bake / ensure SM_Hilt on PrimaryPart.
-	Always recomputes CFrame so HiltOverrides.flipTip applies even if Place already has SM_Hilt.
+	Always recomputes CFrame (Place SM_Hilt + overrides tipSign / hiltBias / flipTip).
+	Palm sits at HANDLE end; tip along +Y of attachment.
 ]]
 function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, modelName: string?): Attachment?
 	local handle = model.PrimaryPart or findHandlePart(model)
@@ -144,37 +145,27 @@ function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, mode
 
 	local axis, length = longestLocalAxis(handle)
 	local half = length * 0.5
-	local bias = WeaponModelConfig.HiltEndBias or 0.92
-	local along = half * bias
+
+	local ov = WeaponModelConfig.ResolveOverride(modelName or model.Name)
 
 	local tipSign = 1
-	if toolGrip and toolGrip.Position.Magnitude > 0.01 then
-		local g = toolGrip.Position
-		local proj = g:Dot(axis)
-		if proj > 0 then
-			tipSign = -1
-		else
-			tipSign = 1
-		end
-	end
-
-	local overrideName = modelName or model.Name
-	overrideName = string.gsub(overrideName, "^Weapon_", "")
-	-- Map weaponId-style names to Model.Name via reverse lookup not needed if modelName is template.Name
-	local ov = WeaponModelConfig.GetOverride(overrideName)
-	if not ov then
-		-- clone name may be Weapon_ardite — resolve template name from config
-		local WeaponConfig = require(Shared.Config.WeaponConfig)
-		local wid = string.gsub(model.Name, "^Weapon_", "")
-		local mapped = WeaponModelConfig.GetModelName(wid)
-		if mapped then
-			ov = WeaponModelConfig.GetOverride(mapped)
-		end
+	if ov and type(ov.tipSign) == "number" and ov.tipSign ~= 0 then
+		tipSign = if ov.tipSign > 0 then 1 else -1
+	elseif toolGrip and toolGrip.Position.Magnitude > 0.01 then
+		local proj = toolGrip.Position:Dot(axis)
+		tipSign = if proj > 0 then -1 else 1
 	end
 	if ov and ov.flipTip then
 		tipSign = -tipSign
 	end
 
+	local bias = WeaponModelConfig.HiltEndBias or 0.94
+	if ov and type(ov.hiltBias) == "number" then
+		bias = math.clamp(ov.hiltBias, 0.55, 0.995)
+	end
+	local along = half * bias
+
+	-- Palm on handle end (opposite tip)
 	local tipAxis = axis * tipSign
 	local hiltLocal = -tipAxis * along
 	local tip = tipAxis.Unit
@@ -188,6 +179,7 @@ function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, mode
 	att.CFrame = CFrame.fromMatrix(hiltLocal, right, tip, back)
 
 	model:SetAttribute("SM_HiltBaked", true)
+	model:SetAttribute("SM_TipSign", tipSign)
 	return att
 end
 
@@ -458,19 +450,27 @@ local function prepareIconClone(weaponId: string): Model?
 		end)
 	end
 
-	-- Per-model icon tip flip (hand uses flipTip; icon uses iconFlip axis)
-	local ov = WeaponModelConfig.GetOverride(template.Name)
-	if ov and ov.iconFlip then
-		local axis = ov.iconFlip
-		local rot = CFrame.Angles(math.rad(180), 0, 0) -- default X
-		if axis == "y" then
-			rot = CFrame.Angles(0, math.rad(180), 0)
-		elseif axis == "z" then
-			rot = CFrame.Angles(0, 0, math.rad(180))
+	-- Per-model icon orientation (iconEuler preferred; iconFlip legacy)
+	local ov = WeaponModelConfig.ResolveOverride(template.Name)
+	if ov then
+		local rot: CFrame? = nil
+		if typeof(ov.iconEuler) == "Vector3" then
+			local e = ov.iconEuler
+			rot = CFrame.Angles(math.rad(e.X), math.rad(e.Y), math.rad(e.Z))
+		elseif ov.iconFlip then
+			local axis = ov.iconFlip
+			rot = CFrame.Angles(math.rad(180), 0, 0)
+			if axis == "y" then
+				rot = CFrame.Angles(0, math.rad(180), 0)
+			elseif axis == "z" then
+				rot = CFrame.Angles(0, 0, math.rad(180))
+			end
 		end
-		pcall(function()
-			clone:PivotTo(rot * clone:GetPivot())
-		end)
+		if rot then
+			pcall(function()
+				clone:PivotTo(rot * clone:GetPivot())
+			end)
+		end
 	end
 
 	return clone
