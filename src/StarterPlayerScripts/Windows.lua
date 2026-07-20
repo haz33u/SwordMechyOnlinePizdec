@@ -132,12 +132,20 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				root.Position = UDim2.fromScale(0.5, 0.5)
 				root.AnchorPoint = Vector2.new(0.5, 0.5)
 			elseif id == "character" then
-				-- Figma MainCharacterUpgrader ~900×336
+				-- Character Upgrade: large readable panel (~1240×500 @1080p)
 				local cam = workspace.CurrentCamera
 				local vw = if cam then cam.ViewportSize.X else 1280
-				root.Size = UDim2.fromOffset(math.min(920, math.floor(vw * 0.92)), 360)
+				local vh = if cam then cam.ViewportSize.Y else 720
+				local w = math.min(1280, math.floor(vw * 0.94))
+				local h = math.min(540, math.floor(vh * 0.72))
+				root.Size = UDim2.fromOffset(w, h)
 				root.Position = UDim2.fromScale(0.5, 0.5)
 				root.AnchorPoint = Vector2.new(0.5, 0.5)
+				local sc = root:FindFirstChildOfClass("UISizeConstraint")
+				if sc then
+					sc.MinSize = Vector2.new(900, 420)
+					sc.MaxSize = Vector2.new(1400, 640)
+				end
 			else
 				root.Size = UDim2.fromScale(ww, wh)
 			end
@@ -273,13 +281,22 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		UIKit.Stroke(root, Color3.fromRGB(51, 51, 51), 2, 0)
 
 		local coins = stats.coins or 0
+		-- Same soft currency + same asset as header (UpgradeIconConfig.Coin)
+		local coinImgId = UpgradeIconConfig.Get("Coin")
+
+		-- Interior scale vs original Figma ~900×336 (window is now ~1240×500)
+		local CS = 1.38
+		local function cpx(n: number): number
+			return math.floor(n * CS + 0.5)
+		end
 
 		-- ===== Header =====
+		local headerH = cpx(52)
 		local header = Instance.new("Frame")
 		header.Name = "CU_Header"
 		header.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 		header.BorderSizePixel = 0
-		header.Size = UDim2.new(1, 0, 0, 52)
+		header.Size = UDim2.new(1, 0, 0, headerH)
 		header.ZIndex = 32
 		header.Parent = body
 		local hStroke = Instance.new("UIStroke")
@@ -292,8 +309,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			Parent = header,
 			Text = "Character Upgrade",
 			Size = UDim2.new(0.5, 0, 1, 0),
-			Position = UDim2.fromOffset(14, 0),
-			SizePx = 14,
+			Position = UDim2.fromOffset(cpx(16), 0),
+			SizePx = cpx(18),
 			Font = T.Font.Title,
 			Color = Color3.fromRGB(204, 204, 204),
 			Z = 34,
@@ -302,28 +319,28 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local coinPill = Instance.new("Frame")
 		coinPill.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 		coinPill.BorderSizePixel = 0
-		coinPill.Size = UDim2.fromOffset(110, 30)
-		coinPill.Position = UDim2.new(1, -150, 0.5, 0)
+		coinPill.Size = UDim2.fromOffset(cpx(130), cpx(34))
+		coinPill.Position = UDim2.new(1, -cpx(178), 0.5, 0)
 		coinPill.AnchorPoint = Vector2.new(0, 0.5)
 		coinPill.ZIndex = 33
 		coinPill.Parent = header
-		UIKit.Corner(coinPill, 3)
+		UIKit.Corner(coinPill, 4)
 		UIKit.Stroke(coinPill, Color3.fromRGB(51, 51, 51), 1, 0)
-		local coinImgId = UpgradeIconConfig.Get("Coin")
 		if coinImgId ~= "" then
 			local cimg = Instance.new("ImageLabel")
 			cimg.BackgroundTransparency = 1
 			cimg.Image = coinImgId
-			cimg.Size = UDim2.fromOffset(18, 18)
-			cimg.Position = UDim2.fromOffset(8, 6)
+			cimg.ScaleType = Enum.ScaleType.Fit
+			cimg.Size = UDim2.fromOffset(cpx(22), cpx(22))
+			cimg.Position = UDim2.fromOffset(cpx(8), cpx(6))
 			cimg.ZIndex = 34
 			cimg.Parent = coinPill
 			UIKit.Label({
 				Parent = coinPill,
 				Text = Format.Num(coins),
-				Size = UDim2.new(1, -30, 1, 0),
-				Position = UDim2.fromOffset(28, 0),
-				SizePx = 12,
+				Size = UDim2.new(1, -cpx(36), 1, 0),
+				Position = UDim2.fromOffset(cpx(34), 0),
+				SizePx = cpx(14),
 				Font = T.Font.Title,
 				Color = Color3.fromRGB(255, 178, 0),
 				Z = 34,
@@ -331,9 +348,9 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		else
 			UIKit.Label({
 				Parent = coinPill,
-				Text = "🪙  " .. Format.Num(coins),
+				Text = "C  " .. Format.Num(coins),
 				Size = UDim2.fromScale(1, 1),
-				SizePx = 12,
+				SizePx = cpx(14),
 				Font = T.Font.Title,
 				Color = Color3.fromRGB(255, 178, 0),
 				X = Enum.TextXAlignment.Center,
@@ -345,29 +362,30 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		closeBtn.Name = "Close"
 		closeBtn.Text = ""
 		closeBtn.AutoButtonColor = true
-		closeBtn.Size = UDim2.fromOffset(26, 26)
-		closeBtn.Position = UDim2.new(1, -36, 0.5, 0)
+		closeBtn.Size = UDim2.fromOffset(cpx(32), cpx(32))
+		closeBtn.Position = UDim2.new(1, -cpx(42), 0.5, 0)
 		closeBtn.AnchorPoint = Vector2.new(0, 0.5)
 		closeBtn.BackgroundColor3 = Color3.fromRGB(180, 20, 20)
 		closeBtn.BorderSizePixel = 0
 		closeBtn.ZIndex = 35
 		closeBtn.Parent = header
-		UIKit.Corner(closeBtn, 3)
+		UIKit.Corner(closeBtn, 4)
 		UIKit.Stroke(closeBtn, Color3.fromRGB(170, 34, 34), 1, 0)
 		local closeImgId = UpgradeIconConfig.Get("Close")
 		if closeImgId ~= "" then
 			local ximg = Instance.new("ImageLabel")
 			ximg.BackgroundTransparency = 1
 			ximg.Image = closeImgId
-			ximg.Size = UDim2.fromOffset(14, 14)
+			ximg.ScaleType = Enum.ScaleType.Fit
+			ximg.Size = UDim2.fromOffset(cpx(16), cpx(16))
 			ximg.Position = UDim2.fromScale(0.5, 0.5)
 			ximg.AnchorPoint = Vector2.new(0.5, 0.5)
 			ximg.ZIndex = 36
 			ximg.Parent = closeBtn
 		else
-			closeBtn.Text = "✕"
+			closeBtn.Text = "X"
 			closeBtn.Font = Enum.Font.GothamBold
-			closeBtn.TextSize = 14
+			closeBtn.TextSize = cpx(16)
 			closeBtn.TextColor3 = Color3.fromRGB(255, 220, 220)
 		end
 		closeBtn.MouseButton1Click:Connect(function()
@@ -375,14 +393,17 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end)
 
 		-- ===== Cards row =====
+		local cardH = cpx(230)
+		local cardW = cpx(210)
+		local cardsTop = headerH + cpx(14)
 		local cardsRow = Instance.new("Frame")
 		cardsRow.Name = "Cards"
 		cardsRow.BackgroundTransparency = 1
-		cardsRow.Size = UDim2.new(1, -28, 0, 180)
-		cardsRow.Position = UDim2.fromOffset(14, 66)
+		cardsRow.Size = UDim2.new(1, -cpx(32), 0, cardH)
+		cardsRow.Position = UDim2.fromOffset(cpx(16), cardsTop)
 		cardsRow.ZIndex = 32
 		cardsRow.Parent = body
-		local cardList = UIKit.List(cardsRow, 8, true)
+		local cardList = UIKit.List(cardsRow, cpx(12), true)
 		cardList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		cardList.VerticalAlignment = Enum.VerticalAlignment.Top
 
@@ -412,32 +433,36 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 					edge = Color3.fromRGB(232, 184, 0)
 				end
 
+				local titleH = cpx(42)
+				local footH = cpx(56)
+				local midH = cardH - titleH - footH
+
 				local card = Instance.new("TextButton")
 				card.Name = upId
 				card.Text = ""
 				card.AutoButtonColor = false
 				card.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 				card.BorderSizePixel = 0
-				card.Size = UDim2.fromOffset(167, 180)
+				card.Size = UDim2.fromOffset(cardW, cardH)
 				card.LayoutOrder = i
 				card.ZIndex = 33
 				card.ClipsDescendants = true
 				card.Parent = cardsRow
-				UIKit.Corner(card, 4)
-				UIKit.Stroke(card, edge, selected and 2.5 or 2, 0)
+				UIKit.Corner(card, 5)
+				UIKit.Stroke(card, edge, selected and 3 or 2, 0)
 
 				-- title bar
 				local titleBar = Instance.new("Frame")
 				titleBar.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 				titleBar.BorderSizePixel = 0
-				titleBar.Size = UDim2.new(1, 0, 0, 36)
+				titleBar.Size = UDim2.new(1, 0, 0, titleH)
 				titleBar.ZIndex = 34
 				titleBar.Parent = card
 				UIKit.Label({
 					Parent = titleBar,
 					Text = ui.title,
 					Size = UDim2.fromScale(1, 1),
-					SizePx = 11,
+					SizePx = cpx(14),
 					Font = T.Font.Title,
 					Color = Color3.fromRGB(204, 204, 204),
 					X = Enum.TextXAlignment.Center,
@@ -448,8 +473,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				local mid = Instance.new("Frame")
 				mid.BackgroundColor3 = Color3.new(1, 1, 1)
 				mid.BorderSizePixel = 0
-				mid.Size = UDim2.new(1, 0, 0, 100)
-				mid.Position = UDim2.fromOffset(0, 36)
+				mid.Size = UDim2.new(1, 0, 0, midH)
+				mid.Position = UDim2.fromOffset(0, titleH)
 				mid.ZIndex = 34
 				mid.ClipsDescendants = true
 				mid.Parent = card
@@ -460,7 +485,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 					img.BackgroundTransparency = 1
 					img.Image = iconAsset
 					img.ScaleType = Enum.ScaleType.Fit
-					img.Size = UDim2.fromOffset(64, 64)
+					img.Size = UDim2.fromOffset(cpx(84), cpx(84))
 					img.Position = UDim2.fromScale(0.5, 0.5)
 					img.AnchorPoint = Vector2.new(0.5, 0.5)
 					img.ZIndex = 35
@@ -470,7 +495,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 						Parent = mid,
 						Text = ui.glyph,
 						Size = UDim2.fromScale(1, 1),
-						SizePx = 36,
+						SizePx = cpx(44),
 						X = Enum.TextXAlignment.Center,
 						Z = 35,
 					})
@@ -479,9 +504,9 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 					local lock = UIKit.Label({
 						Parent = mid,
 						Text = "LOCKED",
-						Size = UDim2.new(1, 0, 0, 16),
-						Position = UDim2.new(0, 0, 1, -18),
-						SizePx = 9,
+						Size = UDim2.new(1, 0, 0, cpx(18)),
+						Position = UDim2.new(0, 0, 1, -cpx(22)),
+						SizePx = cpx(11),
 						Color = Color3.fromRGB(255, 120, 120),
 						X = Enum.TextXAlignment.Center,
 						Z = 36,
@@ -493,25 +518,25 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				local foot = Instance.new("Frame")
 				foot.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 				foot.BorderSizePixel = 0
-				foot.Size = UDim2.new(1, 0, 0, 44)
-				foot.Position = UDim2.new(0, 0, 1, -44)
+				foot.Size = UDim2.new(1, 0, 0, footH)
+				foot.Position = UDim2.new(0, 0, 1, -footH)
 				foot.ZIndex = 34
 				foot.Parent = card
 				UIKit.Label({
 					Parent = foot,
 					Text = "Level",
-					Size = UDim2.new(0.5, -8, 0, 14),
-					Position = UDim2.fromOffset(8, 6),
-					SizePx = 10,
+					Size = UDim2.new(0.5, -cpx(10), 0, cpx(16)),
+					Position = UDim2.fromOffset(cpx(10), cpx(8)),
+					SizePx = cpx(12),
 					Color = Color3.fromRGB(119, 119, 119),
 					Z = 35,
 				})
 				UIKit.Label({
 					Parent = foot,
 					Text = tostring(lvl),
-					Size = UDim2.new(0.5, -8, 0, 14),
-					Position = UDim2.new(0.5, 0, 0, 6),
-					SizePx = 10,
+					Size = UDim2.new(0.5, -cpx(10), 0, cpx(16)),
+					Position = UDim2.new(0.5, 0, 0, cpx(8)),
+					SizePx = cpx(12),
 					Color = Color3.fromRGB(204, 204, 204),
 					X = Enum.TextXAlignment.Right,
 					Z = 35,
@@ -519,18 +544,18 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				UIKit.Label({
 					Parent = foot,
 					Text = ui.statLabel,
-					Size = UDim2.new(0.5, -8, 0, 14),
-					Position = UDim2.fromOffset(8, 22),
-					SizePx = 10,
+					Size = UDim2.new(0.5, -cpx(10), 0, cpx(16)),
+					Position = UDim2.fromOffset(cpx(10), cpx(28)),
+					SizePx = cpx(12),
 					Color = Color3.fromRGB(119, 119, 119),
 					Z = 35,
 				})
 				UIKit.Label({
 					Parent = foot,
 					Text = statValueText(upId, def, lvl),
-					Size = UDim2.new(0.5, -8, 0, 14),
-					Position = UDim2.new(0.5, 0, 0, 22),
-					SizePx = 10,
+					Size = UDim2.new(0.5, -cpx(10), 0, cpx(16)),
+					Position = UDim2.new(0.5, 0, 0, cpx(28)),
+					SizePx = cpx(12),
 					Color = Color3.fromRGB(204, 204, 204),
 					X = Enum.TextXAlignment.Right,
 					Z = 35,
@@ -544,15 +569,16 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end
 
 		-- ===== Bottom bar: Next Level + Price + Upgrade =====
+		local barH = cpx(78)
 		local bar = Instance.new("Frame")
 		bar.Name = "UpgradeBar"
 		bar.BackgroundColor3 = Color3.fromRGB(26, 26, 26)
 		bar.BorderSizePixel = 0
-		bar.Size = UDim2.new(1, -32, 0, 62)
-		bar.Position = UDim2.new(0, 16, 1, -78)
+		bar.Size = UDim2.new(1, -cpx(36), 0, barH)
+		bar.Position = UDim2.new(0, cpx(18), 1, -(barH + cpx(16)))
 		bar.ZIndex = 32
 		bar.Parent = body
-		UIKit.Corner(bar, 4)
+		UIKit.Corner(bar, 5)
 		UIKit.Stroke(bar, Color3.fromRGB(51, 51, 51), 1, 0)
 
 		local selId = selectedUpgradeId
@@ -581,80 +607,128 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			end
 		end
 
+		-- Left block: next level / stat (scale-aware, not fixed 520px)
+		local leftBlock = Instance.new("Frame")
+		leftBlock.Name = "NextInfo"
+		leftBlock.BackgroundTransparency = 1
+		leftBlock.Size = UDim2.new(0.42, 0, 1, 0)
+		leftBlock.Position = UDim2.fromOffset(cpx(18), 0)
+		leftBlock.ZIndex = 33
+		leftBlock.Parent = bar
+
 		UIKit.Label({
-			Parent = bar,
+			Parent = leftBlock,
 			Text = "Next Level",
-			Size = UDim2.fromOffset(120, 14),
-			Position = UDim2.fromOffset(16, 12),
-			SizePx = 11,
+			Size = UDim2.new(0.55, 0, 0, cpx(18)),
+			Position = UDim2.fromOffset(0, cpx(14)),
+			SizePx = cpx(13),
 			Color = Color3.fromRGB(119, 119, 119),
 			Z = 34,
 		})
 		UIKit.Label({
-			Parent = bar,
+			Parent = leftBlock,
 			Text = maxed and "MAX" or tostring(nextLvl),
-			Size = UDim2.fromOffset(80, 14),
-			Position = UDim2.fromOffset(520, 12),
-			SizePx = 11,
+			Size = UDim2.new(0.4, 0, 0, cpx(18)),
+			Position = UDim2.new(0.55, 0, 0, cpx(14)),
+			SizePx = cpx(13),
 			Color = Color3.fromRGB(204, 204, 204),
 			X = Enum.TextXAlignment.Right,
 			Z = 34,
 		})
 		UIKit.Label({
-			Parent = bar,
+			Parent = leftBlock,
 			Text = selUi and selUi.statLabel or "Stat",
-			Size = UDim2.fromOffset(120, 14),
-			Position = UDim2.fromOffset(16, 32),
-			SizePx = 11,
+			Size = UDim2.new(0.55, 0, 0, cpx(18)),
+			Position = UDim2.fromOffset(0, cpx(40)),
+			SizePx = cpx(13),
 			Color = Color3.fromRGB(119, 119, 119),
 			Z = 34,
 		})
 		UIKit.Label({
-			Parent = bar,
+			Parent = leftBlock,
 			Text = if not unlocked then (lockReason or "Locked") else nextStat,
-			Size = UDim2.fromOffset(120, 14),
-			Position = UDim2.fromOffset(480, 32),
-			SizePx = 11,
+			Size = UDim2.new(0.4, 0, 0, cpx(18)),
+			Position = UDim2.new(0.55, 0, 0, cpx(40)),
+			SizePx = cpx(13),
 			Color = Color3.fromRGB(204, 204, 204),
 			X = Enum.TextXAlignment.Right,
 			Z = 34,
 		})
 
+		-- Price: SAME coin rbxasset as header (not emoji — Arcade font has no 🪙)
+		local priceCol = Instance.new("Frame")
+		priceCol.Name = "Price"
+		priceCol.BackgroundTransparency = 1
+		priceCol.Size = UDim2.fromOffset(cpx(140), barH)
+		priceCol.Position = UDim2.new(1, -cpx(270), 0, 0)
+		priceCol.ZIndex = 34
+		priceCol.Parent = bar
+
 		UIKit.Label({
-			Parent = bar,
+			Parent = priceCol,
 			Text = "Price",
-			Size = UDim2.fromOffset(50, 12),
-			Position = UDim2.new(1, -200, 0, 12),
-			SizePx = 10,
+			Size = UDim2.new(1, 0, 0, cpx(16)),
+			Position = UDim2.fromOffset(0, cpx(12)),
+			SizePx = cpx(12),
 			Color = Color3.fromRGB(119, 119, 119),
-			Z = 34,
+			Z = 35,
 		})
-		UIKit.Label({
-			Parent = bar,
-			Text = "🪙 " .. (if maxed then "—" else Format.Num(cost)),
-			Size = UDim2.fromOffset(90, 14),
-			Position = UDim2.new(1, -210, 0, 28),
-			SizePx = 12,
-			Font = T.Font.Title,
-			Color = Color3.fromRGB(255, 178, 0),
-			Z = 34,
-		})
+
+		local priceRow = Instance.new("Frame")
+		priceRow.BackgroundTransparency = 1
+		priceRow.Size = UDim2.new(1, 0, 0, cpx(28))
+		priceRow.Position = UDim2.fromOffset(0, cpx(34))
+		priceRow.ZIndex = 35
+		priceRow.Parent = priceCol
+
+		local priceText = if maxed then "—" else Format.Num(cost)
+		if coinImgId ~= "" then
+			local pimg = Instance.new("ImageLabel")
+			pimg.Name = "CoinIcon"
+			pimg.BackgroundTransparency = 1
+			pimg.Image = coinImgId -- identical to header pill
+			pimg.ScaleType = Enum.ScaleType.Fit
+			pimg.Size = UDim2.fromOffset(cpx(22), cpx(22))
+			pimg.Position = UDim2.fromOffset(0, cpx(2))
+			pimg.ZIndex = 36
+			pimg.Parent = priceRow
+			UIKit.Label({
+				Parent = priceRow,
+				Text = priceText,
+				Size = UDim2.new(1, -cpx(28), 1, 0),
+				Position = UDim2.fromOffset(cpx(28), 0),
+				SizePx = cpx(15),
+				Font = T.Font.Title,
+				Color = Color3.fromRGB(255, 178, 0),
+				Z = 36,
+			})
+		else
+			UIKit.Label({
+				Parent = priceRow,
+				Text = "C " .. priceText,
+				Size = UDim2.fromScale(1, 1),
+				SizePx = cpx(15),
+				Font = T.Font.Title,
+				Color = Color3.fromRGB(255, 178, 0),
+				Z = 36,
+			})
+		end
 
 		local upBtn = Instance.new("TextButton")
 		upBtn.Name = "UpgradeBtn"
 		upBtn.Text = if not unlocked then "Locked" elseif maxed then "MAX" else "Upgrade"
 		upBtn.Font = Enum.Font.GothamBold
-		upBtn.TextSize = 13
+		upBtn.TextSize = cpx(15)
 		upBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 		upBtn.AutoButtonColor = canBuy
-		upBtn.Size = UDim2.fromOffset(92, 35)
-		upBtn.Position = UDim2.new(1, -108, 0.5, 0)
+		upBtn.Size = UDim2.fromOffset(cpx(118), cpx(42))
+		upBtn.Position = UDim2.new(1, -cpx(132), 0.5, 0)
 		upBtn.AnchorPoint = Vector2.new(0, 0.5)
 		upBtn.BackgroundColor3 = if canBuy then Color3.fromRGB(40, 40, 48) else Color3.fromRGB(40, 40, 40)
 		upBtn.BorderSizePixel = 0
 		upBtn.ZIndex = 35
 		upBtn.Parent = bar
-		UIKit.Corner(upBtn, 4)
+		UIKit.Corner(upBtn, 5)
 		UIKit.Stroke(upBtn, if canBuy then Color3.fromRGB(80, 80, 90) else Color3.fromRGB(50, 50, 50), 1, 0)
 		if canBuy then
 			upBtn.MouseButton1Click:Connect(function()
