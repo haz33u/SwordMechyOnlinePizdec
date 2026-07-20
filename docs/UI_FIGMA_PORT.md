@@ -50,6 +50,19 @@ https://www.figma.com/design/WhLWwV1ZttJfjbvxKhSve2/Untitled?node-id=1-122
 
 Also mirrored in **`docs/MASTER_PLAN.md` §8.1 UI Asset Registry**.
 
+### Quest + Coin Shop (2026-07-20)
+
+Canonical: `src/ReplicatedStorage/Shared/Config/UiIconConfig.lua` · **MASTER_PLAN §8.3**
+
+| Key | rbxassetid |
+|-----|------------|
+| QuestIcon | `rbxassetid://111972532166796` |
+| CoinShop / CoinShop1 | `rbxassetid://126265387260987` |
+| CoinShop2 | `rbxassetid://92652371656965` |
+| CoinShop3 | `rbxassetid://122342766899212` |
+| CoinShop4 | `rbxassetid://107120449770577` |
+| CoinShop5 | `rbxassetid://70679769514889` |
+
 ---
 
 ## How to load from Figma (parts, not all at once)

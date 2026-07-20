@@ -161,6 +161,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Реальные 3D модели мечей | placeholder Parts |
 | Иконки Loc2+ weapons | пустые id → FIGMA_PROMPTS |
 | Character Upgrade icons | ✅ `UpgradeIconConfig` + **§8.1** (strength/bag/speed/crit/multicrit/coin/close/**shop**) |
+| Quest + CoinShop 1–5 icons | ✅ `UiIconConfig` + **§8.3** |
 | Питомцы / ауры / кейсы economy | keys + CaseResult (v0.5.4); roster still thin |
 | CaseResult remote (spin accuracy) | ✅ `CaseResult` + profile fallback |
 | Данжи Easy/Mid/Hard | timer AFK complete, не бой |
@@ -268,6 +269,7 @@ Do not start BP implementation until inventory Figma pass is testable.
 | `ICON_UPLOAD.md` | rbxassetid иконок оружия |
 | **§8.1 this file** | **UI Asset Registry** (upgrade/HUD icons) |
 | **§8.2 this file** | **Potion Asset Registry** (idle + hover Open) |
+| **§8.3 this file** | **UI extras** (QuestIcon + CoinShop 1–5) |
 | `FIGMA_PROMPTS.md` | промпты AI/Figma + tracking иконок |
 | `COLLAB.md` | Git + Team Create |
 | **§13 this file** | Figma UI order + Roblox worlds/teleport design |
@@ -363,6 +365,32 @@ Shop always uses **closed** (`*Potion`). Never show Open permanently in grids.
 | 36 | SmallPowerPotionOpen.png | `SmallPowerOpen` | `rbxassetid://81848929788674` |
 
 **Agent rule:** wire potions via `PotionIconConfig.GetIdle(size, stat)` / `GetHover(size, stat)` — do not hardcode free decals. Hover swap Open **only in inventory**.
+
+### 8.3 Quest + Coin Shop icons (LOCKED — remember & reuse)
+
+**Code source of truth:** `src/ReplicatedStorage/Shared/Config/UiIconConfig.lua`  
+Recorded 2026-07-20 from Studio upload — **do not lose these IDs**.
+
+| Key (config) | Note | rbxassetid |
+|--------------|------|------------|
+| `QuestIcon` | Quest UI / rail / panel | `rbxassetid://111972532166796` |
+| `CoinShop` / `CoinShop1` | Coin shop tier 1 | `rbxassetid://126265387260987` |
+| `CoinShop2` | Coin shop tier 2 | `rbxassetid://92652371656965` |
+| `CoinShop3` | Coin shop tier 3 | `rbxassetid://122342766899212` |
+| `CoinShop4` | Coin shop tier 4 | `rbxassetid://107120449770577` |
+| `CoinShop5` | Coin shop tier 5 | `rbxassetid://70679769514889` |
+
+```lua
+-- paste-ready (UiIconConfig)
+QuestIcon = "rbxassetid://111972532166796",
+CoinShop  = "rbxassetid://126265387260987", -- also CoinShop1
+CoinShop2 = "rbxassetid://92652371656965",
+CoinShop3 = "rbxassetid://122342766899212",
+CoinShop4 = "rbxassetid://107120449770577",
+CoinShop5 = "rbxassetid://70679769514889",
+```
+
+**Agent rule:** wire via `UiIconConfig.Get("QuestIcon")` / `UiIconConfig.GetCoinShop(1..5)` — do not invent placeholders.
 
 ---
 
