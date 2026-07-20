@@ -274,6 +274,7 @@ Do not start BP implementation until inventory Figma pass is testable.
 | **§8.3 this file** | **UI extras** (QuestIcon + CoinShop 1–5) |
 | `FIGMA_PROMPTS.md` | промпты AI/Figma + tracking иконок |
 | `COLLAB.md` | Git + Team Create |
+| `AGENT_MCP.md` | gh CLI + GitHub / Studio / Figma MCP for agents |
 | **§13 this file** | Figma UI order + Roblox worlds/teleport design |
 
 ### 8.1 UI Asset Registry (LOCKED — remember & reuse)

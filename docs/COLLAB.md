@@ -10,6 +10,8 @@
 
 Правило для AI: корневой **`AGENTS.md`**.
 
+**Agent tooling (gh / GitHub MCP / Studio MCP / Figma MCP):** `docs/AGENT_MCP.md`.
+
 ## Зачем так
 
 | Слой | Кто владеет | Где живёт |
