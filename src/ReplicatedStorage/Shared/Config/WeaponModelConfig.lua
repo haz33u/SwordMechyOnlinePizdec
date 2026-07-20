@@ -52,19 +52,17 @@ local WeaponModelConfig = {
 		  X = side · Y = along knuckles / "up" of grip · Z = into-out of palm
 		Slight +Y and small Z push = hilt sits in the palm (clips hand a bit = OK).
 	]]
-	PalmOffsetRight = Vector3.new(0.04, 0.1, 0.06),
-	PalmOffsetLeft = Vector3.new(-0.04, 0.1, 0.06),
+	-- 2026-07-20: pull hilts slightly into palm, less outward X
+	PalmOffsetRight = Vector3.new(0.02, 0.06, 0.05),
+	PalmOffsetLeft = Vector3.new(-0.02, 0.06, 0.05),
 
 	--[[
-		Palm tilt (degrees, applied as CFrame.Angles(rx, ry, rz) on the palm attachment).
-		Turns the free mesh from a flat "plank" into a cutting sword:
-		  X = pitch (tip up/down)
-		  Y = yaw
-		  Z = roll (blade edge into cut plane — main anti-flat fix)
-		Left hand mirrors Z.
+		Palm tilt (degrees, CFrame.Angles(rx, ry, rz) on palm attachment).
+		  X = pitch · Y = yaw (toward camera / “our side”) · Z = roll (edge plane)
+		Was Z=±55 — too “inside-out”. Softened roll + yaw toward viewer (2026-07-20).
 	]]
-	PalmTiltRight = Vector3.new(18, -8, -55),
-	PalmTiltLeft = Vector3.new(18, 8, 55),
+	PalmTiltRight = Vector3.new(8, 22, -22),
+	PalmTiltLeft = Vector3.new(8, -22, 22),
 
 	-- Fraction of half-length back from tip-axis end → sit on handle (0.85–0.95 = near pommel)
 	HiltEndBias = 0.92,

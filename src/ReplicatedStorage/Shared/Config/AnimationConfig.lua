@@ -9,6 +9,7 @@
 
 -- Right / left hand attacks (user assets, 2026-07-20)
 local ATTACK_RIGHT = "rbxassetid://131793860537357"
+local ATTACK_RIGHT_BRUTAL = "rbxassetid://86113662553657" -- spare right-hand set (future)
 local ATTACK_LEFT = "rbxassetid://97155624777350"
 
 local AnimationConfig = {
@@ -24,10 +25,22 @@ local AnimationConfig = {
 		SoundVolume = 0.6,
 	},
 
+	--[[
+		Presets (switch AttackMain later without losing ids):
+		  default  = ATTACK_RIGHT
+		  brutal   = ATTACK_RIGHT_BRUTAL  (saved for future)
+	]]
+	AttackPresets = {
+		defaultRight = ATTACK_RIGHT,
+		brutalRight = ATTACK_RIGHT_BRUTAL,
+		defaultLeft = ATTACK_LEFT,
+	},
+
+	-- Active set (use brutal: AttackMain = AnimationConfig.AttackPresets.brutalRight)
 	AttackMain = ATTACK_RIGHT,
 	AttackOffhand = ATTACK_LEFT,
-	AttackAlt = ATTACK_RIGHT,
-	AttackCandidates = { ATTACK_RIGHT },
+	AttackAlt = ATTACK_RIGHT_BRUTAL, -- alt / future brutal right
+	AttackCandidates = { ATTACK_RIGHT, ATTACK_RIGHT_BRUTAL },
 
 	PreferPublishedAttack = true,
 	UseCombatKeyframeSequences = false,
@@ -38,7 +51,7 @@ local AnimationConfig = {
 	Swing2Name = "Swing2",
 
 	AttackMainFallback = ATTACK_RIGHT,
-	AttackAltFallback = ATTACK_RIGHT,
+	AttackAltFallback = ATTACK_RIGHT_BRUTAL,
 	ToolHold = ATTACK_RIGHT,
 
 	AlternateDual = false,
