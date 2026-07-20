@@ -466,31 +466,78 @@ local function prepareIconClone(weaponId: string): Model?
 		end
 	end
 
+	-- Grip → same hiltEnd as hands (icon tip-up must match hold, not "higher world end")
+	local tool = template:FindFirstChildWhichIsA("Tool", true)
+	local gripHiltEnd: number? = nil
+	if tool and tool:IsA("Tool") then
+		local gp = tool.Grip.Position
+		if gp.Magnitude > 0.01 then
+			local axis0 = longestLocalAxis(handle)
+			local proj = gp:Dot(axis0)
+			if math.abs(proj) > 0.01 then
+				gripHiltEnd = if proj >= 0 then 1 else -1
+			end
+		end
+	end
+	-- Also read from already-cloned Tool before flatten (if still present)
+	if gripHiltEnd == nil then
+		local cloneTool = clone:FindFirstChildWhichIsA("Tool", true)
+		if cloneTool and cloneTool:IsA("Tool") then
+			local gp = cloneTool.Grip.Position
+			if gp.Magnitude > 0.01 then
+				local axis0 = longestLocalAxis(handle)
+				local proj = gp:Dot(axis0)
+				if math.abs(proj) > 0.01 then
+					gripHiltEnd = if proj >= 0 then 1 else -1
+				end
+			end
+		end
+	end
+
 	clone:SetAttribute("IconTemplateName", template.Name)
+	if gripHiltEnd then
+		clone:SetAttribute("IconHiltEnd", gripHiltEnd)
+	end
 	return clone
 end
 
---- Align PrimaryPart longest axis to world +Y (tip up), using hiltEnd/tip from override when set.
+--- Align PrimaryPart longest axis to world +Y (tip up).
+--- Prefer override.hiltEnd, then IconHiltEnd from Tool.Grip (same as hand).
+--- Fallback "higher end = tip" is WRONG for many toolbox meshes (e.g. IronSword hangs tip-down).
 local function orientTipUp(clone: Model)
 	local handle = clone.PrimaryPart
 	if not handle then
 		return
 	end
 	local axis, _len = longestLocalAxis(handle)
-	-- World direction of local long axis
 	local worldAxis = handle.CFrame:VectorToWorldSpace(axis).Unit
-	-- Prefer tip opposite handle end from override
+
 	local templateName = clone:GetAttribute("IconTemplateName")
 	local ov = if type(templateName) == "string" then WeaponModelConfig.ResolveOverride(templateName) else nil
-	local tipWorld = worldAxis
+
+	local hiltEnd: number? = nil
 	if ov and type(ov.hiltEnd) == "number" and ov.hiltEnd ~= 0 then
-		-- handle along +axis * hiltEnd in local → tip is opposite in world
-		local handleLocal = axis * (if ov.hiltEnd > 0 then 1 else -1)
-		tipWorld = handle.CFrame:VectorToWorldSpace(-handleLocal).Unit
-	elseif worldAxis:Dot(Vector3.yAxis) < 0 then
-		tipWorld = -worldAxis
+		hiltEnd = if ov.hiltEnd > 0 then 1 else -1
+	else
+		local attr = clone:GetAttribute("IconHiltEnd")
+		if type(attr) == "number" and attr ~= 0 then
+			hiltEnd = if attr > 0 then 1 else -1
+		end
 	end
-	-- Rotation that maps tipWorld → +Y
+
+	local tipWorld: Vector3
+	if hiltEnd then
+		-- tip is opposite handle end (same convention as EnsureHiltAttachment)
+		local handleLocal = axis * hiltEnd
+		tipWorld = handle.CFrame:VectorToWorldSpace(-handleLocal).Unit
+	else
+		-- Last resort: whichever long-axis end is currently higher
+		tipWorld = worldAxis
+		if worldAxis:Dot(Vector3.yAxis) < 0 then
+			tipWorld = -worldAxis
+		end
+	end
+
 	local from = tipWorld
 	local to = Vector3.yAxis
 	local dot = math.clamp(from:Dot(to), -1, 1)
@@ -507,7 +554,43 @@ local function orientTipUp(clone: Model)
 	clone:PivotTo(rot * clone:GetPivot())
 end
 
+local function resolveIconOverride(clone: Model): any
+	local templateName = clone:GetAttribute("IconTemplateName")
+	if type(templateName) ~= "string" then
+		return nil
+	end
+	return WeaponModelConfig.ResolveOverride(templateName)
+end
+
+--- Camera only — safe to call twice (idempotent). Zoom via iconScaleMult.
+local function applyIconCamera(clone: Model, cam: Camera, extent: number)
+	local zoom = 1
+	local ov = resolveIconOverride(clone)
+	if ov and type(ov.iconScaleMult) == "number" and ov.iconScaleMult > 0 then
+		-- iconScaleMult = inventory camera zoom (closer = larger on screen).
+		-- Do NOT ScaleTo then move camera by extent — that cancels out.
+		zoom = ov.iconScaleMult
+	end
+	local dist = math.clamp((extent * 1.65) / zoom, 0.9, 12)
+	-- Slight FOV pull-in for thin blades so they don't vanish as a hairline
+	cam.FieldOfView = if zoom > 1.01 then math.clamp(28 / math.sqrt(zoom), 18, 28) else 28
+	cam.CFrame = CFrame.new(Vector3.new(dist * 0.5, dist * 0.28, dist * 0.8), Vector3.zero)
+end
+
 local function frameModelInViewport(clone: Model, cam: Camera)
+	-- Idempotent guard: re-entry used to re-apply invert/yaw and cancel them (X180 twice = 0)
+	if clone:GetAttribute("IconFramed") == true then
+		local extent = 1.5
+		local okE, _, sizeE = pcall(function()
+			return clone:GetBoundingBox()
+		end)
+		if okE and typeof(sizeE) == "Vector3" then
+			extent = math.max(sizeE.X, sizeE.Y, sizeE.Z, 0.35)
+		end
+		applyIconCamera(clone, cam, extent)
+		return
+	end
+
 	-- 1) Center at origin
 	local okBox, bbCf, bbSize = pcall(function()
 		return clone:GetBoundingBox()
@@ -526,17 +609,16 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		extent = math.max(s.X, s.Y, s.Z, 0.35)
 	end
 
-	-- 2) Auto tip-up (align long axis with +Y)
+	-- 2) Tip-up (hiltEnd / Tool.Grip — not "higher end")
 	pcall(function()
 		orientTipUp(clone)
 	end)
 
 	-- 3) iconInvert / iconEuler AFTER tip-up (hand grip does not use these)
-	local templateName = clone:GetAttribute("IconTemplateName")
-	local ov = if type(templateName) == "string" then WeaponModelConfig.ResolveOverride(templateName) else nil
+	local ov = resolveIconOverride(clone)
 	if ov then
 		if ov.iconInvert then
-			-- 180° around X → flips upside-down inventory previews
+			-- 180° around X → tip and handle swap in inventory
 			pcall(function()
 				clone:PivotTo(CFrame.Angles(math.rad(180), 0, 0) * clone:GetPivot())
 			end)
@@ -549,12 +631,12 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		end
 	end
 
-	-- 4) Showcase yaw only
+	-- 4) Showcase yaw
 	pcall(function()
 		clone:PivotTo(CFrame.Angles(0, math.rad(-35), 0) * clone:GetPivot())
 	end)
 
-	-- 5) Re-center + uniform fill scale (small swords get bigger)
+	-- 5) Re-center only — NO global IconTargetExtent normalize (kept normal swords as before)
 	local ok2, bb2, size2 = pcall(function()
 		return clone:GetBoundingBox()
 	end)
@@ -567,45 +649,10 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		extent = math.max(size2.X, size2.Y, size2.Z, 0.35)
 	end
 
-	local target = WeaponModelConfig.IconTargetExtent or 2.4
-	-- Per-model boost (thin swords look larger in slot)
-	local templateName2 = clone:GetAttribute("IconTemplateName")
-	if type(templateName2) == "string" then
-		local ov2 = WeaponModelConfig.ResolveOverride(templateName2)
-		if ov2 and type(ov2.iconScaleMult) == "number" and ov2.iconScaleMult > 0 then
-			target = target * ov2.iconScaleMult
-		end
-	end
-	if extent > 0.01 and math.abs(extent - target) > 0.05 then
-		local factor = target / extent
-		factor = math.clamp(factor, 0.25, 5)
-		pcall(function()
-			local cur = 1
-			pcall(function()
-				cur = (clone :: any):GetScale()
-			end)
-			if type(cur) ~= "number" or cur <= 0 then
-				cur = 1
-			end
-			(clone :: any):ScaleTo(cur * factor)
-		end)
-		local ok3, bb3, size3 = pcall(function()
-			return clone:GetBoundingBox()
-		end)
-		if ok3 and typeof(bb3) == "CFrame" then
-			pcall(function()
-				clone:TranslateBy(-(bb3 :: CFrame).Position)
-			end)
-		end
-		if ok3 and typeof(size3) == "Vector3" then
-			extent = math.max(size3.X, size3.Y, size3.Z, 0.35)
-		end
-	end
+	clone:SetAttribute("IconFramed", true)
 
-	-- 6) Camera (slightly closer = bigger on screen)
-	local dist = math.clamp(extent * 1.65, 1.5, 10)
-	cam.FieldOfView = 28
-	cam.CFrame = CFrame.new(Vector3.new(dist * 0.5, dist * 0.28, dist * 0.8), Vector3.zero)
+	-- 6) Camera: natural framing; thin swords only get zoom via iconScaleMult
+	applyIconCamera(clone, cam, extent)
 end
 
 --[[
@@ -658,15 +705,12 @@ function WeaponModels.FillViewport(parent: GuiObject, weaponId: string, zIndex: 
 
 		frameModelInViewport(clone, cam)
 
-		-- Re-apply camera next frame (fixes rare first-frame empty ViewportFrame)
+		-- Re-bind camera next frame only (do NOT re-frame: invert/yaw would apply twice and cancel)
 		task.defer(function()
-			if not vf.Parent or not clone.Parent then
+			if not vf.Parent or not cam.Parent then
 				return
 			end
 			vf.CurrentCamera = cam
-			pcall(function()
-				frameModelInViewport(clone, cam)
-			end)
 		end)
 
 		return vf

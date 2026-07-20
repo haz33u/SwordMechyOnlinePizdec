@@ -21,7 +21,8 @@ export type HiltOverride = {
 	iconInvert: boolean?,
 	iconEuler: Vector3?,
 	iconFlip: (boolean | string)?,
-	-- Extra size in inventory only (1 = default fill; 1.4 = 40% larger)
+	-- Inventory camera zoom only (1 = default; 1.8 = ~80% closer / larger on screen).
+	-- Does NOT scale the world mesh. Use for thin blades that look like hairlines.
 	iconScaleMult: number?,
 }
 
@@ -51,38 +52,42 @@ local WeaponModelConfig = {
 	} :: { [string]: string },
 
 	DefaultScale = 0.52,
-	-- Base scale before fill-normalize in viewport
+	-- Base scale (unused for fill; kept for compatibility)
 	IconScale = 1,
-	-- Normalize every icon so max bbox ≈ this (studs) → small swords look as big as fat ones
-	IconTargetExtent = 2.4,
+	-- Disabled: global normalize fattened every icon. Thin blades use iconScaleMult zoom instead.
+	IconTargetExtent = 0,
 
 	HiltEndBias = 0.96,
 
 	--[[
 		hiltEnd: +1 = positive local long-axis end is HANDLE, -1 = negative end.
-		Screenshot 231434: previous +offsets still blade → use -1 for Ardite/Forest.
+		iconInvert: inventory-only 180° after tip-up (hand uses hiltEnd / Tool.Grip).
+		iconScaleMult: inventory camera zoom for thin meshes only.
 	]]
 	HiltOverrides = {
-		-- Old Sword: hand OK; icon still wrong after X-invert → flip Y instead
-		IronSword = {
-			iconInvert = false,
-			iconEuler = Vector3.new(0, 180, 0),
-		},
-		-- Double-Edged: was fixed with X invert
+		-- Old Sword: tip-up follows Tool.Grip; inventory still needs X-flip vs hand pose.
+		-- Root cause of "fixes never stuck": FillViewport deferred a second full frame
+		-- which applied iconInvert twice (360°) and cancelled it.
+		IronSword = { iconInvert = true },
+		-- Double-Edged
 		RubySword = { iconInvert = true },
-		-- Forest Sword: hand OK; larger + upright icon
+		-- Forest Sword (thin) — zoom so blade is visible
 		SupeSport = {
 			hiltEnd = -1,
 			hiltBias = 0.98,
 			iconInvert = true,
-			iconScaleMult = 1.45,
+			iconScaleMult = 1.85,
 		},
-		-- Ardite: hand OK; larger + upright icon
+		-- Ardite (very thin) — strongest zoom
 		KawashimaSword = {
 			hiltEnd = -1,
 			hiltBias = 0.98,
 			iconInvert = true,
-			iconScaleMult = 1.45,
+			iconScaleMult = 2.0,
+		},
+		-- Forest Shadow (thin profile)
+		LastSword = {
+			iconScaleMult = 1.7,
 		},
 	} :: { [string]: HiltOverride },
 
