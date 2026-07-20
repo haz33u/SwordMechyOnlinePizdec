@@ -328,19 +328,28 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 		gripAtt.Parent = hand
 	end
 
-	-- Shared palm nudge (forward of fist). Clean previous offsets on this hand.
+	-- Palm offset + tilt (cutting angle). Clean previous offsets on this hand.
 	for _, c in hand:GetChildren() do
 		if c:IsA("Attachment") and c.Name == "SM_PalmOffset" then
 			c:Destroy()
 		end
 	end
-	local off = if side == "left" then WeaponModelConfig.PalmOffsetLeft else WeaponModelConfig.PalmOffsetRight
+	local isLeft = side == "left"
+	local off = if isLeft then WeaponModelConfig.PalmOffsetLeft else WeaponModelConfig.PalmOffsetRight
 	if typeof(off) ~= "Vector3" then
 		off = Vector3.zero
 	end
+	local tilt = if isLeft then WeaponModelConfig.PalmTiltLeft else WeaponModelConfig.PalmTiltRight
+	if typeof(tilt) ~= "Vector3" then
+		tilt = Vector3.zero
+	end
+	-- Position first, then roll/pitch so blade is edge-on (not a flat board)
+	local palmCf = gripAtt.CFrame
+		* CFrame.new(off)
+		* CFrame.Angles(math.rad(tilt.X), math.rad(tilt.Y), math.rad(tilt.Z))
 	local palmAtt = Instance.new("Attachment")
 	palmAtt.Name = "SM_PalmOffset"
-	palmAtt.CFrame = gripAtt.CFrame * CFrame.new(off)
+	palmAtt.CFrame = palmCf
 	palmAtt.Parent = hand
 
 	local rigid = Instance.new("RigidConstraint")

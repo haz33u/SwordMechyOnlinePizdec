@@ -61,9 +61,13 @@ Algorithm:
 |-------|------|
 | `ModelByWeaponId` | weaponId → Model name |
 | `DefaultScale` | free sword size |
-| `PalmOffsetRight/Left` | shared forward nudge (not hilt) |
+| `PalmOffsetRight/Left` | shared palm position (Y/Z into hand) |
+| `PalmTiltRight/Left` | degrees — roll (Z) fixes “flat plank”; pitch (X) tip angle |
 | `HiltEndBias` | how close to pommel end |
 | `HiltOverrides.GoldSword.flipTip` | only if auto tip is inverted |
+
+**Tune cutting angle:** only `PalmTilt*` / `PalmOffset*` in config — applies to all swords.
+**Tune one sword’s handle point:** move that model’s `SM_Hilt` only.
 
 ---
 

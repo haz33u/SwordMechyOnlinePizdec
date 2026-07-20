@@ -48,11 +48,23 @@ local WeaponModelConfig = {
 	} :: { [string]: { flipTip: boolean? } },
 
 	--[[
-		Shared palm offset in hand-grip space (both hands). NOT hilt placement.
-		-Z ≈ forward of fist (Minecraft-like item sits slightly out of the hand).
+		Shared palm offset in hand-grip space (both hands). NOT per-mesh hilt.
+		  X = side · Y = along knuckles / "up" of grip · Z = into-out of palm
+		Slight +Y and small Z push = hilt sits in the palm (clips hand a bit = OK).
 	]]
-	PalmOffsetRight = Vector3.new(0.05, 0.02, -0.12),
-	PalmOffsetLeft = Vector3.new(-0.05, 0.02, -0.12),
+	PalmOffsetRight = Vector3.new(0.04, 0.1, 0.06),
+	PalmOffsetLeft = Vector3.new(-0.04, 0.1, 0.06),
+
+	--[[
+		Palm tilt (degrees, applied as CFrame.Angles(rx, ry, rz) on the palm attachment).
+		Turns the free mesh from a flat "plank" into a cutting sword:
+		  X = pitch (tip up/down)
+		  Y = yaw
+		  Z = roll (blade edge into cut plane — main anti-flat fix)
+		Left hand mirrors Z.
+	]]
+	PalmTiltRight = Vector3.new(18, -8, -55),
+	PalmTiltLeft = Vector3.new(18, 8, 55),
 
 	-- Fraction of half-length back from tip-axis end → sit on handle (0.85–0.95 = near pommel)
 	HiltEndBias = 0.92,
