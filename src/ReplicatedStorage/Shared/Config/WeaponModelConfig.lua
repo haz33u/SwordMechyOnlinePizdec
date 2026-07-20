@@ -2,18 +2,22 @@
 --[[
 	Weapon 3D models + hold / inventory icon contract.
 	See docs/WEAPON_HOLD.md
+
+	IMPORTANT: hiltEnd is evaluated AFTER DefaultScale on the live part Size.
+	Do NOT store absolute stud offsets from unscaled Toolbox sizes (they break after ScaleTo).
 ]]
 
 export type HiltOverride = {
-	-- Absolute tip along longest axis: +1 or -1. Palm at opposite end.
-	tipSign: number?,
-	flipTip: boolean?, -- relative invert (avoid if tipSign set)
-	hiltBias: number?, -- 0.55–0.995, default ~0.94; higher = closer to geometric end
-	-- Absolute local hilt position on PrimaryPart (overrides tipSign/bias if set)
+	-- Which end of the longest local axis is the HANDLE: +1 or -1
+	hiltEnd: number?,
+	-- 0.9–0.99 = near geometric end (handle). Default HiltEndBias.
+	hiltBias: number?,
+	-- Absolute local position AFTER scale (rare). Prefer hiltEnd.
 	hiltPosition: Vector3?,
-	-- Tip direction for attachment +Y (defaults to -hiltPosition.Unit)
 	tipDirection: Vector3?,
-	-- Inventory: applied AFTER camera framing (must not be wiped by PivotTo)
+	tipSign: number?, -- legacy
+	flipTip: boolean?,
+	-- Extra icon rotation after auto tip-up (usually not needed)
 	iconEuler: Vector3?,
 	iconFlip: (boolean | string)?,
 }
@@ -44,34 +48,27 @@ local WeaponModelConfig = {
 	} :: { [string]: string },
 
 	DefaultScale = 0.52,
-	IconScale = 0.7,
-	HiltEndBias = 0.94,
+	-- Base scale before fill-normalize in viewport
+	IconScale = 1,
+	-- Normalize every icon so max bbox ≈ this (studs) → small swords look as big as fat ones
+	IconTargetExtent = 2.4,
+
+	HiltEndBias = 0.96,
 
 	--[[
-		QA locks 2026-07-20 (re-tested until correct):
-		  tipSign +1 put palm on BLADE for Ardite/Forest → use -1 + high bias.
-		  Icons: euler applied AFTER framing (see WeaponModels.frameModelInViewport).
+		hiltEnd: +1 = positive local long-axis end is HANDLE, -1 = negative end.
+		Screenshot 231434: previous +offsets still blade → use -1 for Ardite/Forest.
 	]]
 	HiltOverrides = {
-		-- Old Sword: hand OK; icon upside-down
-		IronSword = {
-			iconEuler = Vector3.new(180, 0, 0),
-		},
-		-- Double-Edged: icon upside-down
-		RubySword = {
-			iconEuler = Vector3.new(180, 0, 0),
-		},
-		-- Forest Sword (Y-long ~4.73): absolute palm at +Y end = handle
+		IronSword = {}, -- hand OK; icon uses auto tip-up
+		RubySword = {},
 		SupeSport = {
-			hiltPosition = Vector3.new(0, 2.30, 0),
-			tipDirection = Vector3.new(0, -1, 0),
-			iconEuler = Vector3.new(180, 0, 0),
+			hiltEnd = -1,
+			hiltBias = 0.98,
 		},
-		-- Ardite (Z-long ~5.60): absolute palm at +Z end = handle
 		KawashimaSword = {
-			hiltPosition = Vector3.new(0, 0, 2.70),
-			tipDirection = Vector3.new(0, 0, -1),
-			iconEuler = Vector3.new(0, 0, -90),
+			hiltEnd = -1,
+			hiltBias = 0.98,
 		},
 	} :: { [string]: HiltOverride },
 
