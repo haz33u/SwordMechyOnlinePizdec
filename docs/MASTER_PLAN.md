@@ -267,6 +267,7 @@ Do not start BP implementation until inventory Figma pass is testable.
 | `ROJO_STUDIO.md` | Rojo vs Place |
 | `ICON_UPLOAD.md` | rbxassetid иконок оружия |
 | **§8.1 this file** | **UI Asset Registry** (upgrade/HUD icons) |
+| **§8.2 this file** | **Potion Asset Registry** (idle + hover Open) |
 | `FIGMA_PROMPTS.md` | промпты AI/Figma + tracking иконок |
 | `COLLAB.md` | Git + Team Create |
 | **§13 this file** | Figma UI order + Roblox worlds/teleport design |
@@ -301,6 +302,67 @@ Shop = "rbxassetid://133565026221740",
 ```
 
 **Agent rule:** when wiring Character Upgrade / HUD / Shop chrome, **use these IDs** via `UpgradeIconConfig.Get(key)` — do not invent placeholders or Creator Store free decals for these keys.
+
+### 8.2 Potion Asset Registry (LOCKED — remember & reuse)
+
+**Code source of truth:** `src/ReplicatedStorage/Shared/Config/PotionIconConfig.lua`  
+Source PNGs: `ACCETSPOTIONS` batch (Big / Mid / Small / Globall).
+
+#### Usage rule (UI)
+| Asset suffix | When to show |
+|--------------|----------------|
+| `*Potion` (closed) | **Default** texture — player inventory + shop |
+| `*PotionOpen` | **Only on hover** in inventory (swap `Image` on MouseEnter → Open, MouseLeave → closed) |
+
+Shop always uses **closed** (`*Potion`). Never show Open permanently in grids.
+
+#### Sizes / stats
+- **Size:** `Small` · `Mid` · `Big` · `Globall` (global / server-wide)
+- **Stat:** `Coin` · `Damage` · `Luck` · `Power`
+- **Backgrounds:** plates for cards; Mid = solid black (park); Small cover = `Group 1261154050`
+
+#### Full ID table
+
+| # | File | Config key | rbxassetid |
+|---|------|------------|------------|
+| 1 | BigBackGroundPotion.png | `BigBackground` | `rbxassetid://87813480175029` |
+| 2 | BigCoinPotion.png | `BigCoin` | `rbxassetid://123525448642522` |
+| 3 | BigCoinPotionOpen.png | `BigCoinOpen` | `rbxassetid://85471490348637` |
+| 4 | BigDamagePotion.png | `BigDamage` | `rbxassetid://77976545014734` |
+| 5 | BigDamagePotionOpen.png | `BigDamageOpen` | `rbxassetid://100846431333192` |
+| 6 | BigLuckPotion.png | `BigLuck` | `rbxassetid://93921132820014` |
+| 7 | BigLuckPotionOpen.png | `BigLuckOpen` | `rbxassetid://114236597813508` |
+| 8 | BigPowerPotion.png | `BigPower` | `rbxassetid://81684258283596` |
+| 9 | BigPowerPotionOpen.png | `BigPowerOpen` | `rbxassetid://112355517693170` |
+| 10 | GloballBackgroundPotion.png | `GloballBackground` | `rbxassetid://124907509434472` |
+| 11 | GloballCoinPotion.png | `GloballCoin` | `rbxassetid://128739216534711` |
+| 12 | GloballCoinPotionOpen.png | `GloballCoinOpen` | `rbxassetid://85854368587544` |
+| 13 | GloballDamagePotion.png | `GloballDamage` | `rbxassetid://74581058727863` |
+| 14 | GloballDamagePotionopen.png | `GloballDamageOpen` | `rbxassetid://87264874596741` |
+| 15 | GloballLuckPotion.png | `GloballLuck` | `rbxassetid://138279482261455` |
+| 16 | GloballLuckPotionOpen.png | `GloballLuckOpen` | `rbxassetid://113062484961240` |
+| 17 | GloballPowerPotion.png | `GloballPower` | `rbxassetid://109834286119069` |
+| 18 | GloballPowerPotionOpen.png | `GloballPowerOpen` | `rbxassetid://120037569836057` |
+| 19 | Group 1261154050.png | `SmallCover` | `rbxassetid://71540050000210` (black cover for Small) |
+| 20 | MidBackgroundPotion.png | `MidBackground` | `rbxassetid://83821392234258` (solid black plate — park) |
+| 21 | MidCoinPotion.png | `MidCoin` | `rbxassetid://92630530796611` |
+| 22 | MidCoinPotionOpen.png | `MidCoinOpen` | `rbxassetid://73785912682549` |
+| 23 | MidDamagePotion.png | `MidDamage` | `rbxassetid://109446287175098` |
+| 24 | MidDamagePotionOpen.png | `MidDamageOpen` | `rbxassetid://132235301402853` |
+| 25 | MidLuckPotion.png | `MidLuck` | `rbxassetid://76287598017023` |
+| 26 | MidLuckPotionOpen.png | `MidLuckOpen` | `rbxassetid://115289485411140` |
+| 27 | MidPowerPotion.png | `MidPower` | `rbxassetid://98113276595328` |
+| 28 | MidPowerPotionOpen.png | `MidPowerOpen` | `rbxassetid://85900601718525` |
+| 29 | SmallCoinPotion.png | `SmallCoin` | `rbxassetid://129754362855584` |
+| 30 | SmallCoinPotionOpen.png | `SmallCoinOpen` | `rbxassetid://135452551473185` |
+| 31 | SmallDamagePotion.png | `SmallDamage` | `rbxassetid://126425760044867` |
+| 32 | SmallDamagePotionOPen.png | `SmallDamageOpen` | `rbxassetid://131125671762922` |
+| 33 | SmallLuckPotion.png | `SmallLuck` | `rbxassetid://97002801957265` |
+| 34 | SmallLuckPotionOpen.png | `SmallLuckOpen` | `rbxassetid://127967918786290` |
+| 35 | SmallPowerPotion.png | `SmallPower` | `rbxassetid://115507101515088` |
+| 36 | SmallPowerPotionOpen.png | `SmallPowerOpen` | `rbxassetid://81848929788674` |
+
+**Agent rule:** wire potions via `PotionIconConfig.GetIdle(size, stat)` / `GetHover(size, stat)` — do not hardcode free decals. Hover swap Open **only in inventory**.
 
 ---
 
