@@ -244,6 +244,62 @@ local function getAnimator(char: Model): Animator?
 	return animator
 end
 
+--- Must be defined BEFORE playOffhandSwing / PlayAttack (Luau local scope).
+local function loadTrack(animator: Animator, id: string): AnimationTrack?
+	if tracks[id] then
+		local cached = tracks[id]
+		-- Length can resolve after first load; keep using same track
+		return cached
+	end
+	local anim = Instance.new("Animation")
+	anim.Name = "SM_Attack"
+	anim.AnimationId = id
+	local ok, result = pcall(function()
+		return animator:LoadAnimation(anim)
+	end)
+	anim:Destroy()
+	if not ok or typeof(result) ~= "Instance" then
+		warn("[WeaponVisual] LoadAnimation FAILED:", id, result)
+		return nil
+	end
+	local track = result :: AnimationTrack
+	track.Priority = Enum.AnimationPriority.Action4
+	track.Looped = false
+	tracks[id] = track
+	print("[WeaponVisual] Loaded attack track:", id, "len=", track.Length)
+	return track
+end
+
+--- Wait until track.Length > 0 or timeout (async asset fetch).
+local function waitTrackLength(track: AnimationTrack, timeoutSec: number?): number
+	local timeout = timeoutSec or 2
+	local t0 = os.clock()
+	while track.Length <= 0 and (os.clock() - t0) < timeout do
+		task.wait(0.05)
+	end
+	return track.Length
+end
+
+local function preloadAttackTracks(char: Model)
+	local animator = getAnimator(char)
+	if not animator then
+		return
+	end
+	local ids = {
+		AnimationConfig.GetAttackId(false),
+		AnimationConfig.GetAttackOffhandId(),
+	}
+	for _, id in ids do
+		if type(id) == "string" and id ~= "" then
+			local tr = loadTrack(animator, id)
+			if tr then
+				waitTrackLength(tr, 2)
+				print("[WeaponVisual] preload", id, "len=", tr.Length)
+			end
+		end
+	end
+end
+
 local mcWarnedNoShoulder = false
 
 --- R15 shoulder motors (Right / Left). R6: "Right Shoulder" under Torso.
@@ -455,6 +511,7 @@ local function playOffhandSwing(): number
 		if animator then
 			local track = loadTrack(animator, offId)
 			if track then
+				waitTrackLength(track, 1.5)
 				-- Stop right track so left anim is visible (sequential combo)
 				local rightId = AnimationConfig.GetAttackId(false)
 				local rightT = tracks[rightId]
@@ -463,14 +520,9 @@ local function playOffhandSwing(): number
 						rightT:Stop(0.08)
 					end)
 				end
-				track:Play(0.05, 1, 1.15)
+				track:Play(0.05, 1, 1.0)
 				local len = track.Length
-				if len <= 0 then
-					-- Length sometimes 0 until first frames
-					task.wait()
-					len = track.Length
-				end
-				local dur = if len > 0 then len / 1.15 else 0.35
+				local dur = if len > 0 then len / 1.0 else 0.4
 				print("[WeaponVisual] PlayAttack LEFT →", offId, "len=", len)
 				return dur
 			end
@@ -495,22 +547,18 @@ local function playOffhandSwing(): number
 end
 
 local function rightAttackDuration(rightTrack: AnimationTrack?): number
-	local speed = 1.15
+	local speed = 1.0
 	if rightTrack then
-		local len = rightTrack.Length
-		if len <= 0 then
-			task.wait()
-			len = rightTrack.Length
-		end
+		local len = waitTrackLength(rightTrack, 1.5)
 		if len > 0 then
-			return math.clamp(len / speed, 0.12, 1.2)
+			return math.clamp(len / speed * 0.92, 0.15, 1.5)
 		end
 	end
 	if AnimationConfig.UseMinecraftSwing then
 		local cfg = AnimationConfig.MinecraftSwing or {}
 		return cfg.SwingTime or 0.28
 	end
-	return 0.32 -- safe default stagger if Length unknown
+	return 0.35 -- safe default stagger if Length unknown
 end
 
 local function playMinecraftSwing()
@@ -551,32 +599,6 @@ local function playMinecraftSwing()
 	print("[WeaponVisual] PlayAttack → MinecraftSwing")
 end
 
-local function loadTrack(animator: Animator, id: string): AnimationTrack?
-	if tracks[id] then
-		return tracks[id]
-	end
-	local anim = Instance.new("Animation")
-	anim.Name = "SM_Attack"
-	anim.AnimationId = id
-	local ok, result = pcall(function()
-		return animator:LoadAnimation(anim)
-	end)
-	anim:Destroy()
-	if not ok or typeof(result) ~= "Instance" then
-		warn("[WeaponVisual] LoadAnimation FAILED:", id, result)
-		return nil
-	end
-	local track = result :: AnimationTrack
-	if track.Length == 0 then
-		warn("[WeaponVisual] track length 0 — check publish/access for", id)
-	end
-	track.Priority = Enum.AnimationPriority.Action4
-	track.Looped = false
-	tracks[id] = track
-	print("[WeaponVisual] Loaded attack track:", id, "len=", track.Length)
-	return track
-end
-
 function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	-- Dual combo lock: spam LMB used to cancel the scheduled LEFT swing forever
 	if comboBusy then
@@ -596,23 +618,39 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	local hasOff = offModel ~= nil and offModel.Parent ~= nil
 	local offId = AnimationConfig.GetAttackOffhandId()
 
+	local function runCombo(playRight: () -> AnimationTrack?)
+		comboBusy = true
+		task.spawn(function()
+			local ok, err = pcall(function()
+				local rightTrack = playRight()
+				local waitRight = rightAttackDuration(rightTrack)
+				task.wait(waitRight)
+				if player.Character ~= char then
+					return
+				end
+				if hasOff and offModel and offModel.Parent then
+					local leftDur = playOffhandSwing()
+					task.wait(math.max(leftDur, 0.12))
+				elseif hasOff then
+					print("[WeaponVisual] skip LEFT — no offhand equipped")
+				end
+			end)
+			if not ok then
+				warn("[WeaponVisual] combo error:", err)
+			end
+			comboBusy = false
+		end)
+	end
+
 	-- Minecraft path: right procedural, then left
 	if AnimationConfig.UseMinecraftSwing then
 		if hasOff then
-			comboBusy = true
-		end
-		playMinecraftSwing()
-		if hasOff then
-			task.spawn(function()
-				task.wait(rightAttackDuration(nil))
-				if player.Character ~= char then
-					comboBusy = false
-					return
-				end
-				local leftDur = playOffhandSwing()
-				task.wait(math.max(leftDur, 0.15))
-				comboBusy = false
+			runCombo(function()
+				playMinecraftSwing()
+				return nil
 			end)
+		else
+			playMinecraftSwing()
 		end
 		return
 	end
@@ -637,6 +675,7 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 		warn("[WeaponVisual] PlayAttack FAILED — id", id)
 		return
 	end
+	waitTrackLength(track, 1.5)
 
 	for _, t in tracks do
 		if t.IsPlaying then
@@ -646,34 +685,20 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 		end
 	end
 
-	-- 1) RIGHT first
-	track:Play(0.05, 1, 1.15)
-	print("[WeaponVisual] PlayAttack RIGHT →", id, "offhand=", hasOff, "offId=", offId)
+	print("[WeaponVisual] PlayAttack RIGHT →", id, "len=", track.Length, "offhand=", hasOff, "offId=", offId)
 
 	if not hasOff then
+		track:Play(0.05, 1, 1.0)
 		if lastPlayedId ~= id then
 			lastPlayedId = id
 		end
 		return
 	end
 
-	-- 2) LEFT after right duration — locked so spam cannot cancel
-	comboBusy = true
-	task.spawn(function()
-		local waitRight = rightAttackDuration(track)
-		task.wait(waitRight)
-		if player.Character ~= char then
-			comboBusy = false
-			return
-		end
-		if not offModel or not offModel.Parent then
-			print("[WeaponVisual] skip LEFT — no offhand equipped")
-			comboBusy = false
-			return
-		end
-		local leftDur = playOffhandSwing()
-		task.wait(math.max(leftDur, 0.12))
-		comboBusy = false
+	-- RIGHT then LEFT; comboBusy always cleared (even on error)
+	runCombo(function()
+		track:Play(0.05, 1, 1.0)
+		return track
 	end)
 
 	if lastPlayedId ~= id then
@@ -734,6 +759,7 @@ function WeaponVisual.Init(getProfile: () -> any?)
 					mcLeftShoulder and mcLeftShoulder:GetFullName() or "nil"
 				)
 			end
+			preloadAttackTracks(char)
 			WeaponVisual.Refresh(getProfile())
 		end)
 		char.Destroying:Connect(function()
