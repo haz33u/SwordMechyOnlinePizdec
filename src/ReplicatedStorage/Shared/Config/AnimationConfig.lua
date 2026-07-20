@@ -10,13 +10,14 @@
 local ATTACK = "rbxassetid://95040065182870"
 
 local AnimationConfig = {
-	-- === published anim ON; set true only to retest procedural MC swing ===
-	UseMinecraftSwing = false,
+	-- Minecraft third-person: raised arm READY + procedural slash (user request 2026-07-20).
+	-- Set false to go back to published AttackMain only.
+	UseMinecraftSwing = true,
 
 	MinecraftSwing = {
-		SwingTime = 0.3, -- ~6 ticks at 20 TPS
-		RaisePower = 1.2,
-		RollPower = 0.4,
+		SwingTime = 0.28,
+		RaisePower = 1.15,
+		RollPower = 0.45,
 		SwingDir = -1, -- flip to 1 if swings backward
 		SoundId = "rbxasset://sounds/swordslash.wav",
 		SoundVolume = 0.6,

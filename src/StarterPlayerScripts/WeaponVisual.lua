@@ -36,8 +36,10 @@ local offT = 0
 local mcBound: RBXScriptConnection? = nil
 local mcSlash: Sound? = nil
 
-local READY = CFrame.Angles(math.rad(-90), 0, math.rad(-15))
-local READY_LEFT = CFrame.Angles(math.rad(-90), 0, math.rad(15))
+-- Minecraft third-person arm raise: hand in front of torso, fist "holds" the blade.
+-- (Not hanging at hip — that made free swords stick out of the elbows.)
+local READY = CFrame.Angles(math.rad(-85), math.rad(-10), math.rad(-25))
+local READY_LEFT = CFrame.Angles(math.rad(-85), math.rad(10), math.rad(25))
 
 local RARITY_COLOR = {
 	Common = Color3.fromRGB(170, 175, 185),
@@ -381,14 +383,14 @@ local function bindMcRender()
 		local rollPower = cfg.RollPower or 0.4
 		local swingDir = cfg.SwingDir or -1
 
-		-- Right arm: full MC swing when UseMinecraftSwing, else idle ready only if MC mode
+		-- Right arm: MC hold + slash whenever a main sword is equipped
 		if mcShoulder and mcShoulder.Parent then
 			if mcSwinging then
 				mcT += dt / swingTime
 				if mcT >= 1 then
 					mcSwinging = false
 					mcT = 0
-					mcShoulder.Transform = READY
+					mcShoulder.Transform = if mainModel and mainModel.Parent then READY else CFrame.new()
 					if mcWaist and mcWaist.Parent then
 						mcWaist.Transform = CFrame.new()
 					end
@@ -400,26 +402,22 @@ local function bindMcRender()
 						mcWaist.Transform = CFrame.Angles(0, body, 0)
 					end
 				end
-			elseif AnimationConfig.UseMinecraftSwing and mainModel and mainModel.Parent then
+			elseif mainModel and mainModel.Parent then
+				-- Idle hold: raised fist (Minecraft TP), not hip-hang
 				mcShoulder.Transform = READY
 			end
 		end
 
-		-- Left arm: offhand always gets a procedural mirror swing (published anim is right-only)
+		-- Left arm: same READY hold + mirror slash for offhand
 		if mcLeftShoulder and mcLeftShoulder.Parent then
 			if offSwinging then
 				offT += dt / swingTime
 				if offT >= 1 then
 					offSwinging = false
 					offT = 0
-					if offModel and offModel.Parent then
-						mcLeftShoulder.Transform = READY_LEFT
-					else
-						mcLeftShoulder.Transform = CFrame.new()
-					end
+					mcLeftShoulder.Transform = if offModel and offModel.Parent then READY_LEFT else CFrame.new()
 				else
 					local raise, roll, body = mcCurve(offT)
-					-- Mirror roll / yaw for left side
 					mcLeftShoulder.Transform = READY_LEFT
 						* CFrame.Angles(swingDir * raise * raisePower, -body * 2, roll * rollPower)
 				end
@@ -526,6 +524,7 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	end
 	lastPlay = now
 
+	-- Minecraft path is default: raised-arm slash (matches MC sword hold)
 	if AnimationConfig.UseMinecraftSwing then
 		playMinecraftSwing()
 		playOffhandSwing()
@@ -536,9 +535,11 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	if not char then
 		return
 	end
-	-- Ensure left shoulder resolved for dual-wield even in published-anim mode
 	if not mcLeftShoulder or not mcLeftShoulder.Parent then
 		mcLeftShoulder = findShoulder(char, "left")
+	end
+	if not mcShoulder or not mcShoulder.Parent then
+		mcShoulder = findRightShoulder(char)
 	end
 	bindMcRender()
 

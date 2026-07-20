@@ -195,27 +195,48 @@ local function findHandGripAttachment(hand: BasePart, side: string): Attachment?
 	return nil
 end
 
---- Build C1 so a Y-long free sword points forward/up (classic sim style).
+local function degAngles(v: Vector3): CFrame
+	return CFrame.Angles(math.rad(v.X), math.rad(v.Y), math.rad(v.Z))
+end
+
+--- Classic sim: blade forward/up when arms hang.
 local function forwardHoldC1(handle: BasePart, side: string): CFrame
 	local size = handle.Size
 	local long = math.max(size.X, size.Y, size.Z)
 	local hiltFactor = WeaponModelConfig.ForwardHiltFactor or 0.32
-	-- Hilt sits in the palm; blade extends away along +Y of mesh after rotation.
 	local hilt = long * hiltFactor
 	local deg = if side == "left"
 		then (WeaponModelConfig.ForwardLeftAngles or Vector3.new(-90, -90, 0))
 		else (WeaponModelConfig.ForwardRightAngles or Vector3.new(-90, 90, 0))
-	local rot = CFrame.Angles(math.rad(deg.X), math.rad(deg.Y), math.rad(deg.Z))
-	return CFrame.new(0, hilt, 0) * rot
+	return CFrame.new(0, hilt, 0) * degAngles(deg)
+end
+
+--[[
+	Minecraft third-person item hold:
+	  Arm is raised (READY pose on shoulder). Sword leaves the FIST —
+	  blade up/diagonal, OK to clip through hand mesh (like MC).
+	  Must not look like it's glued to the elbow/shoulder.
+]]
+local function minecraftHoldC1(handle: BasePart, side: string): CFrame
+	local size = handle.Size
+	local long = math.max(size.X, size.Y, size.Z)
+	local hiltFactor = WeaponModelConfig.MinecraftHiltFactor or 0.14
+	local hilt = long * hiltFactor
+	local isLeft = side == "left"
+	local deg = if isLeft
+		then (WeaponModelConfig.MinecraftLeftAngles or Vector3.new(0, 0, -90))
+		else (WeaponModelConfig.MinecraftRightAngles or Vector3.new(0, 0, 90))
+	local off = if isLeft
+		then (WeaponModelConfig.MinecraftLeftOffset or Vector3.zero)
+		else (WeaponModelConfig.MinecraftRightOffset or Vector3.zero)
+	-- Offset in handle space after rotation order: translate hilt, rotate blade, nudge
+	return CFrame.new(off) * CFrame.new(0, hilt, 0) * degAngles(deg)
 end
 
 --[[
 	Weld like Roblox Tools on R15:
 	  Part0 = Hand, C0 = Right/LeftGripAttachment.CFrame
 	  Part1 = Handle, C1 = hold pose
-
-	HoldMode "forward" = same pose both hands (blade out front/up), good enough.
-	HoldMode "tool"    = each free asset's Tool.Grip (scaled).
 ]]
 function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip: CFrame)
 	local handle = model.PrimaryPart
@@ -247,21 +268,22 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 	weld.Part0 = hand
 	weld.Part1 = handle
 
-	-- Palm point on R15 (same as engine Tool equip)
 	if gripAtt then
 		weld.C0 = gripAtt.CFrame
 	else
 		weld.C0 = CFrame.new(0, -0.15, 0)
 	end
 
-	local mode = WeaponModelConfig.HoldMode or "forward"
+	local mode = WeaponModelConfig.HoldMode or "minecraft"
 	local c1: CFrame
 	local hasToolGrip = typeof(grip) == "CFrame" and grip.Position.Magnitude > 0.05
 	if mode == "tool" and hasToolGrip then
-		-- Free Toolbox grip, already scaled in PrepareClone
 		c1 = grip
-	else
+	elseif mode == "forward" then
 		c1 = forwardHoldC1(handle, side)
+	else
+		-- default minecraft
+		c1 = minecraftHoldC1(handle, side)
 	end
 	weld.C1 = c1 * tune
 	weld.Parent = handle

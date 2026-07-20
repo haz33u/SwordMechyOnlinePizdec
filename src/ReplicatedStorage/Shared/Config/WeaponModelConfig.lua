@@ -2,18 +2,16 @@
 --[[
 	Maps WeaponConfig ids → Model names under ReplicatedStorage.WeaponModels.
 
-	Place folder (not in git):
-	  ReplicatedStorage.WeaponModels.<ModelName>
-
-	Hold: free Tools use huge meshes + R6-ish Tool.Grip. We scale down and apply
-	HoldTune so the handle sits in the R15 palm instead of through the torso.
+	Minecraft-style hold (target look):
+	  - Arm raised (WeaponVisual READY pose) — not hanging at hip
+	  - Blade leaves the FIST up/diagonal (can clip through hand mesh like MC)
+	  - Must NOT originate from shoulder / stick out of the elbow sideways
 ]]
 
 local WeaponModelConfig = {
 	FolderName = "WeaponModels",
 
 	ModelByWeaponId = {
-		-- Loc1 rarity ladder bottom → top (6 free models)
 		starter_weapon = "StarterSword",
 		old_sword = "IronSword",
 		bone_dagger = "PixelIronSword",
@@ -35,40 +33,39 @@ local WeaponModelConfig = {
 		sea_dagger = "",
 	} :: { [string]: string },
 
-	-- Free Toolbox swords are ~5–7 studs; ~0.5 is hand-sized on R15.
-	DefaultScale = 0.5,
+	-- Slightly larger than 0.45 — MC swords read better when chunky
+	DefaultScale = 0.55,
 
 	--[[
-		Hold mode (how C1 is built — same idea as Roblox Tool equip):
-
-		  "tool"    — use free asset Tool.Grip (scaled). Best when each mesh
-		              has its own grip authored in Toolbox.
-		  "forward" — ignore Tool.Grip; force Y-long blade to point roughly
-		              forward/up like classic sword sims (adequate, not perfect).
-
-		Use "forward" for a consistent dual-wield look across mixed free models.
+		HoldMode:
+		  "minecraft" — blade from fist up/diagonal (with arm READY pose)
+		  "forward"   — classic sim side/forward hold
+		  "tool"      — free asset Tool.Grip
 	]]
-	HoldMode = "forward",
+	HoldMode = "minecraft",
 
-	-- Extra nudge after the base hold (both modes). Identity = no extra.
 	HoldTuneRight = CFrame.new(),
 	HoldTuneLeft = CFrame.new(),
 
-	--[[
-		"forward" mode: free swords usually have longest axis = local Y (blade).
-		We put the palm near the hilt (along +Y into the mesh) and rotate so
-		the blade leaves the hand forward/up — NOT out to the side.
-
-		Recipe (R15 RightGripAttachment as C0):
-		  C1 = CFrame.new(0, hiltAlongY, 0) * CFrame.Angles(rx, ry, rz)
-
-		If a set still looks wrong, tweak only these angles (degrees in comments):
-		  Right: -90 X, +90 Y  → blade along tool-forward of the grip attachment
-		  Left:  mirror Y sign
-	]]
-	ForwardHiltFactor = 0.32, -- fraction of longest axis toward hilt from center
-	ForwardRightAngles = Vector3.new(-90, 90, 0), -- degrees Euler XYZ
+	-- Shared hilt: small factor = more blade "through" the hand (MC-like clip)
+	ForwardHiltFactor = 0.18,
+	ForwardRightAngles = Vector3.new(-90, 90, 0),
 	ForwardLeftAngles = Vector3.new(-90, -90, 0),
+
+	--[[
+		Minecraft mode (arm is in READY ≈ pitch -90, hand in front of torso).
+		Free swords: longest axis usually local +Y (blade).
+
+		Hilt near palm; blade extends out of the fist (through hand mesh is OK).
+		Tune only these if tip still points wrong:
+	]]
+	MinecraftHiltFactor = 0.14,
+	-- degrees Euler applied as CFrame.Angles(rx, ry, rz) after hilt offset on +Y
+	MinecraftRightAngles = Vector3.new(0, 0, 90),
+	MinecraftLeftAngles = Vector3.new(0, 0, -90),
+	-- Extra shift in grip-attachment space (studs): push blade out of fist, not into shoulder
+	MinecraftRightOffset = Vector3.new(0, 0, -0.05),
+	MinecraftLeftOffset = Vector3.new(0, 0, -0.05),
 }
 
 function WeaponModelConfig.GetModelName(weaponId: string): string?
