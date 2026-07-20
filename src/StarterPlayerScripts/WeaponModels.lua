@@ -195,7 +195,28 @@ local function findHandGripAttachment(hand: BasePart, side: string): Attachment?
 	return nil
 end
 
---- Weld prepared model into R15 palm (grip attachment + tuned hold).
+--- Build C1 so a Y-long free sword points forward/up (classic sim style).
+local function forwardHoldC1(handle: BasePart, side: string): CFrame
+	local size = handle.Size
+	local long = math.max(size.X, size.Y, size.Z)
+	local hiltFactor = WeaponModelConfig.ForwardHiltFactor or 0.32
+	-- Hilt sits in the palm; blade extends away along +Y of mesh after rotation.
+	local hilt = long * hiltFactor
+	local deg = if side == "left"
+		then (WeaponModelConfig.ForwardLeftAngles or Vector3.new(-90, -90, 0))
+		else (WeaponModelConfig.ForwardRightAngles or Vector3.new(-90, 90, 0))
+	local rot = CFrame.Angles(math.rad(deg.X), math.rad(deg.Y), math.rad(deg.Z))
+	return CFrame.new(0, hilt, 0) * rot
+end
+
+--[[
+	Weld like Roblox Tools on R15:
+	  Part0 = Hand, C0 = Right/LeftGripAttachment.CFrame
+	  Part1 = Handle, C1 = hold pose
+
+	HoldMode "forward" = same pose both hands (blade out front/up), good enough.
+	HoldMode "tool"    = each free asset's Tool.Grip (scaled).
+]]
 function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip: CFrame)
 	local handle = model.PrimaryPart
 	if not handle then
@@ -220,29 +241,29 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 	if typeof(tune) ~= "CFrame" then
 		tune = CFrame.new()
 	end
-	local palm = if isLeft then WeaponModelConfig.PalmHoldLeft else WeaponModelConfig.PalmHoldRight
-	if typeof(palm) ~= "CFrame" then
-		palm = CFrame.new()
-	end
 
 	local weld = Instance.new("Weld")
 	weld.Name = "SM_WeaponWeld"
 	weld.Part0 = hand
 	weld.Part1 = handle
-	-- C0: sit at the avatar grip attachment (true palm point on R15)
+
+	-- Palm point on R15 (same as engine Tool equip)
 	if gripAtt then
 		weld.C0 = gripAtt.CFrame
 	else
-		weld.C0 = CFrame.new(0, -0.1, 0)
+		weld.C0 = CFrame.new(0, -0.15, 0)
 	end
 
-	-- C1: free Tool.Grip is often R6-scale and puts the blade through the torso.
-	-- PreferPalmHold uses a calibrated palm pose; optional grip blend for fine tune.
-	if WeaponModelConfig.PreferPalmHold then
-		weld.C1 = palm * tune
+	local mode = WeaponModelConfig.HoldMode or "forward"
+	local c1: CFrame
+	local hasToolGrip = typeof(grip) == "CFrame" and grip.Position.Magnitude > 0.05
+	if mode == "tool" and hasToolGrip then
+		-- Free Toolbox grip, already scaled in PrepareClone
+		c1 = grip
 	else
-		weld.C1 = grip * tune
+		c1 = forwardHoldC1(handle, side)
 	end
+	weld.C1 = c1 * tune
 	weld.Parent = handle
 end
 

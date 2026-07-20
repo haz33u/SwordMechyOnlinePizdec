@@ -35,24 +35,40 @@ local WeaponModelConfig = {
 		sea_dagger = "",
 	} :: { [string]: string },
 
-	-- Free Toolbox swords are ~5–7 studs; ~0.45 keeps them hand-sized on R15.
-	DefaultScale = 0.45,
+	-- Free Toolbox swords are ~5–7 studs; ~0.5 is hand-sized on R15.
+	DefaultScale = 0.5,
 
 	--[[
-		Extra CFrame on top of (scaled) Tool.Grip when welding to hand.
-		Tune in Play if a blade still clips the arm.
-		Right: slight pitch so blade sits along the forearm / up.
+		Hold mode (how C1 is built — same idea as Roblox Tool equip):
+
+		  "tool"    — use free asset Tool.Grip (scaled). Best when each mesh
+		              has its own grip authored in Toolbox.
+		  "forward" — ignore Tool.Grip; force Y-long blade to point roughly
+		              forward/up like classic sword sims (adequate, not perfect).
+
+		Use "forward" for a consistent dual-wield look across mixed free models.
 	]]
-	HoldTuneRight = CFrame.new(0, 0.05, 0.02) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0)),
-	HoldTuneLeft = CFrame.new(0, 0.05, 0.02) * CFrame.Angles(math.rad(0), math.rad(0), math.rad(0)),
+	HoldMode = "forward",
 
-	-- If Tool.Grip still looks broken for a set, ignore it and use palm hold only.
-	PreferPalmHold = true,
+	-- Extra nudge after the base hold (both modes). Identity = no extra.
+	HoldTuneRight = CFrame.new(),
+	HoldTuneLeft = CFrame.new(),
 
-	-- Palm hold when PreferPalmHold (or no usable grip). Attachment-local CFrame.
-	-- Handle long axis is usually +Y on free swords; grip near bottom of mesh.
-	PalmHoldRight = CFrame.new(0, 0.9, 0) * CFrame.Angles(math.rad(90), math.rad(90), 0),
-	PalmHoldLeft = CFrame.new(0, 0.9, 0) * CFrame.Angles(math.rad(90), math.rad(-90), 0),
+	--[[
+		"forward" mode: free swords usually have longest axis = local Y (blade).
+		We put the palm near the hilt (along +Y into the mesh) and rotate so
+		the blade leaves the hand forward/up — NOT out to the side.
+
+		Recipe (R15 RightGripAttachment as C0):
+		  C1 = CFrame.new(0, hiltAlongY, 0) * CFrame.Angles(rx, ry, rz)
+
+		If a set still looks wrong, tweak only these angles (degrees in comments):
+		  Right: -90 X, +90 Y  → blade along tool-forward of the grip attachment
+		  Left:  mirror Y sign
+	]]
+	ForwardHiltFactor = 0.32, -- fraction of longest axis toward hilt from center
+	ForwardRightAngles = Vector3.new(-90, 90, 0), -- degrees Euler XYZ
+	ForwardLeftAngles = Vector3.new(-90, -90, 0),
 }
 
 function WeaponModelConfig.GetModelName(weaponId: string): string?
