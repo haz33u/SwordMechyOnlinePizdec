@@ -1,6 +1,13 @@
 --!strict
 --[[
 	Weapon image assets — keys match dump weapon slugs (WeaponConfig ids).
+
+	Inventory priority (see Inventory + docs/WEAPON_ICONS.md):
+	  1) Authored 2D if HasWeaponImage (Minecraft-style card)
+	  2) Else 3D Viewport card from WeaponModels
+	  3) Else placeholder
+
+	Prefer2DWhenAvailable: when true, LegacyWeaponAssetIds count as authored 2D.
 ]]
 
 local IconConfig = {
@@ -8,15 +15,17 @@ local IconConfig = {
 	FallbackFrame = "",
 
 	--[[
-		Legacy flat Decals (old Cristalix-style art).
-		Inventory prefers 3D Viewport when WeaponModels mesh exists.
-		These ids kept ONLY as backup if PreferLegacyDecals = true OR no mesh.
+		When true (default): use LegacyWeaponAssetIds / WeaponAssetIds as ImageLabel
+		BEFORE trying live 3D — matches Minecraft bag quality when art exists.
+		When false: 3D mesh wins whenever present (old behavior).
 	]]
+	Prefer2DWhenAvailable = true,
+
+	-- Global switch: force legacy table only (rarely needed)
 	PreferLegacyDecals = false,
 
 	WeaponAssetIds = {
-		-- Loc1 — legacy PNGs parked (empty = don't show wrong art when 3D fails)
-		-- Restore ids here if PreferLegacyDecals = true
+		-- Fill with new uploads for Loc2 / custom art. Empty = fall through to legacy or 3D.
 		starter_weapon = "",
 		old_sword = "",
 		bone_dagger = "",
@@ -26,7 +35,6 @@ local IconConfig = {
 		ardite = "",
 		forest_sword = "",
 		forest_shadow = "",
-		-- Loc2
 		pirate_hook = "",
 		pirate_hammer = "",
 		pirate_saber = "",
@@ -37,7 +45,7 @@ local IconConfig = {
 		sea_dagger = "",
 	} :: { [string]: string },
 
-	-- Parked legacy rbxassetid (do not delete — re-enable via PreferLegacyDecals + paste back)
+	-- Loc1 Cristalix-style flat icons (used when Prefer2DWhenAvailable)
 	LegacyWeaponAssetIds = {
 		starter_weapon = "rbxassetid://116982617153585",
 		old_sword = "rbxassetid://85575954431015",
@@ -62,9 +70,13 @@ local IconConfig = {
 	} :: { [string]: string },
 }
 
-function IconConfig.GetWeaponImage(weaponId: string): string
+local function resolveId(weaponId: string): string
 	local WeaponConfig = require(script.Parent.WeaponConfig)
-	local resolved = WeaponConfig.ResolveId(weaponId)
+	return WeaponConfig.ResolveId(weaponId)
+end
+
+function IconConfig.GetWeaponImage(weaponId: string): string
+	local resolved = resolveId(weaponId)
 	if IconConfig.PreferLegacyDecals then
 		local legacy = IconConfig.LegacyWeaponAssetIds[resolved] or IconConfig.LegacyWeaponAssetIds[weaponId]
 		if type(legacy) == "string" and legacy ~= "" then
@@ -75,7 +87,30 @@ function IconConfig.GetWeaponImage(weaponId: string): string
 	if type(id) == "string" and id ~= "" then
 		return id
 	end
+	-- Prefer2D: also accept legacy as authored card
+	if IconConfig.Prefer2DWhenAvailable then
+		local legacy = IconConfig.LegacyWeaponAssetIds[resolved] or IconConfig.LegacyWeaponAssetIds[weaponId]
+		if type(legacy) == "string" and legacy ~= "" then
+			return legacy
+		end
+	end
 	return IconConfig.FallbackWeapon
+end
+
+--- true if we have a real 2D card (not generic fallback) for this weapon
+function IconConfig.HasWeaponImage(weaponId: string): boolean
+	local resolved = resolveId(weaponId)
+	local primary = IconConfig.WeaponAssetIds[resolved] or IconConfig.WeaponAssetIds[weaponId]
+	if type(primary) == "string" and primary ~= "" then
+		return true
+	end
+	if IconConfig.Prefer2DWhenAvailable or IconConfig.PreferLegacyDecals then
+		local legacy = IconConfig.LegacyWeaponAssetIds[resolved] or IconConfig.LegacyWeaponAssetIds[weaponId]
+		if type(legacy) == "string" and legacy ~= "" then
+			return true
+		end
+	end
+	return false
 end
 
 function IconConfig.GetFrameImage(rarity: string): string

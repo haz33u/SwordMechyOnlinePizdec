@@ -1194,38 +1194,19 @@ function Inventory.Bind(
 				btn.Active = true
 				btn.Selectable = true
 
-				-- Icon priority: 3D mesh Viewport → static Decal only if no mesh
-				local hasMesh = false
+				-- Icon card priority (Minecraft rule):
+				--   1) authored 2D if available  2) live 3D Viewport  3) "?"
+				local usedIcon = false
+				local has2d = false
 				pcall(function()
-					hasMesh = WeaponModels.HasVisual(w.id)
+					has2d = IconConfig.HasWeaponImage(w.id)
 				end)
-				local used3d = false
-				if hasMesh then
-					local ok3d, res3d = pcall(function()
-						return WeaponModels.TryFillInventoryIcon(btn, w.id, 40)
-					end)
-					used3d = ok3d and res3d == true
-					if not used3d then
-						warn("[Inventory] 3D icon failed for", w.id, "ok=", ok3d, "res=", res3d)
-						local fail = Instance.new("TextLabel")
-						fail.Name = "IconFail"
-						fail.BackgroundTransparency = 1
-						fail.Size = UDim2.fromScale(1, 1)
-						fail.Font = Enum.Font.Arcade
-						fail.TextSize = 18
-						fail.TextColor3 = TD
-						fail.Text = "?"
-						fail.ZIndex = 40
-						fail.Active = false
-						fail.Parent = btn
-					end
-				end
-				if not used3d and not hasMesh then
+				if has2d then
 					local img = Instance.new("ImageLabel")
 					img.Name = "Icon"
 					img.BackgroundTransparency = 1
 					img.BorderSizePixel = 0
-					img.Size = UDim2.fromScale(0.78, 0.78)
+					img.Size = UDim2.fromScale(0.82, 0.82)
 					img.Position = UDim2.fromScale(0.5, 0.48)
 					img.AnchorPoint = Vector2.new(0.5, 0.5)
 					img.ScaleType = Enum.ScaleType.Fit
@@ -1233,6 +1214,35 @@ function Inventory.Bind(
 					img.Active = false
 					img.Image = IconConfig.GetWeaponImage(w.id)
 					img.Parent = btn
+					usedIcon = true
+				end
+				if not usedIcon then
+					local hasMesh = false
+					pcall(function()
+						hasMesh = WeaponModels.HasVisual(w.id)
+					end)
+					if hasMesh then
+						local ok3d, res3d = pcall(function()
+							return WeaponModels.TryFillInventoryIcon(btn, w.id, 40)
+						end)
+						usedIcon = ok3d and res3d == true
+						if not usedIcon then
+							warn("[Inventory] 3D icon failed for", w.id, "ok=", ok3d, "res=", res3d)
+						end
+					end
+				end
+				if not usedIcon then
+					local fail = Instance.new("TextLabel")
+					fail.Name = "IconFail"
+					fail.BackgroundTransparency = 1
+					fail.Size = UDim2.fromScale(1, 1)
+					fail.Font = Enum.Font.Arcade
+					fail.TextSize = 18
+					fail.TextColor3 = TD
+					fail.Text = "?"
+					fail.ZIndex = 40
+					fail.Active = false
+					fail.Parent = btn
 				end
 
 				if profile.equippedMain == w.uid or profile.equippedOffhand == w.uid then

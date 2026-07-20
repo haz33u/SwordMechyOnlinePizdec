@@ -562,59 +562,96 @@ local function resolveIconOverride(clone: Model): any
 	return WeaponModelConfig.ResolveOverride(templateName)
 end
 
-local function getIconBbSize(clone: Model): (number, number)
-	-- Returns height (Y), width (max X/Z) for fit-to-slot. Falls back to attributes.
-	local hAttr = clone:GetAttribute("IconFitH")
-	local wAttr = clone:GetAttribute("IconFitW")
-	if type(hAttr) == "number" and type(wAttr) == "number" and hAttr > 0 and wAttr > 0 then
-		return hAttr, wAttr
-	end
+local function measureIconBb(clone: Model): (number, number, number)
+	-- height Y, lateral max(X,Z), half-diagonal of AABB
 	local ok, _, size = pcall(function()
 		return clone:GetBoundingBox()
 	end)
 	if ok and typeof(size) == "Vector3" then
-		local h = math.max(size.Y, 0.2)
-		local w = math.max(size.X, size.Z, 0.05)
-		return h, w
+		local h = math.max(size.Y, 0.15)
+		local lat = math.max(size.X, size.Z, 0.02)
+		local halfDiag = size.Magnitude * 0.5
+		return h, lat, halfDiag
 	end
-	return 1.5, 0.4
+	return 1.5, 0.4, 1.0
+end
+
+local function getStoredIconFit(clone: Model): (number, number, number)
+	local h = clone:GetAttribute("IconFitH")
+	local lat = clone:GetAttribute("IconFitW")
+	local diag = clone:GetAttribute("IconFitDiag")
+	if type(h) == "number" and type(lat) == "number" and h > 0 and lat > 0 then
+		local d = if type(diag) == "number" and diag > 0 then diag else math.max(h, lat)
+		return h, lat, d
+	end
+	return measureIconBb(clone)
+end
+
+--- Icon-only: enlarge needle meshes so they are readable (does not affect world hand scale).
+local function ensureIconLateralThickness(clone: Model)
+	local floor = WeaponModelConfig.IconMinLateralStuds or 0.48
+	local maxMult = WeaponModelConfig.IconLateralScaleMax or 4.5
+	if floor <= 0 then
+		return
+	end
+	local _h, lat, _d = measureIconBb(clone)
+	if lat >= floor * 0.98 then
+		return
+	end
+	local factor = math.clamp(floor / math.max(lat, 0.02), 1, maxMult)
+	if factor <= 1.02 then
+		return
+	end
+	pcall(function()
+		local cur = 1
+		pcall(function()
+			cur = (clone :: any):GetScale()
+		end)
+		if type(cur) ~= "number" or cur <= 0 then
+			cur = 1
+		end
+		(clone :: any):ScaleTo(cur * factor)
+	end)
+	-- Re-center after scale
+	local ok, bb = pcall(function()
+		local c, _s = clone:GetBoundingBox()
+		return c
+	end)
+	if ok and typeof(bb) == "CFrame" then
+		pcall(function()
+			clone:TranslateBy(-(bb :: CFrame).Position)
+		end)
+	end
 end
 
 --[[
-	ONE icon standard: same camera math for every sword.
-	dist chosen so projected height ≈ IconFillHeight of the view,
-	and projected width ≥ IconMinWidth (thin blades pull camera closer).
+	ONE icon card camera: fit HEIGHT only.
+	Thin blades are thickened via icon-only ScaleTo (not near-clip zoom).
+	Near-clip guard prevents black/white face squares (Ardite bug).
 ]]
 local function applyIconCamera(clone: Model, cam: Camera)
-	local height, width = getIconBbSize(clone)
+	local height, _lat, halfDiag = getStoredIconFit(clone)
 
 	local fov = WeaponModelConfig.IconFov or 28
-	local fillH = WeaponModelConfig.IconFillHeight or 0.80
-	local minW = WeaponModelConfig.IconMinWidth or 0.22
-	local dMin = WeaponModelConfig.IconDistMin or 0.55
-	local dMax = WeaponModelConfig.IconDistMax or 14
-
-	fillH = math.clamp(fillH, 0.35, 0.95)
-	minW = math.clamp(minW, 0.08, 0.6)
+	local fillH = math.clamp(WeaponModelConfig.IconFillHeight or 0.82, 0.4, 0.95)
+	local dMin = WeaponModelConfig.IconDistMin or 1.2
+	local dMax = WeaponModelConfig.IconDistMax or 16
+	local nearFac = WeaponModelConfig.IconNearClipFactor or 1.2
 
 	local halfTan = math.tan(math.rad(fov * 0.5))
 	if halfTan < 1e-4 then
 		halfTan = 0.25
 	end
 
-	-- full visible span at origin ≈ 2 * dist * tan(fov/2)  (square VF, aspect≈1)
-	-- want: height = fillH * span  →  dist = height / (2 * fillH * tan)
-	local distForHeight = height / (2 * fillH * halfTan)
-	-- want: width >= minW * span  →  dist <= width / (2 * minW * tan)
-	local distForWidth = width / (2 * minW * halfTan)
-
-	-- Closer of the two satisfies both (height target + min width floor)
-	local dist = math.min(distForHeight, distForWidth)
-	dist = math.clamp(dist, dMin, dMax)
+	-- height = fillH * (2 * dist * tan)  →  dist = height / (2 * fillH * tan)
+	local dist = height / (2 * fillH * halfTan)
+	-- Stay outside the mesh (fixes black/white square when camera sat on a face)
+	local nearFloor = math.max(dMin, halfDiag * nearFac)
+	dist = math.clamp(math.max(dist, nearFloor), dMin, dMax)
 
 	local dir = WeaponModelConfig.IconCamDir
 	if typeof(dir) ~= "Vector3" or dir.Magnitude < 0.01 then
-		dir = Vector3.new(0.5, 0.28, 0.8)
+		dir = Vector3.new(0.55, 0.22, 0.85)
 	end
 	dir = dir.Unit
 
@@ -630,8 +667,9 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 	end
 
 	-- 1) Center at origin
-	local okBox, bbCf, _bbSize = pcall(function()
-		return clone:GetBoundingBox()
+	local okBox, bbCf = pcall(function()
+		local c, _s = clone:GetBoundingBox()
+		return c
 	end)
 	if okBox and typeof(bbCf) == "CFrame" then
 		pcall(function()
@@ -648,7 +686,7 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		orientTipUp(clone)
 	end)
 
-	-- 3) Rare flip overrides (inventory only)
+	-- 3) Rare flip overrides (inventory only — one bit per mesh)
 	local ov = resolveIconOverride(clone)
 	if ov then
 		if ov.iconInvert then
@@ -670,23 +708,27 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		clone:PivotTo(CFrame.Angles(0, math.rad(yaw), 0) * clone:GetPivot())
 	end)
 
-	-- 5) Re-center + store fit dimensions
-	local ok2, bb2, size2 = pcall(function()
-		return clone:GetBoundingBox()
+	-- 5) Re-center
+	local ok2, bb2 = pcall(function()
+		local c, _s = clone:GetBoundingBox()
+		return c
 	end)
 	if ok2 and typeof(bb2) == "CFrame" then
 		pcall(function()
 			clone:TranslateBy(-(bb2 :: CFrame).Position)
 		end)
 	end
-	if ok2 and typeof(size2) == "Vector3" then
-		clone:SetAttribute("IconFitH", math.max(size2.Y, 0.2))
-		clone:SetAttribute("IconFitW", math.max(size2.X, size2.Z, 0.05))
-	end
 
+	-- 6) Icon-only lateral thicken (needles → readable cards; no camera dive)
+	ensureIconLateralThickness(clone)
+
+	-- 7) Store fit dims + camera
+	local h, lat, halfDiag = measureIconBb(clone)
+	clone:SetAttribute("IconFitH", h)
+	clone:SetAttribute("IconFitW", lat)
+	clone:SetAttribute("IconFitDiag", halfDiag)
 	clone:SetAttribute("IconFramed", true)
 
-	-- 6) Fit-to-slot camera (one standard for all)
 	applyIconCamera(clone, cam)
 end
 

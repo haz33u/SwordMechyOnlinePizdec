@@ -1,13 +1,13 @@
 --!strict
 --[[
 	Weapon 3D models + hold / inventory icon contract.
-	See docs/WEAPON_HOLD.md
+	See docs/WEAPON_HOLD.md and docs/WEAPON_ICONS.md
 
 	IMPORTANT: hiltEnd is evaluated AFTER DefaultScale on the live part Size.
 	Do NOT store absolute stud offsets from unscaled Toolbox sizes (they break after ScaleTo).
 
-	Inventory icons use ONE fit-to-slot standard (see Icon* fields). Per-model
-	overrides are ONLY for grip (hiltEnd) and rare flip (iconInvert) — never size.
+	Inventory = equal-size CARDS (Minecraft rule). World/hand scale is independent.
+	Per-model overrides: hiltEnd (hand) + iconInvert (inventory flip only). Never size lists.
 ]]
 
 export type HiltOverride = {
@@ -24,7 +24,7 @@ export type HiltOverride = {
 	iconInvert: boolean?,
 	iconEuler: Vector3?,
 	iconFlip: (boolean | string)?,
-	-- DEPRECATED: size is global fit-to-slot. Kept optional for one-off debug.
+	-- DEPRECATED — size is global card fit. Do not use for new weapons.
 	iconScaleMult: number?,
 }
 
@@ -53,36 +53,44 @@ local WeaponModelConfig = {
 		sea_dagger = "",
 	} :: { [string]: string },
 
+	-- Hand / world size only (does NOT drive inventory card size)
 	DefaultScale = 0.52,
 
 	--[[
-		ONE icon standard for every weapon ViewportFrame:
-		  tip up → fixed yaw → fit projected height + min width to the slot.
-		Thin blades get a closer camera automatically (min width rule).
-		Do not add per-sword zoom lists — change these knobs only.
+		ICON CARD standard (same for every weapon, including future giants):
+		1) tip up + fixed yaw
+		2) icon-only ScaleTo so lateral thickness is readable
+		3) camera fits HEIGHT to IconFillHeight — never zoom into the mesh face
 	]]
 	IconYawDeg = -35,
 	IconFov = 28,
-	-- Target: sword height fills this fraction of the vertical view
-	IconFillHeight = 0.80,
-	-- Target: blade width fills at least this fraction (stops hairline icons)
-	IconMinWidth = 0.22,
-	IconCamDir = Vector3.new(0.5, 0.28, 0.8),
-	IconDistMin = 0.55,
-	IconDistMax = 14,
+	-- Silhouette height as fraction of viewport (equal card fill)
+	IconFillHeight = 0.82,
+	-- After pose: if min(X,Z) < this, ScaleTo icon clone up until lateral floor
+	-- (stops hairlines without pulling camera into the blade)
+	IconMinLateralStuds = 0.48,
+	-- Cap how much we may enlarge a needle (avoid giant flat cards)
+	IconLateralScaleMax = 4.5,
+	IconCamDir = Vector3.new(0.55, 0.22, 0.85),
+	IconDistMin = 1.2,
+	IconDistMax = 16,
+	-- Camera must stay outside half-diagonal * this factor
+	IconNearClipFactor = 1.2,
 
-	-- Legacy fields (unused by fit-to-slot; kept so old requires don't nil)
+	-- Legacy unused
 	IconScale = 1,
 	IconTargetExtent = 0,
+	IconMinWidth = 0,
 
 	HiltEndBias = 0.96,
 
 	--[[
-		hiltEnd: hand grip which geometric end is HANDLE (+1 / -1).
-		iconInvert: inventory flip only when tip-up still looks wrong.
+		hiltEnd: hand which end is HANDLE.
+		iconInvert: one-bit inventory flip after tip-up (QA once per mesh).
+		Old Sword: tip-up from Tool.Grip is correct — do NOT invert (was true → looked upside-down).
 	]]
 	HiltOverrides = {
-		IronSword = { iconInvert = true },
+		IronSword = { iconInvert = false },
 		RubySword = { iconInvert = true },
 		SupeSport = {
 			hiltEnd = -1,
@@ -94,7 +102,6 @@ local WeaponModelConfig = {
 			hiltBias = 0.98,
 			iconInvert = true,
 		},
-		-- LastSword: grip tip-up only; size comes from global fit
 	} :: { [string]: HiltOverride },
 
 	PalmOffsetRight = Vector3.new(0.04, 0.08, 0.04),
