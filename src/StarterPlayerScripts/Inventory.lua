@@ -1194,41 +1194,42 @@ function Inventory.Bind(
 				btn.Active = true
 				btn.Selectable = true
 
-				-- Icon card priority (Minecraft rule):
-				--   1) authored 2D if available  2) live 3D Viewport  3) "?"
+				-- Icon priority (pro hybrid — see docs/WEAPON_ICONS.md):
+				--   1) live 3D if mesh  2) NEW authored 2D only  3) "?"
+				-- Legacy Cristalix dump art is NOT used (looks like wrong stubs).
 				local usedIcon = false
-				local has2d = false
+				local hasMesh = false
 				pcall(function()
-					has2d = IconConfig.HasWeaponImage(w.id)
+					hasMesh = WeaponModels.HasVisual(w.id)
 				end)
-				if has2d then
-					local img = Instance.new("ImageLabel")
-					img.Name = "Icon"
-					img.BackgroundTransparency = 1
-					img.BorderSizePixel = 0
-					img.Size = UDim2.fromScale(0.82, 0.82)
-					img.Position = UDim2.fromScale(0.5, 0.48)
-					img.AnchorPoint = Vector2.new(0.5, 0.5)
-					img.ScaleType = Enum.ScaleType.Fit
-					img.ZIndex = 36
-					img.Active = false
-					img.Image = IconConfig.GetWeaponImage(w.id)
-					img.Parent = btn
-					usedIcon = true
+				if hasMesh then
+					local ok3d, res3d = pcall(function()
+						return WeaponModels.TryFillInventoryIcon(btn, w.id, 40)
+					end)
+					usedIcon = ok3d and res3d == true
+					if not usedIcon then
+						warn("[Inventory] 3D icon failed for", w.id, "ok=", ok3d, "res=", res3d)
+					end
 				end
 				if not usedIcon then
-					local hasMesh = false
+					local has2d = false
 					pcall(function()
-						hasMesh = WeaponModels.HasVisual(w.id)
+						has2d = IconConfig.HasWeaponImage(w.id)
 					end)
-					if hasMesh then
-						local ok3d, res3d = pcall(function()
-							return WeaponModels.TryFillInventoryIcon(btn, w.id, 40)
-						end)
-						usedIcon = ok3d and res3d == true
-						if not usedIcon then
-							warn("[Inventory] 3D icon failed for", w.id, "ok=", ok3d, "res=", res3d)
-						end
+					if has2d then
+						local img = Instance.new("ImageLabel")
+						img.Name = "Icon"
+						img.BackgroundTransparency = 1
+						img.BorderSizePixel = 0
+						img.Size = UDim2.fromScale(0.82, 0.82)
+						img.Position = UDim2.fromScale(0.5, 0.48)
+						img.AnchorPoint = Vector2.new(0.5, 0.5)
+						img.ScaleType = Enum.ScaleType.Fit
+						img.ZIndex = 36
+						img.Active = false
+						img.Image = IconConfig.GetWeaponImage(w.id)
+						img.Parent = btn
+						usedIcon = true
 					end
 				end
 				if not usedIcon then
