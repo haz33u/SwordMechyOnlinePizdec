@@ -199,6 +199,25 @@ local function degAngles(v: Vector3): CFrame
 	return CFrame.Angles(math.rad(v.X), math.rad(v.Y), math.rad(v.Z))
 end
 
+--- Rotation that maps vector `from` → `to` (both directions).
+local function mapVector(from: Vector3, to: Vector3): CFrame
+	from = from.Unit
+	to = to.Unit
+	local dot = from:Dot(to)
+	if dot > 0.9999 then
+		return CFrame.new()
+	end
+	if dot < -0.9999 then
+		local orth = if math.abs(from.X) < 0.9 then Vector3.xAxis else Vector3.yAxis
+		local axis = from:Cross(orth)
+		if axis.Magnitude < 1e-4 then
+			axis = from:Cross(Vector3.zAxis)
+		end
+		return CFrame.fromAxisAngle(axis.Unit, math.pi)
+	end
+	return CFrame.fromAxisAngle(from:Cross(to).Unit, math.acos(math.clamp(dot, -1, 1)))
+end
+
 --- Classic sim: blade forward/up when arms hang.
 local function forwardHoldC1(handle: BasePart, side: string): CFrame
 	local size = handle.Size
@@ -213,24 +232,32 @@ end
 
 --[[
 	Minecraft third-person item hold:
-	  Arm is raised (READY pose on shoulder). Sword leaves the FIST —
-	  blade up/diagonal, OK to clip through hand mesh (like MC).
-	  Must not look like it's glued to the elbow/shoulder.
+	  Arm raised (READY). Point free-sword long axis (+Y) along BladeDir in grip space
+	  so the tip goes UP/OUT — not into the chest (see screenshot 193836).
 ]]
 local function minecraftHoldC1(handle: BasePart, side: string): CFrame
 	local size = handle.Size
 	local long = math.max(size.X, size.Y, size.Z)
-	local hiltFactor = WeaponModelConfig.MinecraftHiltFactor or 0.14
+	local hiltFactor = WeaponModelConfig.MinecraftHiltFactor or 0.12
 	local hilt = long * hiltFactor
 	local isLeft = side == "left"
-	local deg = if isLeft
-		then (WeaponModelConfig.MinecraftLeftAngles or Vector3.new(0, 0, -90))
-		else (WeaponModelConfig.MinecraftRightAngles or Vector3.new(0, 0, 90))
+
+	local dir = if isLeft
+		then (WeaponModelConfig.MinecraftBladeDirLeft or Vector3.new(-0.25, 1, -0.55))
+		else (WeaponModelConfig.MinecraftBladeDirRight or Vector3.new(0.25, 1, -0.55))
+	if dir.Magnitude < 1e-3 then
+		dir = Vector3.new(0, 1, -0.4)
+	end
+	dir = dir.Unit
+
 	local off = if isLeft
 		then (WeaponModelConfig.MinecraftLeftOffset or Vector3.zero)
 		else (WeaponModelConfig.MinecraftRightOffset or Vector3.zero)
-	-- Offset in handle space after rotation order: translate hilt, rotate blade, nudge
-	return CFrame.new(off) * CFrame.new(0, hilt, 0) * degAngles(deg)
+
+	-- C1:Inverse() maps handle +Y → `dir` in grip-attachment space
+	-- ⇒ C1 maps `dir` → +Y
+	local rot = mapVector(dir, Vector3.yAxis)
+	return CFrame.new(off) * CFrame.new(0, hilt, 0) * rot
 end
 
 --[[

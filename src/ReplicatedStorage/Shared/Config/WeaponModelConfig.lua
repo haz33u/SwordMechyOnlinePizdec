@@ -53,19 +53,32 @@ local WeaponModelConfig = {
 	ForwardLeftAngles = Vector3.new(-90, -90, 0),
 
 	--[[
-		Minecraft mode (arm is in READY ≈ pitch -90, hand in front of torso).
-		Free swords: longest axis usually local +Y (blade).
+		Minecraft mode — WHERE TO TUNE (this file only):
 
-		Hilt near palm; blade extends out of the fist (through hand mesh is OK).
-		Tune only these if tip still points wrong:
+		  src/ReplicatedStorage/Shared/Config/WeaponModelConfig.lua
+
+		Blade direction is in **grip-attachment space** (not world):
+		  X = right of palm · Y = out of knuckles / “up” of grip · Z = into/out of palm
+		We point the mesh long axis (+Y on free swords) along MinecraftBladeDir*.
+
+		If tip goes INTO the torso → more +Y / less toward body (see values below).
+		If tip too vertical → add a bit of -Z (forward).
+		If tip too far from body → lower |X|.
 	]]
-	MinecraftHiltFactor = 0.14,
-	-- degrees Euler applied as CFrame.Angles(rx, ry, rz) after hilt offset on +Y
-	MinecraftRightAngles = Vector3.new(0, 0, 90),
-	MinecraftLeftAngles = Vector3.new(0, 0, -90),
-	-- Extra shift in grip-attachment space (studs): push blade out of fist, not into shoulder
-	MinecraftRightOffset = Vector3.new(0, 0, -0.05),
-	MinecraftLeftOffset = Vector3.new(0, 0, -0.05),
+	MinecraftHiltFactor = 0.12,
+
+	-- Unit-ish direction of the BLADE tip from the fist (right / left hand)
+	-- Right: slightly outward (+X), mostly up (+Y), a bit forward (-Z in grip space)
+	MinecraftBladeDirRight = Vector3.new(0.25, 1.0, -0.55),
+	MinecraftBladeDirLeft = Vector3.new(-0.25, 1.0, -0.55),
+
+	-- Nudge fist point (studs, grip space). +X = away from chest on right hand.
+	MinecraftRightOffset = Vector3.new(0.12, 0.0, 0.0),
+	MinecraftLeftOffset = Vector3.new(-0.12, 0.0, 0.0),
+
+	-- Legacy euler fields (unused when BladeDir is set; kept for docs/old “forward” mode)
+	MinecraftRightAngles = Vector3.new(0, 0, 0),
+	MinecraftLeftAngles = Vector3.new(0, 0, 0),
 }
 
 function WeaponModelConfig.GetModelName(weaponId: string): string?
