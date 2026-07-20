@@ -254,10 +254,15 @@ local function minecraftHoldC1(handle: BasePart, side: string): CFrame
 		then (WeaponModelConfig.MinecraftLeftOffset or Vector3.zero)
 		else (WeaponModelConfig.MinecraftRightOffset or Vector3.zero)
 
-	-- C1:Inverse() maps handle +Y → `dir` in grip-attachment space
-	-- ⇒ C1 maps `dir` → +Y
-	local rot = mapVector(dir, Vector3.yAxis)
-	return CFrame.new(off) * CFrame.new(0, hilt, 0) * rot
+	-- Free meshes: tip usually +Y; FlipBlade* reverses (tip was backward on right hand)
+	local flip = if isLeft then WeaponModelConfig.MinecraftFlipBladeLeft else WeaponModelConfig.MinecraftFlipBladeRight
+	local meshTip = if flip then -Vector3.yAxis else Vector3.yAxis
+
+	-- C1:Inverse() maps meshTip → dir  ⇒  C1 maps dir → meshTip
+	local rot = mapVector(dir, meshTip)
+	-- Hilt offset along mesh tip axis (into the handle)
+	local hiltOffset = meshTip * hilt
+	return CFrame.new(off) * CFrame.new(hiltOffset) * rot
 end
 
 --[[

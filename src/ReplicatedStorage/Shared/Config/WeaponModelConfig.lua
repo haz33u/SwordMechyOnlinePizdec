@@ -67,16 +67,24 @@ local WeaponModelConfig = {
 	]]
 	MinecraftHiltFactor = 0.12,
 
-	-- Unit-ish direction of the BLADE tip from the fist (right / left hand)
-	-- Right: slightly outward (+X), mostly up (+Y), a bit forward (-Z in grip space)
-	MinecraftBladeDirRight = Vector3.new(0.25, 1.0, -0.55),
-	MinecraftBladeDirLeft = Vector3.new(-0.25, 1.0, -0.55),
+	--[[
+		Blade tip direction from the fist (grip space):
+		  +X outward (right hand) · +Y up · -Z forward (out of knuckles)
+		2026-07-20 tune from screenshots:
+		  - Right was tip-BACKWARD → FlipBladeRight + more -Z
+		  - Left needs a bit more forward (-Z)
+	]]
+	MinecraftBladeDirRight = Vector3.new(0.22, 0.95, -0.95),
+	MinecraftBladeDirLeft = Vector3.new(-0.22, 0.95, -0.95),
 
-	-- Nudge fist point (studs, grip space). +X = away from chest on right hand.
-	MinecraftRightOffset = Vector3.new(0.12, 0.0, 0.0),
-	MinecraftLeftOffset = Vector3.new(-0.12, 0.0, 0.0),
+	-- true = free mesh tip is opposite local +Y (right hand was pommel-forward)
+	MinecraftFlipBladeRight = true,
+	MinecraftFlipBladeLeft = false,
 
-	-- Legacy euler fields (unused when BladeDir is set; kept for docs/old “forward” mode)
+	-- Nudge fist: X away from chest, Z negative = forward
+	MinecraftRightOffset = Vector3.new(0.14, 0.0, -0.18),
+	MinecraftLeftOffset = Vector3.new(-0.14, 0.0, -0.22),
+
 	MinecraftRightAngles = Vector3.new(0, 0, 0),
 	MinecraftLeftAngles = Vector3.new(0, 0, 0),
 }
