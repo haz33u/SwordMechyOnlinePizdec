@@ -7,11 +7,12 @@
 	Default: published user attack anim (MC swing optional).
 ]]
 
--- Right-hand attack (user asset, 2026-07-20)
-local ATTACK = "rbxassetid://131793860537357"
+-- Right / left hand attacks (user assets, 2026-07-20)
+local ATTACK_RIGHT = "rbxassetid://131793860537357"
+local ATTACK_LEFT = "rbxassetid://97155624777350"
 
 local AnimationConfig = {
-	-- false = play AttackMain AnimationId on right arm; offhand still uses procedural swing
+	-- false = published AttackMain (right) + AttackOffhand (left when dual-wield)
 	UseMinecraftSwing = false,
 
 	MinecraftSwing = {
@@ -23,9 +24,10 @@ local AnimationConfig = {
 		SoundVolume = 0.6,
 	},
 
-	AttackMain = ATTACK,
-	AttackAlt = ATTACK,
-	AttackCandidates = { ATTACK },
+	AttackMain = ATTACK_RIGHT,
+	AttackOffhand = ATTACK_LEFT,
+	AttackAlt = ATTACK_RIGHT,
+	AttackCandidates = { ATTACK_RIGHT },
 
 	PreferPublishedAttack = true,
 	UseCombatKeyframeSequences = false,
@@ -35,9 +37,9 @@ local AnimationConfig = {
 	Swing1Name = "Swing1",
 	Swing2Name = "Swing2",
 
-	AttackMainFallback = ATTACK,
-	AttackAltFallback = ATTACK,
-	ToolHold = ATTACK,
+	AttackMainFallback = ATTACK_RIGHT,
+	AttackAltFallback = ATTACK_RIGHT,
+	ToolHold = ATTACK_RIGHT,
 
 	AlternateDual = false,
 
@@ -73,6 +75,15 @@ end
 
 function AnimationConfig.GetAttackId(_isAlt: boolean?): string
 	return AnimationConfig.AttackMain
+end
+
+--- Left-hand / offhand attack AnimationId (empty → procedural fallback)
+function AnimationConfig.GetAttackOffhandId(): string
+	local id = AnimationConfig.AttackOffhand
+	if type(id) == "string" and id ~= "" and not AnimationConfig.IsBannedId(id) then
+		return id
+	end
+	return ""
 end
 
 function AnimationConfig.GetAttackCandidateList(_preferAlt: boolean?): { string }

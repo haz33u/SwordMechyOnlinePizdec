@@ -413,8 +413,10 @@ local function bindMcRender()
 			end
 		end
 
-		-- Left arm: offhand READY + mirror slash (works with published right-arm attack)
-		if mcLeftShoulder and mcLeftShoulder.Parent then
+		-- Left arm: procedural READY/slash only when no published offhand anim
+		local offAnimId = AnimationConfig.GetAttackOffhandId()
+		local useProcLeft = useMc or offAnimId == ""
+		if useProcLeft and mcLeftShoulder and mcLeftShoulder.Parent then
 			if offSwinging then
 				offT += dt / swingTime
 				if offT >= 1 then
@@ -435,16 +437,32 @@ local function bindMcRender()
 	end)
 end
 
---- Offhand slash: published AttackMain only moves the right arm.
+--- Offhand slash: published AttackOffhand anim, else procedural left shoulder.
 local function playOffhandSwing()
 	if not offModel or not offModel.Parent then
 		return
 	end
-	if offSwinging then
-		return
-	end
 	local char = player.Character
 	if not char then
+		return
+	end
+
+	local offId = AnimationConfig.GetAttackOffhandId()
+	if offId ~= "" then
+		local animator = getAnimator(char)
+		if animator then
+			local track = loadTrack(animator, offId)
+			if track then
+				-- Do not stop right-hand attack track — dual-wield both together
+				track:Play(0.05, 1, 1.15)
+				print("[WeaponVisual] PlayAttack offhand →", offId)
+				return
+			end
+		end
+		warn("[WeaponVisual] offhand anim failed, procedural fallback:", offId)
+	end
+
+	if offSwinging then
 		return
 	end
 	if not mcLeftShoulder or not mcLeftShoulder.Parent then
@@ -555,23 +573,32 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	end
 
 	local id = AnimationConfig.GetAttackId(false)
+	local offId = AnimationConfig.GetAttackOffhandId()
 	local track = loadTrack(animator, id)
 	if not track then
 		warn("[WeaponVisual] PlayAttack FAILED — id", id)
 		return
 	end
-	for _, t in tracks do
+	-- Stop other tracks except dual-wield pair (right + left attack)
+	for key, t in tracks do
 		if t ~= track and t.IsPlaying then
-			pcall(function()
-				t:Stop(0.05)
-			end)
+			local keepOff = offId ~= "" and key == offId
+			if not keepOff then
+				pcall(function()
+					t:Stop(0.05)
+				end)
+			end
 		end
 	end
 	track:Play(0.05, 1, 1.15)
 	playOffhandSwing()
 	if lastPlayedId ~= id then
 		lastPlayedId = id
-		print("[WeaponVisual] PlayAttack →", id, if offModel then "+offhandSwing" else "")
+		print(
+			"[WeaponVisual] PlayAttack →",
+			id,
+			if offModel and offId ~= "" then ("+ " .. offId) elseif offModel then "+offhandProc" else ""
+		)
 	end
 end
 
@@ -579,7 +606,12 @@ function WeaponVisual.Init(getProfile: () -> any?)
 	if AnimationConfig.UseMinecraftSwing then
 		print("[WeaponVisual] Attack mode = MinecraftSwing (procedural)")
 	else
-		print("[WeaponVisual] Attack mode = AnimationId", AnimationConfig.GetAttackId(false))
+		print(
+			"[WeaponVisual] Attack mode = R",
+			AnimationConfig.GetAttackId(false),
+			"L",
+			AnimationConfig.GetAttackOffhandId()
+		)
 	end
 
 	local function onChar(char: Model)

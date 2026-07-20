@@ -14,12 +14,13 @@
 
 Если `RightShoulder not found` — rejoin; joint ищется на R15 `RightUpperArm`.
 
-### B) Published AnimationId (default — right hand attack)
+### B) Published AnimationId (default — dual attack)
 
 | Flag | `UseMinecraftSwing = false` (default) |
-| Id | **`rbxassetid://131793860537357`** (right-hand attack) |
-| Code | `WeaponVisual.PlayAttack` → `AnimationConfig.AttackMain` |
-| Offhand | still procedural left-arm swing when dual-wield |
+| Right | **`rbxassetid://131793860537357`** → `AttackMain` |
+| Left / offhand | **`rbxassetid://97155624777350`** → `AttackOffhand` (when offhand sword equipped) |
+| Code | `WeaponVisual.PlayAttack` plays both tracks together |
+| Fallback | if left id fails → procedural left shoulder swing |
 
 ## Ходьба (не атака)
 
