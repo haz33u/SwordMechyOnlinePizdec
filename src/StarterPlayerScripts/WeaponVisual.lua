@@ -24,6 +24,7 @@ local offModel: Model? = nil
 local tracks: { [string]: AnimationTrack } = {}
 local lastPlay = 0
 local lastPlayedId: string? = nil
+local attackSeq = 0 -- cancel pending left swing if a new attack starts
 
 -- Minecraft-style procedural swing state
 local mcShoulder: Motor6D? = nil
@@ -453,7 +454,6 @@ local function playOffhandSwing()
 		if animator then
 			local track = loadTrack(animator, offId)
 			if track then
-				-- Do not stop right-hand attack track — dual-wield both together
 				track:Play(0.05, 1, 1.15)
 				print("[WeaponVisual] PlayAttack offhand →", offId)
 				return
@@ -474,6 +474,54 @@ local function playOffhandSwing()
 	bindMcRender()
 	offSwinging = true
 	offT = 0
+end
+
+--- After right finishes (or MC right swing ends), play left. Cancelled if a new attack starts.
+local function scheduleOffhandAfterRight(seq: number, rightTrack: AnimationTrack?, char: Model)
+	if not offModel or not offModel.Parent then
+		return
+	end
+	task.spawn(function()
+		local speed = 1.15
+		local maxWait = 0.45
+		if rightTrack and rightTrack.Length > 0 then
+			maxWait = (rightTrack.Length / speed) + 0.08
+		elseif AnimationConfig.UseMinecraftSwing then
+			local cfg = AnimationConfig.MinecraftSwing or {}
+			maxWait = (cfg.SwingTime or 0.28) + 0.05
+		end
+		local t0 = os.clock()
+		if rightTrack then
+			while rightTrack.IsPlaying and (os.clock() - t0) < maxWait and char.Parent do
+				if seq ~= attackSeq then
+					return
+				end
+				task.wait()
+			end
+		else
+			while (os.clock() - t0) < maxWait and char.Parent do
+				if seq ~= attackSeq then
+					return
+				end
+				if AnimationConfig.UseMinecraftSwing and not mcSwinging then
+					break
+				end
+				task.wait()
+			end
+		end
+		-- tiny gap so it reads as two hits: right → left
+		task.wait(0.04)
+		if seq ~= attackSeq then
+			return
+		end
+		if player.Character ~= char then
+			return
+		end
+		if not offModel or not offModel.Parent then
+			return
+		end
+		playOffhandSwing()
+	end)
 end
 
 local function playMinecraftSwing()
@@ -546,11 +594,16 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 		return
 	end
 	lastPlay = now
+	attackSeq += 1
+	local seq = attackSeq
 
-	-- Minecraft path is default: raised-arm slash (matches MC sword hold)
+	-- Minecraft path: right procedural first, then left after swing ends
 	if AnimationConfig.UseMinecraftSwing then
 		playMinecraftSwing()
-		playOffhandSwing()
+		local char = player.Character
+		if char and offModel then
+			scheduleOffhandAfterRight(seq, nil, char)
+		end
 		return
 	end
 
@@ -579,25 +632,26 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 		warn("[WeaponVisual] PlayAttack FAILED — id", id)
 		return
 	end
-	-- Stop other tracks except dual-wield pair (right + left attack)
-	for key, t in tracks do
-		if t ~= track and t.IsPlaying then
-			local keepOff = offId ~= "" and key == offId
-			if not keepOff then
-				pcall(function()
-					t:Stop(0.05)
-				end)
-			end
+	-- Stop lingering attack tracks (new combo starts clean)
+	for _, t in tracks do
+		if t.IsPlaying then
+			pcall(function()
+				t:Stop(0.05)
+			end)
 		end
 	end
+	-- 1) Right hand first
 	track:Play(0.05, 1, 1.15)
-	playOffhandSwing()
+	-- 2) Left hand after right finishes (only if offhand equipped)
+	if offModel then
+		scheduleOffhandAfterRight(seq, track, char)
+	end
 	if lastPlayedId ~= id then
 		lastPlayedId = id
 		print(
 			"[WeaponVisual] PlayAttack →",
 			id,
-			if offModel and offId ~= "" then ("+ " .. offId) elseif offModel then "+offhandProc" else ""
+			if offModel and offId ~= "" then ("then " .. offId) elseif offModel then "then offhandProc" else ""
 		)
 	end
 end
@@ -617,6 +671,7 @@ function WeaponVisual.Init(getProfile: () -> any?)
 	local function onChar(char: Model)
 		tracks = {}
 		lastPlayedId = nil
+		attackSeq += 1 -- cancel any pending left-hand follow-up
 		mcSwinging = false
 		mcT = 0
 		offSwinging = false

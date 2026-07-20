@@ -19,7 +19,7 @@
 | Flag | `UseMinecraftSwing = false` (default) |
 | Right | **`rbxassetid://131793860537357`** → `AttackMain` |
 | Left / offhand | **`rbxassetid://97155624777350`** → `AttackOffhand` (when offhand sword equipped) |
-| Code | `WeaponVisual.PlayAttack` plays both tracks together |
+| Code | `WeaponVisual.PlayAttack`: **right first**, then **left** after right track ends |
 | Fallback | if left id fails → procedural left shoulder swing |
 
 ## Ходьба (не атака)
