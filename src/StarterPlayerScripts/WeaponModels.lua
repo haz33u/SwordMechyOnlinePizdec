@@ -526,16 +526,22 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		extent = math.max(s.X, s.Y, s.Z, 0.35)
 	end
 
-	-- 2) Auto tip-up (shared with hand hiltEnd when set)
+	-- 2) Auto tip-up (align long axis with +Y)
 	pcall(function()
 		orientTipUp(clone)
 	end)
 
-	-- 3) Optional fine iconEuler AFTER tip-up
+	-- 3) iconInvert / iconEuler AFTER tip-up (hand grip does not use these)
 	local templateName = clone:GetAttribute("IconTemplateName")
-	if type(templateName) == "string" then
-		local ov = WeaponModelConfig.ResolveOverride(templateName)
-		if ov and typeof(ov.iconEuler) == "Vector3" then
+	local ov = if type(templateName) == "string" then WeaponModelConfig.ResolveOverride(templateName) else nil
+	if ov then
+		if ov.iconInvert then
+			-- 180° around X → flips upside-down inventory previews
+			pcall(function()
+				clone:PivotTo(CFrame.Angles(math.rad(180), 0, 0) * clone:GetPivot())
+			end)
+		end
+		if typeof(ov.iconEuler) == "Vector3" then
 			local e = ov.iconEuler
 			pcall(function()
 				clone:PivotTo(CFrame.Angles(math.rad(e.X), math.rad(e.Y), math.rad(e.Z)) * clone:GetPivot())
@@ -543,7 +549,7 @@ local function frameModelInViewport(clone: Model, cam: Camera)
 		end
 	end
 
-	-- 4) Showcase yaw only (keep tip roughly up)
+	-- 4) Showcase yaw only
 	pcall(function()
 		clone:PivotTo(CFrame.Angles(0, math.rad(-35), 0) * clone:GetPivot())
 	end)

@@ -17,7 +17,8 @@ export type HiltOverride = {
 	tipDirection: Vector3?,
 	tipSign: number?, -- legacy
 	flipTip: boolean?,
-	-- Extra icon rotation after auto tip-up (usually not needed)
+	-- Inventory: flip 180° after tip-up (upside-down icons when hand is already OK)
+	iconInvert: boolean?,
 	iconEuler: Vector3?,
 	iconFlip: (boolean | string)?,
 }
@@ -60,15 +61,18 @@ local WeaponModelConfig = {
 		Screenshot 231434: previous +offsets still blade → use -1 for Ardite/Forest.
 	]]
 	HiltOverrides = {
-		IronSword = {}, -- hand OK; icon uses auto tip-up
-		RubySword = {},
+		-- Hand OK after hiltEnd fix; icons still upside-down → iconInvert
+		IronSword = { iconInvert = true }, -- Old Sword
+		RubySword = { iconInvert = true }, -- Double-Edged
 		SupeSport = {
 			hiltEnd = -1,
 			hiltBias = 0.98,
+			iconInvert = true, -- Forest Sword
 		},
 		KawashimaSword = {
 			hiltEnd = -1,
 			hiltBias = 0.98,
+			iconInvert = true, -- Ardite
 		},
 	} :: { [string]: HiltOverride },
 
