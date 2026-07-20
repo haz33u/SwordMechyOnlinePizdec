@@ -1194,25 +1194,38 @@ function Inventory.Bind(
 				btn.Active = true
 				btn.Selectable = true
 
-				-- Icon: 3D Viewport if WeaponModels mesh exists, else IconConfig Decal
-				local used3d = false
-				local ok3d, res3d = pcall(function()
-					return WeaponModels.TryFillInventoryIcon(btn, w.id, 36)
+				-- Icon priority: 3D mesh Viewport → static Decal only if no mesh
+				local hasMesh = false
+				pcall(function()
+					hasMesh = WeaponModels.HasVisual(w.id)
 				end)
-				used3d = ok3d and res3d == true
+				local used3d = false
+				if hasMesh then
+					local ok3d, res3d = pcall(function()
+						return WeaponModels.TryFillInventoryIcon(btn, w.id, 36)
+					end)
+					used3d = ok3d and res3d == true
+					if not used3d then
+						warn("[Inventory] 3D icon failed for", w.id, "ok=", ok3d, "res=", res3d)
+					end
+				end
 				if not used3d then
+					-- Never show wrong legacy art when a mesh exists but viewport failed
 					local img = Instance.new("ImageLabel")
 					img.Name = "Icon"
-					img.BackgroundColor3 = BG_SLOT
 					img.BackgroundTransparency = 1
 					img.BorderSizePixel = 0
 					img.Size = UDim2.fromScale(0.78, 0.78)
 					img.Position = UDim2.fromScale(0.5, 0.48)
 					img.AnchorPoint = Vector2.new(0.5, 0.5)
-					img.Image = IconConfig.GetWeaponImage(w.id)
 					img.ScaleType = Enum.ScaleType.Fit
 					img.ZIndex = 36
 					img.Active = false
+					if hasMesh then
+						img.Image = "" -- empty; rarity stroke still shows slot
+					else
+						img.Image = IconConfig.GetWeaponImage(w.id)
+					end
 					img.Parent = btn
 				end
 

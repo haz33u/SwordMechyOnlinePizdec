@@ -39,6 +39,8 @@ local WeaponModelConfig = {
 
 	-- Uniform scale for free Toolbox swords (~5–7 stud → hand size)
 	DefaultScale = 0.52,
+	-- Inventory ViewportFrame icon scale (independent of hand scale)
+	IconScale = 0.65,
 
 	--[[
 		Rare per-MODEL overrides (Model.Name keys). Used only when auto-hilt

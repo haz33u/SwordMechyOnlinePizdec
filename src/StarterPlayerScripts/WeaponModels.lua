@@ -376,10 +376,68 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 	rigid.Parent = handle
 end
 
+--- Lightweight clone for UI icons only (no ScaleTo / hilt bake — more reliable in ViewportFrame).
+local function prepareIconClone(weaponId: string): Model?
+	local template = WeaponModels.GetTemplate(weaponId)
+	if not template then
+		return nil
+	end
+	local clone = template:Clone()
+	clone.Name = "Icon_" .. weaponId
+
+	-- Flatten Tool wrappers into the model
+	local tools = {}
+	for _, d in clone:GetDescendants() do
+		if d:IsA("Tool") then
+			table.insert(tools, d)
+		end
+	end
+	for _, tool in tools do
+		for _, ch in tool:GetChildren() do
+			ch.Parent = clone
+		end
+		tool:Destroy()
+	end
+
+	for _, d in clone:GetDescendants() do
+		if d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("RemoteEvent") or d:IsA("RemoteFunction") then
+			d:Destroy()
+		end
+	end
+
+	local handle = findHandlePart(clone)
+	if not handle then
+		clone:Destroy()
+		return nil
+	end
+	clone.PrimaryPart = handle
+	weldLooseParts(handle, clone)
+
+	for _, d in clone:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanCollide = false
+			d.CanQuery = false
+			d.CanTouch = false
+			d.Massless = true
+			d.CastShadow = false
+		end
+	end
+
+	-- Soft icon scale (independent of hand DefaultScale)
+	local iconScale = WeaponModelConfig.IconScale or 0.65
+	if type(iconScale) == "number" and iconScale > 0 and iconScale ~= 1 then
+		pcall(function()
+			(clone :: any):ScaleTo(iconScale)
+		end)
+	end
+
+	return clone
+end
+
 --[[
 	Inventory / UI icon: 3D ViewportFrame of WeaponModels mesh.
 	Safe for slots: Active=false, full pcall, never throws to parent UI.
-	Returns ViewportFrame or nil (caller falls back to IconConfig Decal).
 ]]
 function WeaponModels.FillViewport(parent: GuiObject, weaponId: string, zIndex: number?): ViewportFrame?
 	local ok, result = pcall(function()
@@ -389,95 +447,88 @@ function WeaponModels.FillViewport(parent: GuiObject, weaponId: string, zIndex: 
 		end
 
 		if not WeaponModels.HasVisual(weaponId) then
-			return nil
+			return nil :: any
 		end
 
-		local clone, _grip = WeaponModels.PrepareClone(weaponId)
+		local clone = prepareIconClone(weaponId)
 		if not clone then
+			warn("[WeaponModels] icon clone failed for", weaponId)
 			return nil
-		end
-
-		-- Icon-only: strip any leftover constraints / sounds
-		for _, d in clone:GetDescendants() do
-			if d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("RigidConstraint") or d:IsA("Weld") then
-				if d.Name == "SM_WeaponRigid" or d:IsA("BaseScript") or d:IsA("Sound") then
-					d:Destroy()
-				end
-			elseif d:IsA("BasePart") then
-				d.Anchored = true
-				d.CanCollide = false
-				d.CanQuery = false
-				d.CanTouch = false
-				d.CastShadow = false
-			end
 		end
 
 		local vf = Instance.new("ViewportFrame")
 		vf.Name = "WeaponViewport"
 		vf.BackgroundTransparency = 1
 		vf.BorderSizePixel = 0
-		vf.Size = UDim2.fromScale(0.88, 0.88)
+		vf.Size = UDim2.fromScale(0.9, 0.9)
 		vf.Position = UDim2.fromScale(0.5, 0.5)
 		vf.AnchorPoint = Vector2.new(0.5, 0.5)
 		vf.ZIndex = zIndex or 36
-		vf.Active = false -- clicks pass through to inventory slot button
+		vf.Active = false
 		vf.Selectable = false
-		vf.Ambient = Color3.fromRGB(180, 185, 200)
-		vf.LightColor = Color3.fromRGB(255, 250, 240)
-		vf.LightDirection = Vector3.new(-0.6, -1, -0.5)
+		vf.Ambient = Color3.fromRGB(170, 175, 190)
+		vf.LightColor = Color3.fromRGB(255, 252, 245)
+		vf.LightDirection = Vector3.new(-0.55, -1, -0.45)
 		vf.Parent = parent
 
 		local world = Instance.new("WorldModel")
+		world.Name = "IconWorld"
 		world.Parent = vf
 		clone.Parent = world
 
+		local handle = clone.PrimaryPart
+		local extent = 1.2
+
+		-- Center bounding box at origin
 		local okBox, bbCf, bbSize = pcall(function()
 			return clone:GetBoundingBox()
 		end)
-		if not okBox or typeof(bbCf) ~= "CFrame" or typeof(bbSize) ~= "Vector3" then
-			clone:Destroy()
-			vf:Destroy()
-			return nil
+		if okBox and typeof(bbCf) == "CFrame" and typeof(bbSize) == "Vector3" then
+			local center = (bbCf :: CFrame).Position
+			local pivot = clone:GetPivot()
+			clone:PivotTo(pivot * CFrame.new(pivot:PointToObjectSpace(center)).Inverse())
+			extent = math.max(bbSize.X, bbSize.Y, bbSize.Z, 0.35)
+		elseif handle then
+			local pivot = clone:GetPivot()
+			clone:PivotTo(pivot * CFrame.new(pivot:PointToObjectSpace(handle.Position)).Inverse())
+			extent = math.max(handle.Size.X, handle.Size.Y, handle.Size.Z, 0.35)
 		end
 
-		-- Center model at origin, then 3/4 hero angle (icon-friendly)
-		local center = (bbCf :: CFrame).Position
-		local pivot = clone:GetPivot()
-		clone:PivotTo(pivot * CFrame.new(pivot:PointToObjectSpace(center)).Inverse())
-		clone:PivotTo(
-			CFrame.Angles(0, math.rad(-40), 0)
-				* CFrame.Angles(math.rad(18), 0, 0)
-				* CFrame.Angles(0, 0, math.rad(-8))
-		)
-
-		local ok2, _cf2, size2 = pcall(function()
-			return clone:GetBoundingBox()
-		end)
-		local extent = 1
-		if ok2 and typeof(size2) == "Vector3" then
-			extent = math.max(size2.X, size2.Y, size2.Z, 0.4)
-		end
+		-- Showcase angle for inventory icons
+		clone:PivotTo(CFrame.Angles(0, math.rad(-38), 0) * CFrame.Angles(math.rad(20), 0, 0) * clone:GetPivot())
 
 		local cam = Instance.new("Camera")
+		cam.Name = "IconCamera"
 		cam.Parent = vf
 		vf.CurrentCamera = cam
-		local dist = extent * 1.55
-		cam.FieldOfView = 28
-		cam.CFrame = CFrame.new(Vector3.new(dist * 0.55, dist * 0.28, dist * 0.72), Vector3.zero)
+		local dist = extent * 1.7
+		cam.FieldOfView = 30
+		cam.CFrame = CFrame.new(Vector3.new(dist * 0.5, dist * 0.32, dist * 0.75), Vector3.zero)
 
 		return vf
 	end)
 
-	if ok and result and typeof(result) == "Instance" and result:IsA("ViewportFrame") then
-		return result
+	if not ok then
+		warn("[WeaponModels] FillViewport error for", weaponId, result)
+		return nil
+	end
+	if result and typeof(result) == "Instance" and (result :: Instance):IsA("ViewportFrame") then
+		return result :: ViewportFrame
 	end
 	return nil
 end
 
---- Inventory helper: 3D mesh icon if available, else false (use IconConfig Image).
+--- true = 3D icon shown; false = caller may use static Decal (only if no mesh).
 function WeaponModels.TryFillInventoryIcon(parent: GuiObject, weaponId: string, zIndex: number?): boolean
+	if not WeaponModels.HasVisual(weaponId) then
+		return false
+	end
 	local vf = WeaponModels.FillViewport(parent, weaponId, zIndex)
-	return vf ~= nil
+	if vf then
+		return true
+	end
+	warn("[WeaponModels] 3D icon failed for", weaponId, "— check WeaponModels folder + model name map")
+	return false
 end
 
 return WeaponModels
