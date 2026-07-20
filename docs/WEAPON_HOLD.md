@@ -84,8 +84,10 @@ Algorithm:
 | double_edged_sword | RubySword | Epic |
 | forest_spirit_staff | DiamondSword | Epic |
 | ardite | **KawashimaSword** | Legendary |
-| forest_sword | **SupeSport** | Mythic |
+| forest_sword | **SupeSport** | Mythic · iconFlip + flipTip |
 | forest_shadow | **LastSword** | Secret |
+
+Icon-only flip: `HiltOverrides.IronSword.iconFlip` (old_sword — hand OK).
 
 ## New sword checklist
 

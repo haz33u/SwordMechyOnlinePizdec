@@ -43,12 +43,16 @@ local WeaponModelConfig = {
 	IconScale = 0.65,
 
 	--[[
-		Rare per-MODEL overrides (Model.Name keys). Used only when auto-hilt
-		picks the wrong tip end. flipTip = reverse blade axis after Tool.Grip heuristic.
+		Per-MODEL overrides (key = Model.Name in WeaponModels):
+		  flipTip  = reverse tip for HAND grip (SM_Hilt)
+		  iconFlip = 180° for inventory Viewport only (hand can still be OK)
 	]]
 	HiltOverrides = {
-		-- Example: GoldSword = { flipTip = true },
-	} :: { [string]: { flipTip: boolean? } },
+		-- User QA 2026-07-20: icon tip-down; hand OK
+		IronSword = { iconFlip = true }, -- old_sword
+		-- User QA: forest_sword flipped in icon (+ tip for hand)
+		SupeSport = { iconFlip = true, flipTip = true }, -- forest_sword
+	} :: { [string]: { flipTip: boolean?, iconFlip: boolean? } },
 
 	--[[
 		Palm OFFSET only (position in hand-grip space). Do NOT use this to spin the blade.
@@ -91,7 +95,7 @@ function WeaponModelConfig.HasModel(weaponId: string): boolean
 	return WeaponModelConfig.GetModelName(weaponId) ~= nil
 end
 
-function WeaponModelConfig.GetOverride(modelName: string): { flipTip: boolean? }?
+function WeaponModelConfig.GetOverride(modelName: string): { flipTip: boolean?, iconFlip: boolean? }?
 	local o = WeaponModelConfig.HiltOverrides[modelName]
 	if type(o) == "table" then
 		return o
