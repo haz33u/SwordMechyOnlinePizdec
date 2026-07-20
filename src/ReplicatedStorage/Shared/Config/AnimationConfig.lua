@@ -7,12 +7,12 @@
 	Default: published user attack anim (MC swing optional).
 ]]
 
-local ATTACK = "rbxassetid://95040065182870"
+-- Right-hand attack (user asset, 2026-07-20)
+local ATTACK = "rbxassetid://131793860537357"
 
 local AnimationConfig = {
-	-- Minecraft third-person: raised arm READY + procedural slash (user request 2026-07-20).
-	-- Set false to go back to published AttackMain only.
-	UseMinecraftSwing = true,
+	-- false = play AttackMain AnimationId on right arm; offhand still uses procedural swing
+	UseMinecraftSwing = false,
 
 	MinecraftSwing = {
 		SwingTime = 0.28,

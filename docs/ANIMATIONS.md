@@ -2,24 +2,24 @@
 
 ## Атака
 
-### A) Minecraft procedural swing + hold (ON by default)
+### A) Minecraft procedural swing + hold (optional)
 
 | | |
 |--|--|
-| **Включить** | `AnimationConfig.UseMinecraftSwing = true` (default) |
+| **Включить** | `AnimationConfig.UseMinecraftSwing = true` |
 | How | Idle: raised-arm **READY** pose · Attack: Motor6D RightShoulder/LeftShoulder slash |
-| Hold | `WeaponModelConfig.HoldMode = "minecraft"` — blade from **fist** up/diagonal (may clip hand like MC; not from shoulder) |
+| Hold | `SM_Hilt` + palm tilt — see `docs/WEAPON_HOLD.md` |
 | Code | `WeaponVisual.PlayAttack` на LMB (Tool не нужен) |
-| Tune swing | `MinecraftSwing.SwingTime / RaisePower / RollPower / SwingDir` |
-| Tune grip | `MinecraftRightAngles / MinecraftHiltFactor / DefaultScale` |
 | Output | `[WeaponVisual] PlayAttack → MinecraftSwing` |
 
 Если `RightShoulder not found` — rejoin; joint ищется на R15 `RightUpperArm`.
 
-### B) Published AnimationId
-| Flag | `UseMinecraftSwing = false` |
-| Id | `rbxassetid://95040065182870` |
-| Note | Arms may hang unless READY hold still applied for equipped swords |
+### B) Published AnimationId (default — right hand attack)
+
+| Flag | `UseMinecraftSwing = false` (default) |
+| Id | **`rbxassetid://131793860537357`** (right-hand attack) |
+| Code | `WeaponVisual.PlayAttack` → `AnimationConfig.AttackMain` |
+| Offhand | still procedural left-arm swing when dual-wield |
 
 ## Ходьба (не атака)
 
