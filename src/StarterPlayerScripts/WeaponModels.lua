@@ -376,58 +376,108 @@ function WeaponModels.AttachToHand(model: Model, char: Model, side: string, grip
 	rigid.Parent = handle
 end
 
---- Fill a parent GuiObject with a ViewportFrame preview of the weapon model.
+--[[
+	Inventory / UI icon: 3D ViewportFrame of WeaponModels mesh.
+	Safe for slots: Active=false, full pcall, never throws to parent UI.
+	Returns ViewportFrame or nil (caller falls back to IconConfig Decal).
+]]
 function WeaponModels.FillViewport(parent: GuiObject, weaponId: string, zIndex: number?): ViewportFrame?
-	local existing = parent:FindFirstChild("WeaponViewport")
-	if existing then
-		existing:Destroy()
-	end
+	local ok, result = pcall(function()
+		local existing = parent:FindFirstChild("WeaponViewport")
+		if existing then
+			existing:Destroy()
+		end
 
-	local clone, _grip = WeaponModels.PrepareClone(weaponId)
-	if not clone then
-		return nil
-	end
+		if not WeaponModels.HasVisual(weaponId) then
+			return nil
+		end
 
-	local vf = Instance.new("ViewportFrame")
-	vf.Name = "WeaponViewport"
-	vf.BackgroundTransparency = 1
-	vf.BorderSizePixel = 0
-	vf.Size = UDim2.fromScale(0.86, 0.86)
-	vf.Position = UDim2.fromScale(0.5, 0.48)
-	vf.AnchorPoint = Vector2.new(0.5, 0.5)
-	vf.ZIndex = zIndex or 36
-	vf.Ambient = Color3.fromRGB(200, 200, 210)
-	vf.LightColor = Color3.fromRGB(255, 255, 255)
-	vf.LightDirection = Vector3.new(-0.5, -1, -0.4)
-	vf.Parent = parent
+		local clone, _grip = WeaponModels.PrepareClone(weaponId)
+		if not clone then
+			return nil
+		end
 
-	local world = Instance.new("WorldModel")
-	world.Parent = vf
-	clone.Parent = world
+		-- Icon-only: strip any leftover constraints / sounds
+		for _, d in clone:GetDescendants() do
+			if d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("RigidConstraint") or d:IsA("Weld") then
+				if d.Name == "SM_WeaponRigid" or d:IsA("BaseScript") or d:IsA("Sound") then
+					d:Destroy()
+				end
+			elseif d:IsA("BasePart") then
+				d.Anchored = true
+				d.CanCollide = false
+				d.CanQuery = false
+				d.CanTouch = false
+				d.CastShadow = false
+			end
+		end
 
-	local okBox, bbCf, bbSize = pcall(function()
-		return clone:GetBoundingBox()
+		local vf = Instance.new("ViewportFrame")
+		vf.Name = "WeaponViewport"
+		vf.BackgroundTransparency = 1
+		vf.BorderSizePixel = 0
+		vf.Size = UDim2.fromScale(0.88, 0.88)
+		vf.Position = UDim2.fromScale(0.5, 0.5)
+		vf.AnchorPoint = Vector2.new(0.5, 0.5)
+		vf.ZIndex = zIndex or 36
+		vf.Active = false -- clicks pass through to inventory slot button
+		vf.Selectable = false
+		vf.Ambient = Color3.fromRGB(180, 185, 200)
+		vf.LightColor = Color3.fromRGB(255, 250, 240)
+		vf.LightDirection = Vector3.new(-0.6, -1, -0.5)
+		vf.Parent = parent
+
+		local world = Instance.new("WorldModel")
+		world.Parent = vf
+		clone.Parent = world
+
+		local okBox, bbCf, bbSize = pcall(function()
+			return clone:GetBoundingBox()
+		end)
+		if not okBox or typeof(bbCf) ~= "CFrame" or typeof(bbSize) ~= "Vector3" then
+			clone:Destroy()
+			vf:Destroy()
+			return nil
+		end
+
+		-- Center model at origin, then 3/4 hero angle (icon-friendly)
+		local center = (bbCf :: CFrame).Position
+		local pivot = clone:GetPivot()
+		clone:PivotTo(pivot * CFrame.new(pivot:PointToObjectSpace(center)).Inverse())
+		clone:PivotTo(
+			CFrame.Angles(0, math.rad(-40), 0)
+				* CFrame.Angles(math.rad(18), 0, 0)
+				* CFrame.Angles(0, 0, math.rad(-8))
+		)
+
+		local ok2, _cf2, size2 = pcall(function()
+			return clone:GetBoundingBox()
+		end)
+		local extent = 1
+		if ok2 and typeof(size2) == "Vector3" then
+			extent = math.max(size2.X, size2.Y, size2.Z, 0.4)
+		end
+
+		local cam = Instance.new("Camera")
+		cam.Parent = vf
+		vf.CurrentCamera = cam
+		local dist = extent * 1.55
+		cam.FieldOfView = 28
+		cam.CFrame = CFrame.new(Vector3.new(dist * 0.55, dist * 0.28, dist * 0.72), Vector3.zero)
+
+		return vf
 	end)
-	if not okBox or typeof(bbCf) ~= "CFrame" or typeof(bbSize) ~= "Vector3" then
-		clone:Destroy()
-		vf:Destroy()
-		return nil
+
+	if ok and result and typeof(result) == "Instance" and result:IsA("ViewportFrame") then
+		return result
 	end
+	return nil
+end
 
-	local center = (bbCf :: CFrame).Position
-	clone:PivotTo(clone:GetPivot() * CFrame.new(clone:GetPivot():PointToObjectSpace(center)).Inverse())
-	clone:PivotTo(CFrame.Angles(0, math.rad(-35), 0) * CFrame.Angles(math.rad(12), 0, 0))
-
-	local _, size2 = clone:GetBoundingBox()
-	local extent = math.max(size2.X, size2.Y, size2.Z, 0.5)
-	local cam = Instance.new("Camera")
-	cam.Parent = vf
-	vf.CurrentCamera = cam
-	local dist = extent * 1.45
-	cam.CFrame = CFrame.new(Vector3.new(dist * 0.55, dist * 0.2, dist * 0.7), Vector3.zero)
-	cam.FieldOfView = 32
-
-	return vf
+--- Inventory helper: 3D mesh icon if available, else false (use IconConfig Image).
+function WeaponModels.TryFillInventoryIcon(parent: GuiObject, weaponId: string, zIndex: number?): boolean
+	local vf = WeaponModels.FillViewport(parent, weaponId, zIndex)
+	return vf ~= nil
 end
 
 return WeaponModels

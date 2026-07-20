@@ -25,6 +25,7 @@ local AuraConfig = require(Shared.Config.AuraConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 local GamePassConfig = require(Shared.Config.GamePassConfig)
 local WorldConfig = require(Shared.Config.WorldConfig)
+local WeaponModels = require(script.Parent.WeaponModels)
 
 local Inventory = {}
 
@@ -1189,25 +1190,31 @@ function Inventory.Bind(
 				local btn, plate = makeItemSlot(scroll, i, edge)
 				plate.BackgroundColor3 = BG_SLOT
 				btn.Name = "W_" .. w.uid
-				-- Keep slot clickable above any future overlays
+				-- Keep slot clickable above icon overlays
 				btn.Active = true
 				btn.Selectable = true
 
-				-- Icons = IconConfig Decals (Loc1 uploaded). Viewport 3D was breaking
-				-- equip UI (empty previews + errors mid-refresh) — do not use in slots.
-				local img = Instance.new("ImageLabel")
-				img.Name = "Icon"
-				img.BackgroundColor3 = BG_SLOT
-				img.BackgroundTransparency = 1
-				img.BorderSizePixel = 0
-				img.Size = UDim2.fromScale(0.78, 0.78)
-				img.Position = UDim2.fromScale(0.5, 0.48)
-				img.AnchorPoint = Vector2.new(0.5, 0.5)
-				img.Image = IconConfig.GetWeaponImage(w.id)
-				img.ScaleType = Enum.ScaleType.Fit
-				img.ZIndex = 36
-				img.Active = false -- clicks go to slot button
-				img.Parent = btn
+				-- Icon: 3D Viewport if WeaponModels mesh exists, else IconConfig Decal
+				local used3d = false
+				local ok3d, res3d = pcall(function()
+					return WeaponModels.TryFillInventoryIcon(btn, w.id, 36)
+				end)
+				used3d = ok3d and res3d == true
+				if not used3d then
+					local img = Instance.new("ImageLabel")
+					img.Name = "Icon"
+					img.BackgroundColor3 = BG_SLOT
+					img.BackgroundTransparency = 1
+					img.BorderSizePixel = 0
+					img.Size = UDim2.fromScale(0.78, 0.78)
+					img.Position = UDim2.fromScale(0.5, 0.48)
+					img.AnchorPoint = Vector2.new(0.5, 0.5)
+					img.Image = IconConfig.GetWeaponImage(w.id)
+					img.ScaleType = Enum.ScaleType.Fit
+					img.ZIndex = 36
+					img.Active = false
+					img.Parent = btn
+				end
 
 				if profile.equippedMain == w.uid or profile.equippedOffhand == w.uid then
 					local dot = Instance.new("Frame")

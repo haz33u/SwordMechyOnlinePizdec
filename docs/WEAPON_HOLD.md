@@ -93,7 +93,8 @@ Algorithm:
 2. Map id in `ModelByWeaponId`  
 3. Bake hilts (or equip once for runtime bake)  
 4. Playtest dual wield  
-5. Icon separately via `IconConfig` (`docs/ICON_UPLOAD.md`)  
+5. Inventory icon: **auto 3D Viewport** if model mapped; optional Decal via `IconConfig`  
+6. See `docs/ICON_UPLOAD.md`
 
 ---
 

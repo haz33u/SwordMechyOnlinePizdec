@@ -1,9 +1,25 @@
-# Как создавать иконки мечей (IconConfig)
+# Иконки мечей (инвентарь)
 
-Инвентарь **не** рисует 3D-модель в слоте.  
-Слот = **картинка** `ImageLabel` → `IconConfig.GetWeaponImage(weaponId)`.
+## Порядок в UI (live)
 
-3D в `ReplicatedStorage.WeaponModels` = только **в руке** (`WeaponVisual`).
+```
+WeaponModels has mesh for weaponId?
+  YES → ViewportFrame 3D (WeaponModels.TryFillInventoryIcon)  ← auto for new swords
+  NO  → IconConfig Decal PNG
+  empty → FallbackWeapon generic
+```
+
+Код: `Inventory.lua` weapons tab · `WeaponModels.FillViewport`.  
+Viewport **Active=false** — клики слота (equip) не перехватываются.
+
+3D в руке = тот же mesh (`WeaponVisual`); иконка = превью того же asset.
+
+---
+
+## Опционально: Decal PNG (IconConfig)
+
+Если нужен «плоский» арт поверх 3D — заполни `IconConfig` и при желании
+поставь приоритет Decal в Inventory (сейчас 3D побеждает, когда mesh есть).
 
 ---
 
