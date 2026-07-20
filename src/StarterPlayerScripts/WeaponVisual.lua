@@ -338,7 +338,7 @@ local function ensureMcSound(): Sound?
 end
 
 local function setupMcJoints(char: Model): boolean
-	-- joints may appear after character stream; retry briefly
+	-- joints may appear after character stream; retry without spam-warn
 	if not mcShoulder or not mcShoulder.Parent then
 		mcShoulder = findRightShoulder(char)
 	end
@@ -352,24 +352,28 @@ local function setupMcJoints(char: Model): boolean
 		mcWarnedNoShoulder = false
 		return true
 	end
-	if not mcWarnedNoShoulder then
-		mcWarnedNoShoulder = true
-		local motors = {}
-		for _, d in char:GetDescendants() do
-			if d:IsA("Motor6D") then
-				table.insert(motors, d:GetFullName())
-			end
-		end
-		local hum = char:FindFirstChildOfClass("Humanoid")
-		local rig = if hum then tostring(hum.RigType) else "?"
-		warn(
-			"[WeaponVisual] MC swing: no RightShoulder. RigType=",
-			rig,
-			"| motors:",
-			if #motors > 0 then table.concat(motors, "; ") else "(none yet)"
-		)
-	end
 	return false
+end
+
+local function warnNoShoulder(char: Model)
+	if mcWarnedNoShoulder then
+		return
+	end
+	mcWarnedNoShoulder = true
+	local motors = {}
+	for _, d in char:GetDescendants() do
+		if d:IsA("Motor6D") then
+			table.insert(motors, d:GetFullName())
+		end
+	end
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	local rig = if hum then tostring(hum.RigType) else "?"
+	warn(
+		"[WeaponVisual] no RightShoulder after wait. RigType=",
+		rig,
+		"| motors:",
+		if #motors > 0 then table.concat(motors, "; ") else "(none)"
+	)
 end
 
 local function bindMcRender()
@@ -382,9 +386,11 @@ local function bindMcRender()
 		local raisePower = cfg.RaisePower or 1.2
 		local rollPower = cfg.RollPower or 0.4
 		local swingDir = cfg.SwingDir or -1
+		local useMc = AnimationConfig.UseMinecraftSwing == true
 
-		-- Right arm: MC hold + slash whenever a main sword is equipped
-		if mcShoulder and mcShoulder.Parent then
+		-- Right arm: only drive Motor6D when MC procedural mode is on.
+		-- Published AttackMain owns the right arm when UseMinecraftSwing = false.
+		if useMc and mcShoulder and mcShoulder.Parent then
 			if mcSwinging then
 				mcT += dt / swingTime
 				if mcT >= 1 then
@@ -403,12 +409,11 @@ local function bindMcRender()
 					end
 				end
 			elseif mainModel and mainModel.Parent then
-				-- Idle hold: raised fist (Minecraft TP), not hip-hang
 				mcShoulder.Transform = READY
 			end
 		end
 
-		-- Left arm: same READY hold + mirror slash for offhand
+		-- Left arm: offhand READY + mirror slash (works with published right-arm attack)
 		if mcLeftShoulder and mcLeftShoulder.Parent then
 			if offSwinging then
 				offT += dt / swingTime
@@ -589,18 +594,33 @@ function WeaponVisual.Init(getProfile: () -> any?)
 		mcWaist = nil
 		mcWarnedNoShoulder = false
 		task.spawn(function()
-			-- wait for R15 stream (RightUpperArm + motor)
+			-- Wait for character stream (Humanoid + Motor6Ds); do not warn on first empty frame
+			local hum = char:FindFirstChildOfClass("Humanoid") or char:WaitForChild("Humanoid", 5)
+			if hum then
+				pcall(function()
+					(hum :: Humanoid):WaitForChild("Animator", 3)
+				end)
+			end
+			char:WaitForChild("RightUpperArm", 5)
 			local deadline = os.clock() + 5
 			while os.clock() < deadline and char.Parent do
 				if setupMcJoints(char) then
 					break
 				end
-				task.wait(0.15)
+				task.wait(0.1)
 			end
-			-- Always bind so offhand ready pose + swing work in published-anim mode
+			if not mcShoulder and char.Parent then
+				warnNoShoulder(char)
+			end
+			-- Bind for offhand swing (and MC right arm only if UseMinecraftSwing)
 			bindMcRender()
 			if mcShoulder then
-				print("[WeaponVisual] joints ready R:", mcShoulder:GetFullName(), "L:", mcLeftShoulder and mcLeftShoulder:GetFullName() or "nil")
+				print(
+					"[WeaponVisual] joints ready R:",
+					mcShoulder:GetFullName(),
+					"L:",
+					mcLeftShoulder and mcLeftShoulder:GetFullName() or "nil"
+				)
 			end
 			WeaponVisual.Refresh(getProfile())
 		end)
