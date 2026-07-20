@@ -17,12 +17,14 @@
 ### B) Published AnimationId (default — dual attack)
 
 | Flag | `UseMinecraftSwing = false` (default) |
-| Right (active) | **`rbxassetid://131793860537357`** → `AttackMain` |
-| Right (brutal, saved) | **`rbxassetid://86113662553657`** → `AttackPresets.brutalRight` / `AttackAlt` — not active yet |
-| Left / offhand | **`rbxassetid://97155624777350`** → `AttackOffhand` (when offhand sword equipped) |
-| Code | `WeaponVisual.PlayAttack`: **right first**, then **left** after right track ends |
-| Fallback | if left id fails → procedural left shoulder swing |
-| Switch to brutal later | `AttackMain = AnimationConfig.AttackPresets.brutalRight` in `AnimationConfig.lua` |
+| Right (1-hand) | **`rbxassetid://131793860537357`** → `AttackMain` |
+| Right (brutal, saved) | **`rbxassetid://86113662553657`** → `AttackPresets.brutalRight` / `AttackAlt` |
+| Left (sequential fallback) | **`rbxassetid://97155624777350`** → `AttackOffhand` |
+| **Dual both hands** | **`rbxassetid://81321426085093`** → `AttackDual` / `AttackPresets.dualBoth` |
+| Dual unlock rule | **Only if** `profile.unlocks.offhand == true` **and** offhand sword equipped |
+| Without Offhand purchase | always 1-hand `AttackMain` (dual ignored) |
+| Fallback | dual fails → right-then-left sequential; left fails → procedural |
+| Switch to brutal later | `AttackMain = AnimationConfig.AttackPresets.brutalRight` |
 
 ## Ходьба (не атака)
 

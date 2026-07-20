@@ -7,13 +7,14 @@
 	Default: published user attack anim (MC swing optional).
 ]]
 
--- Right / left hand attacks (user assets, 2026-07-20)
+-- Right / left / dual attacks (user assets, 2026-07-20)
 local ATTACK_RIGHT = "rbxassetid://131793860537357"
 local ATTACK_RIGHT_BRUTAL = "rbxassetid://86113662553657" -- spare right-hand set (future)
 local ATTACK_LEFT = "rbxassetid://97155624777350"
+local ATTACK_DUAL = "rbxassetid://81321426085093" -- both hands in one clip; only after Offhand purchase
 
 local AnimationConfig = {
-	-- false = published AttackMain (right) + AttackOffhand (left when dual-wield)
+	-- false = published AttackMain (right) + dual/offhand when allowed
 	UseMinecraftSwing = false,
 
 	MinecraftSwing = {
@@ -26,21 +27,23 @@ local AnimationConfig = {
 	},
 
 	--[[
-		Presets (switch AttackMain later without losing ids):
-		  default  = ATTACK_RIGHT
-		  brutal   = ATTACK_RIGHT_BRUTAL  (saved for future)
+		Presets (ids kept even when not active):
+		  defaultRight / brutalRight / defaultLeft / dualBoth
 	]]
 	AttackPresets = {
 		defaultRight = ATTACK_RIGHT,
 		brutalRight = ATTACK_RIGHT_BRUTAL,
 		defaultLeft = ATTACK_LEFT,
+		dualBoth = ATTACK_DUAL,
 	},
 
-	-- Active set (use brutal: AttackMain = AnimationConfig.AttackPresets.brutalRight)
-	AttackMain = ATTACK_RIGHT,
-	AttackOffhand = ATTACK_LEFT,
-	AttackAlt = ATTACK_RIGHT_BRUTAL, -- alt / future brutal right
-	AttackCandidates = { ATTACK_RIGHT, ATTACK_RIGHT_BRUTAL },
+	-- Active set
+	AttackMain = ATTACK_RIGHT, -- one-hand (no offhand sword)
+	AttackOffhand = ATTACK_LEFT, -- sequential left fallback if dual fails
+	AttackDual = ATTACK_DUAL, -- full dual clip when Offhand purchased + equipped
+	UseDualAttackAnim = true, -- prefer AttackDual over right-then-left
+	AttackAlt = ATTACK_RIGHT_BRUTAL,
+	AttackCandidates = { ATTACK_RIGHT, ATTACK_RIGHT_BRUTAL, ATTACK_DUAL },
 
 	PreferPublishedAttack = true,
 	UseCombatKeyframeSequences = false,
@@ -93,6 +96,18 @@ end
 --- Left-hand / offhand attack AnimationId (empty → procedural fallback)
 function AnimationConfig.GetAttackOffhandId(): string
 	local id = AnimationConfig.AttackOffhand
+	if type(id) == "string" and id ~= "" and not AnimationConfig.IsBannedId(id) then
+		return id
+	end
+	return ""
+end
+
+--- Dual-wield full-body attack (both arms). Empty if disabled / banned.
+function AnimationConfig.GetAttackDualId(): string
+	if AnimationConfig.UseDualAttackAnim == false then
+		return ""
+	end
+	local id = AnimationConfig.AttackDual
 	if type(id) == "string" and id ~= "" and not AnimationConfig.IsBannedId(id) then
 		return id
 	end

@@ -27,6 +27,7 @@ local lastPlayedId: string? = nil
 local comboBusy = false -- true while right→left combo is running (spam LMB ignored)
 local autoAttackOn = false
 local autoAttackToken = 0
+local getProfileFn: (() -> any?)? = nil
 
 -- Minecraft-style procedural swing state
 local mcShoulder: Motor6D? = nil
@@ -290,6 +291,7 @@ local function preloadAttackTracks(char: Model)
 	local ids = {
 		AnimationConfig.GetAttackId(false),
 		AnimationConfig.GetAttackOffhandId(),
+		AnimationConfig.GetAttackDualId(),
 	}
 	for _, id in ids do
 		if type(id) == "string" and id ~= "" then
@@ -300,6 +302,32 @@ local function preloadAttackTracks(char: Model)
 			end
 		end
 	end
+end
+
+--- Offhand purchased (gamepass/unlock) — required to use dual attack clip.
+local function isOffhandPurchased(): boolean
+	local fn = getProfileFn
+	if not fn then
+		return false
+	end
+	local profile = fn()
+	if type(profile) ~= "table" then
+		return false
+	end
+	local u = (profile :: any).unlocks
+	return type(u) == "table" and u.offhand == true
+end
+
+--- Dual clip only after Offhand purchase AND a second sword equipped.
+local function canUseDualAttackAnim(): boolean
+	if not isOffhandPurchased() then
+		return false
+	end
+	if not offModel or not offModel.Parent then
+		return false
+	end
+	local dualId = AnimationConfig.GetAttackDualId()
+	return dualId ~= ""
 end
 
 local mcWarnedNoShoulder = false
@@ -618,7 +646,10 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	end
 
 	local hasOff = offModel ~= nil and offModel.Parent ~= nil
+	local offPurchased = isOffhandPurchased()
+	local useDual = canUseDualAttackAnim()
 	local offId = AnimationConfig.GetAttackOffhandId()
+	local dualId = AnimationConfig.GetAttackDualId()
 
 	local function runCombo(playRight: () -> AnimationTrack?)
 		comboBusy = true
@@ -639,6 +670,28 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 			end)
 			if not ok then
 				warn("[WeaponVisual] combo error:", err)
+			end
+			comboBusy = false
+		end)
+	end
+
+	local function playSingleTrack(track: AnimationTrack, label: string)
+		comboBusy = true
+		task.spawn(function()
+			local ok, err = pcall(function()
+				for _, t in tracks do
+					if t.IsPlaying then
+						pcall(function()
+							t:Stop(0.05)
+						end)
+					end
+				end
+				track:Play(0.05, 1, 1.0)
+				print("[WeaponVisual] PlayAttack", label, "→", track.Animation and track.Animation.AnimationId or "?", "len=", track.Length)
+				task.wait(rightAttackDuration(track))
+			end)
+			if not ok then
+				warn("[WeaponVisual] attack error:", err)
 			end
 			comboBusy = false
 		end)
@@ -671,6 +724,22 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 		return
 	end
 
+	-- Dual clip: only if Offhand purchased + second sword equipped
+	if useDual then
+		local dualTrack = loadTrack(animator, dualId)
+		if dualTrack then
+			waitTrackLength(dualTrack, 1.5)
+			playSingleTrack(dualTrack, "DUAL")
+			if lastPlayedId ~= dualId then
+				lastPlayedId = dualId
+			end
+			return
+		end
+		warn("[WeaponVisual] dual anim failed, fallback sequential:", dualId)
+	elseif hasOff and not offPurchased then
+		print("[WeaponVisual] dual anim locked — buy Offhand (using right-only)")
+	end
+
 	local id = AnimationConfig.GetAttackId(false)
 	local track = loadTrack(animator, id)
 	if not track then
@@ -687,28 +756,29 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 		end
 	end
 
-	print("[WeaponVisual] PlayAttack RIGHT →", id, "len=", track.Length, "offhand=", hasOff, "offId=", offId)
+	print(
+		"[WeaponVisual] PlayAttack RIGHT →",
+		id,
+		"len=",
+		track.Length,
+		"offhandEq=",
+		hasOff,
+		"offPurchased=",
+		offPurchased,
+		"dual=",
+		useDual
+	)
 
-	if not hasOff then
-		-- Still mark busy so AUTO waits for the full swing before looping
-		comboBusy = true
-		task.spawn(function()
-			local ok, err = pcall(function()
-				track:Play(0.05, 1, 1.0)
-				task.wait(rightAttackDuration(track))
-			end)
-			if not ok then
-				warn("[WeaponVisual] single attack error:", err)
-			end
-			comboBusy = false
-		end)
+	if not hasOff or not offPurchased then
+		-- One-hand (no offhand purchase or no second sword)
+		playSingleTrack(track, "RIGHT")
 		if lastPlayedId ~= id then
 			lastPlayedId = id
 		end
 		return
 	end
 
-	-- RIGHT then LEFT; comboBusy always cleared (even on error)
+	-- Fallback: sequential RIGHT then LEFT (if dual clip unavailable)
 	runCombo(function()
 		track:Play(0.05, 1, 1.0)
 		return track
@@ -764,6 +834,7 @@ function WeaponVisual.IsComboBusy(): boolean
 end
 
 function WeaponVisual.Init(getProfile: () -> any?)
+	getProfileFn = getProfile
 	if AnimationConfig.UseMinecraftSwing then
 		print("[WeaponVisual] Attack mode = MinecraftSwing (procedural)")
 	else
@@ -771,7 +842,9 @@ function WeaponVisual.Init(getProfile: () -> any?)
 			"[WeaponVisual] Attack mode = R",
 			AnimationConfig.GetAttackId(false),
 			"L",
-			AnimationConfig.GetAttackOffhandId()
+			AnimationConfig.GetAttackOffhandId(),
+			"DUAL",
+			AnimationConfig.GetAttackDualId()
 		)
 	end
 
