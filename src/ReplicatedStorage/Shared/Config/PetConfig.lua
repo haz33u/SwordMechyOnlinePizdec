@@ -211,4 +211,24 @@ function PetConfig.GetDefaultPoolId(locationId: number): string
 	return PetConfig.DefaultPoolByLocation[locationId] or "loc1_500"
 end
 
+function PetConfig.IsValidPool(casePool: string): boolean
+	return type(casePool) == "string" and PetConfig.CasePools[casePool] ~= nil
+end
+
+function PetConfig.GetSellPrice(petId: string): number
+	local def = PetConfig.Get(petId)
+	if def and type(def.sellPrice) == "number" then
+		return math.max(0, math.floor(def.sellPrice))
+	end
+	return 0
+end
+
+--- Loc1 coin pools for Cases UI
+function PetConfig.ListOpenablePools(locationId: number): { string }
+	if locationId >= 2 then
+		return { "loc2_3_75m", "loc2_key54" }
+	end
+	return { "loc1_500", "loc1_50k", "loc1_key49" }
+end
+
 return PetConfig

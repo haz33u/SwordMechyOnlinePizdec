@@ -10,10 +10,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local GameConfig = require(Shared.Config.GameConfig)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
+local PetConfig = require(Shared.Config.PetConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 local LootService = require(script.Parent.LootService)
 local CombatService = require(script.Parent.CombatService)
+local PetService = require(script.Parent.PetService)
 
 local DebugService = {}
 
@@ -89,6 +91,33 @@ function DebugService.Run(player: Player, action: string, payload: any)
 			end
 		end
 		notify(player, string.format("Dev: granted Loc1 weapons (%d tries)", granted), "green")
+		ProfileService.Push(player)
+		return
+	end
+
+	if action == "giveLoc1Pets" then
+		local n = 0
+		for id, def in PetConfig.Pets do
+			if def.location == 1 and def.casePool == "loc1_500" then
+				if PetService.GrantPet(player, profile, id) then
+					n += 1
+				end
+			end
+		end
+		notify(player, string.format("Dev: Loc1 pets granted (%d)", n), "green")
+		ProfileService.Push(player)
+		return
+	end
+
+	if action == "givePet" then
+		local id = if type(payload) == "string" then payload else "P1_L1"
+		local uid = PetService.GrantPet(player, profile, id)
+		if uid then
+			local def = PetConfig.Get(id)
+			notify(player, "Dev: pet " .. ((def and def.name) or id), "green")
+		else
+			notify(player, "Dev: pet grant failed (bag full?)", "red")
+		end
 		ProfileService.Push(player)
 		return
 	end

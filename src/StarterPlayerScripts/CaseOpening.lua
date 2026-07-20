@@ -34,18 +34,20 @@ export type SpinItem = {
 	sub: string?,
 }
 
-local function petPool(locationId: number): { SpinItem }
+local function petPool(casePoolId: string?, locationId: number): { SpinItem }
 	local out: { SpinItem } = {}
-	for _, def in PetConfig.Pets do
-		if def.location == locationId or locationId == 0 then
-			table.insert(out, {
-				id = def.id,
-				name = def.name,
-				rarity = def.rarity,
-				icon = "🐾",
-				sub = string.format("power x%.2f", PetConfig.GetPowerMult(def)),
-			})
-		end
+	local poolId = casePoolId
+	if type(poolId) ~= "string" or not PetConfig.IsValidPool(poolId) then
+		poolId = PetConfig.GetDefaultPoolId(locationId)
+	end
+	for _, def in PetConfig.GetPool(poolId) do
+		table.insert(out, {
+			id = def.id,
+			name = def.name,
+			rarity = def.rarity,
+			icon = "🐾",
+			sub = string.format("power x%.2f", PetConfig.GetPowerMult(def)),
+		})
 	end
 	if #out == 0 then
 		for _, def in PetConfig.Pets do
@@ -412,16 +414,24 @@ function CaseOpening.Mount(gui: ScreenGui, store: any, toastApi: any?)
 		if kind ~= "pet" and kind ~= "aura" then
 			kind = "pet"
 		end
+		local petPoolId: string? = if payload and type(payload.poolId) == "string" then payload.poolId else nil
 
 		local profile = store:PeekProfile()
 		local stats = store:PeekStats()
+		local loc = (profile and profile.currentLocation) or 1
 		local keys = if kind == "aura"
 			then ((stats and stats.auraKeys) or (profile and profile.auraKeys) or 0)
 			else ((stats and stats.petKeys) or (profile and profile.petKeys) or 0)
-		local keyCost = if kind == "aura" then (CaseConfig.AURA_KEY_COST or 1) else (CaseConfig.PET_KEY_COST or 0)
-		local coinCost = if kind == "aura"
-			then (CaseConfig.AURA_COIN_COST or 0)
-			else (CaseConfig.PET_COIN_COST or PetConfig.OPEN_COST or 0)
+		local keyCost = 0
+		local coinCost = 0
+		if kind == "aura" then
+			keyCost = CaseConfig.AURA_KEY_COST or 1
+			coinCost = CaseConfig.AURA_COIN_COST or 0
+		else
+			local pid = petPoolId or PetConfig.GetDefaultPoolId(loc)
+			coinCost, keyCost = PetConfig.GetCaseCosts(pid)
+			petPoolId = pid
+		end
 		local coins = (stats and stats.coins) or (profile and profile.coins) or 0
 
 		if keyCost > 0 and keys < keyCost then
@@ -431,9 +441,10 @@ function CaseOpening.Mount(gui: ScreenGui, store: any, toastApi: any?)
 			return false, "need_coins", coinCost
 		end
 
-		local loc = (profile and profile.currentLocation) or 1
-		local pool = if kind == "aura" then auraPool() else petPool(loc)
-		local caseName = if kind == "aura" then "Aura Case" else "Pet Case"
+		local pool = if kind == "aura" then auraPool() else petPool(petPoolId, loc)
+		local caseName = if kind == "aura"
+			then "Aura Case"
+			else string.format("Pet Case (%s)", tostring(petPoolId or "loc1_500"))
 		local before = if kind == "aura"
 			then uidSet(profile and profile.auras, "uid")
 			else uidSet(profile and profile.pets, "uid")
@@ -496,7 +507,7 @@ function CaseOpening.Mount(gui: ScreenGui, store: any, toastApi: any?)
 			if kind == "aura" then
 				Net.OpenAuraCase()
 			else
-				Net.OpenPetCase()
+				Net.OpenPetCase(petPoolId)
 			end
 
 			local t0 = os.clock()

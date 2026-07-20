@@ -1374,6 +1374,7 @@ function Inventory.Bind(
 			local pets = profile.pets or {}
 			countLab.Text = string.format("%d / %d team", #(profile.petTeam or {}), profile.petSlots or 3)
 			local scroll = makeSlotGrid(main)
+			local selectedPetUid: string? = nil
 
 			for i, p in ipairs(pets) do
 				local def = PetConfig.Get(p.id)
@@ -1389,8 +1390,31 @@ function Inventory.Bind(
 				local edge = rarityBorder(rar)
 				local btn = makeItemSlot(scroll, i, edge)
 				btn.Name = "P_" .. tostring(p.uid)
-				local glyph = lbl(btn, "🐾", UDim2.fromScale(1, 0.75), UDim2.fromScale(0, 0.08), 28, TW, 37)
+				-- Rarity plate (3D world pets use PetVisual; slot = colored card)
+				local plate = Instance.new("Frame")
+				plate.Name = "PetPlate"
+				plate.BackgroundColor3 = edge
+				plate.BackgroundTransparency = 0.55
+				plate.BorderSizePixel = 0
+				plate.Size = UDim2.fromScale(0.72, 0.62)
+				plate.Position = UDim2.fromScale(0.5, 0.42)
+				plate.AnchorPoint = Vector2.new(0.5, 0.5)
+				plate.ZIndex = 36
+				plate.Active = false
+				plate.Parent = btn
+				UIKit.Corner(plate, 12)
+				local glyph = lbl(btn, "🐾", UDim2.fromScale(1, 0.55), UDim2.fromScale(0, 0.12), 26, TW, 37)
 				glyph.TextXAlignment = Enum.TextXAlignment.Center
+				local lvLab = lbl(
+					btn,
+					"Lv " .. tostring(p.level or 1),
+					UDim2.fromScale(1, 0.18),
+					UDim2.fromScale(0, 0.78),
+					11,
+					TD,
+					37
+				)
+				lvLab.TextXAlignment = Enum.TextXAlignment.Center
 				if inTeam then
 					local dot = Instance.new("Frame")
 					dot.Size = UDim2.fromOffset(8, 8)
@@ -1402,31 +1426,55 @@ function Inventory.Bind(
 					UIKit.Corner(dot, 99)
 				end
 				btn.MouseEnter:Connect(function()
-					local power = def and def.powerPct or p.powerPct or 0
+					local mult = if def then PetConfig.GetPowerMult(def) else 1
+					local sell = if def then (def.sellPrice or 0) else 0
 					setTooltip(
 						name,
 						rar,
-						string.format("Power: +%d%%", math.floor(power)),
-						inTeam and "● On team" or nil,
+						string.format("Power x%.2f · Lv %d", mult, p.level or 1),
+						string.format(
+							"%s · sell %d",
+							inTeam and "● On team" or "○ Bag",
+							sell
+						),
 						rarityBorder(rar)
 					)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
 				btn.MouseButton1Click:Connect(function()
+					selectedPetUid = p.uid
 					if inTeam then
 						Net.UnequipPet(p.uid)
 					else
 						Net.EquipPet(p.uid)
 					end
 				end)
+				btn.MouseButton2Click:Connect(function()
+					selectedPetUid = p.uid
+					Net.FeedPet(p.uid)
+				end)
 			end
 			for i = #pets + 1, MAX_SLOTS do
 				emptySlot(scroll, i)
 			end
 			local row = actionsRow()
-			keybind(row, 1, "LMB", "Equip / Unequip")
-			actBtn(row, "Open pet case", Color3.fromRGB(0, 90, 80), 2, function()
-				openModal("case", { kind = "pet" })
+			keybind(row, 1, "LMB", "Equip")
+			keybind(row, 2, "RMB", "Feed")
+			actBtn(row, "Case 500", Color3.fromRGB(0, 90, 80), 3, function()
+				openModal("case", { kind = "pet", poolId = "loc1_500" })
+			end)
+			actBtn(row, "Case 50K", Color3.fromRGB(0, 70, 100), 4, function()
+				openModal("case", { kind = "pet", poolId = "loc1_50k" })
+			end)
+			actBtn(row, "Sell selected", Color3.fromRGB(120, 50, 40), 5, function()
+				-- sell last hovered team interaction: use first bag pet if none
+				local uid = selectedPetUid
+				if not uid and pets[1] then
+					uid = pets[1].uid
+				end
+				if uid then
+					Net.SellPet(uid)
+				end
 			end)
 
 		---------------------------------------------------------------- AURAS

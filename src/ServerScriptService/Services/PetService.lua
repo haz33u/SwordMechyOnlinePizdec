@@ -4,15 +4,14 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local PetConfig = require(Shared.Config.PetConfig)
 local CaseConfig = require(Shared.Config.CaseConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
-local GameConfig = require(Shared.Config.GameConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 
 local PetService = {}
 
 function PetService.Init()
-	Remotes.Event("OpenPetCase").OnServerEvent:Connect(function(player)
-		PetService.OpenCase(player)
+	Remotes.Event("OpenPetCase").OnServerEvent:Connect(function(player, poolId)
+		PetService.OpenCase(player, poolId)
 	end)
 	Remotes.Event("EquipPet").OnServerEvent:Connect(function(player, petUid)
 		PetService.Equip(player, petUid)
@@ -22,6 +21,9 @@ function PetService.Init()
 	end)
 	Remotes.Event("FeedPet").OnServerEvent:Connect(function(player, petUid)
 		PetService.Feed(player, petUid)
+	end)
+	Remotes.Event("SellPet").OnServerEvent:Connect(function(player, petUid)
+		PetService.Sell(player, petUid)
 	end)
 end
 
@@ -35,7 +37,28 @@ local function fireCaseFail(player: Player, reason: string, needKeys: number?, n
 	})
 end
 
-function PetService.OpenCase(player: Player)
+local function findPet(profile: any, petUid: string): any?
+	if type(petUid) ~= "string" then
+		return nil
+	end
+	for _, pet in profile.pets or {} do
+		if pet.uid == petUid then
+			return pet
+		end
+	end
+	return nil
+end
+
+local function removeFromTeam(profile: any, petUid: string)
+	for i, uid in profile.petTeam or {} do
+		if uid == petUid then
+			table.remove(profile.petTeam, i)
+			return
+		end
+	end
+end
+
+function PetService.OpenCase(player: Player, poolIdArg: any?)
 	local profile = ProfileService.Get(player)
 	if not profile then
 		return
@@ -43,8 +66,15 @@ function PetService.OpenCase(player: Player)
 
 	local loc = profile.currentLocation or 1
 	local poolId = PetConfig.GetDefaultPoolId(loc)
+	if type(poolIdArg) == "string" and PetConfig.IsValidPool(poolIdArg) then
+		local meta = PetConfig.CasePools[poolIdArg]
+		-- only allow pools for current location (or loc1 while on 1)
+		if meta and (meta.location or 1) <= math.max(loc, 1) then
+			poolId = poolIdArg
+		end
+	end
+
 	local coinCost, keyCost = PetConfig.GetCaseCosts(poolId)
-	-- fallback CaseConfig only if pool missing
 	if coinCost == 0 and keyCost == 0 then
 		keyCost = CaseConfig.PET_KEY_COST or 0
 		coinCost = CaseConfig.PET_COIN_COST or PetConfig.OPEN_COST or 0
@@ -52,12 +82,9 @@ function PetService.OpenCase(player: Player)
 	local keys = profile.petKeys or 0
 	local coins = profile.coins or 0
 
-	-- Allow either: enough keys (if keyCost>0) OR enough coins (if coinCost>0).
-	-- Loc1 dump: coinCost=500, keyCost=0 → coins only.
 	local needKeys = keyCost > 0 and keys < keyCost
 	local needCoins = coinCost > 0 and coins < coinCost
 	if keyCost > 0 and coinCost > 0 then
-		-- both required
 		if needKeys then
 			Remotes.Event("Notify"):FireClient(player, {
 				text = string.format("Need %d pet key(s) (have %d)", keyCost, keys),
@@ -114,13 +141,14 @@ function PetService.OpenCase(player: Player)
 
 	local petId = PetConfig.RollFromPool(poolId)
 	for _ = 1, 5 do
-		if not profile.bannedPetIds[petId] then
+		if not (profile.bannedPetIds and profile.bannedPetIds[petId]) then
 			break
 		end
 		petId = PetConfig.RollFromPool(poolId)
 	end
 
 	local puid = ProfileService.NewUid()
+	profile.pets = profile.pets or {}
 	table.insert(profile.pets, {
 		uid = puid,
 		id = petId,
@@ -132,8 +160,7 @@ function PetService.OpenCase(player: Player)
 	local name = def and def.name or petId
 	local rarity = def and def.rarity or "Common"
 	local powerMult = if def then PetConfig.GetPowerMult(def) else 1
-	local powerPct = (powerMult - 1) * 100 -- CaseOpening UI still reads %
-	local coinPct = 0
+	local powerPct = (powerMult - 1) * 100
 
 	Remotes.Event("CaseResult"):FireClient(player, {
 		kind = "pet",
@@ -144,110 +171,130 @@ function PetService.OpenCase(player: Player)
 		rarity = rarity,
 		powerMult = powerMult,
 		powerPct = powerPct,
-		coinPct = coinPct,
+		coinPct = 0,
 		keysLeft = profile.petKeys,
 		location = loc,
 		casePool = poolId,
 	})
 
-	-- Toast is shown by CaseOpening AFTER the result card appears (not here).
-
-	-- auto equip if slot free
-	if #profile.petTeam < profile.petSlots then
+	profile.petTeam = profile.petTeam or {}
+	PetService.SyncSlots(profile)
+	if #profile.petTeam < (profile.petSlots or 3) then
 		table.insert(profile.petTeam, puid)
 	end
 	ProfileService.Push(player)
 end
 
-function PetService.Equip(player: Player, petUid: string)
+function PetService.Equip(player: Player, petUid: any)
 	local profile = ProfileService.Get(player)
-	if not profile then
+	if not profile or type(petUid) ~= "string" then
 		return
 	end
+	profile.petTeam = profile.petTeam or {}
+	PetService.SyncSlots(profile)
+
 	for _, uid in profile.petTeam do
 		if uid == petUid then
 			return
 		end
 	end
-	if #profile.petTeam >= profile.petSlots then
+	if #profile.petTeam >= (profile.petSlots or 3) then
 		Remotes.Event("Notify"):FireClient(player, { text = "No pet slots", color = "red" })
 		return
 	end
-	local found = false
-	for _, p in profile.pets do
-		if p.uid == petUid then
-			found = true
-			break
-		end
-	end
-	if not found then
+	if not findPet(profile, petUid) then
 		return
 	end
 	table.insert(profile.petTeam, petUid)
 	ProfileService.Push(player)
 end
 
-function PetService.Unequip(player: Player, petUid: string)
+function PetService.Unequip(player: Player, petUid: any)
 	local profile = ProfileService.Get(player)
-	if not profile then
+	if not profile or type(petUid) ~= "string" then
 		return
 	end
-	for i, uid in profile.petTeam do
-		if uid == petUid then
-			table.remove(profile.petTeam, i)
-			break
-		end
-	end
+	removeFromTeam(profile, petUid)
 	ProfileService.Push(player)
 end
 
-function PetService.Feed(player: Player, petUid: string)
+function PetService.Feed(player: Player, petUid: any)
 	local profile = ProfileService.Get(player)
-	if not profile then
+	if not profile or type(petUid) ~= "string" then
 		return
 	end
-	for _, pet in profile.pets do
-		if pet.uid == petUid then
-			if pet.level >= PetConfig.MAX_LEVEL then
-				return
-			end
-			local cost = math.floor(PetConfig.FEED_BASE_COST * (PetConfig.FEED_GROWTH ^ (pet.level - 1)))
-			if profile.coins < cost then
-				Remotes.Event("Notify"):FireClient(player, { text = "Not enough coins (" .. cost .. ")", color = "red" })
-				return
-			end
-			profile.coins -= cost
-			pet.level += 1
-			ProfileService.Push(player)
-			return
-		end
+	local pet = findPet(profile, petUid)
+	if not pet then
+		return
 	end
+	if (pet.level or 1) >= PetConfig.MAX_LEVEL then
+		Remotes.Event("Notify"):FireClient(player, { text = "Pet max level", color = "yellow" })
+		return
+	end
+	local lv = pet.level or 1
+	local cost = math.floor(PetConfig.FEED_BASE_COST * (PetConfig.FEED_GROWTH ^ (lv - 1)))
+	if (profile.coins or 0) < cost then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = "Not enough coins (" .. tostring(cost) .. ")",
+			color = "red",
+		})
+		return
+	end
+	profile.coins -= cost
+	pet.level = lv + 1
+	local def = PetConfig.Get(pet.id)
+	local name = def and def.name or pet.id
+	Remotes.Event("Notify"):FireClient(player, {
+		text = string.format("Fed %s → Lv %d (−%d coins)", name, pet.level, cost),
+		color = "green",
+	})
+	ProfileService.Push(player)
 end
 
---- Recalculate petSlots from rebirth / dungeon / paid (source of truth).
---- Returns true if slots increased.
+function PetService.Sell(player: Player, petUid: any)
+	local profile = ProfileService.Get(player)
+	if not profile or type(petUid) ~= "string" then
+		return
+	end
+	local idx: number? = nil
+	local pet: any = nil
+	for i, p in profile.pets or {} do
+		if p.uid == petUid then
+			idx = i
+			pet = p
+			break
+		end
+	end
+	if not idx or not pet then
+		return
+	end
+	removeFromTeam(profile, petUid)
+	local price = PetConfig.GetSellPrice(pet.id)
+	table.remove(profile.pets, idx)
+	profile.coins = (profile.coins or 0) + price
+	local def = PetConfig.Get(pet.id)
+	local name = def and def.name or pet.id
+	Remotes.Event("Notify"):FireClient(player, {
+		text = string.format("Sold %s for %d coins", name, price),
+		color = "gold",
+	})
+	ProfileService.Push(player)
+end
+
+--- Recalculate petSlots from rebirth / dungeon / paid.
 function PetService.SyncSlots(profile: any): boolean
 	local before = profile.petSlots or ProgressConfig.START_PET_SLOTS
 	local after = ProgressConfig.ComputePetSlots(profile)
 	profile.petSlots = after
-
-	-- trim team if over capacity
+	profile.petTeam = profile.petTeam or {}
 	while #profile.petTeam > after do
 		table.remove(profile.petTeam)
 	end
-
 	return after > before
 end
 
--- legacy: prefer SyncSlots; still clamps if something external adds
-function PetService.GrantSlot(profile: any, amount: number?)
-	amount = amount or 1
-	-- do not permanently inflate beyond formula — re-sync from progress
+function PetService.GrantSlot(profile: any, _amount: number?)
 	PetService.SyncSlots(profile)
-	-- if caller expected a grant outside formula, only paid path should set unlocks
-	if amount > 0 then
-		-- no-op for free grants; use ProgressConfig + unlocks.paidPetSlot
-	end
 	return profile.petSlots
 end
 
@@ -256,6 +303,32 @@ function PetService.GrantKeys(profile: any, amount: number)
 		return
 	end
 	profile.petKeys = (profile.petKeys or 0) + amount
+end
+
+--- DEV / loot helper: grant pet by id, auto-team if slot free.
+function PetService.GrantPet(player: Player, profile: any, petId: string): string?
+	if not PetConfig.Get(petId) then
+		return nil
+	end
+	local Formulas = require(Shared.Formulas)
+	local maxOwned = Formulas.GetPetBagCap(profile)
+	profile.pets = profile.pets or {}
+	if #profile.pets >= maxOwned then
+		return nil
+	end
+	local puid = ProfileService.NewUid()
+	table.insert(profile.pets, {
+		uid = puid,
+		id = petId,
+		level = 1,
+		enchants = {},
+	})
+	PetService.SyncSlots(profile)
+	profile.petTeam = profile.petTeam or {}
+	if #profile.petTeam < (profile.petSlots or 3) then
+		table.insert(profile.petTeam, puid)
+	end
+	return puid
 end
 
 return PetService

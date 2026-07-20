@@ -164,7 +164,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Иконки weapons | Loc1 IconConfig Decals; pipeline `docs/ICON_UPLOAD.md`. Loc2 empty → fallback |
 | Character Upgrade icons | ✅ `UpgradeIconConfig` + **§8.1** (strength/bag/speed/crit/multicrit/coin/close/**shop**) |
 | Quest + CoinShop 1–5 icons | ✅ `UiIconConfig` + **§8.3** |
-| Питомцы / ауры / кейсы economy | keys + CaseResult (v0.5.4); roster still thin |
+| Питомцы / ауры / кейсы economy | **Pets v1:** catalog+case+equip+feed+sell+`PetVisual` follow; auras still thin |
 | CaseResult remote (spin accuracy) | ✅ `CaseResult` + profile fallback |
 | Данжи Easy/Mid/Hard | timer AFK complete, не бой |
 | Реликвии equip/stars | auto-grant only, no Equip/Upgrade remote |

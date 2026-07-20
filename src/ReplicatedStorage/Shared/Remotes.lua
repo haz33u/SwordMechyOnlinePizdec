@@ -54,7 +54,7 @@ function Remotes.InitAll()
 	Remotes.Event("SellAllWeapons")
 	Remotes.Event("EnchantWeapon")
 	Remotes.Event("MergeWeapon") -- MMB inventory: 5×L1→L2, 3×L2→L3
-	Remotes.Event("OpenPetCase")
+	Remotes.Event("OpenPetCase") -- optional poolId string
 	Remotes.Event("OpenAuraCase")
 	Remotes.Event("EquipPet")
 	Remotes.Event("UnequipPet")
@@ -64,6 +64,7 @@ function Remotes.InitAll()
 	Remotes.Event("StartDungeon")
 	Remotes.Event("BanDrop")
 	Remotes.Event("FeedPet")
+	Remotes.Event("SellPet")
 	Remotes.Event("DebugSpawnDummy") -- debug: spawn training dummy
 	Remotes.Event("DebugCommand") -- DevTools panel (Studio / GameConfig.DEBUG)
 	-- paid unlocks (stub until gamepass): "offhand" | "paidPetSlot"

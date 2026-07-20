@@ -53,8 +53,8 @@ function Net.MergeWeapon(uid: string)
 	Net.Event("MergeWeapon"):FireServer(uid)
 end
 
-function Net.OpenPetCase()
-	Net.Event("OpenPetCase"):FireServer()
+function Net.OpenPetCase(poolId: string?)
+	Net.Event("OpenPetCase"):FireServer(poolId)
 end
 
 function Net.OpenAuraCase()
@@ -71,6 +71,10 @@ end
 
 function Net.FeedPet(uid: string)
 	Net.Event("FeedPet"):FireServer(uid)
+end
+
+function Net.SellPet(uid: string)
+	Net.Event("SellPet"):FireServer(uid)
 end
 
 function Net.EquipAura(uid: string)

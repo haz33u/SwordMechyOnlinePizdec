@@ -20,9 +20,10 @@ All under `ReplicatedStorage.Remotes` (created at runtime).
 | `EquipWeapon` | `weaponUid, slot?` | `"main"` / `"offhand"` |
 | `SellWeapon` | `weaponUid` | |
 | `EnchantWeapon` | `weaponUid` | Costs coins |
-| `OpenPetCase` | — | Spends **petKeys** (`CaseConfig.PET_KEY_COST`). Fires `CaseResult` |
-| `EquipPet` / `UnequipPet` | `petUid` | |
-| `FeedPet` | `petUid` | |
+| `OpenPetCase` | `poolId?` | Pool e.g. `loc1_500` / `loc1_50k` / `loc1_key49`. Coins and/or keys per `PetConfig.CasePools`. Fires `CaseResult` |
+| `EquipPet` / `UnequipPet` | `petUid` | Team slots |
+| `FeedPet` | `petUid` | Coins → level up |
+| `SellPet` | `petUid` | Coins = `sellPrice`; unequips if on team |
 | `OpenAuraCase` | — | Spends **auraKeys** (`CaseConfig.AURA_KEY_COST`). Fires `CaseResult` |
 | `EquipAura` | `auraUid` | |
 | `ClaimQuest` | `questId` | |
