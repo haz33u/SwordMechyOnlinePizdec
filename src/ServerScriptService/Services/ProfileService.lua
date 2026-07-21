@@ -42,6 +42,9 @@ local function defaultProfile()
 		lifetimeDamage = 0,
 		totalClicks = 0, -- CORE metric: every successful attack
 		samClickTier = 0, -- Sam Click Mastery 0..21 → CPS cap (Loc2+)
+		frostCaseTier = 0, -- Frost case-open chain 0..21
+		questLuckPct = 0, -- permanent luck from Frost (and future)
+		questPetSlots = 0, -- +equip slots from Frost milestone
 		rebirthLevel = 0,
 		rebirthMult = 1,
 		autoClicker = false, -- needs purchased auto
@@ -184,6 +187,16 @@ function ProfileService.Load(player: Player)
 		data.samClickTier = 0
 	end
 	data.samClickTier = math.clamp(math.floor(data.samClickTier), 0, 21)
+	if type(data.frostCaseTier) ~= "number" then
+		data.frostCaseTier = 0
+	end
+	data.frostCaseTier = math.clamp(math.floor(data.frostCaseTier), 0, 21)
+	if type(data.questLuckPct) ~= "number" then
+		data.questLuckPct = 0
+	end
+	if type(data.questPetSlots) ~= "number" then
+		data.questPetSlots = 0
+	end
 	-- strip offhand if not paid-unlocked
 	if not ProgressConfig.IsOffhandUnlocked(data) then
 		data.equippedOffhand = nil

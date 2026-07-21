@@ -1077,35 +1077,41 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		table.sort(list, function(a, b)
 			local da = QuestConfig.Get(a.id)
 			local db = QuestConfig.Get(b.id)
-			local sa = da and da.chain == "sam"
-			local sb = db and db.chain == "sam"
-			if sa and sb then
-				return (da.chainIndex or 0) < (db.chainIndex or 0)
+			local pa = if da and da.chain == "sam" then 0 elseif da and da.chain == "frost" then 1 else 2
+			local pb = if db and db.chain == "sam" then 0 elseif db and db.chain == "frost" then 1 else 2
+			if pa ~= pb then
+				return pa < pb
 			end
-			if sa ~= sb then
-				return sa
+			if da and db and da.chain and da.chain == db.chain then
+				return (da.chainIndex or 0) < (db.chainIndex or 0)
 			end
 			return a.id < b.id
 		end)
 		local samDone, samTotal = QuestConfig.GetSamProgress(profile)
+		local frostDone, frostTotal = QuestConfig.GetFrostProgress(profile)
 		local order = 0
 		for _, entry in ipairs(list) do
 			local id = entry.id
 			local state = entry.state
 			order += 1
 			local def = QuestConfig.Get(id)
-			-- hide future Sam steps until previous claimed (show active + claimed only)
-			local showSam = true
+			-- hide future chain steps until previous claimed
+			local showRow = true
 			if def and def.chain == "sam" then
-				local idx = def.chainIndex or 1
-				if idx > samDone + 1 then
-					showSam = false
+				if (def.chainIndex or 1) > samDone + 1 then
+					showRow = false
+				end
+			elseif def and def.chain == "frost" then
+				if (def.chainIndex or 1) > frostDone + 1 then
+					showRow = false
 				end
 			end
-			if showSam then
+			if showRow then
 			local name = (def and def.name) or id
 			if def and def.chain == "sam" then
 				name = string.format("Sam · %s  (%d/%d)", name, def.chainIndex or 0, samTotal)
+			elseif def and def.chain == "frost" then
+				name = string.format("Frost · %s  (%d/%d)", name, def.chainIndex or 0, frostTotal)
 			end
 			local desc = (def and def.description) or ""
 			local amount = (def and def.amount) or 1
@@ -1178,7 +1184,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 					Order = 2,
 				})
 			end
-			end -- showSam
+			end -- showRow
 		end
 	end
 

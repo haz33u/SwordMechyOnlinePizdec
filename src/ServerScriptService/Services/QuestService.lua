@@ -65,6 +65,31 @@ function QuestService.OnClick(profile: any)
 	end
 end
 
+--- Frost: pet case opens. count = 1, or 3/5 when multi-open gamepass used.
+function QuestService.OnCaseOpen(profile: any, kind: string?, count: number?)
+	if not profile or not profile.quests then
+		return
+	end
+	local n = math.max(1, math.floor(count or 1))
+	-- Only pet cases feed Frost chain (screenshot: pet cases any loc)
+	if kind and kind ~= "pet" then
+		return
+	end
+	local activeId = QuestConfig.GetActiveFrostQuestId(profile)
+	if not activeId then
+		return
+	end
+	local state = profile.quests[activeId]
+	local def = QuestConfig.Get(activeId)
+	if not state or not def or state.claimed or def.type ~= "case_open" then
+		return
+	end
+	state.progress = math.min(def.amount, (state.progress or 0) + n)
+	if state.progress >= def.amount then
+		state.completed = true
+	end
+end
+
 function QuestService.Claim(player: Player, questId: string)
 	local profile = ProfileService.Get(player)
 	if not profile then
@@ -76,12 +101,22 @@ function QuestService.Claim(player: Player, questId: string)
 		return
 	end
 
-	-- Sam sequential: only claim active (lowest unclaimed)
+	-- Sequential chains: only claim active (lowest unclaimed)
 	if def.chain == QuestConfig.SAM_CHAIN then
 		local active = QuestConfig.GetActiveSamQuestId(profile)
 		if active ~= questId then
 			Remotes.Event("Notify"):FireClient(player, {
 				text = "Finish earlier Sam quests first",
+				color = "red",
+			})
+			return
+		end
+	end
+	if def.chain == QuestConfig.FROST_CHAIN then
+		local active = QuestConfig.GetActiveFrostQuestId(profile)
+		if active ~= questId then
+			Remotes.Event("Notify"):FireClient(player, {
+				text = "Finish earlier Frost quests first",
 				color = "red",
 			})
 			return
@@ -101,6 +136,14 @@ function QuestService.Claim(player: Player, questId: string)
 	if r.powerPct and r.powerPct > 0 then
 		profile.questPowerPct = (profile.questPowerPct or 0) + r.powerPct
 		note = string.format("Quest: %s ✓  (+%g%% Power permanent)", def.name, r.powerPct)
+	end
+	if r.luckPct and r.luckPct > 0 then
+		profile.questLuckPct = (profile.questLuckPct or 0) + r.luckPct
+		note = string.format("Frost ✓  ·  +%g luck (total +%g)", r.luckPct, profile.questLuckPct)
+	end
+	if r.petSlots and r.petSlots > 0 then
+		profile.questPetSlots = (profile.questPetSlots or 0) + r.petSlots
+		note = string.format("Frost ✓  ·  +%d pet slot!", r.petSlots)
 	end
 	if r.weaponId then
 		local wuid = ProfileService.NewUid()
@@ -125,6 +168,18 @@ function QuestService.Claim(player: Player, questId: string)
 				"Sam (%d/21) ✓  ·  CPS cap %d",
 				r.samCpsTier,
 				cps
+			)
+		end
+	end
+	if r.frostTier and r.frostTier > 0 then
+		profile.frostCaseTier = math.max(profile.frostCaseTier or 0, r.frostTier)
+		if r.frostTier >= 21 then
+			note = "Frost Mastery ✓  ·  case luck complete!"
+		elseif not (r.petSlots and r.petSlots > 0) then
+			note = string.format(
+				"Frost (%d/21) ✓  ·  luck +%g",
+				r.frostTier,
+				r.luckPct or 0
 			)
 		end
 	end

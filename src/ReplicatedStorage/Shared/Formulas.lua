@@ -456,7 +456,8 @@ function Formulas.GetLuck(profile: any): number
 	local ench = Formulas.GetEnchantPools(profile)
 	local lvl = Formulas.GetUpgradeLevel(profile, "Luck")
 	local anom = Formulas.GetAnomalyMods()
-	return lvl * 0.02 + ench.luck / 100 + (anom.luckAdd or 0)
+	local questLuck = (profile and profile.questLuckPct or 0) / 100
+	return lvl * 0.02 + ench.luck / 100 + (anom.luckAdd or 0) + questLuck
 end
 
 --- Multiplier on mob respawn delay (<1 = faster).

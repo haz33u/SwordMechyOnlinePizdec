@@ -177,6 +177,10 @@ function PetService.OpenCase(player: Player, poolIdArg: any?)
 		casePool = poolId,
 	})
 
+	-- Frost quest: each open counts 1 (multi x3/x5 should pass count when wired)
+	local QuestService = require(script.Parent.QuestService)
+	QuestService.OnCaseOpen(profile, "pet", 1)
+
 	profile.petTeam = profile.petTeam or {}
 	PetService.SyncSlots(profile)
 	if #profile.petTeam < (profile.petSlots or 3) then

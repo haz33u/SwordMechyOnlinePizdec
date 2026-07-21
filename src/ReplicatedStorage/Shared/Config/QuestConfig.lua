@@ -17,9 +17,12 @@ export type QuestDef = {
 		auraKeys: number?,
 		unlockLocation: number?,
 		samCpsTier: number?, -- set profile.samClickTier to this on claim
+		frostTier: number?, -- Frost case-open chain tier
+		luckPct: number?, -- permanent +% luck (points, same scale as enchant luck)
+		petSlots: number?, -- +N equip pet slots (quest path)
 	},
 	location: number,
-	chain: string?, -- "sam"
+	chain: string?, -- "sam" | "frost"
 	chainIndex: number?, -- 1..21
 	npc: string?,
 }
@@ -28,6 +31,10 @@ local QuestConfig = {
 	SAM_CHAIN = "sam",
 	SAM_COUNT = 21,
 	SAM_NPC = "Sam",
+
+	FROST_CHAIN = "frost",
+	FROST_COUNT = 21,
+	FROST_NPC = "Frost",
 
 	-- Display click targets (step 3 = 5K, step 21 = 2B)
 	SAM_CLICK_AMOUNTS = {
@@ -271,4 +278,155 @@ function QuestConfig.GetSamProgress(profile: any): (number, number)
 	return claimed, QuestConfig.SAM_COUNT
 end
 
+----------------------------------------------------------------------
+-- Frost — open pet cases (any location). Step 13 = 1M (dump-like).
+-- x3/x5 multi-open counts as 3/5 progress when wired.
+-- Luck rises with chain; loc drop tables still tighten by location.
+----------------------------------------------------------------------
+QuestConfig.FROST_CASE_AMOUNTS = {
+	500,
+	1_500,
+	3_000,
+	6_000,
+	10_000, -- step 5: milestone often paired with pet slot feel
+	25_000,
+	50_000,
+	100_000,
+	200_000,
+	350_000,
+	500_000,
+	750_000,
+	1_000_000, -- step 13 — matches screenshot ~1M
+	2_000_000,
+	4_000_000,
+	8_000_000,
+	15_000_000,
+	30_000_000,
+	60_000_000,
+	100_000_000,
+	200_000_000,
+} :: { number }
+
+QuestConfig.FROST_COIN_REWARDS = {
+	2_000,
+	5_000,
+	10_000,
+	20_000,
+	40_000,
+	80_000,
+	150_000,
+	300_000,
+	600_000,
+	1_200_000,
+	2_500_000,
+	5_000_000,
+	10_000_000,
+	20_000_000,
+	40_000_000,
+	80_000_000,
+	150_000_000,
+	300_000_000,
+	500_000_000,
+	800_000_000,
+	1_200_000_000,
+} :: { number }
+
+-- Permanent luck points per claim (Formulas.GetLuck uses /100)
+QuestConfig.FROST_LUCK_PCT = {
+	0.5,
+	0.5,
+	0.5,
+	0.5,
+	1.0, -- 5
+	0.5,
+	0.5,
+	1.0,
+	0.5,
+	1.0, -- 10
+	0.5,
+	1.0,
+	1.0, -- 13
+	1.0,
+	1.5,
+	1.0,
+	1.5,
+	1.0,
+	2.0,
+	1.5,
+	2.0, -- 21
+} :: { number }
+
+do
+	local amounts = QuestConfig.FROST_CASE_AMOUNTS
+	local coins = QuestConfig.FROST_COIN_REWARDS
+	local lucks = QuestConfig.FROST_LUCK_PCT
+	for i = 1, QuestConfig.FROST_COUNT do
+		local id = string.format("Q_FROST_%02d", i)
+		local need = amounts[i] or 1000
+		local coinR = coins[i] or 5_000
+		local luck = lucks[i] or 0.5
+		-- Step 5 = 10K opens → +1 pet equip slot (x3/x5 multi helps)
+		local petSlots = if i == 5 then 1 else nil
+		local extra = if i == 5
+			then " · +1 pet slot"
+			elseif i == 21 then " · CASE MASTER"
+			else " · +luck"
+		end
+		QuestConfig.Quests[id] = {
+			id = id,
+			name = "Open Pet Cases",
+			description = string.format(
+				"Frost (%d/21): open %s pet cases (any location)%s",
+				i,
+				tostring(need),
+				extra
+			),
+			type = "case_open",
+			targetId = "pet", -- pet cases only
+			amount = need,
+			rewards = {
+				coins = coinR,
+				luckPct = luck,
+				petSlots = petSlots,
+				frostTier = i,
+			},
+			location = 1, -- visible from Loc1; progress on any loc
+			chain = QuestConfig.FROST_CHAIN,
+			chainIndex = i,
+			npc = QuestConfig.FROST_NPC,
+		}
+	end
+end
+
+function QuestConfig.FrostId(index: number): string
+	return string.format("Q_FROST_%02d", index)
+end
+
+function QuestConfig.GetActiveFrostQuestId(profile: any): string?
+	if not profile or not profile.quests then
+		return nil
+	end
+	for i = 1, QuestConfig.FROST_COUNT do
+		local id = QuestConfig.FrostId(i)
+		local state = profile.quests[id]
+		if state and not state.claimed then
+			return id
+		end
+	end
+	return nil
+end
+
+function QuestConfig.GetFrostProgress(profile: any): (number, number)
+	local claimed = 0
+	for i = 1, QuestConfig.FROST_COUNT do
+		local id = QuestConfig.FrostId(i)
+		local state = profile.quests and profile.quests[id]
+		if state and state.claimed then
+			claimed += 1
+		end
+	end
+	return claimed, QuestConfig.FROST_COUNT
+end
+
 return QuestConfig
+

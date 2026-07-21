@@ -80,6 +80,12 @@ function ProgressConfig.ComputePetSlots(profile: any): number
 		slots += ProgressConfig.PAID_PET_SLOT
 	end
 
+	-- Frost case-open quest rewards (+1 at 10K opens step)
+	local qSlots = profile.questPetSlots or 0
+	if type(qSlots) == "number" and qSlots > 0 then
+		slots += math.floor(qSlots)
+	end
+
 	return math.clamp(slots, ProgressConfig.START_PET_SLOTS, ProgressConfig.MAX_PET_SLOTS)
 end
 
