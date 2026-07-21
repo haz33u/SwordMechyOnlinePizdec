@@ -245,8 +245,8 @@ function MobConfig.Get(id: string): MobDef?
 end
 
 function MobConfig.GetByLocation(locationId: number): { MobDef }
-	local out = {}
-	for _, def in MobConfig.Mobs do
+	local out: { MobDef } = {}
+	for _, def in pairs(MobConfig.Mobs) do
 		if def.location == locationId then
 			table.insert(out, def)
 		end
@@ -255,8 +255,8 @@ function MobConfig.GetByLocation(locationId: number): { MobDef }
 end
 
 function MobConfig.GetPublicCatalog(): { any }
-	local out = {}
-	for _, def in MobConfig.Mobs do
+	local out: { any } = {}
+	for _, def in pairs(MobConfig.Mobs) do
 		table.insert(out, {
 			id = def.id,
 			name = def.name,

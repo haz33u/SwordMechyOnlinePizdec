@@ -93,11 +93,19 @@ local MOB_OVERRIDES: {
 		questIds = {},
 		caseId = "Case_Loc3",
 	},
+	[4] = {
+		mobs = {},
+		bossId = nil,
+		debugMobs = {},
+		questIds = {},
+		caseId = "Case_Loc4",
+	},
 }
 
 local LocationConfig = {
 	COUNT = #WorldConfig.Locations,
 	List = {} :: { LocationDef },
+	ById = {} :: { [number]: LocationDef },
 }
 
 for _, meta in WorldConfig.Locations do
@@ -107,22 +115,23 @@ for _, meta in WorldConfig.Locations do
 		name = meta.name,
 		theme = meta.theme,
 		unlockPower = meta.unlockPower,
-		unlockRebirth = meta.unlockRebirth or 0,
-		travelCostCoins = meta.travelCostCoins or 0,
+		unlockRebirth = meta.unlockRebirth,
+		travelCostCoins = meta.travelCostCoins,
 		coinMult = meta.coinMult,
 		powerMult = meta.powerMult,
 		status = meta.status,
-		mobs = ov and ov.mobs or {},
-		bossId = ov and ov.bossId or nil,
-		debugMobs = ov and ov.debugMobs or {},
-		questIds = ov and ov.questIds or {},
-		caseId = ov and ov.caseId or ("Case_Loc" .. meta.id),
+		mobs = if ov then ov.mobs else {},
+		bossId = if ov then ov.bossId else nil,
+		debugMobs = if ov and ov.debugMobs then ov.debugMobs else {},
+		questIds = if ov then ov.questIds else {},
+		caseId = if ov and ov.caseId then ov.caseId else ("Case_Loc" .. tostring(meta.id)),
 	}
 	table.insert(LocationConfig.List, def)
+	LocationConfig.ById[def.id] = def
 end
 
 function LocationConfig.Get(id: number): LocationDef?
-	return LocationConfig.List[id]
+	return LocationConfig.ById[id]
 end
 
 function LocationConfig.GetAll(): { LocationDef }

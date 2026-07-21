@@ -1,13 +1,15 @@
+--!nocheck
 --[[
-	Studio Command Bar / Edit-mode script: bake SM_Hilt on every ReplicatedStorage.WeaponModels child.
+	STUDIO COMMAND BAR / Edit-mode paste script (NOT a Rojo ModuleScript).
+
+	Bake Attachment "SM_Hilt" on every ReplicatedStorage.WeaponModels child.
 
 	Usage:
 	  1. Stop Play (Edit mode)
-	  2. Paste into Command Bar OR require this Module if synced
+	  2. View → Command Bar → paste this entire file → Enter
 	  3. Save Place
 
-	Creates Attachment "SM_Hilt" on each sword PrimaryPart at the HANDLE end.
-	Runtime (WeaponModels.lua) uses the same algorithm if attachment is missing.
+	Runtime WeaponModels.lua can bake hilts if missing; this bakes into the Place.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -16,12 +18,12 @@ local HILT_NAME = "SM_Hilt"
 local FOLDER = "WeaponModels"
 local HILT_END_BIAS = 0.92
 
-local function findHandle(root: Instance): BasePart?
+local function findHandle(root)
 	local named = root:FindFirstChild("Handle", true)
 	if named and named:IsA("BasePart") then
 		return named
 	end
-	local best: BasePart? = nil
+	local best = nil
 	local bestVol = -1
 	for _, d in root:GetDescendants() do
 		if d:IsA("BasePart") then
@@ -36,7 +38,7 @@ local function findHandle(root: Instance): BasePart?
 	return best
 end
 
-local function longestAxis(part: BasePart): (Vector3, number)
+local function longestAxis(part)
 	local s = part.Size
 	if s.Y >= s.X and s.Y >= s.Z then
 		return Vector3.yAxis, s.Y
@@ -46,17 +48,18 @@ local function longestAxis(part: BasePart): (Vector3, number)
 	return Vector3.zAxis, s.Z
 end
 
-local function bakeOne(model: Model): string
-	-- Prefer live Tool.Grip before any unwrap
+local function bakeOne(model)
 	local tool = model:FindFirstChildWhichIsA("Tool", true)
-	local grip = if tool and tool:IsA("Tool") then tool.Grip else CFrame.new()
+	local grip = CFrame.new()
+	if tool and tool:IsA("Tool") then
+		grip = tool.Grip
+	end
 
 	local handle = findHandle(model)
 	if not handle then
 		return model.Name .. " FAIL no BasePart"
 	end
 
-	-- Remove old hilts
 	for _, d in model:GetDescendants() do
 		if d:IsA("Attachment") and d.Name == HILT_NAME then
 			d:Destroy()
@@ -68,13 +71,20 @@ local function bakeOne(model: Model): string
 	local tipSign = 1
 	if grip.Position.Magnitude > 0.01 then
 		local proj = grip.Position:Dot(axis)
-		tipSign = if proj > 0 then -1 else 1
+		if proj > 0 then
+			tipSign = -1
+		else
+			tipSign = 1
+		end
 	end
 	local tipAxis = axis * tipSign
 	local hiltLocal = -tipAxis * along
 
 	local tip = tipAxis.Unit
-	local arb = if math.abs(tip:Dot(Vector3.xAxis)) < 0.9 then Vector3.xAxis else Vector3.zAxis
+	local arb = Vector3.xAxis
+	if math.abs(tip:Dot(Vector3.xAxis)) >= 0.9 then
+		arb = Vector3.zAxis
+	end
 	local right = tip:Cross(arb)
 	if right.Magnitude < 1e-4 then
 		right = tip:Cross(Vector3.zAxis)
@@ -98,20 +108,19 @@ local function bakeOne(model: Model): string
 		length,
 		tipSign,
 		tostring(hiltLocal),
-		grip.Y
+		grip.Position.Y
 	)
 end
 
 local folder = ReplicatedStorage:FindFirstChild(FOLDER)
 if not folder then
 	warn("[bake_weapon_hilts] missing ReplicatedStorage." .. FOLDER)
-	return
-end
-
-print("=== bake_weapon_hilts ===")
-for _, ch in folder:GetChildren() do
-	if ch:IsA("Model") then
-		print(bakeOne(ch))
+else
+	print("=== bake_weapon_hilts ===")
+	for _, ch in folder:GetChildren() do
+		if ch:IsA("Model") then
+			print(bakeOne(ch))
+		end
 	end
+	print("=== done — Save Place ===")
 end
-print("=== done — Save Place ===")

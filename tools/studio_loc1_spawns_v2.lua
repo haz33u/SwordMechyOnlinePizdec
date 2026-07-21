@@ -1,18 +1,20 @@
+--!nocheck
 --[[
 	STUDIO COMMAND BAR (Edit mode) — paste ALL, run once, then Save place.
+	This is NOT a Rojo ModuleScript (lives in /tools only).
 
 	Creates:
 	  Workspace.World.Locations.Loc01.MobSpawns  (drag markers freely)
 	  Workspace.World.Locations.Loc01.PlayerSpawn
 
 	Loc1 roster (matches LocationConfig / MobConfig):
-	  Zone A — L1_Slime        Goblin (T1 green)
-	  Zone B — L1_Skeleton     Dark Goblin (T2 blue)
-	  Zone C — L1_GoblinWarrior Goblin Warrior (T3)
-	  Zone D — L1_Knight       Goblin Scout (T4 elite)
-	  Boss   — L1_Boss         Forest Guardian (end of loc — move to portal area)
+	  Zone A — L1_Slime          Goblin (T1 green)
+	  Zone B — L1_Skeleton       Dark Goblin (T2 blue)
+	  Zone C — L1_GoblinWarrior  Goblin Warrior (T3)
+	  Zone D — L1_Knight         Goblin Scout (T4 elite)
+	  Boss   — L1_Boss           Forest Guardian (move to portal / end)
 
-	Play: CombatService reads markers (Attribute MobId). No markers → config fallback.
+	Play: CombatService reads Attribute MobId on markers.
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -52,7 +54,6 @@ local ZONE_CONFIG = {
 	},
 }
 
--- Boss is separate — place near your Loc1 exit / portal art later
 local BOSS_CONFIG = {
 	mobId = "L1_Boss",
 	zone = "Boss",
@@ -76,7 +77,7 @@ local world = folder(Workspace, "World")
 local locations = folder(world, "Locations")
 local loc01 = folder(locations, "Loc01")
 loc01:SetAttribute("LocationId", 1)
-loc01:SetAttribute("LocationName", "Starter Village") -- English
+loc01:SetAttribute("LocationName", "Starter Village")
 
 local oldSpawns = loc01:FindFirstChild("MobSpawns")
 if oldSpawns then
@@ -139,16 +140,16 @@ for _, cfg in ipairs(ZONE_CONFIG) do
 		local x = math.cos(angle) * cfg.radius
 		local z = math.sin(angle) * cfg.radius
 		createMarker(cfg.mobId, cfg.zone, Vector3.new(x, 2, z), cfg.color, i)
-		totalMarkers += 1
+		totalMarkers = totalMarkers + 1
 	end
-	print(string.format("[ZONE %s] %s × %d r=%d", cfg.zone, cfg.mobId, cfg.count, cfg.radius))
+	print(string.format("[ZONE %s] %s x %d r=%d", cfg.zone, cfg.mobId, cfg.count, cfg.radius))
 end
 
 createMarker(BOSS_CONFIG.mobId, BOSS_CONFIG.zone, BOSS_CONFIG.position, BOSS_CONFIG.color, 1)
-totalMarkers += 1
-print(string.format("[BOSS] %s at %s (move to portal / end of loc art)", BOSS_CONFIG.mobId, tostring(BOSS_CONFIG.position)))
+totalMarkers = totalMarkers + 1
+print(string.format("[BOSS] %s at %s — drag to portal / end of loc", BOSS_CONFIG.mobId, tostring(BOSS_CONFIG.position)))
 
-print("═══════════════════════════════════════════════════")
+print("===================================================")
 print(string.format("[OK] Loc01 MobSpawns: %d markers (4 tiers + 1 boss)", totalMarkers))
-print("NEXT: drag markers to match map art → Ctrl+S Save place → Play")
-print("═══════════════════════════════════════════════════")
+print("NEXT: drag markers onto map art -> Ctrl+S Save place -> Play")
+print("===================================================")

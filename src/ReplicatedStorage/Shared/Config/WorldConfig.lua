@@ -65,6 +65,7 @@ local WorldConfig = {
 		Zones as FRACTIONS of half-island (half = 600 at size 1200).
 		Tight near spawn for playtesting (was too far).
 		A ~ 24–48 studs, B ~ 50–80, C ~ 85–110, Boss ~ 90
+		Typed as [string] so GetZoneRadii(zone: string) is clean under --!strict.
 	]]
 	ZONE_FRACTIONS = {
 		Spawn = { 0.00, 0.04 },
@@ -72,7 +73,7 @@ local WorldConfig = {
 		B = { 0.09, 0.13 }, -- tier2 medium
 		C = { 0.14, 0.18 }, -- tier3 hard
 		D = { 0.19, 0.23 }, -- tier4 elite (secret drop)
-	},
+	} :: { [string]: { number } },
 	BOSS_FRACTION = 0.20,
 
 	ZONE_COLORS = {
@@ -82,7 +83,7 @@ local WorldConfig = {
 		C = Color3.fromRGB(255, 120, 60),
 		D = Color3.fromRGB(180, 80, 220),
 		Boss = Color3.fromRGB(220, 60, 60),
-	},
+	} :: { [string]: Color3 },
 
 	-- Backend does NOT build anything. These names are for YOUR Studio map convention:
 	-- Workspace.World.Locations.Loc01.PlayerSpawn (BasePart)
@@ -155,8 +156,8 @@ end
 
 function WorldConfig.GetZoneRadii(zone: string): (number, number)
 	local half = WorldConfig.GetHalfSize()
-	local frac = WorldConfig.ZONE_FRACTIONS[zone]
-	if not frac then
+	local frac: { number }? = WorldConfig.ZONE_FRACTIONS[zone]
+	if not frac or #frac < 2 then
 		return 0, half * 0.2
 	end
 	return half * frac[1], half * frac[2]
