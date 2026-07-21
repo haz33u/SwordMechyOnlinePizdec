@@ -11,6 +11,8 @@ Capture product ideas here so they are not lost. Implementation only when picked
 - **Pets + offhand** are late-game engines. Aura + 2 relics (F2P) glue mid-game.
 - Soft wall: **no pets / no offhand → Loc15–16 very hard** even with paid aura/relic slots.
 - Full table: `docs/PROGRESSION_EVENTS.md`.
+- **Rebirth:** **60** ranks (~2.4/loc); hard EN names + styles — `docs/REBIRTH_LADDER.md`.
+- **R30 ≠ free Loc25** under current Loc1–2 pet tables (additive pets).
 
 ---
 

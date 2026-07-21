@@ -2014,7 +2014,18 @@ function Inventory.Bind(
 			statLine(leftCol, 2, "CPS", string.format("%.2f", s and s.cps or 0), GREEN, GREEN)
 			statLine(leftCol, 3, "Crit chance", Format.Pct(s and s.crit or 0), GOLD, GOLD)
 			statLine(leftCol, 4, "Luck", Format.Pct(s and s.luck or 0), CYAN, GREEN)
-			statLine(leftCol, 5, "Rebirth", string.format("R%d %s", s and (s.rebirthLevel or 0) or 0, s and Format.Mult(s.rebirthMult) or "x1"), GOLD, GOLD)
+			do
+				local lv = (s and s.rebirthLevel) or 0
+				local rName = (s and s.rebirthRankName) or ("R" .. tostring(lv))
+				statLine(
+					leftCol,
+					5,
+					"Rebirth",
+					string.format("R%d · %s %s", lv, rName, s and Format.Mult(s.rebirthMult) or "×1"),
+					GOLD,
+					GOLD
+				)
+			end
 
 			statLine(rightCol, 1, "DPS", Format.Num(s and s.dps or 0), Color3.fromRGB(204, 68, 68), TW)
 			statLine(rightCol, 2, "Coins", Format.Num(s and s.coins or 0), GOLD, GOLD)

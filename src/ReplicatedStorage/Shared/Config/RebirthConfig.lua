@@ -1,33 +1,39 @@
 --!strict
 --[[
-	Rebirth — from Cristalix dumps (docs/ref/cristalix/captures/rebirth_r1/r2.png)
+	Rebirth ladder — 60 ranks (~2.4 per planned location on a 25-loc map).
 
-	R1: Novice x1 → Beginner x3, progress 75K, ETA bar
-	R2: Beginner x3 → Amateur x7, progress 2.5M
+	Power vs cadence:
+	  - Early R1–R3 keep dump mults (×3 / ×7 / ×18).
+	  - Later growth softens so R60 stays finite (not old ×2.5 bomb).
+	  - Cadence: more ranks to chase across worlds; pets/weapons still carry Loc walls.
 
-	UI shows ONE progress bar (damage/power dealt). After rebirth:
-	  damage progress + coin balance wiped; swords/pets stay.
+	UI: English rank names only. Style via GetRankStyle (color / stroke / gradient).
 ]]
 
+export type RankStyle = {
+	band: string,
+	color: Color3,
+	stroke: Color3,
+	strokeThickness: number,
+	gradientFrom: Color3?,
+	gradientTo: Color3?,
+}
+
 local RebirthConfig = {
-	MAX_LEVEL = 30,
+	MAX_LEVEL = 60,
 
 	----------------------------------------------------------------------
-	-- Absolute damage thresholds from dumps (level = next rebirth index)
+	-- Damage thresholds (level = next rebirth index)
 	----------------------------------------------------------------------
 	DAMAGE_COST = {
-		[1] = 75_000, -- 75K (R1 dump)
-		[2] = 2_500_000, -- 2.5M (R2 dump)
-		[3] = 87_500_000, -- 87.5M (R3 dump)
+		[1] = 75_000, -- dump R1
+		[2] = 2_500_000, -- dump R2
+		[3] = 87_500_000, -- dump R3
 	} :: { [number]: number },
 
-	-- R2→R3 ≈ ×35; use for R4+
-	GROWTH_AFTER_R3 = 35,
+	-- R4+: geometric from R3 (slightly softer than ×35 so R60 is grindy not absurd)
+	GROWTH_AFTER_R3 = 28,
 
-	----------------------------------------------------------------------
-	-- Coin cost: dump UI has no coin bar — requirement is damage only.
-	-- Coins still wipe on rebirth (balance lost).
-	----------------------------------------------------------------------
 	COIN_COST = {
 		[1] = 0,
 		[2] = 0,
@@ -37,7 +43,7 @@ local RebirthConfig = {
 	WIPE_DAMAGE_ON_REBIRTH = true,
 
 	----------------------------------------------------------------------
-	-- Rank mult: Novice x1 → Beginner x3 → Amateur x7 → Strong x18
+	-- Mult: fixed early, then banded growth (NOT flat ×2.5 forever)
 	----------------------------------------------------------------------
 	RANK_MULT = {
 		[0] = 1,
@@ -45,21 +51,92 @@ local RebirthConfig = {
 		[2] = 7,
 		[3] = 18,
 	} :: { [number]: number },
-	-- R4+: multiply last by this each step (18→~45→…)
-	RANK_GROWTH = 2.5,
 
+	-- Applied when stepping to level L (from L-1), for L >= 4
+	GROWTH_BANDS = {
+		{ maxLevel = 20, growth = 1.60 }, -- R4–R20
+		{ maxLevel = 40, growth = 1.40 }, -- R21–R40
+		{ maxLevel = 60, growth = 1.25 }, -- R41–R60
+	},
+
+	----------------------------------------------------------------------
+	-- Names 0..60 (souls-like energy, original EN strings)
+	----------------------------------------------------------------------
 	RANK_NAME = {
-		[0] = "Novice",
-		[1] = "Beginner",
-		[2] = "Amateur",
-		[3] = "Strong", -- Сильный
-		[4] = "Expert",
-		[5] = "Master",
+		[0] = "Ashborn",
+		[1] = "Tarnished Blade",
+		[2] = "Bloodsworn",
+		[3] = "Oathbreaker",
+		[4] = "Gravecaller",
+		[5] = "Nightpiercer",
+		[6] = "Stormbane",
+		[7] = "Iron Wraith",
+		[8] = "Cinder Lord",
+		[9] = "Doomherald",
+		[10] = "Starscourge",
+		[11] = "Eclipse Knight",
+		[12] = "Voidmarked",
+		[13] = "Rift Sovereign",
+		[14] = "Godsbane",
+		[15] = "Red Omen",
+		[16] = "Blight Monarch",
+		[17] = "War Eternal",
+		[18] = "Scarlet Oath",
+		[19] = "Crimson End",
+		[20] = "Demigod",
+		[21] = "World Eater",
+		[22] = "Throne of Ash",
+		[23] = "Sundered King",
+		[24] = "Eternal Scourge",
+		[25] = "Starfallen",
+		[26] = "Astral Tyrant",
+		[27] = "Moonless Crown",
+		[28] = "Fate Render",
+		[29] = "Celestial Ruin",
+		[30] = "Abyss Walker",
+		[31] = "Nameless Horror",
+		[32] = "Outer Flame",
+		[33] = "Crown of Night",
+		[34] = "Fated End",
+		[35] = "Godfall",
+		[36] = "Heavenbreaker",
+		[37] = "Thronebreaker",
+		[38] = "Divine Sorrow",
+		[39] = "Apex Scourge",
+		[40] = "Lord of Ruin",
+		[41] = "Cataclysm",
+		[42] = "Worldscar",
+		[43] = "Last Remnant",
+		[44] = "Unmade",
+		[45] = "Null Sovereign",
+		[46] = "Depths Eternal",
+		[47] = "Silence Incarnate",
+		[48] = "Void Emperor",
+		[49] = "Abyss Absolute",
+		[50] = "Beyond Fate",
+		[51] = "Final Remnant",
+		[52] = "World's Edge",
+		[53] = "Unwritten",
+		[54] = "Omega Scar",
+		[55] = "Last Light",
+		[56] = "Zero Covenant",
+		[57] = "End of Names",
+		[58] = "Absolute Ruin",
+		[59] = "Ecliptic Zero",
+		[60] = "The Unmade Law",
 	} :: { [number]: string },
 
-	-- ETA: coins/sec estimate if coinCost>0 (damage dealt → coins via farm ratio)
 	ETA_COINS_PER_DAMAGE = 0.12,
 }
+
+local function growthForStep(toLevel: number): number
+	for _, band in RebirthConfig.GROWTH_BANDS do
+		if toLevel <= band.maxLevel then
+			return band.growth
+		end
+	end
+	return 1.2
+end
 
 function RebirthConfig.GetDamageCost(level: number): number
 	if level < 1 then
@@ -70,7 +147,7 @@ function RebirthConfig.GetDamageCost(level: number): number
 		return fixed
 	end
 	local base = RebirthConfig.DAMAGE_COST[3] or 87_500_000
-	local g = RebirthConfig.GROWTH_AFTER_R3 or 35
+	local g = RebirthConfig.GROWTH_AFTER_R3 or 28
 	return math.floor(base * (g ^ (level - 3)))
 end
 
@@ -102,14 +179,13 @@ function RebirthConfig.GetMultAfter(level: number): number
 		return fixed
 	end
 	local m = RebirthConfig.RANK_MULT[3] or 18
-	for _ = 4, level do
-		m *= RebirthConfig.RANK_GROWTH
+	for L = 4, level do
+		m *= growthForStep(L)
 	end
 	return m
 end
 
 function RebirthConfig.GetBonus(level: number): number
-	-- delta from previous rank (for notify “+X%”)
 	local prev = RebirthConfig.GetMultAfter(level - 1)
 	local cur = RebirthConfig.GetMultAfter(level)
 	if prev <= 0 then
@@ -119,14 +195,87 @@ function RebirthConfig.GetBonus(level: number): number
 end
 
 function RebirthConfig.GetRankName(level: number): string
-	local n = RebirthConfig.RANK_NAME[level]
+	local lv = math.clamp(math.floor(level or 0), 0, RebirthConfig.MAX_LEVEL)
+	local n = RebirthConfig.RANK_NAME[lv]
 	if n then
 		return n
 	end
-	if level > 5 then
-		return "Master " .. tostring(level)
+	return "Rank " .. tostring(lv)
+end
+
+function RebirthConfig.GetRankBand(level: number): string
+	local lv = math.clamp(math.floor(level or 0), 0, RebirthConfig.MAX_LEVEL)
+	if lv <= 9 then
+		return "Ash"
+	elseif lv <= 19 then
+		return "Blood"
+	elseif lv <= 29 then
+		return "Star"
+	elseif lv <= 39 then
+		return "God"
+	elseif lv <= 49 then
+		return "Abyss"
 	end
-	return "Rank " .. tostring(level)
+	return "End"
+end
+
+function RebirthConfig.GetRankStyle(level: number): RankStyle
+	local band = RebirthConfig.GetRankBand(level)
+	if band == "Ash" then
+		return {
+			band = band,
+			color = Color3.fromRGB(180, 175, 165),
+			stroke = Color3.fromRGB(40, 38, 35),
+			strokeThickness = 1.2,
+			gradientFrom = Color3.fromRGB(200, 190, 170),
+			gradientTo = Color3.fromRGB(120, 110, 95),
+		}
+	elseif band == "Blood" then
+		return {
+			band = band,
+			color = Color3.fromRGB(220, 70, 80),
+			stroke = Color3.fromRGB(60, 10, 15),
+			strokeThickness = 1.6,
+			gradientFrom = Color3.fromRGB(255, 90, 90),
+			gradientTo = Color3.fromRGB(120, 20, 40),
+		}
+	elseif band == "Star" then
+		return {
+			band = band,
+			color = Color3.fromRGB(120, 220, 255),
+			stroke = Color3.fromRGB(20, 40, 80),
+			strokeThickness = 1.8,
+			gradientFrom = Color3.fromRGB(255, 220, 120),
+			gradientTo = Color3.fromRGB(80, 200, 255),
+		}
+	elseif band == "God" then
+		return {
+			band = band,
+			color = Color3.fromRGB(255, 200, 80),
+			stroke = Color3.fromRGB(120, 50, 10),
+			strokeThickness = 2.0,
+			gradientFrom = Color3.fromRGB(255, 240, 160),
+			gradientTo = Color3.fromRGB(255, 120, 40),
+		}
+	elseif band == "Abyss" then
+		return {
+			band = band,
+			color = Color3.fromRGB(180, 120, 255),
+			stroke = Color3.fromRGB(25, 10, 50),
+			strokeThickness = 2.2,
+			gradientFrom = Color3.fromRGB(220, 160, 255),
+			gradientTo = Color3.fromRGB(40, 20, 90),
+		}
+	end
+	-- End
+	return {
+		band = "End",
+		color = Color3.fromRGB(255, 250, 240),
+		stroke = Color3.fromRGB(80, 60, 20),
+		strokeThickness = 2.6,
+		gradientFrom = Color3.fromRGB(255, 255, 255),
+		gradientTo = Color3.fromRGB(255, 200, 80),
+	}
 end
 
 function RebirthConfig.GetProgress(lifetimeDamage: number, coins: number, level: number): number

@@ -159,11 +159,11 @@ function Modals.Mount(gui: ScreenGui, store: any)
 
 			title.Text = "Rebirth"
 			body.Text = string.format(
-				"Rebirth increases your power booster.\n\n%s ×%.0f  →  %s ×%.0f\n\nProgress  %s / %s\n\n⚠ After rebirth, damage progress and balance are lost!\nSwords and pets stay.",
+				"Rebirth raises your power multiplier.\n\n%s  %s\n→  %s  %s\n\nProgress  %s / %s\n\n⚠ After rebirth, damage progress and coin balance reset.\nSwords, pets, auras, and relics stay.",
 				fromName,
-				fromMult,
+				Format.Mult(fromMult),
 				toName,
-				toMult,
+				Format.Mult(toMult),
 				Format.Num(dmg),
 				Format.Num(costDmg)
 			)

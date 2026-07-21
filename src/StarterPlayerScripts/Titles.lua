@@ -1,8 +1,12 @@
 --!strict
 --[[
-	Player titles (placeholder until full title system).
-	Plain "Title | Nick" — two separate TextLabels preferred (no RichText).
+	Player titles + rebirth rank paint (gradient / stroke).
+	Plain "Title | Nick" — two separate TextLabels preferred (no RichText on nick line).
 ]]
+
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local RebirthConfig = require(Shared.Config.RebirthConfig)
 
 local Titles = {}
 
@@ -12,7 +16,6 @@ Titles.SepColor = Color3.fromRGB(80, 230, 220)
 Titles.NickColor = Color3.fromRGB(235, 245, 255)
 Titles.Font = Enum.Font.GothamBlack
 
--- Fixed TextSize only (never TextScaled)
 Titles.HudTextSize = 16
 Titles.PlateTextSize = 22
 
@@ -24,6 +27,50 @@ function Titles.Of(profile: any?): string
 		end
 	end
 	return Titles.DEFAULT
+end
+
+--- Prestige rank string from rebirth level (does not replace custom title).
+function Titles.RankOf(profile: any?): string
+	local lv = 0
+	if type(profile) == "table" then
+		lv = math.floor(profile.rebirthLevel or 0)
+	end
+	return RebirthConfig.GetRankName(lv)
+end
+
+--- Apply band color / stroke / optional gradient to a rank label.
+function Titles.PaintRank(label: TextLabel, rebirthLevel: number?)
+	local lv = math.floor(rebirthLevel or 0)
+	local style = RebirthConfig.GetRankStyle(lv)
+	label.Text = RebirthConfig.GetRankName(lv)
+	label.TextColor3 = style.color
+	label.Font = Titles.Font
+	label.TextScaled = false
+	label.RichText = false
+
+	local stroke = label:FindFirstChildOfClass("UIStroke")
+	if not stroke then
+		stroke = Instance.new("UIStroke")
+		stroke.Parent = label
+	end
+	stroke.Color = style.stroke
+	stroke.Thickness = style.strokeThickness
+	stroke.Transparency = 0.15
+
+	local grad = label:FindFirstChildOfClass("UIGradient")
+	if style.gradientFrom and style.gradientTo then
+		if not grad then
+			grad = Instance.new("UIGradient")
+			grad.Parent = label
+		end
+		grad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, style.gradientFrom),
+			ColorSequenceKeypoint.new(1, style.gradientTo),
+		})
+		grad.Rotation = 15
+	elseif grad then
+		grad:Destroy()
+	end
 end
 
 --- Fill three plain labels: title | nick (fixed TextSize, no RichText)

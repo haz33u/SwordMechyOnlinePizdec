@@ -2,6 +2,7 @@
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local RebirthConfig = require(Shared.Config.RebirthConfig)
+local NumberFormat = require(Shared.NumberFormat)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
@@ -72,10 +73,10 @@ function RebirthService.Try(player: Player): boolean
 
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format(
-			"Rebirth %d — %s ×%.0f%s",
+			"Rebirth %d — %s ×%s%s",
 			nextLevel,
 			rankName,
-			profile.rebirthMult,
+			NumberFormat.Num(profile.rebirthMult),
 			slotNote
 		),
 		color = "purple",

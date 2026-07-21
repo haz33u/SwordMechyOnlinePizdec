@@ -18,7 +18,18 @@ function Format.Pct(frac: number?): string
 end
 
 function Format.Mult(m: number?): string
-	return string.format("×%.2f", m or 1)
+	local v = m or 1
+	if v ~= v or v == math.huge then
+		return "×∞"
+	end
+	-- Large rebirth mults: compact number after ×
+	if math.abs(v) >= 1000 then
+		return "×" .. NumberFormat.Num(v)
+	end
+	if math.abs(v) >= 100 then
+		return string.format("×%.1f", v)
+	end
+	return string.format("×%.2f", v)
 end
 
 --- Compact duration: 0s | 12s | 24m 7s | 1h 5m
