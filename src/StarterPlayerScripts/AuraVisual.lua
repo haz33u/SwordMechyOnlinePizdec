@@ -29,7 +29,191 @@ local function getFolder(): Folder?
 	return nil
 end
 
+local BODY_NAME = {
+	HumanoidRootPart = true,
+	Head = true,
+	Torso = true,
+	UpperTorso = true,
+	LowerTorso = true,
+	["Left Arm"] = true,
+	["Right Arm"] = true,
+	["Left Leg"] = true,
+	["Right Leg"] = true,
+	LeftArm = true,
+	RightArm = true,
+	LeftLeg = true,
+	RightLeg = true,
+	LeftHand = true,
+	RightHand = true,
+	LeftFoot = true,
+	RightFoot = true,
+	LeftUpperArm = true,
+	RightUpperArm = true,
+	LeftLowerArm = true,
+	RightLowerArm = true,
+	LeftUpperLeg = true,
+	RightUpperLeg = true,
+	LeftLowerLeg = true,
+	RightLowerLeg = true,
+}
+
+local function isBodyPartName(name: string): boolean
+	if BODY_NAME[name] then
+		return true
+	end
+	local lower = string.lower(name)
+	if string.find(lower, "dummy", 1, true) then
+		return true
+	end
+	if string.find(lower, "humanoid", 1, true) then
+		return true
+	end
+	-- R15 / classic limb patterns
+	if string.find(lower, "upperarm", 1, true)
+		or string.find(lower, "lowerarm", 1, true)
+		or string.find(lower, "upperleg", 1, true)
+		or string.find(lower, "lowerleg", 1, true)
+		or string.find(lower, "lefthand", 1, true)
+		or string.find(lower, "righthand", 1, true)
+		or string.find(lower, "leftfoot", 1, true)
+		or string.find(lower, "rightfoot", 1, true)
+		or string.find(lower, "left arm", 1, true)
+		or string.find(lower, "right arm", 1, true)
+		or string.find(lower, "left leg", 1, true)
+		or string.find(lower, "right leg", 1, true)
+	then
+		return true
+	end
+	return false
+end
+
+local function hasVfx(inst: Instance): boolean
+	if inst:IsA("ParticleEmitter")
+		or inst:IsA("Beam")
+		or inst:IsA("Trail")
+		or inst:IsA("Fire")
+		or inst:IsA("Smoke")
+		or inst:IsA("Sparkles")
+	then
+		return true
+	end
+	for _, d in inst:GetDescendants() do
+		if d:IsA("ParticleEmitter")
+			or d:IsA("Beam")
+			or d:IsA("Trail")
+			or d:IsA("Fire")
+			or d:IsA("Smoke")
+			or d:IsA("Sparkles")
+		then
+			return true
+		end
+	end
+	return false
+end
+
+--- Pack auras often ship with a full Dummy/R15 — move VFX off limbs, then strip body.
+local function stripCharacterJunk(root: Model)
+	-- Ensure invisible Root to host reparented VFX
+	local host = root.PrimaryPart
+	if not host or isBodyPartName(host.Name) then
+		local r = Instance.new("Part")
+		r.Name = "Root"
+		r.Size = Vector3.new(0.4, 0.4, 0.4)
+		r.Transparency = 1
+		r.CanCollide = false
+		r.Massless = true
+		r.Anchored = false
+		r.Parent = root
+		root.PrimaryPart = r
+		host = r
+	end
+
+	-- Reparent VFX off body parts onto Root attachments (preserve some Y bias)
+	local vfxList: { Instance } = {}
+	for _, d in root:GetDescendants() do
+		if d:IsA("ParticleEmitter")
+			or d:IsA("Beam")
+			or d:IsA("Trail")
+			or d:IsA("Fire")
+			or d:IsA("Smoke")
+			or d:IsA("Sparkles")
+		then
+			table.insert(vfxList, d)
+		end
+	end
+	for i, d in ipairs(vfxList) do
+		local parent = d.Parent
+		local onBody = false
+		local yBias = 0
+		if parent and parent:IsA("BasePart") and isBodyPartName(parent.Name) then
+			onBody = true
+			local l = string.lower(parent.Name)
+			if string.find(l, "head", 1, true) then
+				yBias = 1.1
+			elseif string.find(l, "leg", 1, true) or string.find(l, "foot", 1, true) then
+				yBias = -1.4
+			elseif string.find(l, "arm", 1, true) or string.find(l, "hand", 1, true) then
+				yBias = 0.35
+			end
+		elseif parent and parent:IsA("Attachment") then
+			local bp = parent.Parent
+			if bp and bp:IsA("BasePart") and isBodyPartName(bp.Name) then
+				onBody = true
+			end
+		end
+		if onBody then
+			local att = Instance.new("Attachment")
+			att.Name = "FX_" .. tostring(i)
+			att.Position = Vector3.new(0, yBias, 0)
+			att.Parent = host
+			d.Parent = att
+			if d:IsA("Beam") then
+				local a0 = Instance.new("Attachment")
+				a0.Position = Vector3.new(0, 0, 0)
+				a0.Parent = host
+				local a1 = Instance.new("Attachment")
+				a1.Position = Vector3.new(0, 1.5, 0)
+				a1.Parent = host
+				;(d :: Beam).Attachment0 = a0
+				;(d :: Beam).Attachment1 = a1
+			end
+		end
+	end
+
+	local kill: { Instance } = {}
+	for _, d in root:GetDescendants() do
+		if d:IsA("Humanoid")
+			or d:IsA("Shirt")
+			or d:IsA("Pants")
+			or d:IsA("ShirtGraphic")
+			or d:IsA("BodyColors")
+			or d:IsA("CharacterMesh")
+			or d:IsA("Accessory")
+			or d:IsA("Hat")
+			or d:IsA("Clothing")
+			or d:IsA("Animator")
+			or d:IsA("AnimationController")
+			or d:IsA("Motor6D")
+		then
+			table.insert(kill, d)
+		elseif d:IsA("BasePart") and isBodyPartName(d.Name) and d ~= host then
+			table.insert(kill, d)
+		elseif d:IsA("Model") and d ~= root then
+			local n = string.lower(d.Name)
+			if string.find(n, "dummy", 1, true) or d:FindFirstChildOfClass("Humanoid") then
+				table.insert(kill, d)
+			end
+		end
+	end
+	for _, d in kill do
+		pcall(function()
+			d:Destroy()
+		end)
+	end
+end
+
 local function sanitize(root: Instance)
+	stripCharacterJunk(root)
 	for _, d in root:GetDescendants() do
 		if d:IsA("BasePart") then
 			d.CanCollide = false
@@ -38,8 +222,14 @@ local function sanitize(root: Instance)
 			d.Massless = true
 			d.Anchored = false
 			d.CastShadow = false
-		elseif d:IsA("ParticleEmitter") or d:IsA("Beam") or d:IsA("Trail") or d:IsA("Fire") or d:IsA("Smoke") then
-			-- keep HQ pack VFX alive
+			-- Hide leftover solid junk that isn't neon/effect mesh
+			if not hasVfx(d) and d.Material ~= Enum.Material.Neon and d.Transparency < 0.9 then
+				-- semi-hide non-vfx bricks that packs leave as holders
+				if d.Name ~= "Root" and d.Name ~= "Ring" and d.Name ~= "Wing" then
+					d.Transparency = math.max(d.Transparency, 0.85)
+				end
+			end
+		elseif d:IsA("ParticleEmitter") or d:IsA("Beam") or d:IsA("Trail") or d:IsA("Fire") or d:IsA("Smoke") or d:IsA("Sparkles") then
 			pcall(function()
 				(d :: any).Enabled = true
 			end)
