@@ -231,6 +231,93 @@ local MobConfig = {
 			visual = { preferredModelName = "L2_Captain", color = "#1A5276", scale = 1.4, shape = "humanoid" },
 			description = "Dump: 4.75B HP / 46.4M coins",
 		},
+
+		----------------------------------------------------------------------
+		-- LOC 3 — first T (trillion) scale after Loc2 B-peak
+		-- Approx playtest; tune TTK in Studio (±×2–3 OK)
+		----------------------------------------------------------------------
+		L3_Scout = {
+			id = "L3_Scout",
+			name = "Shadow Scout",
+			location = 3,
+			tier = "simple",
+			defaultZone = "A",
+			hp = 80_000_000_000, -- 80B
+			powerReward = 2_000,
+			coinReward = 8_000_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 4,
+			visual = { preferredModelName = "L3_Scout", color = "#5D6D7E", scale = 1.0, shape = "humanoid" },
+			description = "Loc3 T1 ~80B HP (after Loc2 max 4.75B).",
+		},
+		L3_Adept = {
+			id = "L3_Adept",
+			name = "Blade Adept",
+			location = 3,
+			tier = "medium",
+			defaultZone = "B",
+			hp = 400_000_000_000, -- 400B
+			powerReward = 8_000,
+			coinReward = 40_000_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 6,
+			visual = { preferredModelName = "L3_Adept", color = "#7D3C98", scale = 1.15, shape = "humanoid" },
+			description = "Loc3 T2 ~400B HP.",
+		},
+		L3_Warden = {
+			id = "L3_Warden",
+			name = "Temple Warden",
+			location = 3,
+			tier = "hard",
+			defaultZone = "C",
+			hp = 2_500_000_000_000, -- 2.5T  ← first T on open hard
+			powerReward = 40_000,
+			coinReward = 200_000_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 10,
+			visual = { preferredModelName = "L3_Warden", color = "#1A5276", scale = 1.3, shape = "humanoid" },
+			description = "Loc3 T3 ~2.5T HP — UI shows T.",
+		},
+		L3_Elite = {
+			id = "L3_Elite",
+			name = "Silent Elite",
+			location = 3,
+			tier = "elite",
+			defaultZone = "D",
+			hp = 15_000_000_000_000, -- 15T
+			powerReward = 120_000,
+			coinReward = 800_000_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 14,
+			visual = { preferredModelName = "L3_Elite", color = "#922B21", scale = 1.4, shape = "humanoid" },
+			description = "Loc3 T4 ~15T HP.",
+		},
+		L3_Boss = {
+			id = "L3_Boss",
+			name = "Shogun Shade",
+			location = 3,
+			tier = "boss",
+			defaultZone = "Boss",
+			hp = 50_000_000_000_000, -- 50T
+			powerReward = 500_000,
+			coinReward = 2_500_000_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 600,
+			isBoss = true,
+			armorFlat = 0,
+			visual = { preferredModelName = "L3_Boss", color = "#4A235A", scale = 2.0, shape = "humanoid" },
+			description = "Loc3 boss ~50T HP.",
+		},
 	} :: { [string]: MobDef },
 
 	--[[

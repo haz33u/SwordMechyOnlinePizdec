@@ -133,6 +133,7 @@ local WorldConfig = {
 			status = "stub",
 			blurb = "R2 + 500K once. First big wall.",
 		},
+		-- Loc3+: B→T jump (see docs/SCALE_LOCS.md). Approx ±×3 OK for playtest.
 		{
 			id = 3,
 			name = "Shinobi Lands",
@@ -142,9 +143,9 @@ local WorldConfig = {
 			travelCostCoins = 5_000_000,
 			coinMult = 8,
 			powerMult = 12,
-			combatWall = 80_000_000, -- 80M
+			combatWall = 5_000_000_000_000, -- 5T — first T-scale wall
 			status = "stub",
-			blurb = "R4 + 5M. Bridges and training yards.",
+			blurb = "R4 + 5M. First trillions (T) on hard tiers.",
 		},
 		{
 			id = 4,
@@ -155,7 +156,7 @@ local WorldConfig = {
 			travelCostCoins = 50_000_000,
 			coinMult = 18,
 			powerMult = 30,
-			combatWall = 2_000_000_000, -- 2B
+			combatWall = 150_000_000_000_000, -- 150T
 			status = "stub",
 			blurb = "R6 + 50M. Ice and ravines.",
 		},
@@ -168,7 +169,7 @@ local WorldConfig = {
 			travelCostCoins = 500_000_000,
 			coinMult = 40,
 			powerMult = 70,
-			combatWall = 50_000_000_000, -- 50B
+			combatWall = 4_000_000_000_000_000, -- 4Qa
 			status = "stub",
 			blurb = "R8 + 500M. Heat and cliffs.",
 		},
@@ -181,7 +182,7 @@ local WorldConfig = {
 			travelCostCoins = 5_000_000_000,
 			coinMult = 90,
 			powerMult = 150,
-			combatWall = 1_200_000_000_000, -- 1.2T
+			combatWall = 100_000_000_000_000_000, -- 100Qa
 			status = "stub",
 			blurb = "R10 + 5B. Night markets.",
 		},
@@ -194,9 +195,9 @@ local WorldConfig = {
 			travelCostCoins = 50_000_000_000,
 			coinMult = 200,
 			powerMult = 350,
-			combatWall = 30_000_000_000_000, -- 30T
+			combatWall = 3_000_000_000_000_000_000, -- 3Qi
 			status = "stub",
-			blurb = "R12 + 50B. Soft wall band starts.",
+			blurb = "R12 + 50B. Soft wall band.",
 		},
 		{
 			id = 8,
@@ -207,7 +208,7 @@ local WorldConfig = {
 			travelCostCoins = 500_000_000_000,
 			coinMult = 450,
 			powerMult = 800,
-			combatWall = 800_000_000_000_000, -- 800T
+			combatWall = 80_000_000_000_000_000_000, -- 80Qi
 			status = "stub",
 			blurb = "R14 + 500B. Lightning heights.",
 		},
@@ -220,7 +221,7 @@ local WorldConfig = {
 			travelCostCoins = 5_000_000_000_000,
 			coinMult = 1_000,
 			powerMult = 1_800,
-			combatWall = 20_000_000_000_000_000, -- 20Qa
+			combatWall = 2e21, -- 2Sx
 			status = "stub",
 			blurb = "R16 + 5T. Fog and doubles.",
 		},
@@ -233,7 +234,7 @@ local WorldConfig = {
 			travelCostCoins = 50_000_000_000_000,
 			coinMult = 2_200,
 			powerMult = 4_000,
-			combatWall = 500_000_000_000_000_000, -- 500Qa — end of Loc1–10 band
+			combatWall = 50e21, -- 50Sx — end Loc1–10 band
 			status = "stub",
 			blurb = "R18 + 50T. Gate to late worlds (11–25).",
 		},

@@ -89,9 +89,14 @@ local MOB_OVERRIDES: {
 		caseId = "Case_Loc2",
 	},
 	[3] = {
-		-- No Loc3 dump yet — empty combat
-		mobs = {},
-		bossId = nil,
+		-- Approx T-scale after Loc2 B (docs/SCALE_LOCS.md)
+		mobs = {
+			{ mobId = "L3_Scout", count = 12, zone = "A" },
+			{ mobId = "L3_Adept", count = 8, zone = "B" },
+			{ mobId = "L3_Warden", count = 5, zone = "C" },
+			{ mobId = "L3_Elite", count = 4, zone = "D" },
+		},
+		bossId = "L3_Boss",
 		debugMobs = {},
 		questIds = {},
 		caseId = "Case_Loc3",

@@ -102,7 +102,8 @@ HP_Boss ≈ HP_T1 × 80…150
 | 3 long quests | **Yes** (amounts tunable) | High |
 | Rebirth 60 + names | **Yes** | High |
 | Loc1–2 HP/coins/weapons/pets | **Yes** (dump) | High |
-| Loc3–10 combatWall + R + travel | **Yes (this doc)** | Medium–high (±×2–3 OK) |
+| Loc3–10 combatWall + R + travel | **Yes** + `SCALE_LOCS.md` | Medium–high |
+| Loc3 mobs T-scale (B→T) | **LIVE stubs** | Playtest ±×2 |
 | Loc3–10 final mob/weapon/pet IDs | **No** — need art + drop tables | Stub |
 | Relic full mythic curve | Skeleton only | Medium (anchors known) |
 | Real dungeon stages 1–24 | Skeleton | Low–medium |
