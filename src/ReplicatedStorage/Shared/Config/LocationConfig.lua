@@ -1,8 +1,12 @@
 --!strict
 --[[
-	Gameplay data per location (spawn tables).
-	Mob stats live in MobConfig.
-	World positions: WorldConfig (math) + Studio map (PlayerSpawn).
+	Gameplay data per location (spawn TABLES only: who / how many / zone id).
+
+	WHERE mobs stand in the world:
+	  Primary  → Studio markers under LocXX.MobSpawns (absolute positions)
+	  Fallback → WorldConfig.GetZonePoint (city-scale fractions; Loc1 needs markers)
+
+	Mob stats live in MobConfig. Island meta (name/theme) in WorldConfig.
 ]]
 
 local WorldConfig = require(script.Parent.WorldConfig)
@@ -10,7 +14,9 @@ local WorldConfig = require(script.Parent.WorldConfig)
 export type MobSpawn = {
 	mobId: string,
 	count: number,
-	zone: string, -- A | B | C | Boss | Debug
+	-- Camp / ring id used by markers + fallback math:
+	-- A | B | C | D | Boss | Debug
+	zone: string,
 }
 
 export type LocationDef = {
@@ -25,7 +31,7 @@ export type LocationDef = {
 	status: string,
 	mobs: { MobSpawn },
 	bossId: string?,
-	debugMobs: { MobSpawn }?, -- always available for tests
+	debugMobs: { MobSpawn }?, -- empty ok; optional test dummies
 	questIds: { string },
 	caseId: string?,
 }
@@ -40,23 +46,25 @@ local MOB_OVERRIDES: {
 	},
 } = {
 	----------------------------------------------------------------------
-	-- LOC 1 — Starter Village: exactly 4 combat mobs + boss at the end
-	-- Boss is NOT a normal pack mob: bossId + zone "Boss" (gate / portal area later)
+	-- LOC 1 — Goblin city: 4 camps (tiers) + boss arena at the far end
+	-- Positions are NOT here — place via tools/studio_loc1_level_layout.lua
+	-- on Loc01.Art scale (hundreds of studs between camps).
+	-- Boss is NOT a normal pack mob: bossId + zone "Boss".
 	----------------------------------------------------------------------
 	[1] = {
 		mobs = {
-			{ mobId = "L1_Goblin", count = 12, zone = "A" },
-			{ mobId = "L1_DarkGoblin", count = 8, zone = "B" },
-			{ mobId = "L1_GoblinWarrior", count = 5, zone = "C" },
-			{ mobId = "L1_GoblinScout", count = 4, zone = "D" },
+			{ mobId = "L1_Goblin", count = 12, zone = "A" }, -- Camp A entrance
+			{ mobId = "L1_DarkGoblin", count = 8, zone = "B" }, -- Camp B mid city
+			{ mobId = "L1_GoblinWarrior", count = 5, zone = "C" }, -- Camp C hard
+			{ mobId = "L1_GoblinScout", count = 4, zone = "D" }, -- Camp D elite gate
 		},
 		bossId = "L1_Boss",
 		debugMobs = {},
 		questIds = {
-			"Q1_Slimes", -- T1 Goblin (quest id legacy)
-			"Q1_Skeletons", -- T2 Dark Goblin
-			"Q2_Wolves", -- T3 Warrior
-			"Q2_GoblinWarriors", -- T4 Scout
+			"Q1_Slimes", -- legacy id → Goblin (display/target in QuestConfig)
+			"Q1_Skeletons", -- legacy id → Dark Goblin
+			"Q2_Wolves", -- legacy id → Goblin Warrior
+			"Q2_GoblinWarriors", -- → Goblin Scout
 			"Q3_Boss",
 			"Q4_Power",
 			"Q5_Rebirth",

@@ -62,19 +62,22 @@ local WorldConfig = {
 	BOUND_PADDING = 16,
 
 	--[[
-		Zones as FRACTIONS of half-island (half = 600 at size 1200).
-		Tight near spawn for playtesting (was too far).
-		A ~ 24–48 studs, B ~ 50–80, C ~ 85–110, Boss ~ 90
-		Typed as [string] so GetZoneRadii(zone: string) is clean under --!strict.
+		Fallback zone rings as FRACTIONS of half-island (half = 600 at size 1200).
+		City-scale walk between camps (not playtest postage stamps).
+		Used ONLY when LocXX.MobSpawns has no markers.
+		Loc1 primary layout = Studio markers on Art BB (see studio_loc1_level_layout.lua).
+
+		Approx radii at half=600:
+		  A  72–132, B 168–240, C 288–360, D 408–480, Boss ~480
 	]]
 	ZONE_FRACTIONS = {
-		Spawn = { 0.00, 0.04 },
-		A = { 0.04, 0.08 }, -- tier1 simple
-		B = { 0.09, 0.13 }, -- tier2 medium
-		C = { 0.14, 0.18 }, -- tier3 hard
-		D = { 0.19, 0.23 }, -- tier4 elite (secret drop)
+		Spawn = { 0.00, 0.08 },
+		A = { 0.12, 0.22 }, -- Camp A — entrance goblins
+		B = { 0.28, 0.40 }, -- Camp B — mid city
+		C = { 0.48, 0.60 }, -- Camp C — hard lager
+		D = { 0.68, 0.80 }, -- Camp D — elite gate
 	} :: { [string]: { number } },
-	BOSS_FRACTION = 0.20,
+	BOSS_FRACTION = 0.80, -- far edge for math fallback
 
 	ZONE_COLORS = {
 		Spawn = Color3.fromRGB(80, 200, 120),
@@ -98,14 +101,14 @@ local WorldConfig = {
 	Locations = {
 		{
 			id = 1,
-			name = "Starter Village", -- dump: «Стартовый Посёлок»
+			name = "Goblin City", -- Loc1 art: goblin camps + boss
 			theme = "dark_forest",
 			unlockPower = 0,
 			travelCostCoins = 0, -- free teleport
 			coinMult = 1,
 			powerMult = 1,
 			status = "wip",
-			blurb = "Cozy start settlement. Free travel.",
+			blurb = "Four goblin camps by tier, boss at the far end. Free travel.",
 		},
 		{
 			id = 2,

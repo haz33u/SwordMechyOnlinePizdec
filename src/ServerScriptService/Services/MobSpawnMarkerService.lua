@@ -174,6 +174,7 @@ function MobSpawnMarkerService.EnsureDefaultMarkers(locationId: number, spawnTab
 		A = Color3.fromRGB(100, 200, 100),
 		B = Color3.fromRGB(100, 160, 255),
 		C = Color3.fromRGB(200, 120, 255),
+		D = Color3.fromRGB(180, 80, 220),
 		Boss = Color3.fromRGB(230, 60, 60),
 		Debug = Color3.fromRGB(255, 200, 40),
 	}

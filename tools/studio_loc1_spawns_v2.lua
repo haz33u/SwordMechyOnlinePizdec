@@ -12,4 +12,4 @@
 	Or ask agent with Studio MCP to run the layout.
 ]]
 
-print("[studio_loc1_spawns_v2] Use tools/studio_loc1_level_layout.lua (full paste or MCP).")
+print("[studio_loc1_spawns_v2] Use tools/studio_loc1_level_layout.lua — Goblin City 4 camps + boss on Art BB (full paste or MCP).")
