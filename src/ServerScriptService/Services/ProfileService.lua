@@ -41,6 +41,7 @@ local function defaultProfile()
 		lifetimePower = 0,
 		lifetimeDamage = 0,
 		totalClicks = 0, -- CORE metric: every successful attack
+		samClickTier = 0, -- Sam Click Mastery 0..21 → CPS cap (Loc2+)
 		rebirthLevel = 0,
 		rebirthMult = 1,
 		autoClicker = false, -- needs purchased auto
@@ -179,6 +180,10 @@ function ProfileService.Load(player: Player)
 			data.quests[id] = { id = id, progress = 0, completed = false, claimed = false }
 		end
 	end
+	if type(data.samClickTier) ~= "number" then
+		data.samClickTier = 0
+	end
+	data.samClickTier = math.clamp(math.floor(data.samClickTier), 0, 21)
 	-- strip offhand if not paid-unlocked
 	if not ProgressConfig.IsOffhandUnlocked(data) then
 		data.equippedOffhand = nil

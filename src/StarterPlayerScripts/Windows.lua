@@ -1067,12 +1067,46 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		if not profile then
 			return
 		end
+		local Format = require(script.Parent.Format)
 		local scroll = UIKit.Scroll(body, UDim2.fromScale(1, 1))
-		local order = 0
+		-- stable order: Sam chain first by index, then others
+		local list = {}
 		for id, state in pairs(profile.quests or {}) do
+			table.insert(list, { id = id, state = state })
+		end
+		table.sort(list, function(a, b)
+			local da = QuestConfig.Get(a.id)
+			local db = QuestConfig.Get(b.id)
+			local sa = da and da.chain == "sam"
+			local sb = db and db.chain == "sam"
+			if sa and sb then
+				return (da.chainIndex or 0) < (db.chainIndex or 0)
+			end
+			if sa ~= sb then
+				return sa
+			end
+			return a.id < b.id
+		end)
+		local samDone, samTotal = QuestConfig.GetSamProgress(profile)
+		local order = 0
+		for _, entry in ipairs(list) do
+			local id = entry.id
+			local state = entry.state
 			order += 1
 			local def = QuestConfig.Get(id)
+			-- hide future Sam steps until previous claimed (show active + claimed only)
+			local showSam = true
+			if def and def.chain == "sam" then
+				local idx = def.chainIndex or 1
+				if idx > samDone + 1 then
+					showSam = false
+				end
+			end
+			if showSam then
 			local name = (def and def.name) or id
+			if def and def.chain == "sam" then
+				name = string.format("Sam · %s  (%d/%d)", name, def.chainIndex or 0, samTotal)
+			end
 			local desc = (def and def.description) or ""
 			local amount = (def and def.amount) or 1
 			local progress = state.progress or 0
@@ -1092,7 +1126,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			})
 			UIKit.Label({
 				Parent = c,
-				Text = string.format("%s  ·  %d/%d", desc, progress, amount),
+				Text = string.format("%s  ·  %s/%s", desc, Format.Num(progress), Format.Num(amount)),
 				Size = UDim2.new(1, 0, 0, px(18)),
 				Position = UDim2.fromOffset(0, px(26)),
 				SizePx = px(13),
@@ -1144,6 +1178,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 					Order = 2,
 				})
 			end
+			end -- showSam
 		end
 	end
 

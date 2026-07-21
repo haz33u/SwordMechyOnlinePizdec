@@ -4,23 +4,80 @@ export type QuestDef = {
 	id: string,
 	name: string,
 	description: string,
-	type: string, -- kill | power | rebirth | boss | dungeon
+	type: string, -- kill | power | rebirth | boss | dungeon | clicks
 	targetId: string?, -- mob id, dungeon tier, or "any"
 	amount: number,
 	rewards: {
 		coins: number?,
-		power: number?, -- flat lifetimePower
-		powerPct: number?, -- permanent +% total power (like Power upgrade)
+		power: number?,
+		powerPct: number?,
 		weaponId: string?,
 		petSlot: number?,
 		petKeys: number?,
 		auraKeys: number?,
 		unlockLocation: number?,
+		samCpsTier: number?, -- set profile.samClickTier to this on claim
 	},
 	location: number,
+	chain: string?, -- "sam"
+	chainIndex: number?, -- 1..21
+	npc: string?,
 }
 
 local QuestConfig = {
+	SAM_CHAIN = "sam",
+	SAM_COUNT = 21,
+	SAM_NPC = "Sam",
+
+	-- Display click targets (step 3 = 5K, step 21 = 2B)
+	SAM_CLICK_AMOUNTS = {
+		1_000,
+		2_500,
+		5_000,
+		12_000,
+		28_000,
+		65_000,
+		150_000,
+		350_000,
+		800_000,
+		1_800_000,
+		4_000_000,
+		9_000_000,
+		20_000_000,
+		45_000_000,
+		100_000_000,
+		220_000_000,
+		450_000_000,
+		800_000_000,
+		1_200_000_000,
+		1_600_000_000,
+		2_000_000_000,
+	} :: { number },
+
+	SAM_COIN_REWARDS = {
+		5_000,
+		12_000,
+		25_000,
+		50_000,
+		100_000,
+		200_000,
+		400_000,
+		750_000,
+		1_200_000,
+		2_000_000,
+		4_000_000,
+		8_000_000,
+		15_000_000,
+		30_000_000,
+		60_000_000,
+		120_000_000,
+		250_000_000,
+		400_000_000,
+		600_000_000,
+		800_000_000,
+		1_000_000_000,
+	} :: { number },
+
 	Quests = {
 		-- Loc1: 4 goblin tiers + boss (quest *ids* kept for profile progress)
 		Q1_Slimes = {
@@ -94,7 +151,6 @@ local QuestConfig = {
 			location = 1,
 		},
 
-		-- Dungeon track (slot at easy×5 via ProgressConfig; quest = coins + keys)
 		Q_D_Easy_Slots = {
 			id = "Q_D_Easy_Slots",
 			name = "Dungeon practice",
@@ -129,8 +185,90 @@ local QuestConfig = {
 	} :: { [string]: QuestDef },
 }
 
+-- Build Sam 21-chain
+do
+	local amounts = QuestConfig.SAM_CLICK_AMOUNTS
+	local coins = QuestConfig.SAM_COIN_REWARDS
+	for i = 1, QuestConfig.SAM_COUNT do
+		local id = string.format("Q_SAM_%02d", i)
+		local need = amounts[i] or 1000
+		local coinR = coins[i] or 5_000
+		local powerPct = if i % 5 == 0 then 1 else nil
+		local auraKeys = if i == 21 then 2 else nil
+		local descExtra = if i == 21 then " · MASTER 20 CPS" else " · raises attack speed (CPS)"
+		QuestConfig.Quests[id] = {
+			id = id,
+			name = "Click.. Click.. More Clicks!",
+			description = string.format(
+				"Sam (%d/21): land %s clicks%s",
+				i,
+				tostring(need),
+				descExtra
+			),
+			type = "clicks",
+			targetId = nil,
+			amount = need,
+			rewards = {
+				coins = coinR,
+				powerPct = powerPct,
+				auraKeys = auraKeys,
+				samCpsTier = i,
+			},
+			location = 2,
+			chain = QuestConfig.SAM_CHAIN,
+			chainIndex = i,
+			npc = QuestConfig.SAM_NPC,
+		}
+	end
+end
+
 function QuestConfig.Get(id: string): QuestDef?
 	return QuestConfig.Quests[id]
+end
+
+function QuestConfig.SamId(index: number): string
+	return string.format("Q_SAM_%02d", index)
+end
+
+--- First unclaimed Sam quest (sequential). Nil if chain done or Loc2 locked.
+function QuestConfig.GetActiveSamQuestId(profile: any): string?
+	if not profile then
+		return nil
+	end
+	local unlocked = false
+	for _, loc in profile.locationsUnlocked or {} do
+		if loc >= 2 then
+			unlocked = true
+			break
+		end
+	end
+	if not unlocked and (profile.currentLocation or 1) < 2 then
+		return nil
+	end
+	-- also allow if Loc2 unlocked via gate even if current is 1
+	if not unlocked then
+		return nil
+	end
+	for i = 1, QuestConfig.SAM_COUNT do
+		local id = QuestConfig.SamId(i)
+		local state = profile.quests and profile.quests[id]
+		if state and not state.claimed then
+			return id
+		end
+	end
+	return nil
+end
+
+function QuestConfig.GetSamProgress(profile: any): (number, number)
+	local claimed = 0
+	for i = 1, QuestConfig.SAM_COUNT do
+		local id = QuestConfig.SamId(i)
+		local state = profile.quests and profile.quests[id]
+		if state and state.claimed then
+			claimed += 1
+		end
+	end
+	return claimed, QuestConfig.SAM_COUNT
 end
 
 return QuestConfig

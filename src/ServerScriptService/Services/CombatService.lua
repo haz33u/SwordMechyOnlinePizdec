@@ -253,6 +253,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	mob.hp -= damage
 	profile.lifetimeDamage += damage
 	profile.totalClicks = (profile.totalClicks or 0) + 1
+	QuestService.OnClick(profile)
 
 	MobVisualService.UpdateHp(mob)
 
