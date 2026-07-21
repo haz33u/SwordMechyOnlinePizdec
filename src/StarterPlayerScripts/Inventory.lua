@@ -22,6 +22,8 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local PetConfig = require(Shared.Config.PetConfig)
 local AuraConfig = require(Shared.Config.AuraConfig)
+local RelicConfig = require(Shared.Config.RelicConfig)
+local Formulas = require(Shared.Formulas)
 local IconConfig = require(Shared.Config.IconConfig)
 local GamePassConfig = require(Shared.Config.GamePassConfig)
 local WorldConfig = require(Shared.Config.WorldConfig)
@@ -1490,22 +1492,28 @@ function Inventory.Bind(
 			local auras = profile.auras or {}
 			countLab.Text = string.format("%d auras", #auras)
 			local scroll = makeSlotGrid(main)
+			local selectedAuraUid: string? = profile.equippedAura
 			for i, a in ipairs(auras) do
-				local def = AuraConfig.Get(a.id)
+				local id = AuraConfig.ResolveId(a.id)
+				local def = AuraConfig.Get(id) or AuraConfig.Get(a.id)
 				local name = (def and def.name) or a.name or a.id
 				local rar = (def and def.rarity) or a.rarity or "Common"
+				local lv = a.level or 1
+				local eff = def and AuraConfig.GetEffective(def, lv) or nil
 				local active = profile.equippedAura == a.uid
 				local edge = rarityBorder(rar)
 				local btn = makeItemSlot(scroll, i, edge)
 				btn.Name = "A_" .. tostring(a.uid)
 				local used3d = false
 				pcall(function()
-					used3d = AuraVisual.TryFillInventoryIcon(btn, a.id, 40)
+					used3d = AuraVisual.TryFillInventoryIcon(btn, id, 40)
 				end)
 				if not used3d then
 					local glyph = lbl(btn, "✨", UDim2.fromScale(1, 0.75), UDim2.fromScale(0, 0.08), 28, TW, 37)
 					glyph.TextXAlignment = Enum.TextXAlignment.Center
 				end
+				local lvLab = lbl(btn, "Lv" .. tostring(lv), UDim2.new(1, 0, 0, 12), UDim2.new(0, 0, 1, -14), 10, TW, 37)
+				lvLab.TextXAlignment = Enum.TextXAlignment.Center
 				if active then
 					local dot = Instance.new("Frame")
 					dot.Size = UDim2.fromOffset(8, 8)
@@ -1517,35 +1525,54 @@ function Inventory.Bind(
 					UIKit.Corner(dot, 99)
 				end
 				btn.MouseEnter:Connect(function()
+					local body = nil
+					if eff then
+						body = string.format(
+							"Lv%d  P +%.0f%% · D +%.0f%% · $ +%.0f%%\nCrit +%.0f%% · Multi +%.0f%%",
+							lv,
+							eff.powerPct,
+							eff.damagePct,
+							eff.coinPct,
+							eff.critPct,
+							eff.multiCritPct
+						)
+						if def and lv < AuraConfig.MAX_LEVEL then
+							body ..= string.format("\nUpgrade: %d coins", AuraConfig.UpgradeCost(def, lv))
+						end
+					end
 					setTooltip(
 						name,
 						rar,
-						def
-								and string.format(
-									"Power +%d%% · Dmg +%d%% · Coins +%d%%",
-									math.floor(def.powerPct or 0),
-									math.floor(def.damagePct or 0),
-									math.floor(def.coinPct or 0)
-								)
-							or nil,
-						active and "● Active (click to unequip)" or "Click to equip",
+						body,
+						active and "● Active · LMB equip · RMB upgrade" or "LMB equip · RMB upgrade",
 						edge
 					)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
 				btn.MouseButton1Click:Connect(function()
+					selectedAuraUid = a.uid
 					Net.EquipAura(a.uid)
+				end)
+				btn.MouseButton2Click:Connect(function()
+					selectedAuraUid = a.uid
+					Net.UpgradeAura(a.uid)
 				end)
 			end
 			for i = #auras + 1, MAX_SLOTS do
 				emptySlot(scroll, i)
 			end
 			local row = actionsRow()
-			keybind(row, 1, "LMB", "Equip / toggle")
-			actBtn(row, "Open aura case", Color3.fromRGB(80, 50, 120), 2, function()
+			keybind(row, 1, "LMB", "Equip")
+			actBtn(row, "Upgrade", Color3.fromRGB(50, 90, 120), 2, function()
+				local uid = selectedAuraUid or profile.equippedAura
+				if uid then
+					Net.UpgradeAura(uid)
+				end
+			end)
+			actBtn(row, "Open case", Color3.fromRGB(80, 50, 120), 3, function()
 				openModal("case", { kind = "aura" })
 			end)
-			actBtn(row, "Unequip", Color3.fromRGB(90, 50, 50), 3, function()
+			actBtn(row, "Unequip", Color3.fromRGB(90, 50, 50), 4, function()
 				Net.UnequipAura()
 			end)
 
@@ -1553,25 +1580,80 @@ function Inventory.Bind(
 		elseif tab == "relics" then
 			setPreviewAvatar(nil, "💎")
 			local relics = profile.relics or {}
-			countLab.Text = string.format("%d relics", #relics)
+			local maxSlots = Formulas.GetMaxRelicSlots(profile)
+			local equippedN = #(profile.equippedRelics or {})
+			countLab.Text = string.format("%d relics · equip %d/%d", #relics, equippedN, maxSlots)
 			local scroll = makeSlotGrid(main)
+			local selectedRelicUid: string? = nil
+			local eqSet = {}
+			for _, uid in profile.equippedRelics or {} do
+				eqSet[uid] = true
+			end
 			for i, r in ipairs(relics) do
-				local btn = makeItemSlot(scroll, i, BD)
-				btn.Name = "R" .. i
+				local id = RelicConfig.ResolveId(r.id)
+				local def = RelicConfig.Get(id) or RelicConfig.Get(r.id)
+				local name = (def and def.name) or r.id
+				local rar = (def and def.rarity) or "Common"
+				local starsN = r.stars or 0
+				local edge = rarityBorder(rar)
+				local active = eqSet[r.uid] == true
+				local btn = makeItemSlot(scroll, i, if active then GOLD else edge)
+				btn.Name = "R_" .. tostring(r.uid)
 				local glyph = lbl(btn, "💎", UDim2.fromScale(1, 0.65), nil, 26, TW, 37)
 				glyph.TextXAlignment = Enum.TextXAlignment.Center
-				local stars = lbl(btn, "★" .. tostring(r.stars or 1), UDim2.new(1, 0, 0, 14), UDim2.new(0, 0, 1, -16), 11, GOLD, 37)
+				local stars = lbl(
+					btn,
+					"★" .. tostring(starsN),
+					UDim2.new(1, 0, 0, 14),
+					UDim2.new(0, 0, 1, -16),
+					11,
+					GOLD,
+					37
+				)
 				stars.TextXAlignment = Enum.TextXAlignment.Center
 				btn.MouseEnter:Connect(function()
-					setTooltip(tostring(r.name or r.id), nil, "Dungeon drop", "★" .. tostring(r.stars or 1))
+					local body = "Dungeon drop"
+					if def then
+						local p, d, c = RelicConfig.EffectiveStats(def, starsN)
+						body = string.format("P +%.0f%% · D +%.0f%% · $ +%.0f%%", p, d, c)
+						if starsN < RelicConfig.MAX_STARS then
+							body ..= string.format("\nNext ★: %d coins", RelicConfig.StarUpgradeCost(def, starsN))
+						end
+					end
+					setTooltip(
+						name,
+						rar,
+						body,
+						active and "● Equipped · LMB toggle · RMB star" or "LMB equip · RMB star",
+						edge
+					)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
+				btn.MouseButton1Click:Connect(function()
+					selectedRelicUid = r.uid
+					Net.EquipRelic(r.uid)
+				end)
+				btn.MouseButton2Click:Connect(function()
+					selectedRelicUid = r.uid
+					Net.UpgradeRelic(r.uid)
+				end)
 			end
 			for i = #relics + 1, MAX_SLOTS do
 				emptySlot(scroll, i)
 			end
 			local row = actionsRow()
-			lbl(row, "Relics are read-only (dungeon drops)", UDim2.fromOffset(300, 32), nil, 13, TL, 35)
+			keybind(row, 1, "LMB", "Equip")
+			actBtn(row, "Upgrade ★", Color3.fromRGB(120, 90, 30), 2, function()
+				if selectedRelicUid then
+					Net.UpgradeRelic(selectedRelicUid)
+				end
+			end)
+			actBtn(row, if maxSlots < 3 then "Buy 3rd slot" else "3 slots", Color3.fromRGB(60, 100, 80), 3, function()
+				local pass = GamePassConfig.Get("relicSlot")
+				if pass then
+					Net.PromptGamePass(pass.gamePassId)
+				end
+			end)
 
 		---------------------------------------------------------------- CASES — small fixed-width cards (not full page)
 		elseif tab == "cases" then

@@ -36,8 +36,8 @@ local GamePassConfig = {
 		relicSlot = {
 			gamePassId = 1918053131,
 			key = "relicSlot",
-			title = "1 relic slot",
-			desc = "Extra relic equip slot",
+			title = "3rd relic slot",
+			desc = "Equip 3 relics (free players have 2)",
 			feature = "relicSlot",
 		},
 		paidPetSlot = {

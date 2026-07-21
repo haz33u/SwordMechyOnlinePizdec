@@ -23,6 +23,12 @@ export type WorldLocationMeta = {
 	travelCostCoins: number?, -- one-time buy (Cristalix Loc2 = 500K)
 	coinMult: number,
 	powerMult: number,
+	--[[
+		combatWall — recommended TotalPower to farm zone A ~2s/kill.
+		NOT the same formula each loc: jumps (1→2 is huge) so entry feels hard
+		until weapons/pets/rebirth catch up. Relics/auras only glue the gap.
+	]]
+	combatWall: number?,
 	status: string, -- stub | wip | ready
 	blurb: string,
 }
@@ -107,6 +113,7 @@ local WorldConfig = {
 			travelCostCoins = 0, -- free teleport
 			coinMult = 1,
 			powerMult = 1,
+			combatWall = 250, -- starter BASE_POWER; T1 1K HP ~2s
 			status = "wip",
 			blurb = "Four goblin camps by tier, boss at the far end. Free travel.",
 		},
@@ -119,8 +126,10 @@ local WorldConfig = {
 			travelCostCoins = 500_000, -- dump: «Купить за 500K»
 			coinMult = 3,
 			powerMult = 4,
+			-- wall: Sailor 9M HP — need ~ big weapons+pets, not aura alone
+			combatWall = 2_000_000,
 			status = "stub",
-			blurb = "Needs R2 + 500K once. Cannons, rum, maps.",
+			blurb = "Needs R2 + 500K once. Cannons, rum, maps. Hard entry wall.",
 		},
 		{
 			id = 3,
@@ -131,8 +140,9 @@ local WorldConfig = {
 			travelCostCoins = 5_000_000,
 			coinMult = 8,
 			powerMult = 12,
+			combatWall = 80_000_000,
 			status = "stub",
-			blurb = "Village, bridges, training yards, temple.",
+			blurb = "Village, bridges, training yards, temple. Another power step.",
 		},
 		{
 			id = 4,
@@ -143,14 +153,40 @@ local WorldConfig = {
 			travelCostCoins = 50_000_000,
 			coinMult = 18,
 			powerMult = 30,
+			combatWall = 2_000_000_000,
 			status = "stub",
-			blurb = "Snow, ravines, camp, ice boss.",
+			blurb = "Snow, ravines, camp, ice boss. Late F2P wall.",
 		},
 	} :: { WorldLocationMeta },
+
+	--[[
+		Future ~25 location rungs (F2P 1–2 months): each new loc uses a NEW combatWall
+		step (×4…×40-ish from previous), not a single global formula.
+		Fill when adding Loc5+; keep Loc1–4 dump HP absolute.
+	]]
+	FUTURE_LOC_STEP_HINT = "combatWall jumps per world; weapons/pets carry; relics+auras glue",
 }
 
 function WorldConfig.GetMeta(id: number): WorldLocationMeta?
 	return WorldConfig.Locations[id]
+end
+
+--- Recommended TotalPower for comfortable zone-A farming on this location.
+function WorldConfig.GetCombatWall(locationId: number): number
+	local meta = WorldConfig.GetMeta(locationId)
+	if meta and meta.combatWall then
+		return meta.combatWall
+	end
+	return 250
+end
+
+--- How under-geared is the player vs this location (1 = ok, >1 = struggling).
+function WorldConfig.GetWallRatio(locationId: number, totalPower: number): number
+	local wall = WorldConfig.GetCombatWall(locationId)
+	if wall <= 0 then
+		return 1
+	end
+	return wall / math.max(1, totalPower)
 end
 
 function WorldConfig.GetHalfSize(): number

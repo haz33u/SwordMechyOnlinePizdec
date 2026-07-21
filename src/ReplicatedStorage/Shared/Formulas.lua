@@ -142,31 +142,59 @@ function Formulas.GetPetCoinPct(profile: any): number
 	return total
 end
 
-function Formulas.GetAuraPct(profile: any): (number, number, number)
-	if not profile.equippedAura then
-		return 0, 0, 0
+--- Max equipped relic slots: free 2, +1 if paid relicSlot gamepass.
+function Formulas.GetMaxRelicSlots(profile: any): number
+	local n = GameConfig.START_RELIC_SLOTS or 2
+	local unlocks = profile and profile.unlocks
+	if unlocks and unlocks.relicSlot then
+		n += (GameConfig.PAID_RELIC_SLOTS or 1)
 	end
-	for _, a in profile.auras do
+	local cap = GameConfig.MAX_RELIC_SLOTS or 3
+	return math.min(n, cap)
+end
+
+function Formulas.GetAuraPct(profile: any): (number, number, number)
+	local p, d, c, _, _ = Formulas.GetAuraBonuses(profile)
+	return p, d, c
+end
+
+--- power%, damage%, coin%, crit points, multicrit points (level-scaled dump stats)
+function Formulas.GetAuraBonuses(profile: any): (number, number, number, number, number)
+	if not profile or not profile.equippedAura then
+		return 0, 0, 0, 0, 0
+	end
+	for _, a in profile.auras or {} do
 		if a.uid == profile.equippedAura then
-			local def = AuraConfig.Get(a.id)
+			local rawId = a.id
+			local id = AuraConfig.ResolveId and AuraConfig.ResolveId(rawId) or rawId
+			local def = AuraConfig.Get(id) or AuraConfig.Get(rawId)
 			if def then
-				return def.powerPct, def.damagePct, def.coinPct
+				local eff = AuraConfig.GetEffective(def, a.level or 1)
+				return eff.powerPct, eff.damagePct, eff.coinPct, eff.critPct, eff.multiCritPct
 			end
 		end
 	end
-	return 0, 0, 0
+	return 0, 0, 0, 0, 0
 end
 
 function Formulas.GetRelicPct(profile: any): (number, number)
 	local power, damage = 0, 0
-	for _, uid in profile.equippedRelics do
-		for _, r in profile.relics do
+	local maxSlots = Formulas.GetMaxRelicSlots(profile)
+	local n = 0
+	for _, uid in profile.equippedRelics or {} do
+		if n >= maxSlots then
+			break
+		end
+		for _, r in profile.relics or {} do
 			if r.uid == uid then
-				local def = RelicConfig.Get(r.id)
+				local rawId = r.id
+				local id = RelicConfig.ResolveId and RelicConfig.ResolveId(rawId) or rawId
+				local def = RelicConfig.Get(id) or RelicConfig.Get(rawId)
 				if def then
-					local starMult = 1 + RelicConfig.STAR_BONUS * (r.stars or 0)
-					power += def.powerPct * starMult
-					damage += def.damagePct * starMult
+					local p, d = RelicConfig.EffectiveStats(def, r.stars or 0)
+					power += p
+					damage += d
+					n += 1
 				end
 				break
 			end
@@ -286,13 +314,15 @@ function Formulas.GetCritChance(profile: any): number
 	local ench = Formulas.GetEnchantPools(profile)
 	local lvl = Formulas.GetUpgradeLevel(profile, "CritChance")
 	local per = (UpgradeConfig.Defs.CritChance and UpgradeConfig.Defs.CritChance.effectPerLevel) or 0.01
-	return math.clamp(lvl * per + ench.crit / 100, 0, 0.85)
+	local _, _, _, auraCrit = Formulas.GetAuraBonuses(profile)
+	return math.clamp(lvl * per + ench.crit / 100 + (auraCrit or 0) / 100, 0, 0.85)
 end
 
 function Formulas.GetMultiCritChance(profile: any): number
 	local lvl = Formulas.GetUpgradeLevel(profile, "MultiCrit")
 	local per = (UpgradeConfig.Defs.MultiCrit and UpgradeConfig.Defs.MultiCrit.effectPerLevel) or 0.01
-	return math.clamp(lvl * per, 0, 0.5)
+	local _, _, _, _, auraMulti = Formulas.GetAuraBonuses(profile)
+	return math.clamp(lvl * per + (auraMulti or 0) / 100, 0, 0.5)
 end
 
 --- Returns damage, isCrit, isMultiCrit
@@ -352,7 +382,27 @@ function Formulas.GetCoinMult(profile: any): number
 	local ench = Formulas.GetEnchantPools(profile)
 	local petCoins = Formulas.GetPetCoinPct(profile)
 	local _, _, auraCoins = Formulas.GetAuraPct(profile)
-	return 1 + (ench.coins + petCoins + auraCoins) / 100
+	local relicCoins = 0
+	local maxSlots = Formulas.GetMaxRelicSlots(profile)
+	local n = 0
+	for _, uid in profile.equippedRelics or {} do
+		if n >= maxSlots then
+			break
+		end
+		for _, r in profile.relics or {} do
+			if r.uid == uid then
+				local id = RelicConfig.ResolveId(r.id)
+				local def = RelicConfig.Get(id) or RelicConfig.Get(r.id)
+				if def then
+					local _, _, c = RelicConfig.EffectiveStats(def, r.stars or 0)
+					relicCoins += c
+					n += 1
+				end
+				break
+			end
+		end
+	end
+	return 1 + (ench.coins + petCoins + auraCoins + relicCoins) / 100
 end
 
 function Formulas.GetLuck(profile: any): number

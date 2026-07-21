@@ -18,6 +18,7 @@
 | `Питомцы кейс 500/` | `pets_loc1/` | Coin pet case **500** |
 | `2йкейс1лока/` | `loc1_case2_offhand/` | Coin pet case **50K** (2nd case) |
 | `Донаткейс1й лок/` | `loc1_case_donate/` (+ old `relics_loc1/`) | Key pet case **49** (premium) |
+| Aura tooltips (player folder) | `auras_dump/` | Full aura L1 stats → `AuraConfig` |
 | `1й ребитх .png` / `2й ребитх.png` | `REBIRTH.md` | R1 / R2 |
 | `Переход на локу2.png` | `LOC2_GATE.md` | Loc2 unlock UI |
 

@@ -3,11 +3,11 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local DungeonConfig = require(Shared.Config.DungeonConfig)
 local RelicConfig = require(Shared.Config.RelicConfig)
-local GameConfig = require(Shared.Config.GameConfig)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 local PetService = require(script.Parent.PetService)
 local QuestService = require(script.Parent.QuestService)
+local RelicService = require(script.Parent.RelicService)
 
 local DungeonService = {}
 DungeonService._gates = { easy = 0, medium = 0, hard = 0 }
@@ -75,13 +75,11 @@ function DungeonService.Complete(player: Player, tierId: string)
 		profile.auraKeys = (profile.auraKeys or 0) + auraKeyGrant
 	end
 
-	-- relic
-	local relicId = RelicConfig.Roll(tier.relicSource)
+	-- relic (resolve legacy ids if any)
+	local relicId = RelicConfig.ResolveId(RelicConfig.Roll(tier.relicSource))
 	local ruid = ProfileService.NewUid()
 	table.insert(profile.relics, { uid = ruid, id = relicId, stars = 0 })
-	if #profile.equippedRelics < GameConfig.START_RELIC_SLOTS then
-		table.insert(profile.equippedRelics, ruid)
-	end
+	RelicService.TryAutoEquip(profile, ruid)
 
 	-- dungeon quests + pet slot thresholds (ProgressConfig, not every-N spam)
 	QuestService.OnDungeon(profile, tierId)

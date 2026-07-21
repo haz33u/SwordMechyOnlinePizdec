@@ -18,6 +18,9 @@ function AuraService.Init()
 	Remotes.Event("UnequipAura").OnServerEvent:Connect(function(player)
 		AuraService.Unequip(player)
 	end)
+	Remotes.Event("UpgradeAura").OnServerEvent:Connect(function(player, auraUid)
+		AuraService.Upgrade(player, auraUid)
+	end)
 end
 
 local function fireCaseFail(player: Player, reason: string, needKeys: number?, needCoins: number?)
@@ -64,6 +67,7 @@ function AuraService.Open(player: Player)
 	end
 
 	local auraId = AuraConfig.Roll()
+	profile.bannedAuraIds = profile.bannedAuraIds or {}
 	for _ = 1, 5 do
 		if not profile.bannedAuraIds[auraId] then
 			break
@@ -77,16 +81,22 @@ function AuraService.Open(player: Player)
 		profile.equippedAura = auid
 	else
 		local newDef = AuraConfig.Get(auraId)
-		local curPower = 0
+		local newScore = 0
+		if newDef then
+			local e = AuraConfig.GetEffective(newDef, 1)
+			newScore = e.powerPct + e.damagePct * 0.85
+		end
+		local curScore = 0
 		for _, a in profile.auras do
 			if a.uid == profile.equippedAura then
-				local d = AuraConfig.Get(a.id)
+				local d = AuraConfig.Get(AuraConfig.ResolveId(a.id)) or AuraConfig.Get(a.id)
 				if d then
-					curPower = d.powerPct
+					local e = AuraConfig.GetEffective(d, a.level or 1)
+					curScore = e.powerPct + e.damagePct * 0.85
 				end
 			end
 		end
-		if newDef and newDef.powerPct > curPower then
+		if newScore > curScore then
 			profile.equippedAura = auid
 		end
 	end
@@ -94,9 +104,8 @@ function AuraService.Open(player: Player)
 	local def = AuraConfig.Get(auraId)
 	local name = def and def.name or auraId
 	local rarity = def and def.rarity or "Common"
-	local powerPct = def and def.powerPct or 0
-	local damagePct = def and def.damagePct or 0
-	local coinPct = def and def.coinPct or 0
+	local eff = def and AuraConfig.GetEffective(def, 1)
+		or { powerPct = 0, damagePct = 0, coinPct = 0, critPct = 0, multiCritPct = 0 }
 
 	Remotes.Event("CaseResult"):FireClient(player, {
 		kind = "aura",
@@ -105,9 +114,12 @@ function AuraService.Open(player: Player)
 		uid = auid,
 		name = name,
 		rarity = rarity,
-		powerPct = powerPct,
-		damagePct = damagePct,
-		coinPct = coinPct,
+		powerPct = eff.powerPct,
+		damagePct = eff.damagePct,
+		coinPct = eff.coinPct,
+		critPct = eff.critPct,
+		multiCritPct = eff.multiCritPct,
+		level = 1,
 		keysLeft = profile.auraKeys,
 	})
 
@@ -152,16 +164,64 @@ function AuraService.GrantKeys(profile: any, amount: number)
 end
 
 function AuraService.GrantAura(player: Player, profile: any, auraId: string): string?
-	if not AuraConfig.Get(auraId) then
+	local resolved = AuraConfig.ResolveId(auraId)
+	if not AuraConfig.Get(resolved) and not AuraConfig.Get(auraId) then
 		return nil
 	end
+	local id = AuraConfig.Get(resolved) and resolved or auraId
 	profile.auras = profile.auras or {}
 	local auid = ProfileService.NewUid()
-	table.insert(profile.auras, { uid = auid, id = auraId, level = 1 })
+	table.insert(profile.auras, { uid = auid, id = id, level = 1 })
 	if not profile.equippedAura then
 		profile.equippedAura = auid
 	end
 	return auid
+end
+
+--- Spend coins to raise aura level (dump has levels; L1 stats from screenshots).
+function AuraService.Upgrade(player: Player, auraUid: any): boolean
+	local profile = ProfileService.Get(player)
+	if not profile or type(auraUid) ~= "string" then
+		return false
+	end
+	for _, a in profile.auras or {} do
+		if a.uid == auraUid then
+			local def = AuraConfig.Get(AuraConfig.ResolveId(a.id)) or AuraConfig.Get(a.id)
+			if not def then
+				Remotes.Event("Notify"):FireClient(player, { text = "Unknown aura", color = "red" })
+				return false
+			end
+			local lv = a.level or 1
+			if lv >= AuraConfig.MAX_LEVEL then
+				Remotes.Event("Notify"):FireClient(player, { text = "Aura already max level", color = "yellow" })
+				return false
+			end
+			local cost = AuraConfig.UpgradeCost(def, lv)
+			if (profile.coins or 0) < cost then
+				Remotes.Event("Notify"):FireClient(player, {
+					text = string.format("Need %d coins to upgrade", cost),
+					color = "red",
+				})
+				return false
+			end
+			profile.coins -= cost
+			a.level = lv + 1
+			local eff = AuraConfig.GetEffective(def, a.level)
+			Remotes.Event("Notify"):FireClient(player, {
+				text = string.format(
+					"%s → Lv%d  (P%.0f%% D%.0f%%)",
+					def.name,
+					a.level,
+					eff.powerPct,
+					eff.damagePct
+				),
+				color = "cyan",
+			})
+			ProfileService.Push(player)
+			return true
+		end
+	end
+	return false
 end
 
 return AuraService

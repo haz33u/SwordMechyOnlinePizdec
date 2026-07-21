@@ -85,6 +85,22 @@ function Net.UnequipAura()
 	Net.Event("UnequipAura"):FireServer()
 end
 
+function Net.UpgradeAura(uid: string)
+	Net.Event("UpgradeAura"):FireServer(uid)
+end
+
+function Net.EquipRelic(uid: string)
+	Net.Event("EquipRelic"):FireServer(uid)
+end
+
+function Net.UnequipRelic(uid: string)
+	Net.Event("UnequipRelic"):FireServer(uid)
+end
+
+function Net.UpgradeRelic(uid: string)
+	Net.Event("UpgradeRelic"):FireServer(uid)
+end
+
 function Net.ClaimQuest(id: string)
 	Net.Event("ClaimQuest"):FireServer(id)
 end
