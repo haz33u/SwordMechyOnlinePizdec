@@ -70,8 +70,10 @@ local MobConfig = {
 		},
 
 		----------------------------------------------------------------------
-		-- LOC 1
+		-- LOC 1 — exactly 4 combat mobs + boss (ids stable; names = goblin ladder)
+		-- Wolf / Elite → Spare (not world-spawned)
 		----------------------------------------------------------------------
+		-- T1 simple — green
 		L1_Slime = {
 			id = "L1_Slime",
 			name = "Goblin",
@@ -86,12 +88,13 @@ local MobConfig = {
 			weaponPool = {},
 			respawnSeconds = 3,
 			visual = { preferredModelName = "L1_Slime", color = "#58D68D", scale = 1.0, shape = "humanoid" },
-			description = "Dump: HP 1K, coins 200",
+			description = "T1 green goblin. Dump HP 1K / coins 200.",
 		},
 		-- L1_GoblinScout (Runner) → Spare/MobConfigSpare.lua
+		-- T2 medium — blue
 		L1_Skeleton = {
 			id = "L1_Skeleton",
-			name = "Skeleton",
+			name = "Dark Goblin",
 			location = 1,
 			tier = "medium",
 			defaultZone = "B",
@@ -102,24 +105,10 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 4,
-			visual = { preferredModelName = "L1_Skeleton", color = "#AED6F1", scale = 1.1, shape = "humanoid" },
+			visual = { preferredModelName = "L1_Skeleton", color = "#5DADE2", scale = 1.1, shape = "humanoid" },
+			description = "T2 blue dark goblin. HP 8K / coins 800.",
 		},
-		L1_Wolf = {
-			id = "L1_Wolf",
-			name = "Wolf",
-			location = 1,
-			tier = "medium",
-			defaultZone = "B",
-			hp = 12_000,
-			powerReward = 20,
-			coinReward = 1_200,
-			weaponDropChance = 1,
-			weaponDropScale = 1,
-			weaponPool = {},
-			respawnSeconds = 5,
-			visual = { preferredModelName = "L1_Wolf", color = "#85929E", scale = 1.15, shape = "quad" },
-		},
-		-- Dump warrior: 5.68M HP / 100K coins (player screenshot)
+		-- T3 hard — purple/dark green warrior (dump scale)
 		L1_GoblinWarrior = {
 			id = "L1_GoblinWarrior",
 			name = "Goblin Warrior",
@@ -133,9 +122,10 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 6,
-			visual = { preferredModelName = "L1_GoblinWarrior", color = "#1E8449", scale = 1.25, shape = "humanoid" },
-			description = "Dump: HP 5.68M, coins 100K",
+			visual = { preferredModelName = "L1_GoblinWarrior", color = "#8E44AD", scale = 1.25, shape = "humanoid" },
+			description = "T3 warrior. Dump HP 5.68M / coins 100K.",
 		},
+		-- T4 elite — red scout
 		L1_Knight = {
 			id = "L1_Knight",
 			name = "Goblin Scout",
@@ -149,24 +139,10 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 8,
-			visual = { preferredModelName = "L1_Knight", color = "#7D3C98", scale = 1.35, shape = "humanoid" },
-			description = "Dump: HP 300K, coins 12.5K; Secret 0.0001%",
+			visual = { preferredModelName = "L1_Knight", color = "#922B21", scale = 1.35, shape = "humanoid" },
+			description = "T4 elite scout. Dump HP 300K / coins 12.5K.",
 		},
-		L1_Elite = {
-			id = "L1_Elite",
-			name = "Forest Warden",
-			location = 1,
-			tier = "elite",
-			defaultZone = "D",
-			hp = 450_000,
-			powerReward = 160,
-			coinReward = 18_000,
-			weaponDropChance = 1,
-			weaponDropScale = 1,
-			weaponPool = {},
-			respawnSeconds = 10,
-			visual = { preferredModelName = "L1_Elite", color = "#6C3483", scale = 1.45, shape = "humanoid" },
-		},
+		-- Boss — end of loc / portal area (not a normal pack spawn row)
 		L1_Boss = {
 			id = "L1_Boss",
 			name = "Forest Guardian",
@@ -179,11 +155,11 @@ local MobConfig = {
 			weaponDropChance = 1,
 			weaponDropScale = 1,
 			weaponPool = {},
-			respawnSeconds = 5,
+			respawnSeconds = 600, -- 10 min boss respawn (project rule)
 			isBoss = true,
 			armorFlat = 0,
 			visual = { preferredModelName = "L1_Boss", color = "#145A32", scale = 2.0, shape = "humanoid" },
-			description = "Dump: HP 1.2M, coins 25K",
+			description = "Loc1 boss. Dump HP 1.2M / coins 25K. Own zone — polish later.",
 		},
 
 		----------------------------------------------------------------------

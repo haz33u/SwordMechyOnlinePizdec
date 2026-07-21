@@ -40,32 +40,29 @@ local MOB_OVERRIDES: {
 	},
 } = {
 	----------------------------------------------------------------------
-	-- LOC 1 — Тёмный лес (full roster)
+	-- LOC 1 — Starter Village: exactly 4 combat mobs + boss at the end
+	-- Boss is NOT a normal pack mob: bossId + zone "Boss" (gate / portal area later)
 	----------------------------------------------------------------------
 	[1] = {
-		-- Counts by tier: T1=13 · T2=15 · T3=11 · T4=9
-		-- Dump-aligned roster (counts for playtest density, all feature tiers)
 		mobs = {
-			-- T1 simple — Goblin (dump 1K/200)
-			{ mobId = "L1_Slime", count = 10, zone = "A" },
-			-- T2 medium — Skeleton / Wolf
+			-- T1 simple — green goblin (dump 1K / 200)
+			{ mobId = "L1_Slime", count = 12, zone = "A" },
+			-- T2 medium — dark goblin (blue)
 			{ mobId = "L1_Skeleton", count = 8, zone = "B" },
-			{ mobId = "L1_Wolf", count = 7, zone = "B" },
-			-- T3 hard — Warrior (dump 5.68M/100K)
-			{ mobId = "L1_GoblinWarrior", count = 6, zone = "C" },
-			-- T4 elite — Scout 300K + Elite (secret 0.0001%)
+			-- T3 hard — warrior (dump 5.68M / 100K)
+			{ mobId = "L1_GoblinWarrior", count = 5, zone = "C" },
+			-- T4 elite — scout (dump 300K / 12.5K)
 			{ mobId = "L1_Knight", count = 4, zone = "D" },
-			{ mobId = "L1_Elite", count = 3, zone = "D" },
 		},
 		bossId = "L1_Boss",
 		-- Dummy only via DebugSpawnDummy remote — not auto-spawn
 		debugMobs = {},
 		questIds = {
-			"Q1_Slimes",
-			"Q1_Skeletons",
-			"Q2_Wolves",
-			"Q2_GoblinWarriors",
-			"Q3_Boss",
+			"Q1_Slimes", -- goblins T1
+			"Q1_Skeletons", -- dark goblins T2
+			"Q2_Wolves", -- warriors T3 (id kept for profile saves)
+			"Q2_GoblinWarriors", -- scouts T4
+			"Q3_Boss", -- boss only
 			"Q4_Power",
 			"Q5_Rebirth",
 		},

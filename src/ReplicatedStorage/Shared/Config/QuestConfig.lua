@@ -22,7 +22,7 @@ export type QuestDef = {
 
 local QuestConfig = {
 	Quests = {
-		-- Loc1 main chain — primary reward: permanent +3% power (global, like upgrades)
+		-- Loc1 chain: 4 goblin tiers + boss (quest ids kept stable for existing profiles)
 		Q1_Slimes = {
 			id = "Q1_Slimes",
 			name = "Goblins",
@@ -35,8 +35,8 @@ local QuestConfig = {
 		},
 		Q1_Skeletons = {
 			id = "Q1_Skeletons",
-			name = "Skeletons",
-			description = "Kill 15 skeletons · reward +3% Power",
+			name = "Dark Goblins",
+			description = "Kill 15 dark goblins · reward +3% Power",
 			type = "kill",
 			targetId = "L1_Skeleton",
 			amount = 15,
@@ -45,28 +45,28 @@ local QuestConfig = {
 		},
 		Q2_Wolves = {
 			id = "Q2_Wolves",
-			name = "Wolves",
-			description = "Kill 15 dark wolves · reward +3% Power",
+			name = "Goblin Warriors",
+			description = "Kill 8 goblin warriors · reward +3% Power",
 			type = "kill",
-			targetId = "L1_Wolf",
-			amount = 15,
+			targetId = "L1_GoblinWarrior",
+			amount = 8,
 			rewards = { coins = 8_000, powerPct = 3, weaponId = "wooden_mace" },
 			location = 1,
 		},
 		Q2_GoblinWarriors = {
 			id = "Q2_GoblinWarriors",
-			name = "Dark Goblins",
-			description = "Kill 10 dark goblins · reward +3% Power",
+			name = "Goblin Scouts",
+			description = "Kill 5 elite goblin scouts · reward +3% Power",
 			type = "kill",
-			targetId = "L1_GoblinWarrior",
-			amount = 10,
+			targetId = "L1_Knight",
+			amount = 5,
 			rewards = { coins = 12_000, powerPct = 3 },
 			location = 1,
 		},
 		Q3_Boss = {
 			id = "Q3_Boss",
-			name = "Guardian",
-			description = "Defeat the Forest Guardian · reward +3% Power",
+			name = "Forest Guardian",
+			description = "Defeat the Forest Guardian at the end of Loc1 · reward +3% Power",
 			type = "boss",
 			targetId = "L1_Boss",
 			amount = 1,

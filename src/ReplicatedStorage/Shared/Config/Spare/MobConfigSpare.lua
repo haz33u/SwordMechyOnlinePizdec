@@ -23,11 +23,43 @@ local Spare = {
 		weaponPool = {},
 		respawnSeconds = 3.5,
 		visual = { preferredModelName = "L1_GoblinScout", color = "#52BE80", scale = 1.05, shape = "humanoid" },
-		description = "SPARE — not dump roster",
+		description = "SPARE — not Loc1 world roster (4 goblins + boss only)",
 	},
 
-	-- Training bag (still spawnable via DebugSpawnDummy if wired to MobConfig)
-	-- Prefer keeping DEBUG_Dummy in main MobConfig for remote; this is a copy reference.
+	-- Removed from Loc1 world spawn (kept for art / old markers / tests)
+	L1_Wolf = {
+		id = "L1_Wolf",
+		name = "Wolf",
+		location = 1,
+		tier = "medium",
+		defaultZone = "B",
+		hp = 12_000,
+		powerReward = 20,
+		coinReward = 1_200,
+		weaponDropChance = 1,
+		weaponDropScale = 1,
+		weaponPool = {},
+		respawnSeconds = 5,
+		visual = { preferredModelName = "L1_Wolf", color = "#85929E", scale = 1.15, shape = "quad" },
+		description = "SPARE — Loc1 trimmed to 4 mobs + boss",
+	},
+	L1_Elite = {
+		id = "L1_Elite",
+		name = "Forest Warden",
+		location = 1,
+		tier = "elite",
+		defaultZone = "D",
+		hp = 450_000,
+		powerReward = 160,
+		coinReward = 18_000,
+		weaponDropChance = 1,
+		weaponDropScale = 1,
+		weaponPool = {},
+		respawnSeconds = 10,
+		visual = { preferredModelName = "L1_Elite", color = "#6C3483", scale = 1.45, shape = "humanoid" },
+		description = "SPARE — Loc1 trimmed to 4 mobs + boss",
+	},
+
 	NOTE = "DEBUG_Dummy stays in MobConfig for DebugSpawnDummy; not in world spawn tables.",
 }
 
