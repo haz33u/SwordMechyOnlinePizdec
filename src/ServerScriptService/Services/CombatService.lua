@@ -81,10 +81,11 @@ function CombatService.SpawnMob(mobId: string, position: Vector3?, extras: any?)
 	if not def then
 		return nil
 	end
+	local resolvedId = def.id -- canonical (LegacyIdMap applied inside Get)
 	local id = mobUid()
 	local entry = {
 		uid = id,
-		mobId = mobId,
+		mobId = resolvedId,
 		name = def.name,
 		tier = def.tier,
 		hp = def.hp,

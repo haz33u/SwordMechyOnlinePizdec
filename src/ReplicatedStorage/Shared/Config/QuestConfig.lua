@@ -22,13 +22,13 @@ export type QuestDef = {
 
 local QuestConfig = {
 	Quests = {
-		-- Loc1 chain: 4 goblin tiers + boss (quest ids kept stable for existing profiles)
+		-- Loc1: 4 goblin tiers + boss (quest *ids* kept for profile progress)
 		Q1_Slimes = {
 			id = "Q1_Slimes",
 			name = "Goblins",
-			description = "Kill 25 goblins · reward +3% Power",
+			description = "Kill 25 Goblins · reward +3% Power",
 			type = "kill",
-			targetId = "L1_Slime",
+			targetId = "L1_Goblin",
 			amount = 25,
 			rewards = { coins = 2_000, powerPct = 3 },
 			location = 1,
@@ -36,9 +36,9 @@ local QuestConfig = {
 		Q1_Skeletons = {
 			id = "Q1_Skeletons",
 			name = "Dark Goblins",
-			description = "Kill 15 dark goblins · reward +3% Power",
+			description = "Kill 15 Dark Goblins · reward +3% Power",
 			type = "kill",
-			targetId = "L1_Skeleton",
+			targetId = "L1_DarkGoblin",
 			amount = 15,
 			rewards = { coins = 3_000, powerPct = 3 },
 			location = 1,
@@ -46,7 +46,7 @@ local QuestConfig = {
 		Q2_Wolves = {
 			id = "Q2_Wolves",
 			name = "Goblin Warriors",
-			description = "Kill 8 goblin warriors · reward +3% Power",
+			description = "Kill 8 Goblin Warriors · reward +3% Power",
 			type = "kill",
 			targetId = "L1_GoblinWarrior",
 			amount = 8,
@@ -56,9 +56,9 @@ local QuestConfig = {
 		Q2_GoblinWarriors = {
 			id = "Q2_GoblinWarriors",
 			name = "Goblin Scouts",
-			description = "Kill 5 elite goblin scouts · reward +3% Power",
+			description = "Kill 5 Goblin Scouts · reward +3% Power",
 			type = "kill",
-			targetId = "L1_Knight",
+			targetId = "L1_GoblinScout",
 			amount = 5,
 			rewards = { coins = 12_000, powerPct = 3 },
 			location = 1,

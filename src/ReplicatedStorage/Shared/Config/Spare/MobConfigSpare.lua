@@ -8,9 +8,9 @@
 ]]
 
 local Spare = {
-	-- Was Loc1 T1 filler (not on dump screenshots as separate type)
-	L1_GoblinScout = {
-		id = "L1_GoblinScout",
+	-- Old runner filler (L1_GoblinScout is now active T4 elite in MobConfig)
+	L1_GoblinRunner = {
+		id = "L1_GoblinRunner",
 		name = "Goblin Runner",
 		location = 1,
 		tier = "simple",
@@ -22,8 +22,51 @@ local Spare = {
 		weaponDropScale = 1,
 		weaponPool = {},
 		respawnSeconds = 3.5,
-		visual = { preferredModelName = "L1_GoblinScout", color = "#52BE80", scale = 1.05, shape = "humanoid" },
-		description = "SPARE — not Loc1 world roster (4 goblins + boss only)",
+		visual = { preferredModelName = "L1_GoblinRunner", color = "#52BE80", scale = 1.05, shape = "humanoid" },
+		description = "SPARE — not world roster",
+	},
+	-- Legacy ids (pre-rename) for reference only
+	L1_Slime = {
+		id = "L1_Slime",
+		name = "Goblin (legacy id)",
+		location = 1,
+		tier = "simple",
+		defaultZone = "A",
+		hp = 1_000,
+		powerReward = 5,
+		coinReward = 200,
+		weaponDropChance = 1,
+		weaponPool = {},
+		respawnSeconds = 3,
+		description = "LEGACY — use L1_Goblin (MobConfig.ResolveId)",
+	},
+	L1_Skeleton = {
+		id = "L1_Skeleton",
+		name = "Dark Goblin (legacy id)",
+		location = 1,
+		tier = "medium",
+		defaultZone = "B",
+		hp = 8_000,
+		powerReward = 15,
+		coinReward = 800,
+		weaponDropChance = 1,
+		weaponPool = {},
+		respawnSeconds = 4,
+		description = "LEGACY — use L1_DarkGoblin",
+	},
+	L1_Knight = {
+		id = "L1_Knight",
+		name = "Goblin Scout (legacy id)",
+		location = 1,
+		tier = "elite",
+		defaultZone = "D",
+		hp = 300_000,
+		powerReward = 120,
+		coinReward = 12_500,
+		weaponDropChance = 1,
+		weaponPool = {},
+		respawnSeconds = 8,
+		description = "LEGACY — use L1_GoblinScout",
 	},
 
 	-- Removed from Loc1 world spawn (kept for art / old markers / tests)

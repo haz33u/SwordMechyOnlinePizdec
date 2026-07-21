@@ -70,12 +70,11 @@ local MobConfig = {
 		},
 
 		----------------------------------------------------------------------
-		-- LOC 1 — exactly 4 combat mobs + boss (ids stable; names = goblin ladder)
-		-- Wolf / Elite → Spare (not world-spawned)
+		-- LOC 1 — 4 goblins + boss (clear ids; no Slime/Skeleton/Knight)
+		-- Legacy ids resolve via LegacyIdMap (old markers / quests / profiles)
 		----------------------------------------------------------------------
-		-- T1 simple — green
-		L1_Slime = {
-			id = "L1_Slime",
+		L1_Goblin = {
+			id = "L1_Goblin",
 			name = "Goblin",
 			location = 1,
 			tier = "simple",
@@ -87,13 +86,11 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 3,
-			visual = { preferredModelName = "L1_Slime", color = "#58D68D", scale = 1.0, shape = "humanoid" },
+			visual = { preferredModelName = "L1_Goblin", color = "#58D68D", scale = 1.0, shape = "humanoid" },
 			description = "T1 green goblin. Dump HP 1K / coins 200.",
 		},
-		-- L1_GoblinScout (Runner) → Spare/MobConfigSpare.lua
-		-- T2 medium — blue
-		L1_Skeleton = {
-			id = "L1_Skeleton",
+		L1_DarkGoblin = {
+			id = "L1_DarkGoblin",
 			name = "Dark Goblin",
 			location = 1,
 			tier = "medium",
@@ -105,10 +102,9 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 4,
-			visual = { preferredModelName = "L1_Skeleton", color = "#5DADE2", scale = 1.1, shape = "humanoid" },
+			visual = { preferredModelName = "L1_DarkGoblin", color = "#5DADE2", scale = 1.1, shape = "humanoid" },
 			description = "T2 blue dark goblin. HP 8K / coins 800.",
 		},
-		-- T3 hard — purple/dark green warrior (dump scale)
 		L1_GoblinWarrior = {
 			id = "L1_GoblinWarrior",
 			name = "Goblin Warrior",
@@ -125,9 +121,8 @@ local MobConfig = {
 			visual = { preferredModelName = "L1_GoblinWarrior", color = "#8E44AD", scale = 1.25, shape = "humanoid" },
 			description = "T3 warrior. Dump HP 5.68M / coins 100K.",
 		},
-		-- T4 elite — red scout
-		L1_Knight = {
-			id = "L1_Knight",
+		L1_GoblinScout = {
+			id = "L1_GoblinScout",
 			name = "Goblin Scout",
 			location = 1,
 			tier = "elite",
@@ -139,10 +134,9 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 8,
-			visual = { preferredModelName = "L1_Knight", color = "#922B21", scale = 1.35, shape = "humanoid" },
+			visual = { preferredModelName = "L1_GoblinScout", color = "#922B21", scale = 1.35, shape = "humanoid" },
 			description = "T4 elite scout. Dump HP 300K / coins 12.5K.",
 		},
-		-- Boss — end of loc / portal area (not a normal pack spawn row)
 		L1_Boss = {
 			id = "L1_Boss",
 			name = "Forest Guardian",
@@ -155,11 +149,11 @@ local MobConfig = {
 			weaponDropChance = 1,
 			weaponDropScale = 1,
 			weaponPool = {},
-			respawnSeconds = 600, -- 10 min boss respawn (project rule)
+			respawnSeconds = 600,
 			isBoss = true,
 			armorFlat = 0,
 			visual = { preferredModelName = "L1_Boss", color = "#145A32", scale = 2.0, shape = "humanoid" },
-			description = "Loc1 boss. Dump HP 1.2M / coins 25K. Own zone — polish later.",
+			description = "Loc1 boss at end of path. Dump HP 1.2M / coins 25K.",
 		},
 
 		----------------------------------------------------------------------
@@ -238,10 +232,29 @@ local MobConfig = {
 			description = "Dump: 4.75B HP / 46.4M coins",
 		},
 	} :: { [string]: MobDef },
+
+	--[[
+		Old ids → new Loc1 ladder (markers, quests, any saved kill trackers)
+	]]
+	LegacyIdMap = {
+		L1_Slime = "L1_Goblin",
+		L1_Skeleton = "L1_DarkGoblin",
+		L1_Knight = "L1_GoblinScout",
+		-- L1_GoblinWarrior / L1_Boss unchanged
+	} :: { [string]: string },
 }
 
+function MobConfig.ResolveId(id: string): string
+	local mapped = MobConfig.LegacyIdMap[id]
+	if type(mapped) == "string" and mapped ~= "" then
+		return mapped
+	end
+	return id
+end
+
 function MobConfig.Get(id: string): MobDef?
-	return MobConfig.Mobs[id]
+	local resolved = MobConfig.ResolveId(id)
+	return MobConfig.Mobs[resolved]
 end
 
 function MobConfig.GetByLocation(locationId: number): { MobDef }

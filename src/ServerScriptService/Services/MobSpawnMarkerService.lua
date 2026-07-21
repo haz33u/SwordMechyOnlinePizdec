@@ -5,7 +5,8 @@
 	Convention (you control these in Studio, visible without Play):
 	  Workspace.World.Locations.Loc01.MobSpawns.<any Part>
 	    Attributes:
-	      MobId  (string) required  e.g. "L1_Slime", "DEBUG_Dummy"
+	      MobId  (string) required  e.g. "L1_Goblin", "L1_Boss", "DEBUG_Dummy"
+	      (legacy MobIds like L1_Slime resolve via MobConfig.ResolveId)
 	      Zone   (string) optional  e.g. "A"
 
 	If no markers found for a location → fallback to WorldConfig math + LocationConfig counts.

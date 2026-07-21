@@ -45,24 +45,19 @@ local MOB_OVERRIDES: {
 	----------------------------------------------------------------------
 	[1] = {
 		mobs = {
-			-- T1 simple — green goblin (dump 1K / 200)
-			{ mobId = "L1_Slime", count = 12, zone = "A" },
-			-- T2 medium — dark goblin (blue)
-			{ mobId = "L1_Skeleton", count = 8, zone = "B" },
-			-- T3 hard — warrior (dump 5.68M / 100K)
+			{ mobId = "L1_Goblin", count = 12, zone = "A" },
+			{ mobId = "L1_DarkGoblin", count = 8, zone = "B" },
 			{ mobId = "L1_GoblinWarrior", count = 5, zone = "C" },
-			-- T4 elite — scout (dump 300K / 12.5K)
-			{ mobId = "L1_Knight", count = 4, zone = "D" },
+			{ mobId = "L1_GoblinScout", count = 4, zone = "D" },
 		},
 		bossId = "L1_Boss",
-		-- Dummy only via DebugSpawnDummy remote — not auto-spawn
 		debugMobs = {},
 		questIds = {
-			"Q1_Slimes", -- goblins T1
-			"Q1_Skeletons", -- dark goblins T2
-			"Q2_Wolves", -- warriors T3 (id kept for profile saves)
-			"Q2_GoblinWarriors", -- scouts T4
-			"Q3_Boss", -- boss only
+			"Q1_Slimes", -- T1 Goblin (quest id legacy)
+			"Q1_Skeletons", -- T2 Dark Goblin
+			"Q2_Wolves", -- T3 Warrior
+			"Q2_GoblinWarriors", -- T4 Scout
+			"Q3_Boss",
 			"Q4_Power",
 			"Q5_Rebirth",
 		},
