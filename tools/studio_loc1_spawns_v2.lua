@@ -1,20 +1,23 @@
---!nocheck
 --[[
-	STUDIO COMMAND BAR (Edit mode) — paste ALL, run once, then Save place.
-	This is NOT a Rojo ModuleScript (lives in /tools only).
+	═══════════════════════════════════════════════════════════════════
+	HOW TO RUN (Roblox Studio Command Bar)
+	═══════════════════════════════════════════════════════════════════
+	WRONG: type only   studio_loc1_spawns_v2
+	       → error "Incomplete statement: expected assignment or a function call"
 
-	Creates:
-	  Workspace.World.Locations.Loc01.MobSpawns  (drag markers freely)
-	  Workspace.World.Locations.Loc01.PlayerSpawn
+	RIGHT:
+	  1) Open this file in VS Code / Cursor
+	  2) Select ALL text (Ctrl+A), Copy (Ctrl+C)
+	  3) Studio → View → Command Bar (bottom)
+	  4) Click in the bar, Paste (Ctrl+V) the FULL script
+	  5) Press Enter
+	  6) Save place (Ctrl+S)
 
-	Loc1 roster (matches LocationConfig / MobConfig):
-	  Zone A — L1_Slime          Goblin (T1 green)
-	  Zone B — L1_Skeleton       Dark Goblin (T2 blue)
-	  Zone C — L1_GoblinWarrior  Goblin Warrior (T3)
-	  Zone D — L1_Knight         Goblin Scout (T4 elite)
-	  Boss   — L1_Boss           Forest Guardian (move to portal / end)
+	OR: ask agent with Studio MCP to run it for you.
 
-	Play: CombatService reads Attribute MobId on markers.
+	Creates: Workspace.World.Locations.Loc01.MobSpawns + PlayerSpawn
+	Loc1: L1_Slime / L1_Skeleton / L1_GoblinWarrior / L1_Knight / L1_Boss
+	═══════════════════════════════════════════════════════════════════
 ]]
 
 local Workspace = game:GetService("Workspace")
