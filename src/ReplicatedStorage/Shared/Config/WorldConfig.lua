@@ -39,7 +39,7 @@ local WorldConfig = {
 	-- Later: add Loc05… without shrinking these
 	-- ═══════════════════════════════════════
 	PHASE = 1,
-	LOCATION_COUNT = 4,
+	-- LOCATION_COUNT set below with Locations table (Loc1–10 lock)
 
 	-- ONE territory size (square playable floor)
 	-- Was 280 (too small). Now room for atmosphere.
