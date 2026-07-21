@@ -101,48 +101,50 @@ local WorldConfig = {
 	ART_FOLDER = "Art", -- optional; you own it
 
 	--[[
-		4 territories for Phase 1.
-		Expand later to 8 / 12 / 18 without rescaling these four.
+		Loc1–10 LOCKED for balance (see docs/LOC1_10_BALANCE.md).
+		Loc1–2: dump HP/coins absolute. Loc3–10: combatWall + gates; mobs fill later.
+		Loc11–25: same pattern later.
 	]]
+	LOCATION_COUNT = 10,
+
 	Locations = {
 		{
 			id = 1,
-			name = "Goblin City", -- Loc1 art: goblin camps + boss
+			name = "Goblin City",
 			theme = "dark_forest",
 			unlockPower = 0,
-			travelCostCoins = 0, -- free teleport
+			travelCostCoins = 0,
 			coinMult = 1,
 			powerMult = 1,
-			combatWall = 250, -- starter BASE_POWER; T1 1K HP ~2s
+			combatWall = 250,
 			status = "wip",
-			blurb = "Four goblin camps by tier, boss at the far end. Free travel.",
+			blurb = "Starter goblin camps + boss. Free travel.",
 		},
 		{
 			id = 2,
-			name = "Pirate Ship", -- dump: «Пиратский корабль»
+			name = "Pirate Ship",
 			theme = "pirate",
 			unlockPower = 0,
-			unlockRebirth = 2, -- opens after 2nd rebirth
-			travelCostCoins = 500_000, -- dump: «Купить за 500K»
+			unlockRebirth = 2,
+			travelCostCoins = 500_000,
 			coinMult = 3,
 			powerMult = 4,
-			-- wall: Sailor 9M HP — need ~ big weapons+pets, not aura alone
 			combatWall = 2_000_000,
 			status = "stub",
-			blurb = "Needs R2 + 500K once. Cannons, rum, maps. Hard entry wall.",
+			blurb = "R2 + 500K once. First big wall.",
 		},
 		{
 			id = 3,
 			name = "Shinobi Lands",
 			theme = "shinobi",
 			unlockPower = 0,
-			unlockRebirth = 4, -- placeholder
+			unlockRebirth = 4,
 			travelCostCoins = 5_000_000,
 			coinMult = 8,
 			powerMult = 12,
-			combatWall = 80_000_000,
+			combatWall = 80_000_000, -- 80M
 			status = "stub",
-			blurb = "Village, bridges, training yards, temple. Another power step.",
+			blurb = "R4 + 5M. Bridges and training yards.",
 		},
 		{
 			id = 4,
@@ -153,18 +155,91 @@ local WorldConfig = {
 			travelCostCoins = 50_000_000,
 			coinMult = 18,
 			powerMult = 30,
-			combatWall = 2_000_000_000,
+			combatWall = 2_000_000_000, -- 2B
 			status = "stub",
-			blurb = "Snow, ravines, camp, ice boss. Late F2P wall.",
+			blurb = "R6 + 50M. Ice and ravines.",
+		},
+		{
+			id = 5,
+			name = "Ash Canyons",
+			theme = "canyon",
+			unlockPower = 0,
+			unlockRebirth = 8,
+			travelCostCoins = 500_000_000,
+			coinMult = 40,
+			powerMult = 70,
+			combatWall = 50_000_000_000, -- 50B
+			status = "stub",
+			blurb = "R8 + 500M. Heat and cliffs.",
+		},
+		{
+			id = 6,
+			name = "Neon Docks",
+			theme = "docks",
+			unlockPower = 0,
+			unlockRebirth = 10,
+			travelCostCoins = 5_000_000_000,
+			coinMult = 90,
+			powerMult = 150,
+			combatWall = 1_200_000_000_000, -- 1.2T
+			status = "stub",
+			blurb = "R10 + 5B. Night markets.",
+		},
+		{
+			id = 7,
+			name = "Bone Cathedral",
+			theme = "cathedral",
+			unlockPower = 0,
+			unlockRebirth = 12,
+			travelCostCoins = 50_000_000_000,
+			coinMult = 200,
+			powerMult = 350,
+			combatWall = 30_000_000_000_000, -- 30T
+			status = "stub",
+			blurb = "R12 + 50B. Soft wall band starts.",
+		},
+		{
+			id = 8,
+			name = "Storm Spire",
+			theme = "spire",
+			unlockPower = 0,
+			unlockRebirth = 14,
+			travelCostCoins = 500_000_000_000,
+			coinMult = 450,
+			powerMult = 800,
+			combatWall = 800_000_000_000_000, -- 800T
+			status = "stub",
+			blurb = "R14 + 500B. Lightning heights.",
+		},
+		{
+			id = 9,
+			name = "Mirror Marshes",
+			theme = "marsh",
+			unlockPower = 0,
+			unlockRebirth = 16,
+			travelCostCoins = 5_000_000_000_000,
+			coinMult = 1_000,
+			powerMult = 1_800,
+			combatWall = 20_000_000_000_000_000, -- 20Qa
+			status = "stub",
+			blurb = "R16 + 5T. Fog and doubles.",
+		},
+		{
+			id = 10,
+			name = "Obsidian Gate",
+			theme = "gate",
+			unlockPower = 0,
+			unlockRebirth = 18,
+			travelCostCoins = 50_000_000_000_000,
+			coinMult = 2_200,
+			powerMult = 4_000,
+			combatWall = 500_000_000_000_000_000, -- 500Qa — end of Loc1–10 band
+			status = "stub",
+			blurb = "R18 + 50T. Gate to late worlds (11–25).",
 		},
 	} :: { WorldLocationMeta },
 
-	--[[
-		Future ~25 location rungs (F2P 1–2 months): each new loc uses a NEW combatWall
-		step (×4…×40-ish from previous), not a single global formula.
-		Fill when adding Loc5+; keep Loc1–4 dump HP absolute.
-	]]
-	FUTURE_LOC_STEP_HINT = "combatWall jumps per world; weapons/pets carry; relics+auras glue",
+	FUTURE_LOC_STEP_HINT = "Loc11–25 continue stepped combatWall; pets/weapons carry; relics/auras glue",
 }
 
 function WorldConfig.GetMeta(id: number): WorldLocationMeta?

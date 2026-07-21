@@ -2,6 +2,19 @@
 
 Reference screenshots for dungeon relics & secret weapons (no external names).
 
+## Rare dungeon relic (hard dungeon, deep stage)
+
+| Field | Example |
+|-------|---------|
+| Name | Miner's Ring (Кольцо шахтёра) |
+| Rarity | **Rare** |
+| Level | **1** |
+| XP | 0 |
+| Damage boost | **13.4K%** |
+| Source | **Stage 24** hard dungeon |
+
+Implication: even **Rare L1** from deep hard dungeon can show **five-digit %** damage lines — dungeon depth > open-world early relics.
+
 ## Mythic dungeon relic (hard dungeon)
 
 | Field | Example |
