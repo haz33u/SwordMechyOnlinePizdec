@@ -1,26 +1,16 @@
 --!strict
---[[ Compact K/M/B formatting for Cristalix-style numbers. ]]
+--[[
+	Client formatting helpers.
+	Big numbers → Shared.NumberFormat (K…B…Qdt…∞).
+]]
+
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local NumberFormat = require(Shared:WaitForChild("NumberFormat"))
 
 local Format = {}
 
 function Format.Num(n: number?): string
-	if n == nil or n ~= n then
-		return "0"
-	end
-	n = math.floor(n + 0.5)
-	local abs = math.abs(n)
-	if abs >= 1e15 then
-		return string.format("%.2fQ", n / 1e15)
-	elseif abs >= 1e12 then
-		return string.format("%.2fT", n / 1e12)
-	elseif abs >= 1e9 then
-		return string.format("%.2fB", n / 1e9)
-	elseif abs >= 1e6 then
-		return string.format("%.2fM", n / 1e6)
-	elseif abs >= 1e3 then
-		return string.format("%.1fK", n / 1e3)
-	end
-	return tostring(n)
+	return NumberFormat.Num(n)
 end
 
 function Format.Pct(frac: number?): string
@@ -39,7 +29,7 @@ function Format.Duration(seconds: number?): string
 	if seconds <= 0 then
 		return "0s"
 	end
-	if seconds == math.huge or seconds > 1e12 then
+	if seconds == math.huge or seconds > 1e15 then
 		return "∞"
 	end
 	local s = math.floor(seconds + 0.5)

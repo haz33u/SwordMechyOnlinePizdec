@@ -8,6 +8,7 @@ local Workspace = game:GetService("Workspace")
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local MobConfig = require(Shared.Config.MobConfig)
+local NumberFormat = require(Shared.NumberFormat)
 
 local MobVisualService = {}
 MobVisualService._folder = nil :: Folder?
@@ -40,13 +41,7 @@ local function hexToColor(hex: string?): Color3?
 end
 
 local function formatHp(n: number): string
-	n = math.floor(math.max(0, n))
-	if n >= 1e6 then
-		return string.format("%.1fM", n / 1e6)
-	elseif n >= 1e3 then
-		return string.format("%.1fK", n / 1e3)
-	end
-	return tostring(n)
+	return NumberFormat.Num(math.max(0, n))
 end
 
 local function ensureFolder(): Folder
