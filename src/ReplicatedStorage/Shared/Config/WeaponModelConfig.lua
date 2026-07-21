@@ -104,6 +104,7 @@ local WeaponModelConfig = {
 		iconInvert: one-bit inventory flip after tip-up (QA once per mesh).
 		Old Sword: tip-up from Tool.Grip is correct — do NOT invert (was true → looked upside-down).
 	]]
+	-- DF_* authored +Y tip / origin grip — default bake is fine.
 	HiltOverrides = {
 		IronSword = { iconInvert = false },
 		RubySword = { iconInvert = true },
@@ -117,7 +118,30 @@ local WeaponModelConfig = {
 			hiltBias = 0.98,
 			iconInvert = true,
 		},
+		-- Dark Forest set (inventory tip-up QA)
+		DF_StarterStick = { iconInvert = false },
+		DF_MossRust = { iconInvert = false },
+		DF_BoneThorn = { iconInvert = false },
+		DF_RootMace = { iconInvert = false },
+		DF_Twinleaf = { iconInvert = false },
+		DF_SpiritBranch = { iconInvert = false },
+		DF_Amberheart = { iconInvert = false },
+		DF_CanopyFang = { iconInvert = false },
+		DF_UmbralBough = { iconInvert = false },
 	} :: { [string]: HiltOverride },
+
+	-- Optional recolor if Place mesh is grey after FBX import (not used for multi-part DF builds).
+	MaterialLooks = {
+		DF_StarterStick = { color = Color3.fromRGB(90, 65, 48), material = Enum.Material.Wood },
+		DF_MossRust = { color = Color3.fromRGB(55, 60, 68), material = Enum.Material.Metal },
+		DF_BoneThorn = { color = Color3.fromRGB(200, 185, 150), material = Enum.Material.SmoothPlastic },
+		DF_RootMace = { color = Color3.fromRGB(70, 50, 35), material = Enum.Material.Wood },
+		DF_Twinleaf = { color = Color3.fromRGB(120, 128, 135), material = Enum.Material.Metal },
+		DF_SpiritBranch = { color = Color3.fromRGB(90, 230, 140), material = Enum.Material.Neon },
+		DF_Amberheart = { color = Color3.fromRGB(220, 130, 40), material = Enum.Material.Neon },
+		DF_CanopyFang = { color = Color3.fromRGB(100, 140, 90), material = Enum.Material.Metal },
+		DF_UmbralBough = { color = Color3.fromRGB(100, 65, 160), material = Enum.Material.Neon },
+	} :: { [string]: { color: Color3, material: Enum.Material } },
 
 	PalmOffsetRight = Vector3.new(0.04, 0.08, 0.04),
 	PalmOffsetLeft = Vector3.new(-0.04, 0.08, 0.04),
