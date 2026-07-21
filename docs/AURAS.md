@@ -23,13 +23,29 @@ Combat: `Formulas.GetAuraPct` → total power.
 
 ## Place folder
 
-`ReplicatedStorage.AuraVfx` models named:
+`ReplicatedStorage.AuraVfx` — **active templates** (names must match `AuraModelConfig`):
 
-`Spark`, `Foliage`, `WolfMist`, `ShadowRing`, `Flame`, `GuardianWings`, `Rift`
+| Name | Role | Source (free Creator Store, test) |
+|------|------|-----------------------------------|
+| Spark | yellow RNG spark aura | Magic Particle VFX Pack |
+| Foliage | green toxic/nature aura | Magic Aura Pack Premium |
+| WolfMist | snow/mist | Magic Aura Pack |
+| ShadowRing | dark aura | Magic Aura Pack DarkRoger |
+| Flame | big fire particles | Magic Aura Pack RainbFlame |
+| GuardianWings | white wing FX | Magic Aura Pack WhiteWings |
+| Rift | purple energy | Magic Aura Pack Purp |
 
-Missing → procedural ring + particles (still works).
+Also kept for browsing: `AuraVfx/_SourcePacks/`  
+- Axoie's Auras and VFX Pack  
+- Magic Aura Pack  
+- Yona VFX Pack  
+- Blue Orb VFX  
+- Magic Particle Pack  
+- Angelic Wings  
 
-Map: `AuraModelConfig.ModelByAuraId`.
+**Save Place** after any AuraVfx change.
+
+Missing template → procedural ring + particles.
 
 ## DEV
 
@@ -38,4 +54,5 @@ Map: `AuraModelConfig.ModelByAuraId`.
 
 ## Replace art later
 
-Drop new mesh/VFX into `AuraVfx` with **same name** → no code change.
+Drop better mesh/VFX into `AuraVfx` with **same name** → no code change.  
+Paid packs: buy → insert → rename to Spark/Flame/…

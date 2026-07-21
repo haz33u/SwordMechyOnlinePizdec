@@ -8,8 +8,8 @@ export type AttachMode = "hrp" | "feet" | "back"
 
 local AuraModelConfig = {
 	FolderName = "AuraVfx",
-	-- Mesh auras normalized like pets
-	TargetExtent = 3.5,
+	-- Mesh auras normalized (particle auras often small parts + big FX)
+	TargetExtent = 4.0,
 	TargetExtentMinFactor = 0.04,
 	TargetExtentMaxFactor = 20,
 

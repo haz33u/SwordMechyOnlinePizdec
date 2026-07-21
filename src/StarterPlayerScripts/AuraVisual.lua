@@ -38,7 +38,12 @@ local function sanitize(root: Instance)
 			d.Massless = true
 			d.Anchored = false
 			d.CastShadow = false
-		elseif d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("ForceField") then
+		elseif d:IsA("ParticleEmitter") or d:IsA("Beam") or d:IsA("Trail") or d:IsA("Fire") or d:IsA("Smoke") then
+			-- keep HQ pack VFX alive
+			pcall(function()
+				(d :: any).Enabled = true
+			end)
+		elseif d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("ForceField") or d:IsA("Camera") then
 			d:Destroy()
 		end
 	end
