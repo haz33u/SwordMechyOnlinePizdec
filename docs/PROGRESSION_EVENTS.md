@@ -1,6 +1,6 @@
 # Progression walls + future events (design)
 
-Status: **design** — not all wired. Parked world effects: `docs/ref/cristalix/captures/effects_parked/`.  
+Status: **design** — not all wired. Parked world effects: `docs/ref/balance/captures/effects_parked/`.  
 HUD boost pills exist; `profile.boosts` backend still TODO.
 
 ---

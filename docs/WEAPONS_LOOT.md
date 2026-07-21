@@ -1,7 +1,7 @@
 # Мечи, редкости, дроп (все локации)
 
-> **Статус цифр:** реконструкция / скелет под Cristalix-like loop.  
-> Не HUD-дамп Cristalix. Тюнить: `WeaponConfig.LOCATION_BASE`, `RARITY_REL`, `LocationProgression`, `TierRarityWeights`.
+> **Статус цифр:** реконструкция / скелет под reference game-like loop.  
+> Не HUD-дамп reference game. Тюнить: `WeaponConfig.LOCATION_BASE`, `RARITY_REL`, `LocationProgression`, `TierRarityWeights`.
 
 ---
 
@@ -29,7 +29,7 @@ Common → Uncommon → Rare → Epic → Legendary → Mythic → Secret → Li
 | Common–Rare | trash / normal | фарм, ban-list мусора |
 | Epic–Legendary | normal+ / elite / boss | основной прогресс локации |
 | Mythic | elite (редко) / boss | chase |
-| Secret | elite (крохи) / boss | lottery flex (как Secret на Cristalix) |
+| Secret | elite (крохи) / boss | lottery flex (как Secret на reference game) |
 | **Limited** | ивент / сезон / спец-выдача | **не дроп** + красивые эффекты |
 
 Цвета UI: `StarterPlayerScripts/Rarity.lua` (Limited = hot pink).

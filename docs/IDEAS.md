@@ -44,15 +44,17 @@ Capture product ideas here so they are not lost. Implementation only when picked
 
 ---
 
-## Quest NPCs (Cristalix-style)
+## Quest NPCs (compact number)
 
 | NPC | Chain | Status |
 |-----|-------|--------|
 | **Sam** | 21 click quests → CPS 6–20 | LIVE |
 | **Frost** | 21 pet-case opens → luck + pet slot @ 10K | LIVE |
-| (more) | kill / power tracks per loc | expand later |
+| **Grim** | 21 kill-any → permanent +% Power (50K @ step 7) | LIVE |
 
 **Balance lock:** case-open **luck** rises with Frost, but **each new location still makes good weapon/pet rolls harder** (loc rarity squeeze). Luck softens grind; it does not flatten LocN loot.
+
+**Grim** pushes **spawn rate** value (Swarm anomaly / future paid fast respawn).
 
 **Multi-open:** x3/x5 gamepass should count **3/5** progress per request when multi-open ships.
 

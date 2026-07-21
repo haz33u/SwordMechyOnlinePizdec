@@ -1077,8 +1077,23 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		table.sort(list, function(a, b)
 			local da = QuestConfig.Get(a.id)
 			local db = QuestConfig.Get(b.id)
-			local pa = if da and da.chain == "sam" then 0 elseif da and da.chain == "frost" then 1 else 2
-			local pb = if db and db.chain == "sam" then 0 elseif db and db.chain == "frost" then 1 else 2
+			local function chainPri(d: any): number
+				if not d or not d.chain then
+					return 9
+				end
+				if d.chain == "sam" then
+					return 0
+				end
+				if d.chain == "frost" then
+					return 1
+				end
+				if d.chain == "grim" then
+					return 2
+				end
+				return 5
+			end
+			local pa = chainPri(da)
+			local pb = chainPri(db)
 			if pa ~= pb then
 				return pa < pb
 			end
@@ -1089,6 +1104,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		end)
 		local samDone, samTotal = QuestConfig.GetSamProgress(profile)
 		local frostDone, frostTotal = QuestConfig.GetFrostProgress(profile)
+		local grimDone, grimTotal = QuestConfig.GetGrimProgress(profile)
 		local order = 0
 		for _, entry in ipairs(list) do
 			local id = entry.id
@@ -1105,6 +1121,10 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				if (def.chainIndex or 1) > frostDone + 1 then
 					showRow = false
 				end
+			elseif def and def.chain == "grim" then
+				if (def.chainIndex or 1) > grimDone + 1 then
+					showRow = false
+				end
 			end
 			if showRow then
 			local name = (def and def.name) or id
@@ -1112,6 +1132,8 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				name = string.format("Sam · %s  (%d/%d)", name, def.chainIndex or 0, samTotal)
 			elseif def and def.chain == "frost" then
 				name = string.format("Frost · %s  (%d/%d)", name, def.chainIndex or 0, frostTotal)
+			elseif def and def.chain == "grim" then
+				name = string.format("Grim · %s  (%d/%d)", name, def.chainIndex or 0, grimTotal)
 			end
 			local desc = (def and def.description) or ""
 			local amount = (def and def.amount) or 1

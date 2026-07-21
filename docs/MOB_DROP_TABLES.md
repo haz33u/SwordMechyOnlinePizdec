@@ -1,4 +1,4 @@
-# Таблицы дропа мобов (по скринам Cristalix)
+# Таблицы дропа мобов (по скринам reference game)
 
 Источник: HUD «Возможная награда» (mob1 / mob2 / mob3) — **проценты на килл, сумма ≈ 100%**  
 → в нашем порте: **1 меч за убийство**, редкость по весам; Limited **не** падает.
@@ -96,7 +96,7 @@ Epic+ веса × `highRarityMult`, затем **нормализация к 100
 ## Inspect UI
 
 **Shift + ПКМ** по модели моба (`Workspace.Mobs`)  
-→ `GetMobDropInfo` → панель с % как на Cristalix + иконки из `IconConfig`.
+→ `GetMobDropInfo` → панель с % как на reference game + иконки из `IconConfig`.
 
 ---
 

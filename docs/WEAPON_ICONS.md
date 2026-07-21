@@ -16,7 +16,7 @@
 3. "?" placeholder
 ```
 
-**Not used:** `LegacyWeaponAssetIds` (old Cristalix dump art).  
+**Not used:** `LegacyWeaponAssetIds` (old balance dump art).  
 Those looked like “stubs” next to real Toolbox meshes — kept only as archive.
 
 When you upload a **new** 512² icon, put it in `WeaponAssetIds`.  

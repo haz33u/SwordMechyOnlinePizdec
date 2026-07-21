@@ -18,7 +18,8 @@ export type QuestDef = {
 		unlockLocation: number?,
 		samCpsTier: number?, -- set profile.samClickTier to this on claim
 		frostTier: number?, -- Frost case-open chain tier
-		luckPct: number?, -- permanent +% luck (points, same scale as enchant luck)
+		grimTier: number?, -- Grim kill-any chain tier
+		luckPct: number?, -- permanent luck points
 		petSlots: number?, -- +N equip pet slots (quest path)
 	},
 	location: number,
@@ -35,6 +36,10 @@ local QuestConfig = {
 	FROST_CHAIN = "frost",
 	FROST_COUNT = 21,
 	FROST_NPC = "Frost",
+
+	GRIM_CHAIN = "grim",
+	GRIM_COUNT = 21,
+	GRIM_NPC = "Grim",
 
 	-- Display click targets (step 3 = 5K, step 21 = 2B)
 	SAM_CLICK_AMOUNTS = {
@@ -428,5 +433,143 @@ function QuestConfig.GetFrostProgress(profile: any): (number, number)
 	return claimed, QuestConfig.FROST_COUNT
 end
 
+----------------------------------------------------------------------
+-- Grim — kill any mobs. Step 7 = 50K (screenshot). Rewards +% power.
+-- Motivates faster respawn / Swarm anomaly / AFK farm.
+----------------------------------------------------------------------
+QuestConfig.GRIM_KILL_AMOUNTS = {
+	1_000,
+	2_500,
+	5_000,
+	10_000,
+	20_000,
+	35_000,
+	50_000, -- step 7 — dump-like
+	80_000,
+	120_000,
+	200_000,
+	350_000,
+	500_000,
+	750_000,
+	1_200_000,
+	2_000_000,
+	3_500_000,
+	6_000_000,
+	10_000_000,
+	15_000_000,
+	25_000_000,
+	40_000_000,
+} :: { number }
+
+QuestConfig.GRIM_COIN_REWARDS = {
+	3_000,
+	6_000,
+	12_000,
+	25_000,
+	50_000,
+	100_000,
+	200_000,
+	400_000,
+	800_000,
+	1_500_000,
+	3_000_000,
+	6_000_000,
+	12_000_000,
+	25_000_000,
+	50_000_000,
+	100_000_000,
+	200_000_000,
+	400_000_000,
+	700_000_000,
+	1_000_000_000,
+	1_500_000_000,
+} :: { number }
+
+-- Permanent power % (same pool as other quest powerPct)
+QuestConfig.GRIM_POWER_PCT = {
+	1,
+	1,
+	1,
+	1,
+	2,
+	1,
+	2, -- 7
+	1,
+	2,
+	2, -- 10
+	1,
+	2,
+	2,
+	2,
+	3, -- 15
+	2,
+	3,
+	2,
+	3,
+	3,
+	5, -- 21 mastery
+} :: { number }
+
+do
+	local amounts = QuestConfig.GRIM_KILL_AMOUNTS
+	local coins = QuestConfig.GRIM_COIN_REWARDS
+	local powers = QuestConfig.GRIM_POWER_PCT
+	for i = 1, QuestConfig.GRIM_COUNT do
+		local id = string.format("Q_GRIM_%02d", i)
+		local need = amounts[i] or 1000
+		local coinR = coins[i] or 5_000
+		local pPct = powers[i] or 1
+		local extra = if i == 21 then " · SLAYER MASTER" else string.format(" · +%g%% Power", pPct)
+		QuestConfig.Quests[id] = {
+			id = id,
+			name = "Kill Any Mobs",
+			description = string.format("Grim (%d/21): kill %s mobs (any)%s", i, tostring(need), extra),
+			type = "kill",
+			targetId = "any",
+			amount = need,
+			rewards = {
+				coins = coinR,
+				powerPct = pPct,
+				grimTier = i,
+			},
+			location = 1,
+			chain = QuestConfig.GRIM_CHAIN,
+			chainIndex = i,
+			npc = QuestConfig.GRIM_NPC,
+		}
+	end
+end
+
+function QuestConfig.GrimId(index: number): string
+	return string.format("Q_GRIM_%02d", index)
+end
+
+function QuestConfig.GetActiveGrimQuestId(profile: any): string?
+	if not profile or not profile.quests then
+		return nil
+	end
+	for i = 1, QuestConfig.GRIM_COUNT do
+		local id = QuestConfig.GrimId(i)
+		local state = profile.quests[id]
+		if state and not state.claimed then
+			return id
+		end
+	end
+	return nil
+end
+
+function QuestConfig.GetGrimProgress(profile: any): (number, number)
+	local claimed = 0
+	for i = 1, QuestConfig.GRIM_COUNT do
+		local id = QuestConfig.GrimId(i)
+		local state = profile.quests and profile.quests[id]
+		if state and state.claimed then
+			claimed += 1
+		end
+	end
+	return claimed, QuestConfig.GRIM_COUNT
+end
+
 return QuestConfig
+
 

@@ -1200,7 +1200,7 @@ function Inventory.Bind(
 
 				-- Icon priority (pro hybrid — see docs/WEAPON_ICONS.md):
 				--   1) live 3D if mesh  2) NEW authored 2D only  3) "?"
-				-- Legacy Cristalix dump art is NOT used (looks like wrong stubs).
+				-- Legacy balance dump art is NOT used (looks like wrong stubs).
 				local usedIcon = false
 				local hasMesh = false
 				pcall(function()

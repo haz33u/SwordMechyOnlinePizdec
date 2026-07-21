@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Cristalix-style compact numbers for Loc2 Billions → Loc25 Qdt and beyond.
+	compact number compact numbers for Loc2 Billions → Loc25 Qdt and beyond.
 
 	Thresholds: every 1e3 steps a new suffix.
 	Named ladder (index i → 10^(3*i)):

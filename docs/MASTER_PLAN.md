@@ -4,7 +4,7 @@
 > Repo: https://github.com/haz33u/SwordMechyOnlinePizdec  
 > Place: «Искусство меча онлайн» (Team Create + Rojo)  
 > Icons: `docs/FIGMA_PROMPTS.md`  
-> Cristalix dumps: `docs/ref/cristalix/DUMP_CATALOG.md` (+ `captures/`)  
+> balance dumps: `docs/ref/balance/DUMP_CATALOG.md` (+ `captures/`)  
 > **World effects (eclipse/darkness/blast): PARKED — catalog only, no code yet.**  
 > Loc1+Loc2 dump balance applied in configs (see DUMP_CATALOG).  
 > **LOCALE LOCK: English only** for every player-facing string (UI labels, buttons, Notify toasts, case result, configs shown to player). Comments in code may be RU/EN; **never ship RU text to players.**  
@@ -22,14 +22,14 @@
 
 ## 1. Что это за игра
 
-**Roblox-порт** мини-игры Cristalix **«Мастера Мечей» / Sword Masters** (#sao vibe):
+**Roblox-порт** мини-игры reference game **«Мастера Мечей» / Sword Masters** (#sao vibe):
 
 - Кликай по мобам → урон → киллы → **монеты + сила + мечи**
 - Мечи main + offhand (50%), чары, петы, ауры, rebirth
 - Локации по силе, босс у «портала» → дальше
 - **Без доната** в скелете (одна soft-валюта Coins + enchant dust)
 
-**Не 1:1 Cristalix:** таблицы реконструированы (скриншоты + логика), не HUD-дамп.
+**Не 1:1 reference game:** таблицы реконструированы (скриншоты + логика), не HUD-дамп.
 
 ---
 
@@ -92,7 +92,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 
 ### Мечи / лут
 - [x] Каталог мечей Loc1–4 (60 id, rarity до Secret + Limited)
-- [x] Дроп Cristalix-style: simple / medium / hard / boss
+- [x] Дроп compact number: simple / medium / hard / boss
 - [x] Loc2+ high-tier squeeze
 - [x] Main + offhand, sell, enchant, ban drop
 - [x] **Enchant dust** с босса (2–5), респавн босса **10 мин**
@@ -109,7 +109,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 
 ### UI (SCREEENS + INVETAR inventory 2026-07-18…19)
 - [x] GameUI: HUD, windows, modals — **repo-only**, no dual StarterGui
-- [x] Theme charcoal + blue CTA + red close (SCREEENS / Cristalix-like)
+- [x] Theme charcoal + blue CTA + red close (SCREEENS / reference game-like)
 - [x] **Pixel / Minecraft-like fonts** — `Theme.Fonts` = `Enum.Font.Arcade` (Title/Body/Num/Ui). Whole UIKit labels/buttons pick this up.
 - [x] HUD: boosts top-left · **large** coins/power bottom bar (~380–560×112)  
   - Balance: **4 separate chips** in a row — Rebirth icon · Coins card · Power card · Inventory icon (not one merged rectangle)  
@@ -173,7 +173,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | Wings (equip cosmetic + % ) | **idea parked** — see §11 |
 | Сезоны / топы / банды / BP | нет |
 | Донат R$ wire | Gamepasses wired (IDs in GamePassConfig); DEBUG_FREE_PAID=false |
-| Точный Cristalix HP/coins | playtest-скейл |
+| Точный reference game HP/coins | playtest-скейл |
 | Босс unlock Loc2 квест «у портала» | частично Q3_Boss |
 | Dual-wield отдельные анимки L/R | один AttackMain |
 | DataStore prod-ready | skeleton |
@@ -197,7 +197,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | P3 | Leaderboard / full BP economy / Wings | meta | stable core |
 | P4 | DataStore versioning, anti-cheat, soft launch | skeleton | soft launch |
 
-**Already shipped (do not re-do):** clicks/CPS/rebirth dual-cost · upgrades · weapons drop/enchant/ban · case keys + CaseResult · pet slots 3→7 + paid offhand · Loc1 quests skeleton · cristalix lang dump · **INVETAR inventory shell** · **gamepass donate shop + auto unlock** · case open no-dim center result.
+**Already shipped (do not re-do):** clicks/CPS/rebirth dual-cost · upgrades · weapons drop/enchant/ban · case keys + CaseResult · pet slots 3→7 + paid offhand · Loc1 quests skeleton · reference game lang dump · **INVETAR inventory shell** · **gamepass donate shop + auto unlock** · case open no-dim center result.
 
 ---
 
@@ -252,7 +252,7 @@ Do not start BP implementation until inventory Figma pass is testable.
 3. Donat R$ (если решите)  
 4. Soft launch  
 
-**Не сейчас:** правый Cristalix bind-list, gangs, full R$ shop, Loc5+, Wings implementation.
+**Не сейчас:** правый reference game bind-list, gangs, full R$ shop, Loc5+, Wings implementation.
 
 ---
 
@@ -263,7 +263,7 @@ Do not start BP implementation until inventory Figma pass is testable.
 | **Этот файл** | Сводка + roadmap |
 | `CORE_SYSTEMS.md` | Loop, формулы |
 | `WEAPONS_LOOT.md` | Мечи, rarity, power |
-| `MOB_DROP_TABLES.md` | % дропа Cristalix |
+| `MOB_DROP_TABLES.md` | % дропа reference game |
 | `BACKEND_API.md` | Remotes |
 | `UI_BRIEF_FOR_STUDIO_AGENT.md` | UI для агента/друга |
 | `ANIMATIONS.md` | Атаки / grips |
@@ -415,7 +415,7 @@ git add … ; git commit -m "…" ; git pull --rebase ; git push
 ## 10. Principles
 
 1. **Backend truth** in git; Place = map + assets  
-2. Cristalix numbers = reconstruction, tune in playtest  
+2. reference game numbers = reconstruction, tune in playtest  
 3. Loc1 easy → LocN longer (drop squeeze + HP)  
 4. Limited not from mobs  
 5. Boss 10 min respawn — enchant dust is strong  

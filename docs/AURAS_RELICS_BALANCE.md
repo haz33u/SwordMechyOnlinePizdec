@@ -10,7 +10,7 @@
 
 ## Auras (dump L1)
 
-- Full catalog: `AuraConfig` + `docs/ref/cristalix/captures/auras_dump/`.
+- Full catalog: `AuraConfig` + `docs/ref/balance/captures/auras_dump/`.
 - **1 active** aura.
 - **Upgrade** with coins → max **Lv10** (`LEVEL_STAT_BONUS = 12%` of base per level).
 - Crit / multicrit from aura feed `Formulas.GetCritChance` / `GetMultiCritChance`.
@@ -26,7 +26,7 @@ Example L1 peak mythic: Bone Aura **+100% power +100% damage** (before level).
 
 Stars: +20% of base per star, max 5. Coin upgrade via `UpgradeRelic`.
 
-Bands (designed, not Cristalix dump):
+Bands (designed, not balance dump):
 
 | Band | When | Example power% each (0★) |
 |------|------|---------------------------|

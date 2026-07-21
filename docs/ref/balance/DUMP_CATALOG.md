@@ -1,10 +1,10 @@
-# Cristalix dump catalog (player screenshots)
+# balance dump catalog (player screenshots)
 
 > Source folders (2026-07-19):  
 > `C:\Users\thisi\Downloads\1я локация`  
 > `C:\Users\thisi\Downloads\2я локаци я`  
 > `C:\Users\thisi\Downloads\Эффекты`  
-> Local copies: `docs/ref/cristalix/captures/`  
+> Local copies: `docs/ref/balance/captures/`  
 > **Effects: PARKED — know they exist, do not implement yet.**
 
 ---

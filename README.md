@@ -39,7 +39,7 @@ rojo serve
 
 | Файл | Зачем |
 |------|--------|
-| **[docs/UI_BRIEF_FOR_STUDIO_AGENT.md](docs/UI_BRIEF_FOR_STUDIO_AGENT.md)** | **Бриф UI (Cristalix) — для Studio Agent** |
+| **[docs/UI_BRIEF_FOR_STUDIO_AGENT.md](docs/UI_BRIEF_FOR_STUDIO_AGENT.md)** | **Бриф UI (reference game) — для Studio Agent** |
 | [docs/BACKEND_API.md](docs/BACKEND_API.md) | Remotes для UI |
 | [docs/STUDIO_AGENT.md](docs/STUDIO_AGENT.md) | Как стыковать Studio Agent |
 | [docs/COLLAB.md](docs/COLLAB.md) | Git + друг |

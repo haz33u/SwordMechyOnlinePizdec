@@ -35,5 +35,5 @@ Until they say that, **always commit and push** finished work (including docs ru
 | Doc | Use |
 |-----|-----|
 | `docs/MASTER_PLAN.md` | Living roadmap — read every request |
-| `docs/ref/cristalix/DUMP_CATALOG.md` | Loc1/Loc2 dump balance |
+| `docs/ref/balance/DUMP_CATALOG.md` | Loc1/Loc2 dump balance |
 | `docs/COLLAB.md` | Git + Studio / Team Create |

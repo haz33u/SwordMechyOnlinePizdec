@@ -1,7 +1,7 @@
 --!strict
 --[[
-	WEAPON CATALOG — Loc1 + Loc2 ONLY, 1:1 from Cristalix dumps.
-	Source: docs/ref/cristalix/DUMP_CATALOG.md (player screenshots).
+	WEAPON CATALOG — Loc1 + Loc2 ONLY, 1:1 from balance dumps.
+	Source: docs/ref/balance/DUMP_CATALOG.md (player screenshots).
 
 	Сила = absolute powerMult (pure number, not %).
 	No filler / Loc3 / Loc4 / Limited skeletons.
@@ -11,7 +11,7 @@ export type WeaponDef = {
 	id: string,
 	name: string,
 	rarity: string,
-	powerMult: number, -- Cristalix "Сила" at L1
+	powerMult: number, -- reference game "Сила" at L1
 	location: number,
 	sellPrice: number,
 	iconKey: string?,

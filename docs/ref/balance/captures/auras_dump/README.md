@@ -1,4 +1,4 @@
-# Aura dump (Cristalix screenshots 2026-07-21)
+# Aura dump (reference game screenshots 2026-07-21)
 
 34 tooltips at **level 1**. Applied in `AuraConfig.lua` (English names, exact %).
 

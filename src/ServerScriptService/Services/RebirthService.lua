@@ -42,7 +42,7 @@ function RebirthService.Try(player: Player): boolean
 		return false
 	end
 
-	-- Cristalix: wipe damage progress + balance; keep weapons/pets/locations
+	-- reference game: wipe damage progress + balance; keep weapons/pets/locations
 	if coinCost > 0 then
 		profile.coins = coins - coinCost
 	end

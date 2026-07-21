@@ -1,7 +1,7 @@
-# UI BRIEF — Sword Masters (Cristalix-style)  
+# UI BRIEF — Sword Masters (compact number)  
 ## Для Roblox Studio Agent + художников UI
 
-**Язык UI:** русский (как на Cristalix).  
+**Язык UI:** русский (как на reference game).  
 **Стиль:** тёмный RPG / SAO-sim — полупрозрачные панели, чёткая иерархия, крупные цифры силы, без «детского симулятора».  
 **Backend уже есть.** UI **не** считает геймплей сам — только показывает `ProfileUpdate` / `GetProfile` и шлёт remotes.
 
@@ -9,7 +9,7 @@
 
 # 1. СУТЬ ЗАМЫСЛА (1 абзац)
 
-Игрок — **мастер меча**: кликает (или включает автокликер), убивает мобов на локациях, копит **силу** и **монеты**, прокачивает персонажа, надевает **мечи** (две руки), **питомцев**, **ауры**, **реликвии**, делает **перерождения**, ходит в **подземелья** и закрывает **квесты**. UI должен ощущаться как **клиент мини-игры Cristalix**: постоянный HUD боя + модальные окна прогресса, инвентаря и карты, без перегруза одним экраном.
+Игрок — **мастер меча**: кликает (или включает автокликер), убивает мобов на локациях, копит **силу** и **монеты**, прокачивает персонажа, надевает **мечи** (две руки), **питомцев**, **ауры**, **реликвии**, делает **перерождения**, ходит в **подземелья** и закрывает **квесты**. UI должен ощущаться как **клиент мини-игры reference game**: постоянный HUD боя + модальные окна прогресса, инвентаря и карты, без перегруза одним экраном.
 
 ---
 
@@ -18,7 +18,7 @@
 1. **HUD всегда на экране** во время фарма (сила, CPS, монеты, клики, авто).  
 2. **Окна по запросу** (кнопки на HUD / hotkeys) — не всё сразу.  
 3. **Одно модальное окно поверх** (или вкладки внутри одного shell) — не 10 окон друг на друге.  
-4. **Крупные числа:** сила, CPS, DPS, монеты — как на Cristalix (K / M / B).  
+4. **Крупные числа:** сила, CPS, DPS, монеты — как на reference game (K / M / B).  
 5. **Обратная связь:** toast/notify при дропе, квесте, rebirth, ошибке.  
 6. **Клиент не читерит:** только remotes из backend.  
 7. **Адаптив:** Scale на ScreenGui, якоря по краям (как в MM — инфо слева/сверху, слоты снизу/справа).
@@ -108,7 +108,7 @@
 
 ## A1. HUD (постоянный)
 
-**Раскладка (Cristalix-like):**
+**Раскладка (reference game-like):**
 
 ```
 ┌─ TOP BAR ─────────────────────────────────────────────┐
@@ -343,7 +343,7 @@ Buttons:
 
 ---
 
-# 7. ВИЗУАЛЬНЫЙ СТИЛЬ (Cristalix vibe)
+# 7. ВИЗУАЛЬНЫЙ СТИЛЬ (reference game vibe)
 
 | Элемент | Рекомендация |
 |---------|----------------|
@@ -355,7 +355,7 @@ Buttons:
 | Анимации | Tween open 0.15s, hover scale 1.02 |
 | Не | Яркий rainbow UI, огромный текст «FREE ROBUX» |
 
-Референс-ощущение: **панель мини-игры Cristalix + SAO HUD**, не Pet Simulator.
+Референс-ощущение: **панель мини-игры reference game + SAO HUD**, не Pet Simulator.
 
 ---
 
@@ -434,12 +434,12 @@ StarterGui
 # 11. ПРОМПТ ДЛЯ STUDIO AGENT (скопировать целиком)
 
 ```
-You are building the CLIENT UI only for a Roblox game "Sword Masters" (Cristalix minigame style).
+You are building the CLIENT UI only for a Roblox game "Sword Masters" (reference game minigame style).
 
 BACKEND is already implemented. Do NOT rewrite ServerScriptService or ReplicatedStorage.Shared.
 Use remotes under ReplicatedStorage.Remotes (created at runtime by server).
 
-GOAL: Cristalix-like dark RPG UI in Russian.
+GOAL: reference game-like dark RPG UI in Russian.
 
 ALWAYS ON:
 - HUD: Power (Сила), CPS, DPS, Coins (Монеты), total Clicks, Location name, Rebirth level + mult, Auto-clicker toggle, dock buttons.

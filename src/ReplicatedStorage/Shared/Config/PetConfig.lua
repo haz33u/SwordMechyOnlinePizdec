@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Pets — Loc1 + Loc2 1:1 from Cristalix dumps only.
+	Pets — Loc1 + Loc2 1:1 from balance dumps only.
 
 	Мощь = pure powerMult (x1.1, x4.5, x290…) — NOT stored as %.
 	caseWeight = dump drop % for that case pool.
@@ -11,7 +11,7 @@ export type PetDef = {
 	id: string,
 	name: string,
 	rarity: string,
-	powerMult: number, -- Cristalix "Мощь xN" pure (combat)
+	powerMult: number, -- reference game "Мощь xN" pure (combat)
 	coinMult: number?, -- pure, default 1
 	speedMult: number?, -- pure, default 1
 	-- UI-compat only (Inventory/CaseOpening still read these; combat ignores)

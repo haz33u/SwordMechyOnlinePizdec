@@ -1,4 +1,4 @@
-# Cristalix reference dumps
+# reference game reference dumps
 
 ## Primary catalog
 **→ [DUMP_CATALOG.md](./DUMP_CATALOG.md)** — full Loc1 + Loc2 + effects inventory from player screenshots.
@@ -13,7 +13,7 @@
 Key READMEs: `loc1_case2_offhand/`, `loc1_case_donate/`, `loc2_case_pets/`, `loc2_case_donate/`, `loc2_weapons/`, `loc2_mobs/`, `effects_parked/`
 
 ## Client lang (katana minigame)
-From `~/.cristalix` zstd cache — UI keys only, not server formulas:
+From `~/.reference game` zstd cache — UI keys only, not server formulas:
 - `katana_lang_*.json`, `katana_keys.txt`, `katana_balance_kv.txt`, …
 
 ## Effects (know only — parked)

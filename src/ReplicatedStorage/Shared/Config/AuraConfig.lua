@@ -1,11 +1,11 @@
 --!strict
 --[[
-	Auras — Cristalix dump (player screenshots 2026-07-21), English display names.
+	Auras — balance dump (player screenshots 2026-07-21), English display names.
 	Stats below are LEVEL 1 exact dump values.
 	Upgrade: each level multiplies power/damage/coin by LEVEL_STAT_BONUS (crit scales slower).
 
 	Dump drop % used as roll weights (sum ≈ 100%).
-	Sources: docs/ref/cristalix/captures/auras_dump/
+	Sources: docs/ref/balance/captures/auras_dump/
 ]]
 
 export type AuraDef = {

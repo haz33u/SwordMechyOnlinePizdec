@@ -16,7 +16,7 @@
 Sum of chances ≈ **100%**.
 
 ## Mapping
-- Cristalix `Мощь xN` → `powerMult = N`, `powerPct = (N-1)*100` for Formulas.
+- reference game `Мощь xN` → `powerMult = N`, `powerPct = (N-1)*100` for Formulas.
 - `coinPct` not on tooltips — small soft values scaled with power tier.
 - Feed base cost **500** (Loc1 coin scale).
 - Case: `CaseConfig.PET_COIN_COST = 500`, `PET_KEY_COST = 0`.

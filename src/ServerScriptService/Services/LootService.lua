@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Weapon drops — Cristalix-style absolute tables (simple/medium/hard/boss).
+	Weapon drops — compact number absolute tables (simple/medium/hard/boss).
 
 	Per kill (non-debug):
 	  1) roll drop chance (≈100% for combat tiers)
@@ -283,7 +283,7 @@ function LootService.BuildMobInspect(mobDef: any, profile: any?): any?
 	local petKeyChance = (CaseConfig.PetKeyChance[keyTier] or 0) * 100
 	local auraKeyChance = (CaseConfig.AuraKeyChance[keyTier] or 0) * 100
 
-	-- Kill ETA from equipped gear (Cristalix-style "kill time")
+	-- Kill ETA from equipped gear (compact number "kill time")
 	local hits, seconds, dmgAvg, yourPower, cps = 0, 0, 0, 0, 0
 	if profile then
 		hits, seconds, dmgAvg, yourPower, cps =

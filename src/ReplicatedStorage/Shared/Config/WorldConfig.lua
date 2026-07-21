@@ -20,7 +20,7 @@ export type WorldLocationMeta = {
 	theme: string,
 	unlockPower: number, -- soft recommend (0 = ignore)
 	unlockRebirth: number?, -- min rebirthLevel to unlock (Loc2 = 2)
-	travelCostCoins: number?, -- one-time buy (Cristalix Loc2 = 500K)
+	travelCostCoins: number?, -- one-time buy (reference game Loc2 = 500K)
 	coinMult: number,
 	powerMult: number,
 	--[[

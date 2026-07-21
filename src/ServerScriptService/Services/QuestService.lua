@@ -122,6 +122,16 @@ function QuestService.Claim(player: Player, questId: string)
 			return
 		end
 	end
+	if def.chain == QuestConfig.GRIM_CHAIN then
+		local active = QuestConfig.GetActiveGrimQuestId(profile)
+		if active ~= questId then
+			Remotes.Event("Notify"):FireClient(player, {
+				text = "Finish earlier Grim quests first",
+				color = "red",
+			})
+			return
+		end
+	end
 
 	state.claimed = true
 	local r = def.rewards
@@ -180,6 +190,18 @@ function QuestService.Claim(player: Player, questId: string)
 				"Frost (%d/21) ✓  ·  luck +%g",
 				r.frostTier,
 				r.luckPct or 0
+			)
+		end
+	end
+	if r.grimTier and r.grimTier > 0 then
+		profile.grimKillTier = math.max(profile.grimKillTier or 0, r.grimTier)
+		if r.grimTier >= 21 then
+			note = string.format("Grim Mastery ✓  ·  +%g%% Power permanent", r.powerPct or 0)
+		else
+			note = string.format(
+				"Grim (%d/21) ✓  ·  +%g%% Power permanent",
+				r.grimTier,
+				r.powerPct or 0
 			)
 		end
 	end

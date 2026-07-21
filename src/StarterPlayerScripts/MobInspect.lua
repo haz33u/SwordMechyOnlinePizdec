@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Shift + Right Click on a mob → Cristalix-style drop table panel.
+	Shift + Right Click on a mob → compact number drop table panel.
 ]]
 
 local Players = game:GetService("Players")
@@ -148,7 +148,7 @@ local function show(data: any)
 		makeLabel(body, data.description, 13, Theme.TextMuted, false)
 	end
 
-	-- Cristalix-style kill time from YOUR equipped sword + CPS
+	-- compact number kill time from YOUR equipped sword + CPS
 	local c = data.combat
 	if c then
 		makeLabel(body, "Your combat stats", 16, Color3.fromRGB(120, 200, 255), true)

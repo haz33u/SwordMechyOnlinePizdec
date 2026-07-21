@@ -7,7 +7,7 @@
 	  2) Authored pro 2D only if WeaponAssetIds[id] non-empty (NEW renders)
 	  3) "?"
 
-	LegacyWeaponAssetIds = ARCHIVE only (old Cristalix dumps).
+	LegacyWeaponAssetIds = ARCHIVE only (old balance dumps).
 	Do NOT feed them into the bag — they look like wrong "stubs" vs current meshes.
 ]]
 

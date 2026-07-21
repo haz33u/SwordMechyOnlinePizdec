@@ -1,6 +1,6 @@
 # План иконок: мечи + обводки редкости
 
-> Цель: единый «Cristalix / SAO-lite» вид, читается в инвентаре 64–128px,  
+> Цель: единый «reference game / SAO-lite» вид, читается в инвентаре 64–128px,  
 > масштабируется на 60 мечей × Loc + pets/auras позже.  
 > **Слои разделены:** `frame` (редкость) + `item` (меч) + опционально `fx` (Secret/Limited).
 
@@ -48,7 +48,7 @@ ImageLabel Frame  (Image = rbxassetid rarity frame, ScaleType Fit)
 | Фон frame | transparent center, ornament only on rim |
 | Ракурс меча | **3/4 чуть сверху**, клинок **вверх-вправо ~1–2 часа**, рукоять низ-лево |
 | Силуэт | читается в 32px (squint test) |
-| Стиль | **anime game inventory icon** (SAO / Cristalix vibe): clean cel-shade, sharp silhouette, **не** мультяшный «овощной»/casual UI, **не** фото |
+| Стиль | **anime game inventory icon** (SAO / reference game vibe): clean cel-shade, sharp silhouette, **не** мультяшный «овощной»/casual UI, **не** фото |
 | Обводка меча | тонкий dark rim 2–3% canvas для отделения от любого UI-фона |
 | Текст | **запрещён** на иконках |
 | Отступы item | 12–15% padding от края (место под frame) |

@@ -1,4 +1,4 @@
-# Big number format (Cristalix-style)
+# Big number format (compact number)
 
 Module: `ReplicatedStorage.Shared.NumberFormat`  
 Client: `Format.Num` → same ladder.  

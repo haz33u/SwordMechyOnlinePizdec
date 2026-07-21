@@ -1,6 +1,6 @@
-# Loc1 stats from Cristalix dumps (player folder «Мечи статы»)
+# Loc1 stats from balance dumps (player folder «Мечи статы»)
 
-Source images copied as `cap_01`…`cap_12`. Applied in game `0.5.6-loc1-cristalix-stats`.
+Source images copied as `cap_01`…`cap_12`. Applied in game `0.5.6-loc1-reference game-stats`.
 
 ## Weapons (tooltip)
 
@@ -39,7 +39,7 @@ Extra Loc1 fillers (not on screenshots): U1/U2, R2, L2, M2, S2, X1 Limited.
 ```
 TotalPower ≈ (BASE_POWER + lifetimePower) × weaponMult × rebirth × (1+%)
 BASE_POWER = 250
-weaponMult = Cristalix «Сила» on main (+ 0.5× offhand if unlocked)
+weaponMult = reference game «Сила» on main (+ 0.5× offhand if unlocked)
 dmg/hit avg = power × (1 − crit + 2×crit)
 hits = ceil(HP / (dmg − armor))
 seconds = hits / CPS

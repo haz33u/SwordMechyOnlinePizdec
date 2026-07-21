@@ -349,14 +349,24 @@ function ProfileService.AddQuestProgress(profile: any, questType: string, target
 		if not state.completed and not state.claimed then
 			local def = QuestConfig.Get(id)
 			if def and def.type == questType then
-				local targetOk = true
-				if def.targetId and targetId and def.targetId ~= targetId and def.targetId ~= "any" then
-					targetOk = false
+				local allow = true
+				-- Sequential chains: only the active step receives progress
+				if def.chain == "grim" then
+					allow = QuestConfig.GetActiveGrimQuestId(profile) == id
+				elseif def.chain == "sam" or def.chain == "frost" then
+					-- handled by OnClick / OnCaseOpen
+					allow = false
 				end
-				if targetOk then
-					state.progress = math.min(def.amount, state.progress + amount)
-					if state.progress >= def.amount then
-						state.completed = true
+				if allow then
+					local targetOk = true
+					if def.targetId and targetId and def.targetId ~= targetId and def.targetId ~= "any" then
+						targetOk = false
+					end
+					if targetOk then
+						state.progress = math.min(def.amount, state.progress + amount)
+						if state.progress >= def.amount then
+							state.completed = true
+						end
 					end
 				end
 			end

@@ -5,7 +5,7 @@
 ```
 WeaponModels has mesh for weaponId?
   YES → ViewportFrame 3D (WeaponModels.TryFillInventoryIcon)
-        fail → "?" glyph (not legacy Cristalix PNG)
+        fail → "?" glyph (not legacy reference game PNG)
   NO  → IconConfig Decal / FallbackWeapon
 ```
 
@@ -84,7 +84,7 @@ WeaponAssetIds = {
 | **D. Fallback** | Пустой id → `FallbackWeapon` generic | временно |
 
 Рекомендация для **новых 6 free-мечей**:  
-старые Loc1 иконки в IconConfig **уже есть** (Cristalix-style арт).  
+старые Loc1 иконки в IconConfig **уже есть** (compact number арт).  
 Если хочешь иконку **точно как free mesh** — сделай скрин каждого из `WeaponModels` и перезапиши id.
 
 Имя файла удобно = weaponId: `starter_weapon.png`, `old_sword.png`, …
