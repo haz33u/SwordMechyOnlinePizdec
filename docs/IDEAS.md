@@ -48,9 +48,11 @@ Capture product ideas here so they are not lost. Implementation only when picked
 
 | NPC | Chain | Status |
 |-----|-------|--------|
-| **Sam** | 21 click quests → CPS 6–20 | LIVE |
-| **Frost** | 21 pet-case opens → luck + pet slot @ 10K | LIVE |
-| **Grim** | 21 kill-any → permanent +% Power (50K @ step 7) | LIVE |
+| **Click Quester** (ids `sam`) | 21 click quests → CPS 6–20 | LIVE |
+| **Case Quester** (ids `frost`) | 21 pet-case opens → luck + pet slot @ 10K | LIVE |
+| **Power Quester** (ids `grim`) | 21 kill-any → permanent +% Power (50K @ step 7) | LIVE |
+
+Display names are temporary; replace with real NPC names later.
 
 **Balance lock:** case-open **luck** rises with Frost, but **each new location still makes good weapon/pet rolls harder** (loc rarity squeeze). Luck softens grind; it does not flatten LocN loot.
 

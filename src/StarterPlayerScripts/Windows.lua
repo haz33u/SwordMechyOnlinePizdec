@@ -1129,11 +1129,11 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 			if showRow then
 			local name = (def and def.name) or id
 			if def and def.chain == "sam" then
-				name = string.format("Sam · %s  (%d/%d)", name, def.chainIndex or 0, samTotal)
+				name = string.format("%s · %s  (%d/%d)", QuestConfig.SAM_NPC, name, def.chainIndex or 0, samTotal)
 			elseif def and def.chain == "frost" then
-				name = string.format("Frost · %s  (%d/%d)", name, def.chainIndex or 0, frostTotal)
+				name = string.format("%s · %s  (%d/%d)", QuestConfig.FROST_NPC, name, def.chainIndex or 0, frostTotal)
 			elseif def and def.chain == "grim" then
-				name = string.format("Grim · %s  (%d/%d)", name, def.chainIndex or 0, grimTotal)
+				name = string.format("%s · %s  (%d/%d)", QuestConfig.GRIM_NPC, name, def.chainIndex or 0, grimTotal)
 			end
 			local desc = (def and def.description) or ""
 			local amount = (def and def.amount) or 1

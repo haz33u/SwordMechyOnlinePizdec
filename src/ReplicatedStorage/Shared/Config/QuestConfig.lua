@@ -31,15 +31,14 @@ export type QuestDef = {
 local QuestConfig = {
 	SAM_CHAIN = "sam",
 	SAM_COUNT = 21,
-	SAM_NPC = "Sam",
-
+	-- Display labels (swap to real NPC names later)
+	SAM_NPC = "Click Quester",
 	FROST_CHAIN = "frost",
 	FROST_COUNT = 21,
-	FROST_NPC = "Frost",
-
+	FROST_NPC = "Case Quester",
 	GRIM_CHAIN = "grim",
 	GRIM_COUNT = 21,
-	GRIM_NPC = "Grim",
+	GRIM_NPC = "Power Quester",
 
 	-- Display click targets (step 3 = 5K, step 21 = 2B)
 	SAM_CLICK_AMOUNTS = {
@@ -210,9 +209,9 @@ do
 		local descExtra = if i == 21 then " · MASTER 20 CPS" else " · raises attack speed (CPS)"
 		QuestConfig.Quests[id] = {
 			id = id,
-			name = "Click.. Click.. More Clicks!",
+			name = "More Clicks!",
 			description = string.format(
-				"Sam (%d/21): land %s clicks%s",
+				"Click Quester (%d/21): land %s clicks%s",
 				i,
 				tostring(need),
 				descExtra
@@ -381,7 +380,7 @@ do
 			id = id,
 			name = "Open Pet Cases",
 			description = string.format(
-				"Frost (%d/21): open %s pet cases (any location)%s",
+				"Case Quester (%d/21): open %s pet cases (any location)%s",
 				i,
 				tostring(need),
 				extra
@@ -523,7 +522,7 @@ do
 		QuestConfig.Quests[id] = {
 			id = id,
 			name = "Kill Any Mobs",
-			description = string.format("Grim (%d/21): kill %s mobs (any)%s", i, tostring(need), extra),
+			description = string.format("Power Quester (%d/21): kill %s mobs (any)%s", i, tostring(need), extra),
 			type = "kill",
 			targetId = "any",
 			amount = need,

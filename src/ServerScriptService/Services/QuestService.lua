@@ -106,7 +106,7 @@ function QuestService.Claim(player: Player, questId: string)
 		local active = QuestConfig.GetActiveSamQuestId(profile)
 		if active ~= questId then
 			Remotes.Event("Notify"):FireClient(player, {
-				text = "Finish earlier Sam quests first",
+				text = "Finish earlier Click Quester steps first",
 				color = "red",
 			})
 			return
@@ -116,7 +116,7 @@ function QuestService.Claim(player: Player, questId: string)
 		local active = QuestConfig.GetActiveFrostQuestId(profile)
 		if active ~= questId then
 			Remotes.Event("Notify"):FireClient(player, {
-				text = "Finish earlier Frost quests first",
+				text = "Finish earlier Case Quester steps first",
 				color = "red",
 			})
 			return
@@ -126,7 +126,7 @@ function QuestService.Claim(player: Player, questId: string)
 		local active = QuestConfig.GetActiveGrimQuestId(profile)
 		if active ~= questId then
 			Remotes.Event("Notify"):FireClient(player, {
-				text = "Finish earlier Grim quests first",
+				text = "Finish earlier Power Quester steps first",
 				color = "red",
 			})
 			return
@@ -172,10 +172,10 @@ function QuestService.Claim(player: Player, questId: string)
 		profile.samClickTier = math.max(profile.samClickTier or 0, r.samCpsTier)
 		local cps = ClickConfig.GetSamCpsCap(profile)
 		if r.samCpsTier >= 21 then
-			note = string.format("Sam Mastery ✓  ·  %d CPS unlocked!", cps)
+			note = string.format("Click Quester Mastery ✓  ·  %d CPS unlocked!", cps)
 		else
 			note = string.format(
-				"Sam (%d/21) ✓  ·  CPS cap %d",
+				"Click Quester (%d/21) ✓  ·  CPS cap %d",
 				r.samCpsTier,
 				cps
 			)
@@ -184,10 +184,10 @@ function QuestService.Claim(player: Player, questId: string)
 	if r.frostTier and r.frostTier > 0 then
 		profile.frostCaseTier = math.max(profile.frostCaseTier or 0, r.frostTier)
 		if r.frostTier >= 21 then
-			note = "Frost Mastery ✓  ·  case luck complete!"
+			note = "Case Quester Mastery ✓  ·  case luck complete!"
 		elseif not (r.petSlots and r.petSlots > 0) then
 			note = string.format(
-				"Frost (%d/21) ✓  ·  luck +%g",
+				"Case Quester (%d/21) ✓  ·  luck +%g",
 				r.frostTier,
 				r.luckPct or 0
 			)
@@ -196,10 +196,10 @@ function QuestService.Claim(player: Player, questId: string)
 	if r.grimTier and r.grimTier > 0 then
 		profile.grimKillTier = math.max(profile.grimKillTier or 0, r.grimTier)
 		if r.grimTier >= 21 then
-			note = string.format("Grim Mastery ✓  ·  +%g%% Power permanent", r.powerPct or 0)
+			note = string.format("Power Quester Mastery ✓  ·  +%g%% Power permanent", r.powerPct or 0)
 		else
 			note = string.format(
-				"Grim (%d/21) ✓  ·  +%g%% Power permanent",
+				"Power Quester (%d/21) ✓  ·  +%g%% Power permanent",
 				r.grimTier,
 				r.powerPct or 0
 			)
