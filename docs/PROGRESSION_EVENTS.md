@@ -99,16 +99,19 @@ Not stale if: **visual theme rotates weekly** (forest / sea / frost / void) and 
 
 ## 3. Anomalies (global / per-server events)
 
-**Cadence (your idea, tightened):**
+**Status: LIVE (Pool A + light Pool B).**  
+Code: `AnomalyConfig` · `AnomalyService` · `Formulas.GetActiveAnomaly` · HUD banner.
+
+**Cadence:**
 
 ```
-Every 30–40 min (default 35):
-  roll 1 anomaly from pool
-  active 8–12 min (default 10)
-  5 min rest or next roll immediately after end (no stack of 3 at once)
+Every 35 min (DEBUG: 3 min cycle, 60s active, first after 45s):
+  roll 1 anomaly
+  active 10 min (DEBUG 60s)
+  quiet rest of cycle
 ```
 
-HUD: top-left boost pills (`profile.boosts` / world event bus) — already planned.
+Dev: `DebugCommand` action `forceAnomaly` (optional id string, 120s).
 
 ### Pool A — economy / farm (safe, frequent)
 

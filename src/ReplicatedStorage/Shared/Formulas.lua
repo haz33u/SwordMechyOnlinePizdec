@@ -3,6 +3,8 @@
 	All combat / power math in one place.
 ]]
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local GameConfig = require(script.Parent.Config.GameConfig)
 local RebirthConfig = require(script.Parent.Config.RebirthConfig)
 local UpgradeConfig = require(script.Parent.Config.UpgradeConfig)
@@ -13,8 +15,49 @@ local RelicConfig = require(script.Parent.Config.RelicConfig)
 local EnchantConfig = require(script.Parent.Config.EnchantConfig)
 local ClickConfig = require(script.Parent.Config.ClickConfig)
 local ProgressConfig = require(script.Parent.Config.ProgressConfig)
+local AnomalyConfig = require(script.Parent.Config.AnomalyConfig)
 
 local Formulas = {}
+
+export type AnomalyRuntime = {
+	id: string,
+	name: string,
+	endsAt: number,
+	mods: any,
+	hud: { [string]: number }?,
+}
+
+--- Active global anomaly from ReplicatedStorage.WorldState (server writes, all read).
+function Formulas.GetActiveAnomaly(): AnomalyRuntime?
+	local folder = ReplicatedStorage:FindFirstChild(AnomalyConfig.WORLD_FOLDER)
+	if not folder then
+		return nil
+	end
+	local id = folder:GetAttribute(AnomalyConfig.ATTR_ID)
+	if type(id) ~= "string" or id == "" then
+		return nil
+	end
+	local endsAt = folder:GetAttribute(AnomalyConfig.ATTR_ENDS)
+	if type(endsAt) ~= "number" or endsAt <= os.time() then
+		return nil
+	end
+	local def = AnomalyConfig.Get(id)
+	if not def then
+		return nil
+	end
+	return {
+		id = def.id,
+		name = def.name,
+		endsAt = endsAt,
+		mods = def.mods or {},
+		hud = def.hud,
+	}
+end
+
+function Formulas.GetAnomalyMods(): any
+	local a = Formulas.GetActiveAnomaly()
+	return if a then a.mods else {}
+end
 
 local function sumEnchantStat(enchants: { any }, stat: string): number
 	local total = 0
@@ -224,8 +267,9 @@ function Formulas.GetTotalPower(profile: any): number
 	local questPowerPct = profile.questPowerPct or 0
 
 	-- Non-dump systems still use % pools (enchants / aura / relic / upgrades / quests)
+	local anom = Formulas.GetAnomalyMods()
 	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct
-	local damagePct = ench.damage + auraD + relicD
+	local damagePct = ench.damage + auraD + relicD + (anom.damagePct or 0)
 
 	local total = base
 		* rebirthMult
@@ -233,6 +277,7 @@ function Formulas.GetTotalPower(profile: any): number
 		* petMult
 		* (1 + powerPct / 100)
 		* (1 + damagePct / 100)
+		* (anom.powerMult or 1)
 
 	return math.max(1, total)
 end
@@ -402,13 +447,43 @@ function Formulas.GetCoinMult(profile: any): number
 			end
 		end
 	end
-	return 1 + (ench.coins + petCoins + auraCoins + relicCoins) / 100
+	local base = 1 + (ench.coins + petCoins + auraCoins + relicCoins) / 100
+	local anom = Formulas.GetAnomalyMods()
+	return base * (anom.coinMult or 1)
 end
 
 function Formulas.GetLuck(profile: any): number
 	local ench = Formulas.GetEnchantPools(profile)
 	local lvl = Formulas.GetUpgradeLevel(profile, "Luck")
-	return lvl * 0.02 + ench.luck / 100
+	local anom = Formulas.GetAnomalyMods()
+	return lvl * 0.02 + ench.luck / 100 + (anom.luckAdd or 0)
+end
+
+--- Multiplier on mob respawn delay (<1 = faster).
+function Formulas.GetAnomalySpawnMult(): number
+	local anom = Formulas.GetAnomalyMods()
+	local m = anom.spawnMult or 1
+	return math.clamp(m, 0.25, 3)
+end
+
+function Formulas.GetAnomalyDropMult(): number
+	local anom = Formulas.GetAnomalyMods()
+	return math.max(0.1, anom.dropMult or 1)
+end
+
+function Formulas.GetAnomalyDustMult(): number
+	local anom = Formulas.GetAnomalyMods()
+	return math.max(0.1, anom.dustMult or 1)
+end
+
+function Formulas.GetAnomalyKeyChanceMult(): number
+	local anom = Formulas.GetAnomalyMods()
+	return math.max(0.1, anom.keyChanceMult or 1)
+end
+
+function Formulas.GetAnomalyMobHpMult(): number
+	local anom = Formulas.GetAnomalyMods()
+	return math.max(0.5, anom.mobHpMult or 1)
 end
 
 function Formulas.GetWalkSpeed(profile: any): number

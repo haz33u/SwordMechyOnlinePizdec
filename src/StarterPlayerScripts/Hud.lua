@@ -7,11 +7,16 @@
 	CPS/DPS/Clicks live in character/profile panel, not here.
 ]]
 
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
 local T = require(script.Parent.Theme)
 local UIKit = require(script.Parent.UIKit)
 local Format = require(script.Parent.Format)
 local Net = require(script.Parent.Net)
 local Layout = require(script.Parent.Layout)
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local Formulas = require(Shared.Formulas)
 
 local Hud = {}
 
@@ -174,6 +179,30 @@ function Hud.Mount(
 	for _, meta in ipairs(BOOST_META) do
 		boostRows[meta.key] = makeBoostRow(meta)
 	end
+
+	-- Active anomaly banner (global)
+	local anomBanner = Instance.new("TextLabel")
+	anomBanner.Name = "AnomalyBanner"
+	anomBanner.BackgroundColor3 = Color3.fromRGB(40, 28, 60)
+	anomBanner.BackgroundTransparency = 0.15
+	anomBanner.BorderSizePixel = 0
+	anomBanner.Size = UDim2.fromOffset(220, 36)
+	anomBanner.Position = UDim2.fromOffset(90, 178)
+	anomBanner.ZIndex = 12
+	anomBanner.Visible = false
+	anomBanner.Font = T.Font.Title
+	anomBanner.TextSize = 12
+	anomBanner.TextColor3 = Color3.fromRGB(255, 230, 160)
+	anomBanner.TextXAlignment = Enum.TextXAlignment.Left
+	anomBanner.TextTruncate = Enum.TextTruncate.AtEnd
+	anomBanner.Text = ""
+	anomBanner.Parent = root
+	UIKit.Corner(anomBanner, T.R.sm)
+	UIKit.Stroke(anomBanner, Color3.fromRGB(180, 120, 255), 1.2, 0.3)
+	local anomPad = Instance.new("UIPadding")
+	anomPad.PaddingLeft = UDim.new(0, 8)
+	anomPad.PaddingRight = UDim.new(0, 8)
+	anomPad.Parent = anomBanner
 
 	---------------------------------------------------------------- BOTTOM-CENTER: 4 separate chips
 	-- SCREEENS / Theme palette (not pure black — matches rail/windows)
@@ -407,6 +436,7 @@ function Hud.Mount(
 		end
 
 		boosts.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad)
+		anomBanner.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad + 168)
 
 		local rowW = math.clamp(m.actionW * 1.1, 520, 780)
 		local pad = m.pad
@@ -481,25 +511,47 @@ function Hud.Mount(
 			alab.TextColor3 = Color3.new(1, 1, 1)
 		end
 
-		-- boosts: profile.boosts = { money = {pct=0.5, scope="local"}, ... }
+		-- boosts: profile.boosts (local potions later) + global anomaly hud
 		local boostsData = (profile and profile.boosts) or {}
+		local anom = Formulas.GetActiveAnomaly()
+		local anomHud = (anom and anom.hud) or {}
 		for _, meta in ipairs(BOOST_META) do
 			local row = boostRows[meta.key]
 			local b = boostsData[meta.key]
-			if type(b) == "table" and type(b.pct) == "number" and b.pct > 0 then
+			local localPct = if type(b) == "table" and type(b.pct) == "number" then b.pct else 0
+			local globalPct = anomHud[meta.key] or 0
+			local totalPct = localPct + globalPct
+			if totalPct ~= 0 then
 				row.Visible = true
 				local pctLab = row:FindFirstChild("Pct")
 				local scopeLab = row:FindFirstChild("Scope")
 				if pctLab and pctLab:IsA("TextLabel") then
-					pctLab.Text = string.format("+%d%%", math.floor(b.pct * 100 + 0.5))
+					local sign = if totalPct >= 0 then "+" else ""
+					pctLab.Text = string.format("%s%d%%", sign, math.floor(totalPct * 100 + (if totalPct >= 0 then 0.5 else -0.5)))
 				end
 				if scopeLab and scopeLab:IsA("TextLabel") then
-					local sc = tostring(b.scope or "local")
-					scopeLab.Text = (sc == "global" or sc == "Global") and "Global" or "Local"
+					if globalPct ~= 0 and localPct ~= 0 then
+						scopeLab.Text = "Both"
+					elseif globalPct ~= 0 then
+						scopeLab.Text = "Global"
+					else
+						local sc = tostring((type(b) == "table" and b.scope) or "local")
+						scopeLab.Text = (sc == "global" or sc == "Global") and "Global" or "Local"
+					end
 				end
 			else
 				row.Visible = false
 			end
+		end
+
+		if anom then
+			local left = math.max(0, anom.endsAt - os.time())
+			local m = math.floor(left / 60)
+			local s = left % 60
+			anomBanner.Visible = true
+			anomBanner.Text = string.format("⚡ %s  %d:%02d", anom.name, m, s)
+		else
+			anomBanner.Visible = false
 		end
 
 		local ready = 0

@@ -18,6 +18,7 @@ local LootService = require(script.Parent.LootService)
 local CombatService = require(script.Parent.CombatService)
 local PetService = require(script.Parent.PetService)
 local AuraService = require(script.Parent.AuraService)
+local AnomalyService = require(script.Parent.AnomalyService)
 
 local DebugService = {}
 
@@ -146,6 +147,16 @@ function DebugService.Run(player: Player, action: string, payload: any)
 			notify(player, "Dev: aura grant failed", "red")
 		end
 		ProfileService.Push(player)
+		return
+	end
+
+	if action == "forceAnomaly" then
+		local id = if type(payload) == "string" then payload else nil
+		if AnomalyService.Force(id, 120) then
+			notify(player, "Dev: anomaly forced " .. tostring(id or "random"), "gold")
+		else
+			notify(player, "Dev: forceAnomaly failed", "red")
+		end
 		return
 	end
 

@@ -6,7 +6,7 @@
 
 local GameConfig = {
 	DISPLAY_NAME = "Sword Masters",
-	VERSION = "0.5.15-front-cone-devtools",
+	VERSION = "0.5.16-anomalies",
 
 	-- combat
 	-- With Loc1 weapon "Сила" as powerMult (1–150), BASE≈250 → starter kills 1K HP goblin in ~4 hits (~2s at 2 CPS)

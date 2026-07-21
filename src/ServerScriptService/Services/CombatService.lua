@@ -287,7 +287,8 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 	end
 
 	mob.alive = false
-	mob.respawnAt = os.clock() + def.respawnSeconds
+	local spawnDelay = def.respawnSeconds * Formulas.GetAnomalySpawnMult()
+	mob.respawnAt = os.clock() + spawnDelay
 	MobVisualService.SetAlive(mob, false)
 
 	if def.isDebug then
@@ -295,10 +296,11 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 			text = "Dummy killed (debug) — respawn",
 			color = "gold",
 		})
-		task.delay(def.respawnSeconds, function()
+		task.delay(spawnDelay, function()
 			if CombatService._mobs[mob.uid] then
-				mob.hp = def.hp
-				mob.maxHp = def.hp
+				local hpM = Formulas.GetAnomalyMobHpMult()
+				mob.hp = def.hp * hpM
+				mob.maxHp = def.hp * hpM
 				mob.alive = true
 				MobVisualService.SetAlive(mob, true)
 			end
@@ -322,10 +324,11 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 		color = "green",
 	})
 
-	task.delay(def.respawnSeconds, function()
+	task.delay(spawnDelay, function()
 		if CombatService._mobs[mob.uid] then
-			mob.hp = def.hp
-			mob.maxHp = def.hp
+			local hpM = Formulas.GetAnomalyMobHpMult()
+			mob.hp = def.hp * hpM
+			mob.maxHp = def.hp * hpM
 			mob.alive = true
 			MobVisualService.SetAlive(mob, true)
 		end

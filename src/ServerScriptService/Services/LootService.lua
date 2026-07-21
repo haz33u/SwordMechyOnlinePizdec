@@ -146,7 +146,8 @@ function LootService.TryWeaponDrop(player: Player, profile: any, mobDef: any)
 	local luck = Formulas.GetLuck(profile)
 	local baseChance = WeaponConfig.GetBaseDropChance(tier, locationId)
 	local scale = mobDef.weaponDropScale or 1
-	local chance = math.clamp(baseChance * scale * (1 + luck * 0.05), 0, 1)
+	local anomDrop = Formulas.GetAnomalyDropMult()
+	local chance = math.clamp(baseChance * scale * (1 + luck * 0.05) * anomDrop, 0, 1)
 
 	if math.random() > chance then
 		return
@@ -188,6 +189,7 @@ function LootService.TryBossDust(player: Player, profile: any, mobDef: any)
 	local minD = WeaponConfig.BossDustMin or 2
 	local maxD = WeaponConfig.BossDustMax or 5
 	local amount = math.random(minD, maxD)
+	amount = math.max(1, math.floor(amount * Formulas.GetAnomalyDustMult() + 0.5))
 	profile.enchantDust = (profile.enchantDust or 0) + amount
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format("Enchant dust +%d (total %d)", amount, profile.enchantDust),
@@ -206,8 +208,9 @@ function LootService.TryCaseKeys(player: Player, profile: any, mobDef: any)
 	end
 
 	local granted = false
+	local keyM = Formulas.GetAnomalyKeyChanceMult()
 
-	local petChance = CaseConfig.PetKeyChance[tier] or 0
+	local petChance = (CaseConfig.PetKeyChance[tier] or 0) * keyM
 	if petChance > 0 and math.random() < petChance then
 		local amount = CaseConfig.RollAmount(CaseConfig.PetKeyAmount, tier)
 		profile.petKeys = (profile.petKeys or 0) + amount
@@ -218,7 +221,7 @@ function LootService.TryCaseKeys(player: Player, profile: any, mobDef: any)
 		})
 	end
 
-	local auraChance = CaseConfig.AuraKeyChance[tier] or 0
+	local auraChance = (CaseConfig.AuraKeyChance[tier] or 0) * keyM
 	if auraChance > 0 and math.random() < auraChance then
 		local amount = CaseConfig.RollAmount(CaseConfig.AuraKeyAmount, tier)
 		profile.auraKeys = (profile.auraKeys or 0) + amount
