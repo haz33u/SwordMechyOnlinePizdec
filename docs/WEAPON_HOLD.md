@@ -73,21 +73,23 @@ Algorithm:
 
 ---
 
-## Loc1 mesh map (2026-07-20)
+## Loc1 mesh map (Dark Forest DF_* — 2026-07-21)
 
-| weaponId | Model.Name | Rarity |
-|----------|------------|--------|
-| starter_weapon | StarterSword | Common |
-| old_sword | IronSword | Common |
-| bone_dagger | PixelIronSword | Common |
-| wooden_mace | GoldSword | Rare |
-| double_edged_sword | RubySword | Epic |
-| forest_spirit_staff | DiamondSword | Epic |
-| ardite | **KawashimaSword** | Legendary |
-| forest_sword | **SupeSport** | Mythic · iconFlip + flipTip |
-| forest_shadow | **LastSword** | Secret |
+See `docs/MESH_STANDARD_LOC1.md` and `art/meshes/loc1_dark_forest/`.
 
-Icon-only flip: `HiltOverrides.IronSword.iconFlip` (old_sword — hand OK).
+| weaponId | Model.Name | Rarity | Legacy fallback (until import) |
+|----------|------------|--------|--------------------------------|
+| starter_weapon | **DF_StarterStick** | Common | StarterSword |
+| old_sword | **DF_MossRust** | Common | IronSword |
+| bone_dagger | **DF_BoneThorn** | Common | PixelIronSword |
+| wooden_mace | **DF_RootMace** | Rare | GoldSword |
+| double_edged_sword | **DF_Twinleaf** | Epic | RubySword |
+| forest_spirit_staff | **DF_SpiritBranch** | Epic | DiamondSword |
+| ardite | **DF_Amberheart** | Legendary | KawashimaSword |
+| forest_sword | **DF_CanopyFang** | Mythic | SupeSport |
+| forest_shadow | **DF_UmbralBough** | Secret | LastSword |
+
+`WeaponModels.GetTemplate` falls back to LegacyModelNames if DF_* is missing in Place.
 
 ## New sword checklist
 

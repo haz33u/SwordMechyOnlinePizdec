@@ -32,16 +32,18 @@ local WeaponModelConfig = {
 	FolderName = "WeaponModels",
 	HiltAttachmentName = "SM_Hilt",
 
+	-- Loc1 Dark Forest meshes (import FBX from art/meshes/loc1_dark_forest into Place).
+	-- Until Place has DF_* models, keep free Toolbox names as runtime fallback via LegacyModelNames.
 	ModelByWeaponId = {
-		starter_weapon = "StarterSword",
-		old_sword = "IronSword",
-		bone_dagger = "PixelIronSword",
-		wooden_mace = "GoldSword",
-		double_edged_sword = "RubySword",
-		forest_spirit_staff = "DiamondSword",
-		ardite = "KawashimaSword",
-		forest_sword = "SupeSport",
-		forest_shadow = "LastSword",
+		starter_weapon = "DF_StarterStick",
+		old_sword = "DF_MossRust",
+		bone_dagger = "DF_BoneThorn",
+		wooden_mace = "DF_RootMace",
+		double_edged_sword = "DF_Twinleaf",
+		forest_spirit_staff = "DF_SpiritBranch",
+		ardite = "DF_Amberheart",
+		forest_sword = "DF_CanopyFang",
+		forest_shadow = "DF_UmbralBough",
 
 		pirate_hook = "",
 		pirate_hammer = "",
@@ -51,6 +53,19 @@ local WeaponModelConfig = {
 		element_blade = "",
 		emerald_blade = "",
 		sea_dagger = "",
+	} :: { [string]: string },
+
+	-- If DF_* missing in Place, WeaponModels may resolve these (optional fallbacks).
+	LegacyModelNames = {
+		DF_StarterStick = "StarterSword",
+		DF_MossRust = "IronSword",
+		DF_BoneThorn = "PixelIronSword",
+		DF_RootMace = "GoldSword",
+		DF_Twinleaf = "RubySword",
+		DF_SpiritBranch = "DiamondSword",
+		DF_Amberheart = "KawashimaSword",
+		DF_CanopyFang = "SupeSport",
+		DF_UmbralBough = "LastSword",
 	} :: { [string]: string },
 
 	-- Hand / world size only (does NOT drive inventory card size)

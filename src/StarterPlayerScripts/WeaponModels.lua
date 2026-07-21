@@ -47,6 +47,17 @@ function WeaponModels.GetTemplate(weaponId: string): Model?
 	if m and m:IsA("Model") then
 		return m
 	end
+	-- Until DF_* meshes are imported into Place, use legacy Toolbox models.
+	local legacy = WeaponModelConfig.LegacyModelNames
+	if type(legacy) == "table" then
+		local alt = legacy[modelName]
+		if type(alt) == "string" and alt ~= "" then
+			local m2 = folder:FindFirstChild(alt)
+			if m2 and m2:IsA("Model") then
+				return m2
+			end
+		end
+	end
 	return nil
 end
 
