@@ -65,6 +65,8 @@ function DebugService.Run(player: Player, action: string, payload: any)
 		notify(player, "Profile & Rebirths reset to 0!", "gold")
 		return
 	end
+
+	if action == "giveCoins" then
 		local n = 100_000
 		if type(payload) == "number" then
 			n = math.clamp(math.floor(payload), 1, 1e12)
