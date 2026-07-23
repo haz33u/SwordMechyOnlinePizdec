@@ -61,12 +61,12 @@ function Net.MergeWeapon(uid: string)
 	Net.Event("MergeWeapon"):FireServer(uid)
 end
 
-function Net.OpenPetCase(poolId: string?)
-	Net.Event("OpenPetCase"):FireServer(poolId)
+function Net.OpenPetCase(poolId: string?, count: number?)
+	Net.Event("OpenPetCase"):FireServer(poolId, count or 1)
 end
 
-function Net.OpenAuraCase()
-	Net.Event("OpenAuraCase"):FireServer()
+function Net.OpenAuraCase(count: number?)
+	Net.Event("OpenAuraCase"):FireServer(count or 1)
 end
 
 function Net.EquipPet(uid: string)

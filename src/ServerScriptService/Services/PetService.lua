@@ -10,8 +10,8 @@ local ProfileService = require(script.Parent.ProfileService)
 local PetService = {}
 
 function PetService.Init()
-	Remotes.Event("OpenPetCase").OnServerEvent:Connect(function(player, poolId)
-		PetService.OpenCase(player, poolId)
+	Remotes.Event("OpenPetCase").OnServerEvent:Connect(function(player, poolId, count)
+		PetService.OpenCase(player, poolId, count)
 	end)
 	Remotes.Event("EquipPet").OnServerEvent:Connect(function(player, petUid)
 		PetService.Equip(player, petUid)
@@ -58,74 +58,79 @@ local function removeFromTeam(profile: any, petUid: string)
 	end
 end
 
-function PetService.OpenCase(player: Player, poolIdArg: any?)
+function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?)
+	local count = math.clamp(math.floor(tonumber(countArg) or 1), 1, 5)
+	if count ~= 1 and count ~= 3 and count ~= 5 then
+		count = 1
+	end
+
 	local profile = ProfileService.Get(player)
 	if not profile then
 		return
+	end
+
+	if count == 3 then
+		local ok3 = (profile.unlocks and profile.unlocks.openChest3 == true) or ProgressConfig.DEBUG_FREE_PAID
+		if not ok3 then
+			Remotes.Event("Notify"):FireClient(player, { text = "Unlock Open 3x GamePass first", color = "red" })
+			fireCaseFail(player, "gamepass_required")
+			return
+		end
+	elseif count == 5 then
+		local ok5 = (profile.unlocks and profile.unlocks.openChest5 == true) or ProgressConfig.DEBUG_FREE_PAID
+		if not ok5 then
+			Remotes.Event("Notify"):FireClient(player, { text = "Unlock Open 5x GamePass first", color = "red" })
+			fireCaseFail(player, "gamepass_required")
+			return
+		end
 	end
 
 	local loc = profile.currentLocation or 1
 	local poolId = PetConfig.GetDefaultPoolId(loc)
 	if type(poolIdArg) == "string" and PetConfig.IsValidPool(poolIdArg) then
 		local meta = PetConfig.CasePools[poolIdArg]
-		-- only allow pools for current location (or loc1 while on 1)
 		if meta and (meta.location or 1) <= math.max(loc, 1) then
 			poolId = poolIdArg
 		end
 	end
 
-	local coinCost, keyCost = PetConfig.GetCaseCosts(poolId)
-	if coinCost == 0 and keyCost == 0 then
-		keyCost = CaseConfig.PET_KEY_COST or 0
-		coinCost = CaseConfig.PET_COIN_COST or PetConfig.OPEN_COST or 0
+	local singleCoinCost, singleKeyCost = PetConfig.GetCaseCosts(poolId)
+	if singleCoinCost == 0 and singleKeyCost == 0 then
+		singleKeyCost = CaseConfig.PET_KEY_COST or 0
+		singleCoinCost = CaseConfig.PET_COIN_COST or PetConfig.OPEN_COST or 0
 	end
+
+	local keyCost = singleKeyCost * count
+	local coinCost = singleCoinCost * count
+
 	local keys = profile.petKeys or 0
 	local coins = profile.coins or 0
 
 	local needKeys = keyCost > 0 and keys < keyCost
 	local needCoins = coinCost > 0 and coins < coinCost
-	if keyCost > 0 and coinCost > 0 then
-		if needKeys then
-			Remotes.Event("Notify"):FireClient(player, {
-				text = string.format("Need %d pet key(s) (have %d)", keyCost, keys),
-				color = "red",
-			})
-			fireCaseFail(player, "need_keys", keyCost, coinCost)
-			return
-		end
-		if needCoins then
-			Remotes.Event("Notify"):FireClient(player, {
-				text = "Need " .. tostring(coinCost) .. " coins",
-				color = "red",
-			})
-			fireCaseFail(player, "need_coins", keyCost, coinCost)
-			return
-		end
-	elseif keyCost > 0 then
-		if needKeys then
-			Remotes.Event("Notify"):FireClient(player, {
-				text = string.format("Need %d pet key(s) (have %d)", keyCost, keys),
-				color = "red",
-			})
-			fireCaseFail(player, "need_keys", keyCost, coinCost)
-			return
-		end
-	elseif coinCost > 0 then
-		if needCoins then
-			Remotes.Event("Notify"):FireClient(player, {
-				text = "Need " .. tostring(coinCost) .. " coins for pet case",
-				color = "red",
-			})
-			fireCaseFail(player, "need_coins", keyCost, coinCost)
-			return
-		end
+
+	if needKeys then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Need %d pet key(s) (have %d)", keyCost, keys),
+			color = "red",
+		})
+		fireCaseFail(player, "need_keys", keyCost, coinCost)
+		return
+	end
+	if needCoins then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = "Need " .. tostring(coinCost) .. " coins for pet case",
+			color = "red",
+		})
+		fireCaseFail(player, "need_coins", keyCost, coinCost)
+		return
 	end
 
 	local Formulas = require(Shared.Formulas)
 	local maxOwned = Formulas.GetPetBagCap(profile)
-	if #(profile.pets or {}) >= maxOwned then
+	if #(profile.pets or {}) + count > maxOwned then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = string.format("Pet bag full (%d) — upgrade Backpack", maxOwned),
+			text = string.format("Pet bag full (need %d slots) — upgrade Backpack", count),
 			color = "red",
 		})
 		fireCaseFail(player, "bag_full", keyCost, coinCost)
@@ -139,52 +144,68 @@ function PetService.OpenCase(player: Player, poolIdArg: any?)
 		profile.coins = coins - coinCost
 	end
 
-	local petId = PetConfig.RollFromPool(poolId)
-	for _ = 1, 5 do
-		if not (profile.bannedPetIds and profile.bannedPetIds[petId]) then
-			break
+	local rolledItems = {}
+	profile.pets = profile.pets or {}
+
+	for _ = 1, count do
+		local petId = PetConfig.RollFromPool(poolId)
+		for _b = 1, 5 do
+			if not (profile.bannedPetIds and profile.bannedPetIds[petId]) then
+				break
+			end
+			petId = PetConfig.RollFromPool(poolId)
 		end
-		petId = PetConfig.RollFromPool(poolId)
+
+		local puid = ProfileService.NewUid()
+		table.insert(profile.pets, {
+			uid = puid,
+			id = petId,
+			level = 1,
+			enchants = {},
+		})
+
+		local def = PetConfig.Get(petId)
+		local name = def and def.name or petId
+		local rarity = def and def.rarity or "Common"
+		local powerMult = if def then PetConfig.GetPowerMult(def) else 1
+		local powerPct = (powerMult - 1) * 100
+
+		table.insert(rolledItems, {
+			id = petId,
+			uid = puid,
+			name = name,
+			rarity = rarity,
+			powerMult = powerMult,
+			powerPct = powerPct,
+			coinPct = 0,
+		})
 	end
 
-	local puid = ProfileService.NewUid()
-	profile.pets = profile.pets or {}
-	table.insert(profile.pets, {
-		uid = puid,
-		id = petId,
-		level = 1,
-		enchants = {},
-	})
+	local QuestService = require(script.Parent.QuestService)
+	QuestService.OnEvent(player, "case_open", count)
+	ProfileService.Push(player)
 
-	local def = PetConfig.Get(petId)
-	local name = def and def.name or petId
-	local rarity = def and def.rarity or "Common"
-	local powerMult = if def then PetConfig.GetPowerMult(def) else 1
-	local powerPct = (powerMult - 1) * 100
-
+	local first = rolledItems[1]
 	Remotes.Event("CaseResult"):FireClient(player, {
 		kind = "pet",
 		success = true,
-		id = petId,
-		uid = puid,
-		name = name,
-		rarity = rarity,
-		powerMult = powerMult,
-		powerPct = powerPct,
+		count = count,
+		items = rolledItems,
+		id = first.id,
+		uid = first.uid,
+		name = first.name,
+		rarity = first.rarity,
+		powerMult = first.powerMult,
+		powerPct = first.powerPct,
 		coinPct = 0,
 		keysLeft = profile.petKeys,
 		location = loc,
 		casePool = poolId,
 	})
-
-	-- Frost quest: each open counts 1 (multi x3/x5 should pass count when wired)
-	local QuestService = require(script.Parent.QuestService)
-	QuestService.OnCaseOpen(profile, "pet", 1)
-
 	profile.petTeam = profile.petTeam or {}
 	PetService.SyncSlots(profile)
-	if #profile.petTeam < (profile.petSlots or 3) then
-		table.insert(profile.petTeam, puid)
+	if #profile.petTeam < (profile.petSlots or 3) and first then
+		table.insert(profile.petTeam, first.uid)
 	end
 	ProfileService.Push(player)
 end

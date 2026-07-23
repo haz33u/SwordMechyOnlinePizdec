@@ -414,6 +414,10 @@ function CaseOpening.Mount(gui: ScreenGui, store: any, toastApi: any?)
 		if kind ~= "pet" and kind ~= "aura" then
 			kind = "pet"
 		end
+		local openCount = math.clamp(math.floor(tonumber(payload and payload.count) or 1), 1, 5)
+		if openCount ~= 1 and openCount ~= 3 and openCount ~= 5 then
+			openCount = 1
+		end
 		local petPoolId: string? = if payload and type(payload.poolId) == "string" then payload.poolId else nil
 
 		local profile = store:PeekProfile()
@@ -422,16 +426,19 @@ function CaseOpening.Mount(gui: ScreenGui, store: any, toastApi: any?)
 		local keys = if kind == "aura"
 			then ((stats and stats.auraKeys) or (profile and profile.auraKeys) or 0)
 			else ((stats and stats.petKeys) or (profile and profile.petKeys) or 0)
-		local keyCost = 0
-		local coinCost = 0
+		local singleKeyCost = 0
+		local singleCoinCost = 0
 		if kind == "aura" then
-			keyCost = CaseConfig.AURA_KEY_COST or 1
-			coinCost = CaseConfig.AURA_COIN_COST or 0
+			singleKeyCost = CaseConfig.AURA_KEY_COST or 1
+			singleCoinCost = CaseConfig.AURA_COIN_COST or 0
 		else
 			local pid = petPoolId or PetConfig.GetDefaultPoolId(loc)
-			coinCost, keyCost = PetConfig.GetCaseCosts(pid)
+			singleCoinCost, singleKeyCost = PetConfig.GetCaseCosts(pid)
 			petPoolId = pid
 		end
+
+		local keyCost = singleKeyCost * openCount
+		local coinCost = singleCoinCost * openCount
 		local coins = (stats and stats.coins) or (profile and profile.coins) or 0
 
 		if keyCost > 0 and keys < keyCost then
@@ -443,8 +450,8 @@ function CaseOpening.Mount(gui: ScreenGui, store: any, toastApi: any?)
 
 		local pool = if kind == "aura" then auraPool() else petPool(petPoolId, loc)
 		local caseName = if kind == "aura"
-			then "Aura Case"
-			else string.format("Pet Case (%s)", tostring(petPoolId or "loc1_500"))
+			then string.format("Aura Case (x%d)", openCount)
+			else string.format("Pet Case x%d (%s)", openCount, tostring(petPoolId or "loc1_500"))
 		local before = if kind == "aura"
 			then uidSet(profile and profile.auras, "uid")
 			else uidSet(profile and profile.pets, "uid")
@@ -505,9 +512,9 @@ function CaseOpening.Mount(gui: ScreenGui, store: any, toastApi: any?)
 			end)
 
 			if kind == "aura" then
-				Net.OpenAuraCase()
+				Net.OpenAuraCase(openCount)
 			else
-				Net.OpenPetCase(petPoolId)
+				Net.OpenPetCase(petPoolId, openCount)
 			end
 
 			local t0 = os.clock()

@@ -1504,16 +1504,32 @@ function Inventory.Bind(
 				emptySlot(scroll, i)
 			end
 			local row = actionsRow()
+			local unlocks = profile and profile.unlocks or {}
+			local debugFree = ProgressConfig.DEBUG_FREE_PAID == true
+			local hasChest3 = debugFree or (unlocks.openChest3 == true)
+			local hasChest5 = debugFree or (unlocks.openChest5 == true)
+
 			keybind(row, 1, "LMB", "Equip")
-			keybind(row, 2, "RMB", "Feed")
-			actBtn(row, "Case 500", Color3.fromRGB(0, 90, 80), 3, function()
-				openModal("case", { kind = "pet", poolId = "loc1_500" })
+			actBtn(row, "Case 1x", Color3.fromRGB(0, 90, 80), 3, function()
+				openModal("case", { kind = "pet", count = 1 })
 			end)
-			actBtn(row, "Case 50K", Color3.fromRGB(0, 70, 100), 4, function()
-				openModal("case", { kind = "pet", poolId = "loc1_50k" })
+			actBtn(row, hasChest3 and "Case 3x" or "Case 3x 🔒", Color3.fromRGB(0, 80, 110), 3.5, function()
+				if hasChest3 then
+					openModal("case", { kind = "pet", count = 3 })
+				else
+					local pass = GamePassConfig.Get("openChest3")
+					if pass then Net.PromptGamePass(pass.gamePassId) end
+				end
+			end)
+			actBtn(row, hasChest5 and "Case 5x" or "Case 5x 🔒", Color3.fromRGB(0, 70, 130), 4, function()
+				if hasChest5 then
+					openModal("case", { kind = "pet", count = 5 })
+				else
+					local pass = GamePassConfig.Get("openChest5")
+					if pass then Net.PromptGamePass(pass.gamePassId) end
+				end
 			end)
 			actBtn(row, "Sell selected", Color3.fromRGB(120, 50, 40), 5, function()
-				-- sell last hovered team interaction: use first bag pet if none
 				local uid = selectedPetUid
 				if not uid and pets[1] then
 					uid = pets[1].uid
@@ -1599,6 +1615,11 @@ function Inventory.Bind(
 				emptySlot(scroll, i)
 			end
 			local row = actionsRow()
+			local unlocks = profile and profile.unlocks or {}
+			local debugFree = ProgressConfig.DEBUG_FREE_PAID == true
+			local hasChest3 = debugFree or (unlocks.openChest3 == true)
+			local hasChest5 = debugFree or (unlocks.openChest5 == true)
+
 			keybind(row, 1, "LMB", "Equip")
 			actBtn(row, "Upgrade", Color3.fromRGB(50, 90, 120), 2, function()
 				local uid = selectedAuraUid or profile.equippedAura
@@ -1606,8 +1627,24 @@ function Inventory.Bind(
 					Net.UpgradeAura(uid)
 				end
 			end)
-			actBtn(row, "Open case", Color3.fromRGB(80, 50, 120), 3, function()
-				openModal("case", { kind = "aura" })
+			actBtn(row, "Case 1x", Color3.fromRGB(80, 50, 120), 3, function()
+				openModal("case", { kind = "aura", count = 1 })
+			end)
+			actBtn(row, hasChest3 and "Case 3x" or "Case 3x 🔒", Color3.fromRGB(90, 50, 140), 3.5, function()
+				if hasChest3 then
+					openModal("case", { kind = "aura", count = 3 })
+				else
+					local pass = GamePassConfig.Get("openChest3")
+					if pass then Net.PromptGamePass(pass.gamePassId) end
+				end
+			end)
+			actBtn(row, hasChest5 and "Case 5x" or "Case 5x 🔒", Color3.fromRGB(100, 50, 160), 4, function()
+				if hasChest5 then
+					openModal("case", { kind = "aura", count = 5 })
+				else
+					local pass = GamePassConfig.Get("openChest5")
+					if pass then Net.PromptGamePass(pass.gamePassId) end
+				end
 			end)
 			actBtn(row, "Unequip", Color3.fromRGB(90, 50, 50), 4, function()
 				Net.UnequipAura()
