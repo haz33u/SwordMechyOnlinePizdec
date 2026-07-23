@@ -376,7 +376,7 @@ local function makeProcedural(auraId: string, def: any?): Model
 		orb.Name = "Orb_" .. i
 		orb.Shape = Enum.PartType.Ball
 		orb.Size = Vector3.new(0.65, 0.65, 0.65)
-		orb.Color = (i % 2 == 1) and theme.mainColor else theme.secColor
+		orb.Color = if (i % 2 == 1) then theme.mainColor else theme.secColor
 		orb.Material = Enum.Material.Neon
 		orb.CanCollide = false
 		orb.Massless = true
