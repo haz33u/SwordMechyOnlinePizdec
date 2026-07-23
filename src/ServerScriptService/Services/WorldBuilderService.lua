@@ -190,4 +190,52 @@ function WorldBuilderService.Init()
 	print("[WorldBuilder] Dark Goblin Forest procedural scaffold successfully built!")
 end
 
+function WorldBuilderService.GenerateStudioMarkers()
+	local world = ensureFolder(Workspace, "World")
+	local locations = ensureFolder(world, "Locations")
+	local loc01 = ensureFolder(locations, "Loc01")
+	local spawnsFolder = ensureFolder(loc01, "MobSpawns")
+
+	local function makeMarker(name: string, mobId: string, zone: string, pos: Vector3)
+		local existing = spawnsFolder:FindFirstChild(name)
+		if existing then
+			existing:Destroy()
+		end
+		local p = Instance.new("Part")
+		p.Name = name
+		p.Size = Vector3.new(4, 1, 4)
+		p.CFrame = CFrame.new(pos)
+		p.Transparency = 0.5
+		p.Color = Color3.fromRGB(0, 255, 120)
+		p.Material = Enum.Material.Neon
+		p.Anchored = true
+		p.CanCollide = false
+		p:SetAttribute("MobId", mobId)
+		p:SetAttribute("Zone", zone)
+		p.Parent = spawnsFolder
+		return p
+	end
+
+	makeMarker("Spawn_A1", "L1_Goblin", "A", Vector3.new(-20, 3, 40))
+	makeMarker("Spawn_A2", "L1_Goblin", "A", Vector3.new(20, 3, 40))
+	makeMarker("Spawn_A3", "L1_Goblin", "A", Vector3.new(-35, 3, 60))
+	makeMarker("Spawn_A4", "L1_Goblin", "A", Vector3.new(35, 3, 60))
+
+	makeMarker("Spawn_B1", "L1_DarkGoblin", "B", Vector3.new(-30, 3, -15))
+	makeMarker("Spawn_B2", "L1_DarkGoblin", "B", Vector3.new(30, 3, -15))
+	makeMarker("Spawn_B3", "L1_DarkGoblin", "B", Vector3.new(-45, 3, 0))
+	makeMarker("Spawn_B4", "L1_DarkGoblin", "B", Vector3.new(45, 3, 0))
+
+	makeMarker("Spawn_C1", "L1_GoblinWarrior", "C", Vector3.new(-35, 3, -75))
+	makeMarker("Spawn_C2", "L1_GoblinWarrior", "C", Vector3.new(35, 3, -75))
+	makeMarker("Spawn_C3", "L1_GoblinWarrior", "C", Vector3.new(0, 3, -95))
+
+	makeMarker("Spawn_D1", "L1_GoblinScout", "D", Vector3.new(-20, 3, -130))
+	makeMarker("Spawn_D2", "L1_GoblinScout", "D", Vector3.new(20, 3, -130))
+
+	makeMarker("Spawn_Boss", "L1_GoblinKing", "Boss", Vector3.new(0, 5, -190))
+
+	print("[WorldBuilder] Generated 12 green MobSpawns markers in Workspace.World.Locations.Loc01.MobSpawns!")
+end
+
 return WorldBuilderService
