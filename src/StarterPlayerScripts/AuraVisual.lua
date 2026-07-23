@@ -326,67 +326,81 @@ local function makeProcedural(auraId: string, def: any?): Model
 	root.Parent = m
 	m.PrimaryPart = root
 
-	-- Layer 1: Ground Seal / Rotating Neon Rings
-	if mode == "feet" or mode == "hrp" then
-		local ring = Instance.new("Part")
-		ring.Name = "Ring"
-		ring.Shape = Enum.PartType.Cylinder
-		ring.Size = Vector3.new(0.12, 2.1, 2.1)
-		ring.CFrame = CFrame.Angles(0, 0, math.rad(90))
-		ring.Color = theme.mainColor
-		ring.Material = Enum.Material.Neon
-		ring.Transparency = 0.35
-		ring.CanCollide = false
-		ring.Massless = true
-		ring.Anchored = false
-		ring.Parent = m
+	-- Layer 1: Ground Magic Seals / Rings
+	local ring = Instance.new("Part")
+	ring.Name = "Ring"
+	ring.Shape = Enum.PartType.Cylinder
+	ring.Size = Vector3.new(0.1, 3.2, 3.2)
+	ring.CFrame = CFrame.Angles(0, 0, math.rad(90))
+	ring.Color = theme.mainColor
+	ring.Material = Enum.Material.Neon
+	ring.Transparency = 0.35
+	ring.CanCollide = false
+	ring.Massless = true
+	ring.Anchored = false
+	ring.Parent = m
 
-		local innerRing = Instance.new("Part")
-		innerRing.Name = "InnerRing"
-		innerRing.Shape = Enum.PartType.Cylinder
-		innerRing.Size = Vector3.new(0.15, 1.4, 1.4)
-		innerRing.CFrame = CFrame.Angles(0, 0, math.rad(90))
-		innerRing.Color = theme.secColor
-		innerRing.Material = Enum.Material.Neon
-		innerRing.Transparency = 0.45
-		innerRing.CanCollide = false
-		innerRing.Massless = true
-		innerRing.Anchored = false
-		innerRing.Parent = m
+	local innerRing = Instance.new("Part")
+	innerRing.Name = "InnerRing"
+	innerRing.Shape = Enum.PartType.Cylinder
+	innerRing.Size = Vector3.new(0.12, 2.2, 2.2)
+	innerRing.CFrame = CFrame.Angles(0, 0, math.rad(90))
+	innerRing.Color = theme.secColor
+	innerRing.Material = Enum.Material.Neon
+	innerRing.Transparency = 0.45
+	innerRing.CanCollide = false
+	innerRing.Massless = true
+	innerRing.Anchored = false
+	innerRing.Parent = m
 
-		local w1 = Instance.new("WeldConstraint")
-		w1.Part0 = root
-		w1.Part1 = ring
-		w1.Parent = ring
+	local w1 = Instance.new("WeldConstraint")
+	w1.Part0 = root
+	w1.Part1 = ring
+	w1.Parent = ring
 
-		local w2 = Instance.new("WeldConstraint")
-		w2.Part0 = root
-		w2.Part1 = innerRing
-		w2.Parent = innerRing
+	local w2 = Instance.new("WeldConstraint")
+	w2.Part0 = root
+	w2.Part1 = innerRing
+	w2.Parent = innerRing
+
+	-- Layer 2: 3D Floating Orbiting Energy Spheres (RNG-style Orbs)
+	local orbsFolder = Instance.new("Folder")
+	orbsFolder.Name = "OrbitingOrbs"
+	orbsFolder.Parent = m
+
+	local numOrbs = 3
+	for i = 1, numOrbs do
+		local angle = (i / numOrbs) * math.pi * 2
+		local radius = 2.4
+		local orb = Instance.new("Part")
+		orb.Name = "Orb_" .. i
+		orb.Shape = Enum.PartType.Ball
+		orb.Size = Vector3.new(0.65, 0.65, 0.65)
+		orb.Color = (i % 2 == 1) and theme.mainColor else theme.secColor
+		orb.Material = Enum.Material.Neon
+		orb.CanCollide = false
+		orb.Massless = true
+		orb.Anchored = false
+		orb.CFrame = CFrame.new(math.cos(angle) * radius, 1.2, math.sin(angle) * radius)
+		orb.Parent = orbsFolder
+
+		local orbLight = Instance.new("PointLight")
+		orbLight.Color = orb.Color
+		orbLight.Range = 8
+		orbLight.Brightness = 2.5
+		orbLight.Parent = orb
+
+		local orbEmit = Instance.new("ParticleEmitter")
+		orbEmit.Texture = theme.texture
+		orbEmit.Color = ColorSequence.new(orb.Color)
+		orbEmit.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
+		orbEmit.Rate = 16
+		orbEmit.Speed = NumberRange.new(0.5, 1.8)
+		orbEmit.LightEmission = 0.95
+		orbEmit.Parent = orb
 	end
 
-	-- Layer 2: Wings for Back Mode
-	if mode == "back" then
-		for _, side in { -1, 1 } do
-			local wing = Instance.new("Part")
-			wing.Name = "Wing"
-			wing.Size = Vector3.new(0.15, 1.4, 0.9)
-			wing.Color = theme.mainColor
-			wing.Material = Enum.Material.Neon
-			wing.Transparency = 0.22
-			wing.CanCollide = false
-			wing.Massless = true
-			wing.CFrame = CFrame.new(side * 0.75, 0.4, 0.45) * CFrame.Angles(0, side * 0.4, side * 0.3)
-			wing.Parent = m
-
-			local w = Instance.new("WeldConstraint")
-			w.Part0 = root
-			w.Part1 = wing
-			w.Parent = wing
-		end
-	end
-
-	-- Layer 3: Upward Rising Energy Column (ParticleEmitter)
+	-- Layer 3: Upward Swirling Energy Vortex (ParticleEmitter)
 	local att = Instance.new("Attachment")
 	att.Name = "AuraEmit"
 	att.Parent = root
@@ -396,37 +410,47 @@ local function makeProcedural(auraId: string, def: any?): Model
 	pe.Texture = theme.texture
 	pe.Color = ColorSequence.new({
 		ColorSequenceKeypoint.new(0, theme.mainColor),
-		ColorSequenceKeypoint.new(1, theme.secColor),
+		ColorSequenceKeypoint.new(0.5, theme.secColor),
+		ColorSequenceKeypoint.new(1, theme.mainColor),
 	})
 	pe.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.25),
-		NumberSequenceKeypoint.new(0.5, 0.35),
-		NumberSequenceKeypoint.new(1, 0.05),
+		NumberSequenceKeypoint.new(0, 0.35),
+		NumberSequenceKeypoint.new(0.5, 0.65),
+		NumberSequenceKeypoint.new(1, 0.1),
 	})
 	pe.Transparency = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, 0.1),
-		NumberSequenceKeypoint.new(0.7, 0.3),
+		NumberSequenceKeypoint.new(0.6, 0.25),
 		NumberSequenceKeypoint.new(1, 1.0),
 	})
-	pe.Lifetime = NumberRange.new(0.6, 1.1)
-	pe.Rate = if mode == "back" then 12 else 18
-	pe.Speed = NumberRange.new(0.4 * theme.speed, 1.4 * theme.speed)
-	pe.SpreadAngle = Vector2.new(18, 18)
-	pe.LightEmission = 0.75
+	pe.Lifetime = NumberRange.new(0.8, 1.5)
+	pe.Rate = 28
+	pe.Speed = NumberRange.new(1.2 * theme.speed, 3.2 * theme.speed)
+	pe.SpreadAngle = Vector2.new(22, 22)
+	pe.RotSpeed = NumberRange.new(-120, 120)
+	pe.LightEmission = 0.95
 	pe.Parent = att
 
-	-- Layer 4: Orbital Swirling Embers
+	-- Layer 4: Orbital Swirling Starlight Embers
 	local peOrbit = Instance.new("ParticleEmitter")
 	peOrbit.Name = "OrbitalEmbers"
 	peOrbit.Texture = theme.texture
 	peOrbit.Color = ColorSequence.new(theme.secColor)
-	peOrbit.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0) })
+	peOrbit.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
 	peOrbit.Lifetime = NumberRange.new(1.0, 1.8)
-	peOrbit.Rate = 14
-	peOrbit.Speed = NumberRange.new(1.5, 3.0)
+	peOrbit.Rate = 18
+	peOrbit.Speed = NumberRange.new(1.5, 3.5)
 	peOrbit.SpreadAngle = Vector2.new(180, 180)
-	peOrbit.LightEmission = 0.9
+	peOrbit.LightEmission = 0.95
 	peOrbit.Parent = att
+
+	-- Layer 5: Ambient PointLight illuminating player & surroundings
+	local mainLight = Instance.new("PointLight")
+	mainLight.Name = "AuraLight"
+	mainLight.Color = theme.mainColor
+	mainLight.Range = 16
+	mainLight.Brightness = 2.5
+	mainLight.Parent = root
 
 	return m
 end
@@ -449,9 +473,8 @@ local function cloneAuraModel(auraId: string): Model?
 					end
 				end
 			end
-			normalizeExtent(clone, AuraModelConfig.TargetExtent or 3.5)
+			normalizeExtent(clone, AuraModelConfig.TargetExtent or 2.2)
 			sanitize(clone)
-			-- ensure something to weld
 			if not clone.PrimaryPart then
 				local inv = Instance.new("Part")
 				inv.Name = "Root"
@@ -484,8 +507,8 @@ local function applyAuraHighlight(char: Model, rarity: string?)
 	local col = rarityColor(rarity)
 	hl.FillColor = col
 	hl.OutlineColor = col
-	hl.FillTransparency = 0.85
-	hl.OutlineTransparency = 0.25
+	hl.FillTransparency = 0.95
+	hl.OutlineTransparency = 0.70
 	hl.Enabled = true
 end
 
@@ -549,18 +572,25 @@ local function attachToCharacter(char: Model, model: Model, auraId: string)
 	weld.Parent = root
 
 	-- Keep offset via AlignOrientation-less trick: re-apply Motor6D-like CFrame every frame for feet/back spin
-	if mode == "feet" or mode == "hrp" then
-		spinConn = RunService.RenderStepped:Connect(function()
-			if not model.Parent or not hrp.Parent then
-				return
+	spinConn = RunService.RenderStepped:Connect(function()
+		if not model.Parent or not hrp.Parent then
+			return
+		end
+		local now = os.clock()
+		local orbsFolder = model:FindFirstChild("OrbitingOrbs")
+		if orbsFolder then
+			local children = orbsFolder:GetChildren()
+			local num = #children
+			for i, orb in ipairs(children) do
+				if orb:IsA("BasePart") then
+					local angle = (i / math.max(1, num)) * math.pi * 2 + (now * 2.2)
+					local radius = 2.4
+					local bob = math.sin(now * 3 + i) * 0.3
+					orb.CFrame = hrp.CFrame * CFrame.new(math.cos(angle) * radius, 0.4 + bob, math.sin(angle) * radius)
+				end
 			end
-			local bob = math.sin(os.clock() * 1.8) * 0.05
-			local yaw = os.clock() * 0.7
-			pcall(function()
-				-- Move whole model by setting PrimaryPart CFrame relative; weld may fight —
-				-- destroy weld and use Pivot follow instead for spin
-			end)
-		end)
+		end
+	end)
 		-- Prefer rigid offset without fighting weld: use Weld with Attachment offsets
 		weld:Destroy()
 		local a0 = Instance.new("Attachment")

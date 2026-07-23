@@ -151,22 +151,6 @@ function MobSpawnMarkerService.EnsureDefaultMarkers(locationId: number, spawnTab
 		p:SetAttribute("Zone", zone)
 		p:SetAttribute("IsSpawnMarker", true)
 		p.Parent = folder
-
-		local bb = Instance.new("BillboardGui")
-		bb.Size = UDim2.fromOffset(120, 28)
-		bb.StudsOffset = Vector3.new(0, 2, 0)
-		bb.AlwaysOnTop = true
-		bb.Parent = p
-		local lbl = Instance.new("TextLabel")
-		lbl.Size = UDim2.fromScale(1, 1)
-		lbl.BackgroundTransparency = 0.4
-		lbl.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-		lbl.TextColor3 = Color3.new(1, 1, 1)
-		lbl.Font = Enum.Font.GothamBold
-		lbl.TextSize = 11
-		lbl.Text = mobId
-		lbl.Parent = bb
-
 		return p
 	end
 
