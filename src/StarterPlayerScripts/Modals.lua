@@ -142,11 +142,11 @@ function Modals.Mount(gui: ScreenGui, store: any)
 
 		if m.kind == "rebirth" then
 			local stats = store:PeekStats() or {}
-			local dmg = stats.lifetimeDamage or 0
-			local costDmg = stats.nextRebirthCost or 1
+			local powerProg = stats.totalPower or stats.lifetimeDamage or 0
+			local costPower = stats.nextRebirthCost or 1
 			local pct = stats.rebirthProgress
 			if type(pct) ~= "number" then
-				pct = costDmg > 0 and math.clamp(dmg / costDmg, 0, 1) or 1
+				pct = costPower > 0 and math.clamp(powerProg / costPower, 0, 1) or 1
 			end
 			local fromName = stats.rebirthRankName or ("R" .. tostring(stats.rebirthLevel or 0))
 			local toName = stats.nextRebirthRankName or ("R" .. tostring((stats.rebirthLevel or 0) + 1))
@@ -159,13 +159,13 @@ function Modals.Mount(gui: ScreenGui, store: any)
 
 			title.Text = "Rebirth"
 			body.Text = string.format(
-				"Rebirth raises your power multiplier.\n\n%s  %s\n→  %s  %s\n\nProgress  %s / %s\n\n⚠ After rebirth, damage progress and coin balance reset.\nSwords, pets, auras, and relics stay.",
+				"Rebirth raises your power multiplier.\n\n%s  %s\n→  %s  %s\n\nProgress  %s / %s\n\n⚠ After rebirth, power progress and coin balance reset.\nSwords, pets, auras, and relics stay.",
 				fromName,
 				Format.Mult(fromMult),
 				toName,
 				Format.Mult(toMult),
-				Format.Num(dmg),
-				Format.Num(costDmg)
+				Format.Num(powerProg),
+				Format.Num(costPower)
 			)
 			barHost.Visible = true
 			fill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
