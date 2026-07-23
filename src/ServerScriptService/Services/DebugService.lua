@@ -55,7 +55,16 @@ function DebugService.Run(player: Player, action: string, payload: any)
 		return
 	end
 
-	if action == "giveCoins" then
+	if action == "resetData" or action == "resetRebirths" then
+		profile.rebirthLevel = 0
+		profile.rebirthMult = 1
+		profile.lifetimePower = 0
+		profile.coins = 0
+		profile.lifetimeDamage = 0
+		ProfileService.Push(player)
+		notify(player, "Profile & Rebirths reset to 0!", "gold")
+		return
+	end
 		local n = 100_000
 		if type(payload) == "number" then
 			n = math.clamp(math.floor(payload), 1, 1e12)

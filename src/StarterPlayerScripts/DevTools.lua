@@ -99,6 +99,9 @@ function DevTools.Mount(gui: ScreenGui)
 			return b
 		end
 
+		addBtn("⚠️ RESET DATA & REBIRTHS", Color3.fromRGB(160, 40, 50), function()
+			fire("resetData")
+		end)
 		addBtn("+100K Coins", Color3.fromRGB(40, 120, 70), function()
 			fire("giveCoins", 100_000)
 		end)
