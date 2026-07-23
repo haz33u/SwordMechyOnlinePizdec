@@ -23,6 +23,7 @@ local MobSpawnMarkerService = require(script.Parent.MobSpawnMarkerService)
 local CombatService = {}
 CombatService._mobs = {} :: { [string]: any }
 CombatService._lastSwing = {} :: { [number]: number }
+CombatService._autoLock = {} :: { [number]: string }
 
 local function mobUid(): string
 	return ProfileService.NewUid()
@@ -184,6 +185,20 @@ local function pickTarget(player: Player, targetMobUid: string?, locId: number, 
 		end
 	end
 
+	-- AUTO-CLICKER Single-Target Lock: focus 100% DPS on current locked target until dead or out of range
+	if isAuto then
+		local lockedUid = CombatService._autoLock[player.UserId]
+		if lockedUid then
+			local lockedMob = CombatService._mobs[lockedUid]
+			if lockedMob and lockedMob.alive then
+				local pos = getMobPos(lockedMob)
+				if (pos - origin).Magnitude <= maxRange then
+					return lockedMob
+				end
+			end
+		end
+	end
+
 	local best = nil
 	local bestDist = math.huge
 
@@ -200,6 +215,10 @@ local function pickTarget(player: Player, targetMobUid: string?, locId: number, 
 				end
 			end
 		end
+	end
+
+	if isAuto and best then
+		CombatService._autoLock[player.UserId] = best.uid
 	end
 
 	return best
