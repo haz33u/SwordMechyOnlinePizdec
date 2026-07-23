@@ -60,6 +60,98 @@ function Formulas.GetAnomalyMods(): any
 	return if a then a.mods else {}
 end
 
+local function sumEnchantStat(enchants: { any }?, stat: string): number
+	if not enchants then
+		return 0
+	end
+	local total = 0
+	for _, e in enchants do
+		local def
+		for _, d in EnchantConfig.Enchants do
+			if d.id == e.id then
+				def = d
+				break
+			end
+		end
+		if def and def.stat == stat then
+			total += e.value
+		end
+	end
+	return total
+end
+
+local function findWeapon(profile: any, uid: string?): any?
+	if not uid or not profile or not profile.weapons then
+		return nil
+	end
+	for _, w in profile.weapons do
+		if w.uid == uid then
+			return w
+		end
+	end
+	return nil
+end
+
+function Formulas.GetUpgradeLevel(profile: any, id: string): number
+	if not profile or not profile.upgradeLevels then
+		return 0
+	end
+	return profile.upgradeLevels[id] or 0
+end
+
+function Formulas.GetWeaponPowerMult(profile: any): number
+	if not profile then
+		return 1
+	end
+	local main = findWeapon(profile, profile.equippedMain)
+	local mult = 1
+	if main then
+		local def = WeaponConfig.Get(main.id)
+		if def then
+			mult = WeaponConfig.GetEffectivePower(def, main.level or 1)
+		end
+	end
+	-- offhand only if paid unlock
+	if ProgressConfig.IsOffhandUnlocked(profile) then
+		local off = findWeapon(profile, profile.equippedOffhand)
+		if off then
+			local def = WeaponConfig.Get(off.id)
+			if def then
+				mult += WeaponConfig.GetEffectivePower(def, off.level or 1) * 0.5
+			end
+		end
+	end
+	return mult
+end
+
+function Formulas.GetEnchantPools(profile: any): { [string]: number }
+	local pools = {
+		power = 0,
+		damage = 0,
+		attackSpeed = 0,
+		crit = 0,
+		coins = 0,
+		luck = 0,
+	}
+	if not profile then
+		return pools
+	end
+	local function addFrom(uid: string?)
+		local w = findWeapon(profile, uid)
+		if not w then
+			return
+		end
+		for stat, _ in pools do
+			pools[stat] += sumEnchantStat(w.enchants, stat)
+		end
+	end
+	addFrom(profile.equippedMain)
+	if ProgressConfig.IsOffhandUnlocked(profile) then
+		addFrom(profile.equippedOffhand)
+	end
+	return pools
+end
+
 local function getPetMap(profile: any): { [string]: any }
 	local map = {}
 	if profile and profile.pets then
