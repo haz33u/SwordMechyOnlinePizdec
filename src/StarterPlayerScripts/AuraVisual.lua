@@ -273,11 +273,44 @@ local function normalizeExtent(clone: Model, target: number)
 	end
 end
 
+local function getAuraTheme(auraId: string, def: any?): { mainColor: Color3, secColor: Color3, texture: string, speed: number }
+	local name = (def and def.name) or auraId
+	local lower = string.lower(name .. "_" .. auraId)
+	local rar = (def and def.rarity) or "Common"
+	local main = rarityColor(rar)
+	local sec = main:Lerp(Color3.new(1, 1, 1), 0.3)
+	local tex = "rbxasset://textures/particles/sparkles_main.dds"
+	local spd = 1.2
+
+	if string.find(lower, "ice", 1, true) or string.find(lower, "frost", 1, true) then
+		main = Color3.fromRGB(100, 220, 255)
+		sec = Color3.fromRGB(220, 245, 255)
+		spd = 1.0
+	elseif string.find(lower, "fire", 1, true) or string.find(lower, "flame", 1, true) then
+		main = Color3.fromRGB(255, 90, 40)
+		sec = Color3.fromRGB(255, 200, 50)
+		spd = 2.2
+	elseif string.find(lower, "dark", 1, true) or string.find(lower, "shadow", 1, true) then
+		main = Color3.fromRGB(130, 40, 210)
+		sec = Color3.fromRGB(40, 20, 70)
+		spd = 0.9
+	elseif string.find(lower, "light", 1, true) or string.find(lower, "spark", 1, true) then
+		main = Color3.fromRGB(255, 225, 90)
+		sec = Color3.fromRGB(255, 255, 200)
+		spd = 1.8
+	elseif string.find(lower, "leaf", 1, true) or string.find(lower, "foliage", 1, true) then
+		main = Color3.fromRGB(80, 220, 110)
+		sec = Color3.fromRGB(180, 255, 120)
+		spd = 1.1
+	end
+
+	return { mainColor = main, secColor = sec, texture = tex, speed = spd }
+end
+
 local function makeProcedural(auraId: string, def: any?): Model
 	local m = Instance.new("Model")
 	m.Name = "AuraProc_" .. auraId
-	local rar = (def and def.rarity) or "Common"
-	local col = rarityColor(rar)
+	local theme = getAuraTheme(auraId, def)
 	local mode = AuraModelConfig.GetAttachMode(auraId)
 
 	local root = Instance.new("Part")
@@ -290,37 +323,59 @@ local function makeProcedural(auraId: string, def: any?): Model
 	root.Parent = m
 	m.PrimaryPart = root
 
+	-- Layer 1: Ground Seal / Rotating Neon Rings
 	if mode == "feet" or mode == "hrp" then
 		local ring = Instance.new("Part")
 		ring.Name = "Ring"
 		ring.Shape = Enum.PartType.Cylinder
-		ring.Size = Vector3.new(0.2, 3.2, 3.2)
+		ring.Size = Vector3.new(0.18, 3.4, 3.4)
 		ring.CFrame = CFrame.Angles(0, 0, math.rad(90))
-		ring.Color = col
+		ring.Color = theme.mainColor
 		ring.Material = Enum.Material.Neon
-		ring.Transparency = 0.45
+		ring.Transparency = 0.35
 		ring.CanCollide = false
 		ring.Massless = true
 		ring.Anchored = false
 		ring.Parent = m
-		local w = Instance.new("WeldConstraint")
-		w.Part0 = root
-		w.Part1 = ring
-		w.Parent = ring
+
+		local innerRing = Instance.new("Part")
+		innerRing.Name = "InnerRing"
+		innerRing.Shape = Enum.PartType.Cylinder
+		innerRing.Size = Vector3.new(0.22, 2.2, 2.2)
+		innerRing.CFrame = CFrame.Angles(0, 0, math.rad(90))
+		innerRing.Color = theme.secColor
+		innerRing.Material = Enum.Material.Neon
+		innerRing.Transparency = 0.45
+		innerRing.CanCollide = false
+		innerRing.Massless = true
+		innerRing.Anchored = false
+		innerRing.Parent = m
+
+		local w1 = Instance.new("WeldConstraint")
+		w1.Part0 = root
+		w1.Part1 = ring
+		w1.Parent = ring
+
+		local w2 = Instance.new("WeldConstraint")
+		w2.Part0 = root
+		w2.Part1 = innerRing
+		w2.Parent = innerRing
 	end
 
+	-- Layer 2: Wings for Back Mode
 	if mode == "back" then
 		for _, side in { -1, 1 } do
 			local wing = Instance.new("Part")
 			wing.Name = "Wing"
-			wing.Size = Vector3.new(0.25, 2.2, 1.4)
-			wing.Color = col
+			wing.Size = Vector3.new(0.25, 2.4, 1.5)
+			wing.Color = theme.mainColor
 			wing.Material = Enum.Material.Neon
-			wing.Transparency = 0.25
+			wing.Transparency = 0.22
 			wing.CanCollide = false
 			wing.Massless = true
-			wing.CFrame = CFrame.new(side * 0.9, 0.5, 0.5) * CFrame.Angles(0, side * 0.4, side * 0.3)
+			wing.CFrame = CFrame.new(side * 0.95, 0.55, 0.55) * CFrame.Angles(0, side * 0.4, side * 0.3)
 			wing.Parent = m
+
 			local w = Instance.new("WeldConstraint")
 			w.Part0 = root
 			w.Part1 = wing
@@ -328,22 +383,47 @@ local function makeProcedural(auraId: string, def: any?): Model
 		end
 	end
 
+	-- Layer 3: Upward Rising Energy Column (ParticleEmitter)
 	local att = Instance.new("Attachment")
 	att.Name = "AuraEmit"
 	att.Parent = root
+
 	local pe = Instance.new("ParticleEmitter")
-	pe.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-	pe.Color = ColorSequence.new(col)
+	pe.Name = "ColumnParticles"
+	pe.Texture = theme.texture
+	pe.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, theme.mainColor),
+		ColorSequenceKeypoint.new(1, theme.secColor),
+	})
 	pe.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.35),
+		NumberSequenceKeypoint.new(0, 0.45),
+		NumberSequenceKeypoint.new(0.5, 0.65),
 		NumberSequenceKeypoint.new(1, 0.05),
 	})
-	pe.Lifetime = NumberRange.new(0.6, 1.2)
-	pe.Rate = if mode == "back" then 12 else 28
-	pe.Speed = NumberRange.new(0.4, 1.5)
-	pe.SpreadAngle = Vector2.new(40, 40)
-	pe.LightEmission = 0.6
+	pe.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.1),
+		NumberSequenceKeypoint.new(0.7, 0.3),
+		NumberSequenceKeypoint.new(1, 1.0),
+	})
+	pe.Lifetime = NumberRange.new(0.7, 1.4)
+	pe.Rate = if mode == "back" then 16 else 32
+	pe.Speed = NumberRange.new(0.6 * theme.speed, 2.0 * theme.speed)
+	pe.SpreadAngle = Vector2.new(25, 25)
+	pe.LightEmission = 0.75
 	pe.Parent = att
+
+	-- Layer 4: Orbital Swirling Embers
+	local peOrbit = Instance.new("ParticleEmitter")
+	peOrbit.Name = "OrbitalEmbers"
+	peOrbit.Texture = theme.texture
+	peOrbit.Color = ColorSequence.new(theme.secColor)
+	peOrbit.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.25), NumberSequenceKeypoint.new(1, 0) })
+	peOrbit.Lifetime = NumberRange.new(1.0, 1.8)
+	peOrbit.Rate = 14
+	peOrbit.Speed = NumberRange.new(1.5, 3.0)
+	peOrbit.SpreadAngle = Vector2.new(180, 180)
+	peOrbit.LightEmission = 0.9
+	peOrbit.Parent = att
 
 	return m
 end
