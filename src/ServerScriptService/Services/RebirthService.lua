@@ -31,7 +31,7 @@ function RebirthService.Try(player: Player): boolean
 	end
 
 	local powerCost, coinCost = RebirthConfig.GetCosts(nextLevel)
-	local currentPower = Formulas.GetTotalPower(profile)
+	local currentPower = Formulas.GetTotalPower(profile, player)
 	local coins = profile.coins or 0
 
 	local ok, reason = RebirthConfig.CanAfford(currentPower, coins, nextLevel)

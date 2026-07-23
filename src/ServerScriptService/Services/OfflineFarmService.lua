@@ -40,7 +40,7 @@ function OfflineFarmService.CheckOfflineEarnings(player: Player)
 	local timeStr = if hrs > 0 then string.format("%dh %dm", hrs, mins) else string.format("%dm", mins)
 
 	-- Calculate offline farm rate (20% of online farm output)
-	local power = Formulas.GetTotalPower(profile)
+	local power = Formulas.GetTotalPower(profile, player)
 	local coinMult = Formulas.GetCoinMult(profile)
 	local cps = Formulas.GetCPS(profile)
 

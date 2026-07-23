@@ -36,7 +36,7 @@ function LocationService.Set(player: Player, locId: number)
 		return
 	end
 
-	local power = Formulas.GetTotalPower(profile)
+	local power = Formulas.GetTotalPower(profile, player)
 	local unlocked = ProfileService.IsLocationUnlocked(profile, locId)
 	local travelCost = loc.travelCostCoins or 0
 	local needRebirth = loc.unlockRebirth or 0

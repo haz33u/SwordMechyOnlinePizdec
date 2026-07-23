@@ -326,7 +326,7 @@ function ProfileService.Push(player: Player)
 	if not profile then
 		return
 	end
-	local snap = Formulas.Snapshot(profile)
+	local snap = Formulas.Snapshot(profile, player)
 	Remotes.Event("ProfileUpdate"):FireClient(player, {
 		profile = profile,
 		stats = snap,

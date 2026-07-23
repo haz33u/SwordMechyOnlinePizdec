@@ -44,6 +44,14 @@ function QuestService.OnDungeon(profile: any, tierId: string)
 	PetService.SyncSlots(profile)
 end
 
+function QuestService.OnEvent(player: Player, questType: string, amount: number)
+	local profile = ProfileService.Get(player)
+	if not profile then
+		return
+	end
+	ProfileService.AddQuestProgress(profile, questType, nil, amount)
+end
+
 --- Sam click chain: only active sequential quest; credit scales with tier.
 function QuestService.OnClick(profile: any)
 	if not profile or not profile.quests then

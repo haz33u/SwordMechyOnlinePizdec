@@ -278,12 +278,26 @@ function Formulas.GetBoostPct(profile: any, statKey: string): number
 	return 0
 end
 
+function Formulas.GetFriendMult(player: Player?): number
+	if not player then return 1 end
+	local count = (player:GetAttribute("friends_in_game") or 0) :: number
+	return math.min(1.5, 1 + count * 0.10)
+end
+
+function Formulas.GetPremiumMult(player: Player?): number
+	if not player then return 1 end
+	if player.MembershipType == Enum.MembershipType.Premium then
+		return 1.20
+	end
+	return 1.0
+end
+
 --[[
 	TotalPower = Player Strength (HUD Power, click gain, lifetime strength).
 	Power% boosts this stat directly.
 	Damage% is applied separately during combat hits (GetHitDamage).
 ]]
-function Formulas.GetTotalPower(profile: any): number
+function Formulas.GetTotalPower(profile: any, player: Player?): number
 	local base = GameConfig.BASE_POWER + (profile.lifetimePower or 0)
 	local rebirthMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
 
@@ -298,6 +312,9 @@ function Formulas.GetTotalPower(profile: any): number
 	local questPowerPct = profile.questPowerPct or 0
 	local boostPowerPct = Formulas.GetBoostPct(profile, "power")
 
+	local friendMult = Formulas.GetFriendMult(player)
+	local premiumMult = Formulas.GetPremiumMult(player)
+
 	local anom = Formulas.GetAnomalyMods()
 	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct
 
@@ -305,6 +322,8 @@ function Formulas.GetTotalPower(profile: any): number
 		* rebirthMult
 		* weaponMult
 		* petMult
+		* friendMult
+		* premiumMult
 		* (1 + powerPct / 100)
 		* (anom.powerMult or 1)
 
@@ -312,7 +331,7 @@ function Formulas.GetTotalPower(profile: any): number
 end
 
 -- Base Power gain earned per click (linear & smooth progression)
-function Formulas.GetClickPowerGain(profile: any): number
+function Formulas.GetClickPowerGain(profile: any, player: Player?): number
 	local baseGain = GameConfig.BASE_POWER_PER_CLICK or 1
 	local rebirthMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
 	local weaponMult = Formulas.GetWeaponPowerMult(profile)
@@ -326,6 +345,9 @@ function Formulas.GetClickPowerGain(profile: any): number
 	local questPowerPct = profile.questPowerPct or 0
 	local boostPowerPct = Formulas.GetBoostPct(profile, "power")
 
+	local friendMult = Formulas.GetFriendMult(player)
+	local premiumMult = Formulas.GetPremiumMult(player)
+
 	local anom = Formulas.GetAnomalyMods()
 	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct
 
@@ -333,6 +355,8 @@ function Formulas.GetClickPowerGain(profile: any): number
 		* rebirthMult
 		* weaponMult
 		* petMult
+		* friendMult
+		* premiumMult
 		* (1 + powerPct / 100)
 		* (anom.powerMult or 1)
 
@@ -437,15 +461,15 @@ function Formulas.GetDamageMultiplier(profile: any): number
 	return 1 + damagePct / 100
 end
 
-function Formulas.GetDPS(profile: any): number
-	local power = Formulas.GetTotalPower(profile)
+function Formulas.GetDPS(profile: any, player: Player?): number
+	local power = Formulas.GetTotalPower(profile, player)
 	local dmgMult = Formulas.GetDamageMultiplier(profile)
 	return power * dmgMult * Formulas.GetCPS(profile)
 end
 
 --- Returns damage, isCrit, isMultiCrit
-function Formulas.GetHitDamage(profile: any): (number, boolean, boolean)
-	local power = Formulas.GetTotalPower(profile)
+function Formulas.GetHitDamage(profile: any, player: Player?): (number, boolean, boolean)
+	local power = Formulas.GetTotalPower(profile, player)
 	local dmgMult = Formulas.GetDamageMultiplier(profile)
 	local baseDamage = power * dmgMult
 
@@ -576,10 +600,10 @@ end
 	Ideal-time to next rebirth with CURRENT gear (always clicking).
 	Uses expected DPS (crit averaged). Returns seconds (0 if ready, math.huge if stuck).
 ]]
-function Formulas.EstimateRebirthEta(profile: any): (number, number, number, number)
+function Formulas.EstimateRebirthEta(profile: any, player: Player?): (number, number, number, number)
 	local nextLv = (profile.rebirthLevel or 0) + 1
 	local powerCost, coinCost = RebirthConfig.GetCosts(nextLv)
-	local currentPower = Formulas.GetTotalPower(profile)
+	local currentPower = Formulas.GetTotalPower(profile, player)
 	local coins = profile.coins or 0
 	local remPower = math.max(0, powerCost - currentPower)
 	local remCoins = math.max(0, coinCost - coins)
@@ -588,7 +612,7 @@ function Formulas.EstimateRebirthEta(profile: any): (number, number, number, num
 		return 0, 0, 0, 0
 	end
 
-	local dps = Formulas.GetDPS(profile)
+	local dps = Formulas.GetDPS(profile, player)
 	if dps < 0.01 then
 		return math.huge, remPower, remCoins, dps
 	end
@@ -604,11 +628,11 @@ function Formulas.EstimateRebirthEta(profile: any): (number, number, number, num
 	return math.max(tPower, tCoin), remPower, remCoins, dps
 end
 
-function Formulas.Snapshot(profile: any): { [string]: any }
-	local power = Formulas.GetTotalPower(profile)
+function Formulas.Snapshot(profile: any, player: Player?): { [string]: any }
+	local power = Formulas.GetTotalPower(profile, player)
 	local cps = Formulas.GetCPS(profile)
 	local nextLv = (profile.rebirthLevel or 0) + 1
-	local etaSec, remPower, remCoins, dpsIdeal = Formulas.EstimateRebirthEta(profile)
+	local etaSec, remPower, remCoins, dpsIdeal = Formulas.EstimateRebirthEta(profile, player)
 	local rbMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
 	return {
 		totalPower = power,

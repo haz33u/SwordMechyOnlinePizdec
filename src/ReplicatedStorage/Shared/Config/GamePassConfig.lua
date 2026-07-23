@@ -76,7 +76,15 @@ local GamePassConfig = {
 			feature = "openChest5",
 		},
 	} :: { [string]: GamePassDef },
+	PREMIUM_DISCOUNT_FACTOR = 0.8, -- 20% discount for Roblox Premium members
 }
+
+function GamePassConfig.GetPrice(baseRobux: number, player: Player?): number
+	if player and player.MembershipType == Enum.MembershipType.Premium then
+		return math.floor(baseRobux * GamePassConfig.PREMIUM_DISCOUNT_FACTOR)
+	end
+	return baseRobux
+end
 
 function GamePassConfig.Get(key: string): GamePassDef?
 	return GamePassConfig.Passes[key]

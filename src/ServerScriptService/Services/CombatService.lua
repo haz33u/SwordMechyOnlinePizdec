@@ -251,7 +251,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	if not mob or not mob.alive then
 		-- Air Click (clicking empty space or no target in range): still grants Power gain!
 		CombatService._lastSwing[player.UserId] = now
-		local clickGain = Formulas.GetClickPowerGain(profile)
+		local clickGain = Formulas.GetClickPowerGain(profile, player)
 		profile.lifetimePower = (profile.lifetimePower or 0) + clickGain
 		profile.totalClicks = (profile.totalClicks or 0) + 1
 		QuestService.OnClick(profile)
@@ -272,7 +272,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	if dist > hitRange(isAuto) then
 		-- Target too far: treat as Air Click
 		CombatService._lastSwing[player.UserId] = now
-		local clickGain = Formulas.GetClickPowerGain(profile)
+		local clickGain = Formulas.GetClickPowerGain(profile, player)
 		profile.lifetimePower = (profile.lifetimePower or 0) + clickGain
 		profile.totalClicks = (profile.totalClicks or 0) + 1
 		QuestService.OnClick(profile)
@@ -285,7 +285,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	-- Only record swing cooldown timestamp once a valid hit target is confirmed in range!
 	CombatService._lastSwing[player.UserId] = now
 
-	local damage, isCrit, isMultiCrit = Formulas.GetHitDamage(profile)
+	local damage, isCrit, isMultiCrit = Formulas.GetHitDamage(profile, player)
 	if isAuto then
 		damage *= (ClickConfig.AUTO_DAMAGE_MULT or 1)
 	end
@@ -295,7 +295,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	damage = math.max(1, damage - armor)
 
 	mob.hp -= damage
-	local hitGain = Formulas.GetClickPowerGain(profile)
+	local hitGain = Formulas.GetClickPowerGain(profile, player)
 	profile.lifetimePower = (profile.lifetimePower or 0) + hitGain
 	profile.lifetimeDamage += damage
 	profile.totalClicks = (profile.totalClicks or 0) + 1
