@@ -276,7 +276,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 		CombatService.OnKill(player, profile, mob)
 	end
 
-	if not isAuto or (profile.totalClicks % 5 == 0) then
+	if not isAuto or (profile.totalClicks % 20 == 0) then
 		ProfileService.Push(player)
 	end
 end

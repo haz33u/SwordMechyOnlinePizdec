@@ -59,84 +59,14 @@ function Formulas.GetAnomalyMods(): any
 	return if a then a.mods else {}
 end
 
-local function sumEnchantStat(enchants: { any }, stat: string): number
-	local total = 0
-	for _, e in enchants do
-		local def
-		for _, d in EnchantConfig.Enchants do
-			if d.id == e.id then
-				def = d
-				break
-			end
-		end
-		if def and def.stat == stat then
-			total += e.value
+local function getPetMap(profile: any): { [string]: any }
+	local map = {}
+	if profile and profile.pets then
+		for _, pet in profile.pets do
+			map[pet.uid] = pet
 		end
 	end
-	return total
-end
-
-local function findWeapon(profile: any, uid: string?): any?
-	if not uid then
-		return nil
-	end
-	for _, w in profile.weapons do
-		if w.uid == uid then
-			return w
-		end
-	end
-	return nil
-end
-
-function Formulas.GetUpgradeLevel(profile: any, id: string): number
-	return profile.upgradeLevels[id] or 0
-end
-
-function Formulas.GetWeaponPowerMult(profile: any): number
-	local main = findWeapon(profile, profile.equippedMain)
-	local mult = 1
-	if main then
-		local def = WeaponConfig.Get(main.id)
-		if def then
-			mult = WeaponConfig.GetEffectivePower(def, main.level or 1)
-		end
-	end
-	-- offhand only if paid unlock
-	if ProgressConfig.IsOffhandUnlocked(profile) then
-		local off = findWeapon(profile, profile.equippedOffhand)
-		if off then
-			local def = WeaponConfig.Get(off.id)
-			if def then
-				mult += WeaponConfig.GetEffectivePower(def, off.level or 1) * 0.5
-			end
-		end
-	end
-	return mult
-end
-
-function Formulas.GetEnchantPools(profile: any): { [string]: number }
-	local pools = {
-		power = 0,
-		damage = 0,
-		attackSpeed = 0,
-		crit = 0,
-		coins = 0,
-		luck = 0,
-	}
-	local function addFrom(uid: string?)
-		local w = findWeapon(profile, uid)
-		if not w then
-			return
-		end
-		for stat, _ in pools do
-			pools[stat] += sumEnchantStat(w.enchants, stat)
-		end
-	end
-	addFrom(profile.equippedMain)
-	if ProgressConfig.IsOffhandUnlocked(profile) then
-		addFrom(profile.equippedOffhand)
-	end
-	return pools
+	return map
 end
 
 --[[
@@ -145,17 +75,16 @@ end
 ]]
 function Formulas.GetPetPowerMult(profile: any): number
 	local mult = 1
-	for _, uid in profile.petTeam do
-		for _, pet in profile.pets do
-			if pet.uid == uid then
-				local def = PetConfig.Get(pet.id)
-				if def then
-					local base = PetConfig.GetPowerMult(def)
-					local levelFactor = 1 + PetConfig.LEVEL_POWER_PER * math.max(0, pet.level - 1)
-					local ench = sumEnchantStat(pet.enchants, "power") -- enchant still % points
-					mult += (base * levelFactor - 1) + ench / 100
-				end
-				break
+	local petMap = getPetMap(profile)
+	for _, uid in profile.petTeam or {} do
+		local pet = petMap[uid]
+		if pet then
+			local def = PetConfig.Get(pet.id)
+			if def then
+				local base = PetConfig.GetPowerMult(def)
+				local levelFactor = 1 + PetConfig.LEVEL_POWER_PER * math.max(0, pet.level - 1)
+				local ench = sumEnchantStat(pet.enchants, "power") -- enchant still % points
+				mult += (base * levelFactor - 1) + ench / 100
 			end
 		end
 	end
@@ -169,16 +98,15 @@ end
 
 function Formulas.GetPetCoinPct(profile: any): number
 	local total = 0
-	for _, uid in profile.petTeam do
-		for _, pet in profile.pets do
-			if pet.uid == uid then
-				local def = PetConfig.Get(pet.id)
-				if def then
-					-- coinMult pure → convert excess to soft % for coin formula
-					local cm = def.coinMult or 1
-					total += (cm - 1) * 100
-				end
-				break
+	local petMap = getPetMap(profile)
+	for _, uid in profile.petTeam or {} do
+		local pet = petMap[uid]
+		if pet then
+			local def = PetConfig.Get(pet.id)
+			if def then
+				-- coinMult pure → convert excess to soft % for coin formula
+				local cm = def.coinMult or 1
+				total += (cm - 1) * 100
 			end
 		end
 	end
@@ -246,37 +174,33 @@ function Formulas.GetRelicPct(profile: any): (number, number)
 	return power, damage
 end
 
+--[[
+	TotalPower = Player Strength (HUD Power, click gain, lifetime strength).
+	Power% boosts this stat directly.
+	Damage% is applied separately during combat hits (GetHitDamage).
+]]
 function Formulas.GetTotalPower(profile: any): number
 	local base = GameConfig.BASE_POWER + (profile.lifetimePower or 0)
-
 	local rebirthMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
-	if (profile.rebirthMult or 0) > 0 and profile.rebirthLevel and profile.rebirthLevel > 0 then
-		-- prefer stored if it matches rank table; else force table
-		local tableMult = RebirthConfig.GetMultAfter(profile.rebirthLevel)
-		rebirthMult = tableMult
-	end
 
 	local weaponMult = Formulas.GetWeaponPowerMult(profile) -- pure dump Сила
 	local petMult = Formulas.GetPetPowerMult(profile) -- pure dump Мощь product/stack
 	local ench = Formulas.GetEnchantPools(profile)
-	local auraP, auraD = Formulas.GetAuraPct(profile)
-	local relicP, relicD = Formulas.GetRelicPct(profile)
+	local auraP = Formulas.GetAuraPct(profile)
+	local relicP = Formulas.GetRelicPct(profile)
 
 	local upgradePowerLvl = Formulas.GetUpgradeLevel(profile, "Power")
 	local upgradePowerPct = upgradePowerLvl * (UpgradeConfig.Defs.Power.effectPerLevel * 100)
 	local questPowerPct = profile.questPowerPct or 0
 
-	-- Non-dump systems still use % pools (enchants / aura / relic / upgrades / quests)
 	local anom = Formulas.GetAnomalyMods()
 	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct
-	local damagePct = ench.damage + auraD + relicD + (anom.damagePct or 0)
 
 	local total = base
 		* rebirthMult
 		* weaponMult
 		* petMult
 		* (1 + powerPct / 100)
-		* (1 + damagePct / 100)
 		* (anom.powerMult or 1)
 
 	return math.max(1, total)
@@ -370,18 +294,38 @@ function Formulas.GetMultiCritChance(profile: any): number
 	return math.clamp(lvl * per + (auraMulti or 0) / 100, 0, 0.5)
 end
 
+--- Returns damage multiplier factor (1 + damagePct / 100)
+function Formulas.GetDamageMultiplier(profile: any): number
+	local ench = Formulas.GetEnchantPools(profile)
+	local _, auraD = Formulas.GetAuraPct(profile)
+	local _, relicD = Formulas.GetRelicPct(profile)
+	local anom = Formulas.GetAnomalyMods()
+	local damagePct = ench.damage + auraD + relicD + (anom.damagePct or 0)
+	return 1 + damagePct / 100
+end
+
+function Formulas.GetDPS(profile: any): number
+	local power = Formulas.GetTotalPower(profile)
+	local dmgMult = Formulas.GetDamageMultiplier(profile)
+	return power * dmgMult * Formulas.GetCPS(profile)
+end
+
 --- Returns damage, isCrit, isMultiCrit
 function Formulas.GetHitDamage(profile: any): (number, boolean, boolean)
 	local power = Formulas.GetTotalPower(profile)
+	local dmgMult = Formulas.GetDamageMultiplier(profile)
+	local baseDamage = power * dmgMult
+
 	local crit = Formulas.GetCritChance(profile)
 	local isCrit = math.random() < crit
 	local isMulti = false
-	local dmg = power
+	local dmg = baseDamage
+
 	if isCrit then
 		dmg *= 2
 		-- multi-crit: upgrade crit hit to ×3
 		if math.random() < Formulas.GetMultiCritChance(profile) then
-			dmg = power * 3
+			dmg = baseDamage * 3
 			isMulti = true
 		end
 	end
@@ -410,10 +354,12 @@ function Formulas.EstimateKill(
 	armorFlat: number?
 ): (number, number, number, number, number)
 	local power = Formulas.GetTotalPower(profile)
+	local dmgMult = Formulas.GetDamageMultiplier(profile)
+	local baseDamage = power * dmgMult
 	local crit = Formulas.GetCritChance(profile)
 	local multi = Formulas.GetMultiCritChance(profile)
 	-- expected: normal + crit×2 + multi-crit portion (crit→×3)
-	local avgDmg = power * ((1 - crit) + crit * ((1 - multi) * 2 + multi * 3))
+	local avgDmg = baseDamage * ((1 - crit) + crit * ((1 - multi) * 2 + multi * 3))
 	local armor = armorFlat or 0
 	local effective = math.max(1, avgDmg - armor)
 	local hp = math.max(1, mobHp)
@@ -508,10 +454,7 @@ function Formulas.EstimateRebirthEta(profile: any): (number, number, number, num
 		return 0, 0, 0, 0
 	end
 
-	local power = Formulas.GetTotalPower(profile)
-	local cps = Formulas.GetCPS(profile)
-	local crit = Formulas.GetCritChance(profile)
-	local dps = power * cps * ((1 - crit) + crit * 2)
+	local dps = Formulas.GetDPS(profile)
 	if dps < 0.01 then
 		return math.huge, remDmg, remCoins, dps
 	end
