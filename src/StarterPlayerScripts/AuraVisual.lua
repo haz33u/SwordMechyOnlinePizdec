@@ -591,7 +591,7 @@ local function attachToCharacter(char: Model, model: Model, auraId: string)
 			end
 		end
 	end)
-		-- Prefer rigid offset without fighting weld: use Weld with Attachment offsets
+	if mode == "feet" or mode == "hrp" then
 		weld:Destroy()
 		local a0 = Instance.new("Attachment")
 		a0.Name = "AuraA0"
