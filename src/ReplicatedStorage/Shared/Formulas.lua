@@ -311,6 +311,34 @@ function Formulas.GetTotalPower(profile: any): number
 	return math.max(1, total)
 end
 
+-- Base Power gain earned per click (linear & smooth progression)
+function Formulas.GetClickPowerGain(profile: any): number
+	local baseGain = GameConfig.BASE_POWER_PER_CLICK or 1
+	local rebirthMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
+	local weaponMult = Formulas.GetWeaponPowerMult(profile)
+	local petMult = Formulas.GetPetPowerMult(profile)
+	local ench = Formulas.GetEnchantPools(profile)
+	local auraP = Formulas.GetAuraPct(profile)
+	local relicP = Formulas.GetRelicPct(profile)
+
+	local upgradePowerLvl = Formulas.GetUpgradeLevel(profile, "Power")
+	local upgradePowerPct = upgradePowerLvl * (UpgradeConfig.Defs.Power.effectPerLevel * 100)
+	local questPowerPct = profile.questPowerPct or 0
+	local boostPowerPct = Formulas.GetBoostPct(profile, "power")
+
+	local anom = Formulas.GetAnomalyMods()
+	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct
+
+	local gain = baseGain
+		* rebirthMult
+		* weaponMult
+		* petMult
+		* (1 + powerPct / 100)
+		* (anom.powerMult or 1)
+
+	return math.max(1, math.floor(gain + 0.5))
+end
+
 function Formulas.GetAttackSpeedPercent(profile: any): number
 	local ench = Formulas.GetEnchantPools(profile)
 	local clickLvl = Formulas.GetUpgradeLevel(profile, "ClickSpeed")

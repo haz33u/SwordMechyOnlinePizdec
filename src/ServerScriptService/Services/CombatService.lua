@@ -251,7 +251,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	if not mob or not mob.alive then
 		-- Air Click (clicking empty space or no target in range): still grants Power gain!
 		CombatService._lastSwing[player.UserId] = now
-		local clickGain = math.max(1, math.floor(Formulas.GetTotalPower(profile) * 0.1))
+		local clickGain = Formulas.GetClickPowerGain(profile)
 		profile.lifetimePower = (profile.lifetimePower or 0) + clickGain
 		profile.totalClicks = (profile.totalClicks or 0) + 1
 		QuestService.OnClick(profile)
@@ -272,7 +272,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	if dist > hitRange(isAuto) then
 		-- Target too far: treat as Air Click
 		CombatService._lastSwing[player.UserId] = now
-		local clickGain = math.max(1, math.floor(Formulas.GetTotalPower(profile) * 0.1))
+		local clickGain = Formulas.GetClickPowerGain(profile)
 		profile.lifetimePower = (profile.lifetimePower or 0) + clickGain
 		profile.totalClicks = (profile.totalClicks or 0) + 1
 		QuestService.OnClick(profile)
@@ -295,7 +295,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	damage = math.max(1, damage - armor)
 
 	mob.hp -= damage
-	local hitGain = math.max(1, math.floor(Formulas.GetTotalPower(profile) * 0.1))
+	local hitGain = Formulas.GetClickPowerGain(profile)
 	profile.lifetimePower = (profile.lifetimePower or 0) + hitGain
 	profile.lifetimeDamage += damage
 	profile.totalClicks = (profile.totalClicks or 0) + 1

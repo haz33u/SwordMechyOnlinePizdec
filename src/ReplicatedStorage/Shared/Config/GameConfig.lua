@@ -11,6 +11,7 @@ local GameConfig = {
 	-- combat
 	-- With Loc1 weapon "Сила" as powerMult (1–150), BASE≈250 → starter kills 1K HP goblin in ~4 hits (~2s at 2 CPS)
 	BASE_POWER = 250,
+	BASE_POWER_PER_CLICK = 1,
 	BASE_SWING_COOLDOWN = 0.50, -- seconds
 	MIN_SWING_COOLDOWN = 0.12,
 	--[[
