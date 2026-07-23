@@ -70,9 +70,9 @@ local AnimationConfig = {
 		["rbxassetid://12741376562"] = true,
 	},
 
-	SwordLength = 2.4,
-	SwordWidth = 0.22,
-	SwordDepth = 0.08,
+	SwordLength = 1.9,
+	SwordWidth = 0.16,
+	SwordDepth = 0.05,
 }
 
 function AnimationConfig.IsBannedId(id: string?): boolean

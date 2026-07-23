@@ -182,13 +182,14 @@ local function pickTarget(player: Player, targetMobUid: string?, locId: number, 
 	local bestDist = math.huge
 	local dummyInRange = nil
 
-	-- Free-aim / AUTO: only mobs in a forward cone (area in front of facing)
+	-- AUTO-CLICKER: 360° radius search around player (nearest mob in range, AFK farm friendly)
 	for _, m in CombatService._mobs do
 		if m.alive then
 			local sameLoc = m.locationId == locId or m.isDebug
 			if sameLoc then
 				local d = (m.position - origin).Magnitude
-				if d <= maxRange and inFrontCone(hrp, m.position, coneCos) then
+				local inCone = isAuto or inFrontCone(hrp, m.position, coneCos)
+				if d <= maxRange and inCone then
 					if m.isDebug then
 						dummyInRange = m
 					elseif d < bestDist then

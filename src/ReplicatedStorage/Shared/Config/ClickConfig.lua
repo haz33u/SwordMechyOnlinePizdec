@@ -86,7 +86,7 @@ local ClickConfig = {
 		[21] = 2000,
 	} :: { [number]: number },
 
-	AUTO_UNLOCKED_BY_DEFAULT = false,
+	AUTO_UNLOCKED_BY_DEFAULT = true,
 	AUTO_UNLOCK_REBIRTH = 999,
 	AUTO_UNLOCK_QUEST = nil :: string?,
 
