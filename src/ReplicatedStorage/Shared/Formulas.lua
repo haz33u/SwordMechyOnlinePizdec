@@ -38,7 +38,8 @@ function Formulas.GetActiveAnomaly(): AnomalyRuntime?
 		return nil
 	end
 	local endsAt = folder:GetAttribute(AnomalyConfig.ATTR_ENDS)
-	if type(endsAt) ~= "number" or endsAt <= os.time() then
+	local now = workspace:GetServerTimeNow()
+	if type(endsAt) ~= "number" or endsAt <= now then
 		return nil
 	end
 	local def = AnomalyConfig.Get(id)
