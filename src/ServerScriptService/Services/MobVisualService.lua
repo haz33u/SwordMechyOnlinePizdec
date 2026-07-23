@@ -101,18 +101,18 @@ end
 local function makeHpHud(parent: BasePart, title: string, tierColor: Color3)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "MobHud"
-	bb.Size = UDim2.fromOffset(160, 48)
-	bb.StudsOffset = Vector3.new(0, 3.8, 0)
-	bb.AlwaysOnTop = true
-	bb.MaxDistance = 90
+	bb.Size = UDim2.fromOffset(110, 32)
+	bb.StudsOffset = Vector3.new(0, 2.4, 0)
+	bb.AlwaysOnTop = false
+	bb.MaxDistance = 45
 	bb.Parent = parent
 
 	local nameLbl = Instance.new("TextLabel")
 	nameLbl.Name = "Name"
 	nameLbl.BackgroundTransparency = 1
-	nameLbl.Size = UDim2.new(1, 0, 0, 16)
+	nameLbl.Size = UDim2.new(1, 0, 0, 14)
 	nameLbl.Font = Enum.Font.GothamBold
-	nameLbl.TextSize = 13
+	nameLbl.TextSize = 11
 	nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 	nameLbl.TextStrokeTransparency = 0.25
 	nameLbl.Text = title
