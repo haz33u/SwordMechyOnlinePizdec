@@ -26,7 +26,7 @@ function Titles.Of(profile: any?): string
 			return t
 		end
 	end
-	return Titles.DEFAULT
+	return Titles.RankOf(profile)
 end
 
 --- Prestige rank string from rebirth level (does not replace custom title).
@@ -75,12 +75,17 @@ end
 
 --- Fill three plain labels: title | nick (fixed TextSize, no RichText)
 function Titles.PaintLine(titleLab: TextLabel, sepLab: TextLabel?, nickLab: TextLabel, profile: any?, nick: string)
-	local title = Titles.Of(profile)
-	titleLab.Text = title
-	titleLab.TextColor3 = Titles.TitleColor
-	titleLab.Font = Titles.Font
-	titleLab.TextScaled = false
-	titleLab.RichText = false
+	local hasCustom = type(profile) == "table" and type(profile.title) == "string" and (profile.title :: string):match("^%s*(.-)%s*$") ~= ""
+	if hasCustom then
+		titleLab.Text = profile.title
+		titleLab.TextColor3 = Titles.TitleColor
+		titleLab.Font = Titles.Font
+		titleLab.TextScaled = false
+		titleLab.RichText = false
+	else
+		local rbLevel = (profile and profile.rebirthLevel) or 0
+		Titles.PaintRank(titleLab, rbLevel)
+	end
 
 	if sepLab then
 		sepLab.Text = "|"
