@@ -81,6 +81,9 @@ function DungeonService.Init()
 	Remotes.Event("StartDungeon").OnServerEvent:Connect(function(player, tierId)
 		DungeonService.Start(player, tierId)
 	end)
+	Remotes.Event("ExitDungeon").OnServerEvent:Connect(function(player)
+		DungeonService.Exit(player)
+	end)
 end
 
 function DungeonService.Start(player: Player, tierId: string)
@@ -193,6 +196,19 @@ function DungeonService.Complete(player: Player, tierId: string)
 		color = "gold",
 	})
 	ProfileService.Push(player)
+function DungeonService.Exit(player: Player)
+	local profile = ProfileService.Get(player)
+	local run = DungeonService._runs[player.UserId]
+	if not run then
+		return
+	end
+	DungeonService._runs[player.UserId] = nil
+	if run.returnCFrame then
+		WorldService.TeleportToCFrame(player, run.returnCFrame)
+	else
+		WorldService.TeleportToLocation(player, profile and profile.currentLocation or 1)
+	end
+	Remotes.Event("Notify"):FireClient(player, { text = "Exited Dungeon. Returned to main map.", color = "gold" })
 end
 
 return DungeonService

@@ -68,6 +68,7 @@ local TABS = {
 	{ id = "pets", glyph = "🐾", label = "Pets", image = "rbxassetid://18514765742" }, -- Pet Icon
 	{ id = "auras", glyph = "✦", label = "Auras", image = "rbxassetid://119757312338567" }, -- Star
 	{ id = "relics", glyph = "◆", label = "Relics", image = "rbxassetid://9650296120" }, -- gem
+	{ id = "items", glyph = "🧪", label = "Items", image = "rbxassetid://115507101515088" }, -- Potions / Keys / Dust
 	{ id = "cases", glyph = "▣", label = "Cases", image = "rbxassetid://10168237291" }, -- chest
 	{ id = "shop", glyph = "$", label = "Shop", image = "rbxassetid://5684864511" }, -- gold coin
 	{ id = "profile", glyph = "☺", label = "Profile", image = "rbxassetid://98048782159448" }, -- bust
@@ -1652,6 +1653,60 @@ function Inventory.Bind(
 				local pass = GamePassConfig.Get("relicSlot")
 				if pass then
 					Net.PromptGamePass(pass.gamePassId)
+				end
+			end)
+
+		---------------------------------------------------------------- ITEMS (Potions, Keys & Enchant Dust)
+		elseif tab == "items" then
+			setPreviewAvatar(nil, "🧪")
+			local pKeys = profile.petKeys or 0
+			local aKeys = profile.auraKeys or 0
+			local dust = profile.enchantDust or 0
+			countLab.Text = string.format("Keys: Pet %d · Aura %d | Dust: %d", pKeys, aKeys, dust)
+
+			local scroll = makeSlotGrid(main)
+
+			local POTIONS = {
+				{ id = "SmallCoin", name = "Small Coin Potion", stat = "money", desc = "+25% Coins (10m)", color = GOLD },
+				{ id = "MidCoin", name = "Mid Coin Potion", stat = "money", desc = "+50% Coins (20m)", color = GOLD },
+				{ id = "BigCoin", name = "Big Coin Potion", stat = "money", desc = "+100% Coins (30m)", color = GOLD },
+				{ id = "SmallPower", name = "Small Power Potion", stat = "power", desc = "+25% Power (10m)", color = Color3.fromRGB(220, 50, 70) },
+				{ id = "MidPower", name = "Mid Power Potion", stat = "power", desc = "+50% Power (20m)", color = Color3.fromRGB(220, 50, 70) },
+				{ id = "BigPower", name = "Big Power Potion", stat = "power", desc = "+100% Power (30m)", color = Color3.fromRGB(220, 50, 70) },
+				{ id = "SmallDamage", name = "Small Damage Potion", stat = "damage", desc = "+25% Damage (10m)", color = Color3.fromRGB(160, 60, 220) },
+				{ id = "MidDamage", name = "Mid Damage Potion", stat = "damage", desc = "+50% Damage (20m)", color = Color3.fromRGB(160, 60, 220) },
+				{ id = "BigDamage", name = "Big Damage Potion", stat = "damage", desc = "+100% Damage (30m)", color = Color3.fromRGB(160, 60, 220) },
+				{ id = "SmallLuck", name = "Small Luck Potion", stat = "luck", desc = "+25% Luck (10m)", color = GREEN },
+				{ id = "MidLuck", name = "Mid Luck Potion", stat = "luck", desc = "+50% Luck (20m)", color = GREEN },
+				{ id = "BigLuck", name = "Big Luck Potion", stat = "luck", desc = "+100% Luck (30m)", color = GREEN },
+			}
+
+			local selectedPotion: string? = nil
+			for i, pot in ipairs(POTIONS) do
+				local btn = makeItemSlot(scroll, i, pot.color)
+				btn.Name = "P_" .. pot.id
+				local glyph = lbl(btn, "🧪", UDim2.fromScale(1, 0.65), nil, 26, TW, 37)
+				glyph.TextXAlignment = Enum.TextXAlignment.Center
+				local pLab = lbl(btn, pot.id, UDim2.new(1, 0, 0, 14), UDim2.new(0, 0, 1, -16), 10, TW, 37)
+				pLab.TextXAlignment = Enum.TextXAlignment.Center
+
+				btn.MouseEnter:Connect(function()
+					setTooltip(pot.name, "Consumable", pot.desc, "Click to Activate Potion", pot.color)
+				end)
+				btn.MouseLeave:Connect(hideTooltip)
+				btn.MouseButton1Click:Connect(function()
+					selectedPotion = pot.id
+					Net.UsePotion(pot.id)
+				end)
+			end
+			for i = #POTIONS + 1, MAX_SLOTS do
+				emptySlot(scroll, i)
+			end
+			local row = actionsRow()
+			keybind(row, 1, "LMB", "Use Potion")
+			actBtn(row, "Use Potion", Color3.fromRGB(0, 140, 180), 2, function()
+				if selectedPotion then
+					Net.UsePotion(selectedPotion)
 				end
 			end)
 

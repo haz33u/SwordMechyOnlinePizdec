@@ -119,6 +119,51 @@ function Hud.Mount(
 		store:OpenPanel("dungeons")
 	end)
 
+	---------------------------------------------------------------- EXIT DUNGEON BUTTON
+	local dungExitBanner = Instance.new("Frame")
+	dungExitBanner.Name = "DungeonExitButton"
+	dungExitBanner.Size = UDim2.fromOffset(160, 48)
+	dungExitBanner.Position = UDim2.new(0, 314, 1, -80)
+	dungExitBanner.BackgroundColor3 = Color3.fromRGB(80, 20, 30)
+	dungExitBanner.BackgroundTransparency = 0.15
+	dungExitBanner.ZIndex = 15
+	dungExitBanner.Parent = root
+
+	local dungExitCorner = Instance.new("UICorner")
+	dungExitCorner.CornerRadius = UDim.new(0, 10)
+	dungExitCorner.Parent = dungExitBanner
+
+	local dungExitStroke = Instance.new("UIStroke")
+	dungExitStroke.Color = Color3.fromRGB(255, 60, 80)
+	dungExitStroke.Thickness = 2
+	dungExitStroke.Parent = dungExitBanner
+
+	local dungExitTxt = Instance.new("TextLabel")
+	dungExitTxt.Size = UDim2.fromScale(1, 1)
+	dungExitTxt.BackgroundTransparency = 1
+	dungExitTxt.Text = "🚪 EXIT DUNGEON"
+	dungExitTxt.TextColor3 = Color3.fromRGB(255, 220, 220)
+	dungExitTxt.Font = Enum.Font.Arcade
+	dungExitTxt.TextSize = 13
+	dungExitTxt.Parent = dungExitBanner
+
+	local dungExitBtn = Instance.new("TextButton")
+	dungExitBtn.Size = UDim2.fromScale(1, 1)
+	dungExitBtn.BackgroundTransparency = 1
+	dungExitBtn.Text = ""
+	dungExitBtn.ZIndex = 20
+	dungExitBtn.Parent = dungExitBanner
+
+	dungExitBtn.MouseButton1Click:Connect(function()
+		local SharedRemotes = ReplicatedStorage:FindFirstChild("Remotes")
+		if SharedRemotes then
+			local exitEv = SharedRemotes:FindFirstChild("ExitDungeon")
+			if exitEv and exitEv:IsA("RemoteEvent") then
+				exitEv:FireServer()
+			end
+		end
+	end)
+
 	-- Inventory shell tabs (INVETAR): open weapons panel with tab
 	-- "character" / UP = dedicated Character Upgrade window (not inventory profile)
 	local INV_TABS = {

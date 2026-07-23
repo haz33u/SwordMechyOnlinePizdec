@@ -49,6 +49,14 @@ function Net.EnchantWeapon(uid: string)
 	Net.Event("EnchantWeapon"):FireServer(uid)
 end
 
+function Net.UsePotion(potionId: string)
+	Net.Event("UsePotion"):FireServer(potionId)
+end
+
+function Net.ExitDungeon()
+	Net.Event("ExitDungeon"):FireServer()
+end
+
 function Net.MergeWeapon(uid: string)
 	Net.Event("MergeWeapon"):FireServer(uid)
 end
