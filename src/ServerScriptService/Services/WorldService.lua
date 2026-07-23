@@ -79,6 +79,19 @@ function WorldService.TeleportToLocation(player: Player, locationId: number): bo
 	return true
 end
 
+function WorldService.TeleportToCFrame(player: Player, cf: CFrame): boolean
+	local char = player.Character
+	if not char then
+		return false
+	end
+	local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not hrp then
+		return false
+	end
+	hrp.CFrame = cf
+	return true
+end
+
 function WorldService.GetConfigCenter(locationId: number): Vector3
 	return WorldConfig.GetIslandCenter(locationId)
 end

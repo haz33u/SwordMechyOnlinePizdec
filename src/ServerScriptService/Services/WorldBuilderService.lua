@@ -174,6 +174,24 @@ function WorldBuilderService.Init()
 	makeMarker(spawnsFolder, "Spawn_D2", "L1_GoblinScout", "D", Vector3.new(12, 1, -130))
 
 	--------------------------------------------------------------------------
+	-- DUNGEON PORTAL: Dark Portal to Subterranean Arena
+	--------------------------------------------------------------------------
+	local dungeonPortalFrame = makePart(art, "DungeonPortalFrame", Vector3.new(12, 16, 2), CFrame.new(35, 8, -140), Color3.fromRGB(40, 20, 60), Enum.Material.Slate)
+	local dungeonPortalCore = makePart(art, "DungeonPortalCore", Vector3.new(8, 12, 0.4), CFrame.new(35, 7, -140), Color3.fromRGB(140, 30, 220), Enum.Material.Neon)
+	dungeonPortalCore.Transparency = 0.25
+
+	local dungeonPrompt = Instance.new("ProximityPrompt")
+	dungeonPrompt.ObjectText = "Dark Dungeon Portal"
+	dungeonPrompt.ActionText = "Enter Dungeon [E]"
+	dungeonPrompt.HoldDuration = 0.5
+	dungeonPrompt.MaxActivationDistance = 14
+	dungeonPrompt.Parent = dungeonPortalCore
+
+	dungeonPrompt.Triggered:Connect(function(player)
+		Remotes.Event("OpenPanel"):FireClient(player, "dungeons")
+	end)
+
+	--------------------------------------------------------------------------
 	-- BOSS ARENA: Goblin King's Throne
 	--------------------------------------------------------------------------
 	local throneBase = makePart(art, "ThroneAltar", Vector3.new(36, 3, 36), CFrame.new(0, 1.5, -190), Color3.fromRGB(70, 70, 75), Enum.Material.Cobblestone)
