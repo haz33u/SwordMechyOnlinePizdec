@@ -179,36 +179,30 @@ local function pickTarget(player: Player, targetMobUid: string?, locId: number, 
 	local mob = targetMobUid and CombatService._mobs[targetMobUid] or nil
 	if mob and mob.alive then
 		local pos = getMobPos(mob)
-		if (pos - origin).Magnitude <= maxRange * 1.35 then
+		if (pos - origin).Magnitude <= maxRange * 1.5 then
 			return mob
 		end
 	end
 
 	local best = nil
 	local bestDist = math.huge
-	local dummyInRange = nil
 
-	-- AUTO-CLICKER: 360° radius search around player (nearest mob in range, AFK farm friendly)
+	-- AUTO-CLICKER / Free-aim: 360° radius search around player (nearest mob within maxRange in world space)
 	for _, m in CombatService._mobs do
 		if m.alive then
-			local sameLoc = m.locationId == locId or m.isDebug
-			if sameLoc then
-				local pos = getMobPos(m)
-				local d = (pos - origin).Magnitude
-				local inCone = isAuto or inFrontCone(hrp, pos, coneCos)
-				if d <= maxRange and inCone then
-					if m.isDebug then
-						dummyInRange = m
-					elseif d < bestDist then
-						bestDist = d
-						best = m
-					end
+			local pos = getMobPos(m)
+			local d = (pos - origin).Magnitude
+			local inCone = isAuto or inFrontCone(hrp, pos, coneCos)
+			if d <= maxRange and inCone then
+				if d < bestDist then
+					bestDist = d
+					best = m
 				end
 			end
 		end
 	end
 
-	return best or dummyInRange
+	return best
 end
 
 function CombatService.Swing(player: Player, targetMobUid: string?, source: any?)
@@ -219,9 +213,11 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 
 	local isAuto = source == "auto"
 	if isAuto then
-		if not profile.autoClicker or not Formulas.IsAutoClickerUnlocked(profile) then
+		if not Formulas.IsAutoClickerUnlocked(profile) then
 			return
 		end
+		-- ensure autoClicker flag is synced to profile
+		profile.autoClicker = true
 	end
 
 	local now = os.clock()
