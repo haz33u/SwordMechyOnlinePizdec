@@ -4,6 +4,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local RebirthConfig = require(Shared.Config.RebirthConfig)
 local NumberFormat = require(Shared.NumberFormat)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local Formulas = require(Shared.Formulas)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 local QuestService = require(script.Parent.QuestService)
@@ -29,11 +30,11 @@ function RebirthService.Try(player: Player): boolean
 		return false
 	end
 
-	local dmgCost, coinCost = RebirthConfig.GetCosts(nextLevel)
-	local dmg = profile.lifetimeDamage or 0
+	local powerCost, coinCost = RebirthConfig.GetCosts(nextLevel)
+	local currentPower = Formulas.GetTotalPower(profile)
 	local coins = profile.coins or 0
 
-	local ok, reason = RebirthConfig.CanAfford(dmg, coins, nextLevel)
+	local ok, reason = RebirthConfig.CanAfford(currentPower, coins, nextLevel)
 	if not ok then
 		Remotes.Event("Notify"):FireClient(player, {
 			text = reason or "Not enough resources",
@@ -42,15 +43,14 @@ function RebirthService.Try(player: Player): boolean
 		return false
 	end
 
-	-- reference game: wipe damage progress + balance; keep weapons/pets/locations
 	if coinCost > 0 then
 		profile.coins = coins - coinCost
 	end
 	if RebirthConfig.WIPE_COINS_ON_REBIRTH then
 		profile.coins = 0
 	end
-	if RebirthConfig.WIPE_DAMAGE_ON_REBIRTH then
-		profile.lifetimeDamage = 0
+	if RebirthConfig.WIPE_POWER_ON_REBIRTH then
+		profile.lifetimePower = 0
 	end
 
 	profile.rebirthLevel = nextLevel

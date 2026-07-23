@@ -23,15 +23,15 @@ local RebirthConfig = {
 	MAX_LEVEL = 60,
 
 	----------------------------------------------------------------------
-	-- Damage thresholds (level = next rebirth index)
+	-- Power thresholds (level = next rebirth index)
 	----------------------------------------------------------------------
-	DAMAGE_COST = {
-		[1] = 75_000, -- dump R1
-		[2] = 2_500_000, -- dump R2
-		[3] = 87_500_000, -- dump R3
+	POWER_COST = {
+		[1] = 5_000, -- dump R1 (Power requirement)
+		[2] = 150_000, -- dump R2
+		[3] = 2_500_000, -- dump R3
 	} :: { [number]: number },
 
-	-- R4+: geometric from R3 (slightly softer than ×35 so R60 is grindy not absurd)
+	-- R4+: geometric from R3
 	GROWTH_AFTER_R3 = 28,
 
 	COIN_COST = {
@@ -40,7 +40,7 @@ local RebirthConfig = {
 		[3] = 0,
 	} :: { [number]: number },
 	WIPE_COINS_ON_REBIRTH = true,
-	WIPE_DAMAGE_ON_REBIRTH = true,
+	WIPE_POWER_ON_REBIRTH = true,
 
 	----------------------------------------------------------------------
 	-- Mult: fixed early, then banded growth (NOT flat ×2.5 forever)
@@ -138,15 +138,15 @@ local function growthForStep(toLevel: number): number
 	return 1.2
 end
 
-function RebirthConfig.GetDamageCost(level: number): number
+function RebirthConfig.GetPowerCost(level: number): number
 	if level < 1 then
 		return 0
 	end
-	local fixed = RebirthConfig.DAMAGE_COST[level]
+	local fixed = RebirthConfig.POWER_COST[level]
 	if fixed then
 		return fixed
 	end
-	local base = RebirthConfig.DAMAGE_COST[3] or 87_500_000
+	local base = RebirthConfig.POWER_COST[3] or 2_500_000
 	local g = RebirthConfig.GROWTH_AFTER_R3 or 28
 	return math.floor(base * (g ^ (level - 3)))
 end
@@ -163,11 +163,11 @@ function RebirthConfig.GetCoinCost(level: number): number
 end
 
 function RebirthConfig.GetCost(level: number): number
-	return RebirthConfig.GetDamageCost(level)
+	return RebirthConfig.GetPowerCost(level)
 end
 
 function RebirthConfig.GetCosts(level: number): (number, number)
-	return RebirthConfig.GetDamageCost(level), RebirthConfig.GetCoinCost(level)
+	return RebirthConfig.GetPowerCost(level), RebirthConfig.GetCoinCost(level)
 end
 
 function RebirthConfig.GetMultAfter(level: number): number
@@ -278,17 +278,17 @@ function RebirthConfig.GetRankStyle(level: number): RankStyle
 	}
 end
 
-function RebirthConfig.GetProgress(lifetimeDamage: number, coins: number, level: number): number
-	local dmgCost, coinCost = RebirthConfig.GetCosts(level)
-	local pDmg = if dmgCost > 0 then math.clamp(lifetimeDamage / dmgCost, 0, 1) else 1
+function RebirthConfig.GetProgress(power: number, coins: number, level: number): number
+	local powerCost, coinCost = RebirthConfig.GetCosts(level)
+	local pPower = if powerCost > 0 then math.clamp(power / powerCost, 0, 1) else 1
 	local pCoin = if coinCost > 0 then math.clamp(coins / coinCost, 0, 1) else 1
-	return math.min(pDmg, pCoin)
+	return math.min(pPower, pCoin)
 end
 
-function RebirthConfig.CanAfford(lifetimeDamage: number, coins: number, level: number): (boolean, string?)
-	local dmgCost, coinCost = RebirthConfig.GetCosts(level)
-	if lifetimeDamage < dmgCost then
-		return false, string.format("Need %s damage (have %s)", tostring(dmgCost), tostring(math.floor(lifetimeDamage)))
+function RebirthConfig.CanAfford(power: number, coins: number, level: number): (boolean, string?)
+	local powerCost, coinCost = RebirthConfig.GetCosts(level)
+	if power < powerCost then
+		return false, string.format("Need %s Power (have %s)", tostring(powerCost), tostring(math.floor(power)))
 	end
 	if coinCost > 0 and coins < coinCost then
 		return false, string.format("Need %s coins (have %s)", tostring(coinCost), tostring(math.floor(coins)))

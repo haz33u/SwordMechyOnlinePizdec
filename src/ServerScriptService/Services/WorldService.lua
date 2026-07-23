@@ -67,16 +67,7 @@ function WorldService.TeleportToLocation(player: Player, locationId: number): bo
 	if not cf then
 		return false
 	end
-	local char = player.Character
-	if not char then
-		return false
-	end
-	local hrp = char:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not hrp then
-		return false
-	end
-	hrp.CFrame = cf
-	return true
+	return WorldService.TeleportToCFrame(player, cf)
 end
 
 function WorldService.TeleportToCFrame(player: Player, cf: CFrame): boolean
@@ -88,7 +79,11 @@ function WorldService.TeleportToCFrame(player: Player, cf: CFrame): boolean
 	if not hrp then
 		return false
 	end
-	hrp.CFrame = cf
+	pcall(function()
+		hrp.AssemblyLinearVelocity = Vector3.zero
+		hrp.AssemblyAngularVelocity = Vector3.zero
+	end)
+	char:PivotTo(cf)
 	return true
 end
 
