@@ -187,7 +187,8 @@ function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, mode
 			else (-hiltLocal).Unit
 	else
 		-- hiltEnd: which geometric end is the HANDLE (+1 / -1 along long axis)
-		local hiltEnd = 1
+		-- Standard authored meshes (+Y = tip, -Y = pommel): handle is at -1.
+		local hiltEnd = -1
 		if ov and type(ov.hiltEnd) == "number" and ov.hiltEnd ~= 0 then
 			hiltEnd = if ov.hiltEnd > 0 then 1 else -1
 		elseif ov and type(ov.tipSign) == "number" and ov.tipSign ~= 0 then
@@ -195,7 +196,7 @@ function WeaponModels.EnsureHiltAttachment(model: Model, toolGrip: CFrame?, mode
 			hiltEnd = if ov.tipSign > 0 then -1 else 1
 		elseif toolGrip and toolGrip.Position.Magnitude > 0.01 then
 			local proj = toolGrip.Position:Dot(axis)
-			hiltEnd = if proj >= 0 then 1 else -1
+			hiltEnd = if proj > 0 then 1 else -1
 		end
 		if ov and ov.flipTip then
 			hiltEnd = -hiltEnd
