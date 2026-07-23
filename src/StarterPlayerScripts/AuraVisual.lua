@@ -459,8 +459,17 @@ local function cloneAuraModel(auraId: string): Model?
 	local def = AuraConfig.Get(auraId)
 	local modelName = AuraModelConfig.GetModelName(auraId)
 	local folder = getFolder()
-	if folder and modelName then
-		local template = folder:FindFirstChild(modelName)
+	if folder then
+		local template: Instance? = nil
+		if modelName and modelName ~= "" then
+			template = folder:FindFirstChild(modelName)
+		end
+		if not template then
+			template = folder:FindFirstChild(auraId)
+		end
+		if not template and def and def.name then
+			template = folder:FindFirstChild(def.name)
+		end
 		if template and template:IsA("Model") then
 			local clone = template:Clone()
 			clone.Name = "Aura_" .. auraId
@@ -485,6 +494,7 @@ local function cloneAuraModel(auraId: string): Model?
 				inv.Parent = clone
 				clone.PrimaryPart = inv
 			end
+			print("[AuraVisual] Loaded custom 3D/VFX Aura model:", template.Name, "for aura", auraId)
 			return clone
 		end
 	end
