@@ -281,12 +281,15 @@ local function getAuraTheme(auraId: string, def: any?): { mainColor: Color3, sec
 	local sec = main:Lerp(Color3.new(1, 1, 1), 0.3)
 	local tex = "rbxasset://textures/particles/sparkles_main.dds"
 	local spd = 1.2
-
-	if string.find(lower, "ice", 1, true) or string.find(lower, "frost", 1, true) then
-		main = Color3.fromRGB(100, 220, 255)
-		sec = Color3.fromRGB(220, 245, 255)
+	if string.find(lower, "test", 1, true) or auraId == "A_Test" then
+		main = Color3.fromRGB(0, 240, 255)
+		sec = Color3.fromRGB(255, 0, 180)
+		spd = 2.5
+	elseif string.find(lower, "ice", 1, true) or string.find(lower, "frost", 1, true) then
+		main = Color3.fromRGB(100, 210, 255)
+		sec = Color3.fromRGB(200, 240, 255)
 		spd = 1.0
-	elseif string.find(lower, "fire", 1, true) or string.find(lower, "flame", 1, true) then
+	elseif string.find(lower, "fire", 1, true) or string.find(lower, "flame", 1, true) or string.find(lower, "blaze", 1, true) then
 		main = Color3.fromRGB(255, 90, 40)
 		sec = Color3.fromRGB(255, 200, 50)
 		spd = 2.2
@@ -328,7 +331,7 @@ local function makeProcedural(auraId: string, def: any?): Model
 		local ring = Instance.new("Part")
 		ring.Name = "Ring"
 		ring.Shape = Enum.PartType.Cylinder
-		ring.Size = Vector3.new(0.18, 3.4, 3.4)
+		ring.Size = Vector3.new(0.12, 2.1, 2.1)
 		ring.CFrame = CFrame.Angles(0, 0, math.rad(90))
 		ring.Color = theme.mainColor
 		ring.Material = Enum.Material.Neon
@@ -341,7 +344,7 @@ local function makeProcedural(auraId: string, def: any?): Model
 		local innerRing = Instance.new("Part")
 		innerRing.Name = "InnerRing"
 		innerRing.Shape = Enum.PartType.Cylinder
-		innerRing.Size = Vector3.new(0.22, 2.2, 2.2)
+		innerRing.Size = Vector3.new(0.15, 1.4, 1.4)
 		innerRing.CFrame = CFrame.Angles(0, 0, math.rad(90))
 		innerRing.Color = theme.secColor
 		innerRing.Material = Enum.Material.Neon
@@ -367,13 +370,13 @@ local function makeProcedural(auraId: string, def: any?): Model
 		for _, side in { -1, 1 } do
 			local wing = Instance.new("Part")
 			wing.Name = "Wing"
-			wing.Size = Vector3.new(0.25, 2.4, 1.5)
+			wing.Size = Vector3.new(0.15, 1.4, 0.9)
 			wing.Color = theme.mainColor
 			wing.Material = Enum.Material.Neon
 			wing.Transparency = 0.22
 			wing.CanCollide = false
 			wing.Massless = true
-			wing.CFrame = CFrame.new(side * 0.95, 0.55, 0.55) * CFrame.Angles(0, side * 0.4, side * 0.3)
+			wing.CFrame = CFrame.new(side * 0.75, 0.4, 0.45) * CFrame.Angles(0, side * 0.4, side * 0.3)
 			wing.Parent = m
 
 			local w = Instance.new("WeldConstraint")
@@ -396,8 +399,8 @@ local function makeProcedural(auraId: string, def: any?): Model
 		ColorSequenceKeypoint.new(1, theme.secColor),
 	})
 	pe.Size = NumberSequence.new({
-		NumberSequenceKeypoint.new(0, 0.45),
-		NumberSequenceKeypoint.new(0.5, 0.65),
+		NumberSequenceKeypoint.new(0, 0.25),
+		NumberSequenceKeypoint.new(0.5, 0.35),
 		NumberSequenceKeypoint.new(1, 0.05),
 	})
 	pe.Transparency = NumberSequence.new({
@@ -405,10 +408,10 @@ local function makeProcedural(auraId: string, def: any?): Model
 		NumberSequenceKeypoint.new(0.7, 0.3),
 		NumberSequenceKeypoint.new(1, 1.0),
 	})
-	pe.Lifetime = NumberRange.new(0.7, 1.4)
-	pe.Rate = if mode == "back" then 16 else 32
-	pe.Speed = NumberRange.new(0.6 * theme.speed, 2.0 * theme.speed)
-	pe.SpreadAngle = Vector2.new(25, 25)
+	pe.Lifetime = NumberRange.new(0.6, 1.1)
+	pe.Rate = if mode == "back" then 12 else 18
+	pe.Speed = NumberRange.new(0.4 * theme.speed, 1.4 * theme.speed)
+	pe.SpreadAngle = Vector2.new(18, 18)
 	pe.LightEmission = 0.75
 	pe.Parent = att
 

@@ -32,6 +32,17 @@ local AuraConfig = {
 		----------------------------------------------------------------------
 		-- COMMON (~6.648% each)
 		----------------------------------------------------------------------
+		A_Test = {
+			id = "A_Test",
+			name = "Test",
+			rarity = "Mythic",
+			powerPct = 250,
+			damagePct = 250,
+			coinPct = 100,
+			critPct = 50,
+			multiCritPct = 25,
+			dropWeight = 1.0,
+		},
 		A_Ice = {
 			id = "A_Ice",
 			name = "Ice Aura",

@@ -9,12 +9,13 @@ export type AttachMode = "hrp" | "feet" | "back"
 local AuraModelConfig = {
 	FolderName = "AuraVfx",
 	-- Mesh auras normalized (particle auras often small parts + big FX)
-	TargetExtent = 4.0,
+	TargetExtent = 2.2,
 	TargetExtentMinFactor = 0.04,
 	TargetExtentMaxFactor = 20,
 
 	-- Template name under AuraVfx (or empty = procedural only)
 	ModelByAuraId = {
+		A_Test = "",
 		A_C1 = "Spark",
 		A_C2 = "Foliage",
 		A_U1 = "WolfMist",
@@ -26,6 +27,7 @@ local AuraModelConfig = {
 
 	-- How to attach (mesh / procedural)
 	AttachMode = {
+		A_Test = "feet",
 		A_C1 = "hrp",
 		A_C2 = "feet",
 		A_U1 = "hrp",
@@ -37,9 +39,9 @@ local AuraModelConfig = {
 
 	-- Local offset from HRP (feet = lower Y, back = +Z behind)
 	OffsetByMode = {
-		hrp = Vector3.new(0, 0.2, 0),
-		feet = Vector3.new(0, -2.6, 0),
-		back = Vector3.new(0, 0.4, 0.85),
+		hrp = Vector3.new(0, 0.1, 0),
+		feet = Vector3.new(0, -2.2, 0),
+		back = Vector3.new(0, 0.3, 0.65),
 	},
 
 	RarityColor = {

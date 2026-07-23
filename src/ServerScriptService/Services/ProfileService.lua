@@ -159,6 +159,29 @@ function ProfileService.Load(player: Player)
 			data.unlocks.autoClicker = false
 		end
 	end
+
+	-- Auto-grant new custom "Test" Aura (A_Test) to inventory
+	if type(data.auras) ~= "table" then
+		data.auras = {}
+	end
+	local hasTest = false
+	for _, a in data.auras do
+		if a.id == "A_Test" then
+			hasTest = true
+			break
+		end
+	end
+	if not hasTest then
+		local testUid = ProfileService.NewUid()
+		table.insert(data.auras, {
+			uid = testUid,
+			id = "A_Test",
+			level = 1,
+		})
+		if not data.equippedAura then
+			data.equippedAura = testUid
+		end
+	end
 	-- migrate: gamepass unlocks → purchase flags (do NOT wipe owned auto)
 	if data.unlocks.autoClicker == true or data.autoClickerUnlocked == true then
 		data.purchasedAutoClicker = true
