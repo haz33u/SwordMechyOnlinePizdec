@@ -1265,6 +1265,23 @@ function Inventory.Bind(
 					UIKit.Corner(dot, 99)
 				end
 
+				if (w.level or 1) > 1 then
+					local badge = Instance.new("TextLabel")
+					badge.Name = "LevelBadge"
+					badge.BackgroundTransparency = 0
+					badge.BackgroundColor3 = Color3.fromRGB(240, 180, 40)
+					badge.Size = UDim2.fromOffset(22, 14)
+					badge.Position = UDim2.new(1, -24, 1, -16)
+					badge.Font = Enum.Font.GothamBold
+					badge.TextSize = 10
+					badge.TextColor3 = Color3.fromRGB(20, 20, 20)
+					badge.Text = "L" .. tostring(w.level)
+					badge.ZIndex = 40
+					badge.Active = false
+					badge.Parent = btn
+					UIKit.Corner(badge, 4)
+				end
+
 				local name = (def and def.name) or WeaponConfig.GetDisplayName(w.id)
 				local rar = (def and def.rarity) or "Common"
 				local mult = (def and def.powerMult) or 1
@@ -1359,6 +1376,25 @@ function Inventory.Bind(
 						end
 					end
 				end)
+
+				-- Merge button for 5x L1 -> L2 and 3x L2 -> L3
+				local selLevel = selected.level or 1
+				local needCount = if selLevel == 1 then 5 else (if selLevel == 2 then 3 else nil)
+				if needCount then
+					local matchesCount = 0
+					for _, w in ipairs(weapons) do
+						if w.id == selected.id and (w.level or 1) == selLevel then
+							matchesCount += 1
+						end
+					end
+					local canMerge = matchesCount >= needCount
+					local mergeText = string.format("Merge (%d/%d)", matchesCount, needCount)
+					local mergeCol = if canMerge then Color3.fromRGB(210, 130, 20) else Color3.fromRGB(60, 60, 60)
+					actBtn(row, mergeText, mergeCol, 3.5, function()
+						Net.MergeWeapon(selUid)
+					end)
+				end
+
 				actBtn(row, "Enchant", Color3.fromRGB(70, 40, 100), 4, function()
 					Net.EnchantWeapon(selUid)
 					openModal("enchant", selected)

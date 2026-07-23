@@ -40,6 +40,8 @@ local WeaponConfig = {
 		"Limited",
 	},
 
+	MAX_WEAPON_LEVEL = 3,
+
 	HighRarities = {
 		Epic = true,
 		Legendary = true,
@@ -468,6 +470,25 @@ function WeaponConfig.GetPublicCatalog(): { any }
 		return a.powerMult < b.powerMult
 	end)
 	return out
+end
+function WeaponConfig.GetMergeNeed(level: number): number?
+	local lv = math.clamp(math.floor(level or 1), 1, 3)
+	if lv == 1 then
+		return 5
+	elseif lv == 2 then
+		return 3
+	end
+	return nil
+end
+
+function WeaponConfig.GetLevelPowerMult(level: number): number
+	local lv = math.clamp(math.floor(level or 1), 1, 3)
+	if lv == 2 then
+		return 1.8
+	elseif lv == 3 then
+		return 3.0
+	end
+	return 1.0
 end
 
 return WeaponConfig
