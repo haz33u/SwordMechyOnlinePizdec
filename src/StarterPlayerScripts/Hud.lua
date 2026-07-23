@@ -70,10 +70,54 @@ function Hud.Mount(
 		Z = 10,
 		Deep = true,
 	})
-	local railPad = UIKit.Pad(rail, 10)
-	local railList = UIKit.List(rail, 8, false, Enum.HorizontalAlignment.Center)
-	railList.VerticalAlignment = Enum.VerticalAlignment.Top
-	UIKit.SizeConstraint(rail, Vector2.new(56, 200), Vector2.new(120, 900))
+	---------------------------------------------------------------- DUNGEON QUICK TELEPORT BUTTON
+	local dungBanner = Instance.new("Frame")
+	dungBanner.Name = "DungeonQuickTeleport"
+	dungBanner.Size = UDim2.fromOffset(210, 48)
+	dungBanner.Position = UDim2.new(0, 96, 1, -80)
+	dungBanner.BackgroundColor3 = Color3.fromRGB(30, 20, 45)
+	dungBanner.BackgroundTransparency = 0.15
+	dungBanner.ZIndex = 15
+	dungBanner.Parent = root
+
+	local dungCorner = Instance.new("UICorner")
+	dungCorner.CornerRadius = UDim.new(0, 10)
+	dungCorner.Parent = dungBanner
+
+	local dungStroke = Instance.new("UIStroke")
+	dungStroke.Color = Color3.fromRGB(180, 40, 255)
+	dungStroke.Thickness = 2
+	dungStroke.Parent = dungBanner
+
+	local dungIcon = Instance.new("TextLabel")
+	dungIcon.Size = UDim2.fromOffset(36, 36)
+	dungIcon.Position = UDim2.fromOffset(6, 6)
+	dungIcon.BackgroundTransparency = 1
+	dungIcon.Text = "🏰"
+	dungIcon.TextSize = 22
+	dungIcon.Parent = dungBanner
+
+	local dungTxt = Instance.new("TextLabel")
+	dungTxt.Size = UDim2.new(1, -50, 1, 0)
+	dungTxt.Position = UDim2.fromOffset(46, 0)
+	dungTxt.BackgroundTransparency = 1
+	dungTxt.Text = "DUNGEON READY!\nClick to Teleport [E]"
+	dungTxt.TextColor3 = Color3.fromRGB(245, 220, 255)
+	dungTxt.Font = Enum.Font.Arcade
+	dungTxt.TextSize = 12
+	dungTxt.TextXAlignment = Enum.TextXAlignment.Left
+	dungTxt.Parent = dungBanner
+
+	local dungBtn = Instance.new("TextButton")
+	dungBtn.Size = UDim2.fromScale(1, 1)
+	dungBtn.BackgroundTransparency = 1
+	dungBtn.Text = ""
+	dungBtn.ZIndex = 20
+	dungBtn.Parent = dungBanner
+
+	dungBtn.MouseButton1Click:Connect(function()
+		store:OpenPanel("dungeons")
+	end)
 
 	-- Inventory shell tabs (INVETAR): open weapons panel with tab
 	-- "character" / UP = dedicated Character Upgrade window (not inventory profile)
