@@ -222,11 +222,10 @@ local function sanitize(root: Instance)
 			d.Massless = true
 			d.Anchored = false
 			d.CastShadow = false
-			-- Hide leftover solid junk that isn't neon/effect mesh
-			if not hasVfx(d) and d.Material ~= Enum.Material.Neon and d.Transparency < 0.9 then
-				-- semi-hide non-vfx bricks that packs leave as holders
-				if d.Name ~= "Root" and d.Name ~= "Ring" and d.Name ~= "Wing" then
-					d.Transparency = math.max(d.Transparency, 0.85)
+			-- Make holder/base parts invisible if they don't contain particle emitters
+			if not hasVfx(d) and d.Name ~= "Root" then
+				if not d:IsA("MeshPart") and not d:FindFirstChildOfClass("SpecialMesh") then
+					d.Transparency = 1
 				end
 			end
 		elseif d:IsA("ParticleEmitter") or d:IsA("Beam") or d:IsA("Trail") or d:IsA("Fire") or d:IsA("Smoke") or d:IsA("Sparkles") then
@@ -314,7 +313,6 @@ local function makeProcedural(auraId: string, def: any?): Model
 	local m = Instance.new("Model")
 	m.Name = "AuraProc_" .. auraId
 	local theme = getAuraTheme(auraId, def)
-	local mode = AuraModelConfig.GetAttachMode(auraId)
 
 	local root = Instance.new("Part")
 	root.Name = "Root"
@@ -326,85 +324,13 @@ local function makeProcedural(auraId: string, def: any?): Model
 	root.Parent = m
 	m.PrimaryPart = root
 
-	-- Layer 1: Ground Magic Seals / Rings
-	local ring = Instance.new("Part")
-	ring.Name = "Ring"
-	ring.Shape = Enum.PartType.Cylinder
-	ring.Size = Vector3.new(0.1, 3.2, 3.2)
-	ring.CFrame = CFrame.Angles(0, 0, math.rad(90))
-	ring.Color = theme.mainColor
-	ring.Material = Enum.Material.Neon
-	ring.Transparency = 0.35
-	ring.CanCollide = false
-	ring.Massless = true
-	ring.Anchored = false
-	ring.Parent = m
-
-	local innerRing = Instance.new("Part")
-	innerRing.Name = "InnerRing"
-	innerRing.Shape = Enum.PartType.Cylinder
-	innerRing.Size = Vector3.new(0.12, 2.2, 2.2)
-	innerRing.CFrame = CFrame.Angles(0, 0, math.rad(90))
-	innerRing.Color = theme.secColor
-	innerRing.Material = Enum.Material.Neon
-	innerRing.Transparency = 0.45
-	innerRing.CanCollide = false
-	innerRing.Massless = true
-	innerRing.Anchored = false
-	innerRing.Parent = m
-
-	local w1 = Instance.new("WeldConstraint")
-	w1.Part0 = root
-	w1.Part1 = ring
-	w1.Parent = ring
-
-	local w2 = Instance.new("WeldConstraint")
-	w2.Part0 = root
-	w2.Part1 = innerRing
-	w2.Parent = innerRing
-
-	-- Layer 2: 3D Floating Orbiting Energy Spheres (RNG-style Orbs)
-	local orbsFolder = Instance.new("Folder")
-	orbsFolder.Name = "OrbitingOrbs"
-	orbsFolder.Parent = m
-
-	local numOrbs = 3
-	for i = 1, numOrbs do
-		local angle = (i / numOrbs) * math.pi * 2
-		local radius = 2.4
-		local orb = Instance.new("Part")
-		orb.Name = "Orb_" .. i
-		orb.Shape = Enum.PartType.Ball
-		orb.Size = Vector3.new(0.65, 0.65, 0.65)
-		orb.Color = if (i % 2 == 1) then theme.mainColor else theme.secColor
-		orb.Material = Enum.Material.Neon
-		orb.CanCollide = false
-		orb.Massless = true
-		orb.Anchored = false
-		orb.CFrame = CFrame.new(math.cos(angle) * radius, 1.2, math.sin(angle) * radius)
-		orb.Parent = orbsFolder
-
-		local orbLight = Instance.new("PointLight")
-		orbLight.Color = orb.Color
-		orbLight.Range = 8
-		orbLight.Brightness = 2.5
-		orbLight.Parent = orb
-
-		local orbEmit = Instance.new("ParticleEmitter")
-		orbEmit.Texture = theme.texture
-		orbEmit.Color = ColorSequence.new(orb.Color)
-		orbEmit.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
-		orbEmit.Rate = 16
-		orbEmit.Speed = NumberRange.new(0.5, 1.8)
-		orbEmit.LightEmission = 0.95
-		orbEmit.Parent = orb
-	end
-
-	-- Layer 3: Upward Swirling Energy Vortex (ParticleEmitter)
+	-- Pure Particle VFX Attachment (NO solid neon blocks / cylinders)
 	local att = Instance.new("Attachment")
 	att.Name = "AuraEmit"
+	att.Position = Vector3.new(0, -1.0, 0)
 	att.Parent = root
 
+	-- Layer 1: Upward Swirling Energy Column
 	local pe = Instance.new("ParticleEmitter")
 	pe.Name = "ColumnParticles"
 	pe.Texture = theme.texture
@@ -415,7 +341,7 @@ local function makeProcedural(auraId: string, def: any?): Model
 	})
 	pe.Size = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, 0.35),
-		NumberSequenceKeypoint.new(0.5, 0.65),
+		NumberSequenceKeypoint.new(0.5, 0.75),
 		NumberSequenceKeypoint.new(1, 0.1),
 	})
 	pe.Transparency = NumberSequence.new({
@@ -424,32 +350,32 @@ local function makeProcedural(auraId: string, def: any?): Model
 		NumberSequenceKeypoint.new(1, 1.0),
 	})
 	pe.Lifetime = NumberRange.new(0.8, 1.5)
-	pe.Rate = 28
+	pe.Rate = 32
 	pe.Speed = NumberRange.new(1.2 * theme.speed, 3.2 * theme.speed)
-	pe.SpreadAngle = Vector2.new(22, 22)
+	pe.SpreadAngle = Vector2.new(25, 25)
 	pe.RotSpeed = NumberRange.new(-120, 120)
 	pe.LightEmission = 0.95
 	pe.Parent = att
 
-	-- Layer 4: Orbital Swirling Starlight Embers
+	-- Layer 2: Orbital Swirling Starlight Embers
 	local peOrbit = Instance.new("ParticleEmitter")
 	peOrbit.Name = "OrbitalEmbers"
 	peOrbit.Texture = theme.texture
 	peOrbit.Color = ColorSequence.new(theme.secColor)
-	peOrbit.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
+	peOrbit.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.4), NumberSequenceKeypoint.new(1, 0) })
 	peOrbit.Lifetime = NumberRange.new(1.0, 1.8)
-	peOrbit.Rate = 18
+	peOrbit.Rate = 20
 	peOrbit.Speed = NumberRange.new(1.5, 3.5)
 	peOrbit.SpreadAngle = Vector2.new(180, 180)
 	peOrbit.LightEmission = 0.95
 	peOrbit.Parent = att
 
-	-- Layer 5: Ambient PointLight illuminating player & surroundings
+	-- Layer 3: Ambient PointLight illuminating player
 	local mainLight = Instance.new("PointLight")
 	mainLight.Name = "AuraLight"
 	mainLight.Color = theme.mainColor
-	mainLight.Range = 16
-	mainLight.Brightness = 2.5
+	mainLight.Range = 14
+	mainLight.Brightness = 2.0
 	mainLight.Parent = root
 
 	return m
@@ -458,45 +384,51 @@ end
 local function cloneAuraModel(auraId: string): Model?
 	local def = AuraConfig.Get(auraId)
 	local modelName = AuraModelConfig.GetModelName(auraId)
-	local folder = getFolder()
-	if folder then
-		local template: Instance? = nil
-		if modelName and modelName ~= "" then
-			template = folder:FindFirstChild(modelName)
+	
+	-- Search in ReplicatedStorage recursively across all folders (AuraVfx, Auras, etc.)
+	local template: Instance? = nil
+	local candidates = { ReplicatedStorage:FindFirstChild("AuraVfx"), ReplicatedStorage:FindFirstChild("Auras"), ReplicatedStorage }
+	for _, folder in candidates do
+		if folder then
+			if modelName and modelName ~= "" then
+				template = folder:FindFirstChild(modelName, true)
+			end
+			if not template then
+				template = folder:FindFirstChild(auraId, true)
+			end
+			if not template and def and def.name then
+				template = folder:FindFirstChild(def.name, true)
+			end
+			if template then break end
 		end
-		if not template then
-			template = folder:FindFirstChild(auraId)
-		end
-		if not template and def and def.name then
-			template = folder:FindFirstChild(def.name)
-		end
-		if template and template:IsA("Model") then
-			local clone = template:Clone()
-			clone.Name = "Aura_" .. auraId
-			sanitize(clone)
-			if not clone.PrimaryPart then
-				for _, d in clone:GetDescendants() do
-					if d:IsA("BasePart") then
-						clone.PrimaryPart = d
-						break
-					end
+	end
+
+	if template and template:IsA("Model") then
+		local clone = template:Clone()
+		clone.Name = "Aura_" .. auraId
+		sanitize(clone)
+		if not clone.PrimaryPart then
+			for _, d in clone:GetDescendants() do
+				if d:IsA("BasePart") then
+					clone.PrimaryPart = d
+					break
 				end
 			end
-			normalizeExtent(clone, AuraModelConfig.TargetExtent or 2.2)
-			sanitize(clone)
-			if not clone.PrimaryPart then
-				local inv = Instance.new("Part")
-				inv.Name = "Root"
-				inv.Transparency = 1
-				inv.Size = Vector3.new(0.3, 0.3, 0.3)
-				inv.CanCollide = false
-				inv.Massless = true
-				inv.Parent = clone
-				clone.PrimaryPart = inv
-			end
-			print("[AuraVisual] Loaded custom 3D/VFX Aura model:", template.Name, "for aura", auraId)
-			return clone
 		end
+		normalizeExtent(clone, AuraModelConfig.TargetExtent or 2.2)
+		sanitize(clone)
+		if not clone.PrimaryPart then
+			local inv = Instance.new("Part")
+			inv.Name = "Root"
+			inv.Transparency = 1
+			inv.Size = Vector3.new(0.3, 0.3, 0.3)
+			inv.CanCollide = false
+			inv.Massless = true
+			inv.Parent = clone
+			clone.PrimaryPart = inv
+		end
+		print("[AuraVisual] Loaded custom 3D/VFX Aura model:", template.Name, "for aura", auraId)
+		return clone
 	end
 	return makeProcedural(auraId, def)
 end
