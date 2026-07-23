@@ -375,7 +375,6 @@ do
 			then " · +1 pet slot"
 			elseif i == 21 then " · CASE MASTER"
 			else " · +luck"
-		end
 		QuestConfig.Quests[id] = {
 			id = id,
 			name = "Open Pet Cases",
