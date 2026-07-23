@@ -70,6 +70,10 @@ function Hud.Mount(
 		Z = 10,
 		Deep = true,
 	})
+	local railPad = UIKit.Pad(rail, 10)
+	local railList = UIKit.List(rail, 8, false, Enum.HorizontalAlignment.Center)
+	railList.VerticalAlignment = Enum.VerticalAlignment.Top
+	UIKit.SizeConstraint(rail, Vector2.new(56, 200), Vector2.new(120, 900))
 	---------------------------------------------------------------- DUNGEON QUICK TELEPORT BUTTON
 	local dungBanner = Instance.new("Frame")
 	dungBanner.Name = "DungeonQuickTeleport"

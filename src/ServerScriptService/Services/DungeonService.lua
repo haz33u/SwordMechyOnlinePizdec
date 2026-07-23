@@ -196,6 +196,8 @@ function DungeonService.Complete(player: Player, tierId: string)
 		color = "gold",
 	})
 	ProfileService.Push(player)
+end
+
 function DungeonService.Exit(player: Player)
 	local profile = ProfileService.Get(player)
 	local run = DungeonService._runs[player.UserId]
