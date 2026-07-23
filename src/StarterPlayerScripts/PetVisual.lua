@@ -291,7 +291,7 @@ local function slotOffset(index: number, total: number): Vector3
 	return Vector3.new(x, height, back)
 end
 
-local function stepFollow(_dt: number)
+function stepFollow(dt: number)
 	local char = player.Character
 	if not char then
 		return
@@ -321,7 +321,8 @@ local function stepFollow(_dt: number)
 		return
 	end
 
-	local alpha = PetModelConfig.LerpAlpha or 0.16
+	local frameDt = if typeof(dt) == "number" and dt > 0 then dt else 0.016
+	local alpha = math.clamp(frameDt * 12, 0.05, 0.95)
 	local bobA = PetModelConfig.BobAmp or 0.14
 	local bobS = PetModelConfig.BobSpeed or 2.2
 	local t = os.clock()

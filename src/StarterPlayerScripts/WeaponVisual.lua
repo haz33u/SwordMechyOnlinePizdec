@@ -144,7 +144,101 @@ local function findGripAttachment(char: Model, side: string): Attachment?
 	return hand and hand:FindFirstChild("RightGripAttachment") :: Attachment?
 end
 
+local function attachVfxToSword(model: Model?, rarity: string?)
+	if not model then
+		return
+	end
+	local root = model.PrimaryPart
+		or model:FindFirstChild("Handle")
+		or model:FindFirstChildWhichIsA("BasePart", true)
+	if not root or not root:IsA("BasePart") then
+		return
+	end
+
+	local halfY = math.max(0.5, root.Size.Y / 2)
+	local attHilt = root:FindFirstChild("VFX_Hilt") :: Attachment?
+	local attTip = root:FindFirstChild("VFX_Tip") :: Attachment?
+
+	if not attHilt then
+		attHilt = Instance.new("Attachment")
+		attHilt.Name = "VFX_Hilt"
+		attHilt.Position = Vector3.new(0, -halfY, 0)
+		attHilt.Parent = root
+	end
+	if not attTip then
+		attTip = Instance.new("Attachment")
+		attTip.Name = "VFX_Tip"
+		attTip.Position = Vector3.new(0, halfY, 0)
+		attTip.Parent = root
+	end
+
+	local trail = root:FindFirstChild("SwordTrail") :: Trail?
+	if not trail and attHilt and attTip then
+		trail = Instance.new("Trail")
+		trail.Name = "SwordTrail"
+		trail.Attachment0 = attHilt
+		trail.Attachment1 = attTip
+		trail.Lifetime = 0.25
+		trail.MinLength = 0.1
+		trail.FaceCamera = true
+
+		local col = RARITY_COLOR[rarity or "Common"] or Color3.fromRGB(200, 200, 200)
+		trail.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, col),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
+		})
+		trail.Transparency = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.1),
+			NumberSequenceKeypoint.new(0.6, 0.4),
+			NumberSequenceKeypoint.new(1, 1.0),
+		})
+		trail.Enabled = false
+		trail.Parent = root
+	end
+
+	-- Idle particle sparks on tip for Rare+ swords
+	local r = rarity or "Common"
+	if r ~= "Common" and r ~= "Uncommon" then
+		local sparks = attTip:FindFirstChild("IdleSparks") :: ParticleEmitter?
+		if not sparks and attTip then
+			sparks = Instance.new("ParticleEmitter")
+			sparks.Name = "IdleSparks"
+			sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+			sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
+			sparks.Color = ColorSequence.new(RARITY_COLOR[r] or Color3.fromRGB(255, 200, 50))
+			sparks.Lifetime = NumberRange.new(0.4, 0.8)
+			sparks.Rate = 8
+			sparks.Speed = NumberRange.new(0.4, 1.2)
+			sparks.SpreadAngle = Vector2.new(360, 360)
+			sparks.LightEmission = 0.7
+			sparks.Parent = attTip
+		end
+	end
+end
+
+local function triggerSwordTrail(model: Model?)
+	if not model then
+		return
+	end
+	local root = model.PrimaryPart
+		or model:FindFirstChild("Handle")
+		or model:FindFirstChildWhichIsA("BasePart", true)
+	if not root then
+		return
+	end
+	local trail = root:FindFirstChild("SwordTrail", true) :: Trail?
+	if trail then
+		trail.Enabled = true
+		task.delay(0.3, function()
+			if trail and trail.Parent then
+				trail.Enabled = false
+			end
+		end)
+	end
+end
+
 local function equipSide(char: Model, parent: Folder, side: string, name: string, weaponId: string?, def: any?): Model?
+	local rarity = (def and def.rarity) or "Common"
 	-- Place mesh models (optional). Any error → placeholder so inventory equip never looks "dead".
 	if weaponId then
 		local ok, modelOrErr, grip = pcall(function()
@@ -162,6 +256,7 @@ local function equipSide(char: Model, parent: Folder, side: string, name: string
 				WeaponModels.AttachToHand(model, char, side, gripCf)
 			end)
 			if attOk then
+				attachVfxToSword(model, rarity)
 				return model
 			end
 			model:Destroy()
@@ -176,6 +271,7 @@ local function equipSide(char: Model, parent: Folder, side: string, name: string
 	end
 	local placeholder = makePlaceholderSword(name, def or { rarity = "Common" }, parent)
 	attachPlaceholderToGrip(placeholder, gripAtt)
+	attachVfxToSword(placeholder, rarity)
 	return placeholder
 end
 
@@ -643,6 +739,11 @@ function WeaponVisual.PlayAttack(_forceAlt: boolean?)
 	local char = player.Character
 	if not char then
 		return
+	end
+
+	triggerSwordTrail(mainModel)
+	if offModel then
+		triggerSwordTrail(offModel)
 	end
 
 	local hasOff = offModel ~= nil and offModel.Parent ~= nil

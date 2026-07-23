@@ -385,6 +385,27 @@ local function cloneAuraModel(auraId: string): Model?
 	return makeProcedural(auraId, def)
 end
 
+local function applyAuraHighlight(char: Model, rarity: string?)
+	local hl = char:FindFirstChild("SM_AuraHighlight") :: Highlight?
+	if not rarity then
+		if hl then
+			hl:Destroy()
+		end
+		return
+	end
+	if not hl then
+		hl = Instance.new("Highlight")
+		hl.Name = "SM_AuraHighlight"
+		hl.Parent = char
+	end
+	local col = rarityColor(rarity)
+	hl.FillColor = col
+	hl.OutlineColor = col
+	hl.FillTransparency = 0.85
+	hl.OutlineTransparency = 0.25
+	hl.Enabled = true
+end
+
 local function clear()
 	if spinConn then
 		spinConn:Disconnect()
@@ -395,6 +416,10 @@ local function clear()
 		activeModel = nil
 	end
 	activeUid = nil
+	local char = player.Character
+	if char then
+		applyAuraHighlight(char, nil)
+	end
 end
 
 local function ensureFolder(char: Model): Folder
@@ -538,12 +563,15 @@ function AuraVisual.Refresh(profile: any?)
 	end
 	activeModel = model
 	activeUid = uid
+	local def = AuraConfig.Get(auraId)
 	local ok, err = pcall(function()
 		attachToCharacter(char, model, auraId)
 	end)
 	if not ok then
 		warn("[AuraVisual] attach failed", err)
 		clear()
+	else
+		applyAuraHighlight(char, def and def.rarity)
 	end
 end
 
