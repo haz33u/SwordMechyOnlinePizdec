@@ -550,22 +550,22 @@ end
 ]]
 function Formulas.EstimateRebirthEta(profile: any): (number, number, number, number)
 	local nextLv = (profile.rebirthLevel or 0) + 1
-	local dmgCost, coinCost = RebirthConfig.GetCosts(nextLv)
-	local dmg = profile.lifetimeDamage or 0
+	local powerCost, coinCost = RebirthConfig.GetCosts(nextLv)
+	local currentPower = Formulas.GetTotalPower(profile)
 	local coins = profile.coins or 0
-	local remDmg = math.max(0, dmgCost - dmg)
+	local remPower = math.max(0, powerCost - currentPower)
 	local remCoins = math.max(0, coinCost - coins)
 
-	if remDmg <= 0 and remCoins <= 0 then
+	if remPower <= 0 and remCoins <= 0 then
 		return 0, 0, 0, 0
 	end
 
 	local dps = Formulas.GetDPS(profile)
 	if dps < 0.01 then
-		return math.huge, remDmg, remCoins, dps
+		return math.huge, remPower, remCoins, dps
 	end
 
-	local tDmg = remDmg / dps
+	local tPower = remPower / dps
 	local tCoin = 0
 	if remCoins > 0 then
 		-- rough farm: damage dealt → coins (Loc1-ish ratio × coin mult)
@@ -573,14 +573,14 @@ function Formulas.EstimateRebirthEta(profile: any): (number, number, number, num
 		tCoin = if coinsPerSec > 0.01 then remCoins / coinsPerSec else math.huge
 	end
 
-	return math.max(tDmg, tCoin), remDmg, remCoins, dps
+	return math.max(tPower, tCoin), remPower, remCoins, dps
 end
 
 function Formulas.Snapshot(profile: any): { [string]: any }
 	local power = Formulas.GetTotalPower(profile)
 	local cps = Formulas.GetCPS(profile)
 	local nextLv = (profile.rebirthLevel or 0) + 1
-	local etaSec, remDmg, remCoins, dpsIdeal = Formulas.EstimateRebirthEta(profile)
+	local etaSec, remPower, remCoins, dpsIdeal = Formulas.EstimateRebirthEta(profile)
 	local rbMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
 	return {
 		totalPower = power,
@@ -599,15 +599,15 @@ function Formulas.Snapshot(profile: any): { [string]: any }
 		rebirthRankName = RebirthConfig.GetRankName(profile.rebirthLevel or 0),
 		nextRebirthRankName = RebirthConfig.GetRankName(nextLv),
 		nextRebirthMult = RebirthConfig.GetMultAfter(nextLv),
-		nextRebirthCost = RebirthConfig.GetDamageCost(nextLv),
+		nextRebirthCost = RebirthConfig.GetPowerCost(nextLv),
 		nextRebirthCoinCost = RebirthConfig.GetCoinCost(nextLv),
 		rebirthProgress = RebirthConfig.GetProgress(
-			profile.lifetimeDamage or 0,
+			power,
 			profile.coins or 0,
 			nextLv
 		),
 		rebirthEtaSeconds = etaSec,
-		rebirthRemainingDamage = remDmg,
+		rebirthRemainingDamage = remPower,
 		rebirthRemainingCoins = remCoins,
 		rebirthIdealDps = dpsIdeal,
 		lifetimeDamage = profile.lifetimeDamage,
