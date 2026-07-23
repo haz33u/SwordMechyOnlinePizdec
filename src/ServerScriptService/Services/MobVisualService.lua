@@ -446,6 +446,10 @@ function MobVisualService.SetAlive(entry: any, alive: boolean)
 	end
 end
 
+function MobVisualService.GetModel(uid: string): Model?
+	return MobVisualService._models[uid]
+end
+
 function MobVisualService.Despawn(uid: string)
 	local model = MobVisualService._models[uid]
 	if model then

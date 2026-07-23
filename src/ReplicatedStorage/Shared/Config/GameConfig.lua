@@ -18,15 +18,15 @@ local GameConfig = {
 		Was broken: pickTarget 40 + hit check 48 → kill-aura on Auto.
 		~10 studs ≈ reach a large humanoid + small slack; not map-wide.
 	]]
-	HIT_RANGE = 10,
-	HIT_RANGE_EPSILON = 0.75, -- server lag / part size slack
+	HIT_RANGE = 14,
+	HIT_RANGE_EPSILON = 2.5, -- server lag / part size slack
 	--[[
 		Forward cone for auto / free-aim swings (LookVector, flattened Y).
 		cos(halfAngle): 0.5 ≈ 60° half-cone, 0.35 ≈ 70°, 0.0 = full hemisphere.
 	]]
 	HIT_CONE_COS = 0.35,
 	-- Auto can reach slightly farther in the front cone (still not map-wide)
-	AUTO_HIT_RANGE = 12,
+	AUTO_HIT_RANGE = 18,
 
 	-- inventory — pet slots in ProgressConfig (max 8)
 	START_PET_SLOTS = 3,

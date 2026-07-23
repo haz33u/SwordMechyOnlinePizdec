@@ -150,25 +150,22 @@ local function inFrontCone(hrp: BasePart, mobPos: Vector3, coneCos: number): boo
 	return flat.Unit:Dot(flatLook.Unit) >= coneCos
 end
 
+local function getMobPos(mob: any): Vector3
+	if not mob then
+		return Vector3.zero
+	end
+	local model = MobVisualService.GetModel(mob.uid)
+	if model and model.PrimaryPart then
+		return model.PrimaryPart.Position
+	end
+	return mob.position or Vector3.zero
+end
+
 local function pickTarget(player: Player, targetMobUid: string?, locId: number, isAuto: boolean?): any?
 	local maxRange = hitRange(isAuto)
 	local coneCos = GameConfig.HIT_CONE_COS
 	if type(coneCos) ~= "number" then
 		coneCos = 0.35
-	end
-
-	-- explicit target (manual click on mob) — still must be in range (full circle OK)
-	local mob = targetMobUid and CombatService._mobs[targetMobUid] or nil
-	if mob and mob.alive then
-		local char = player.Character
-		local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-		if not hrp then
-			return nil
-		end
-		if (mob.position - hrp.Position).Magnitude <= maxRange then
-			return mob
-		end
-		return nil
 	end
 
 	local char = player.Character
@@ -177,6 +174,15 @@ local function pickTarget(player: Player, targetMobUid: string?, locId: number, 
 		return nil
 	end
 	local origin = hrp.Position
+
+	-- explicit target (manual click on mob ClickDetector)
+	local mob = targetMobUid and CombatService._mobs[targetMobUid] or nil
+	if mob and mob.alive then
+		local pos = getMobPos(mob)
+		if (pos - origin).Magnitude <= maxRange * 1.35 then
+			return mob
+		end
+	end
 
 	local best = nil
 	local bestDist = math.huge
@@ -187,8 +193,9 @@ local function pickTarget(player: Player, targetMobUid: string?, locId: number, 
 		if m.alive then
 			local sameLoc = m.locationId == locId or m.isDebug
 			if sameLoc then
-				local d = (m.position - origin).Magnitude
-				local inCone = isAuto or inFrontCone(hrp, m.position, coneCos)
+				local pos = getMobPos(m)
+				local d = (pos - origin).Magnitude
+				local inCone = isAuto or inFrontCone(hrp, pos, coneCos)
 				if d <= maxRange and inCone then
 					if m.isDebug then
 						dummyInRange = m
@@ -223,7 +230,6 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	if now - last < cd * 0.90 then
 		return
 	end
-	CombatService._lastSwing[player.UserId] = now
 
 	local locId = profile.currentLocation or 1
 	local mob = pickTarget(player, targetMobUid, locId, isAuto)
@@ -237,10 +243,14 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	if not hrp then
 		return
 	end
-	local dist = (mob.position - hrp.Position).Magnitude
+	local mobPos = getMobPos(mob)
+	local dist = (mobPos - hrp.Position).Magnitude
 	if dist > hitRange(isAuto) then
 		return
 	end
+
+	-- Only record swing cooldown timestamp once a valid hit target is confirmed in range!
+	CombatService._lastSwing[player.UserId] = now
 
 	local damage, isCrit, isMultiCrit = Formulas.GetHitDamage(profile)
 	if isAuto then
