@@ -267,6 +267,17 @@ function Formulas.GetRelicPct(profile: any): (number, number)
 	return power, damage
 end
 
+function Formulas.GetBoostPct(profile: any, statKey: string): number
+	if not profile or type(profile.boosts) ~= "table" then
+		return 0
+	end
+	local b = profile.boosts[statKey]
+	if type(b) == "table" and type(b.expiresAt) == "number" and b.expiresAt > os.time() then
+		return (b.pct or 0) * 100
+	end
+	return 0
+end
+
 --[[
 	TotalPower = Player Strength (HUD Power, click gain, lifetime strength).
 	Power% boosts this stat directly.
@@ -285,9 +296,10 @@ function Formulas.GetTotalPower(profile: any): number
 	local upgradePowerLvl = Formulas.GetUpgradeLevel(profile, "Power")
 	local upgradePowerPct = upgradePowerLvl * (UpgradeConfig.Defs.Power.effectPerLevel * 100)
 	local questPowerPct = profile.questPowerPct or 0
+	local boostPowerPct = Formulas.GetBoostPct(profile, "power")
 
 	local anom = Formulas.GetAnomalyMods()
-	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct
+	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct
 
 	local total = base
 		* rebirthMult
@@ -486,7 +498,8 @@ function Formulas.GetCoinMult(profile: any): number
 			end
 		end
 	end
-	local base = 1 + (ench.coins + petCoins + auraCoins + relicCoins) / 100
+	local boostCoins = Formulas.GetBoostPct(profile, "money")
+	local base = 1 + (ench.coins + petCoins + auraCoins + relicCoins + boostCoins) / 100
 	local anom = Formulas.GetAnomalyMods()
 	return base * (anom.coinMult or 1)
 end

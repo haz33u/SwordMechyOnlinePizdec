@@ -29,6 +29,9 @@ function WeaponService.Init()
 	Remotes.Event("MergeWeapon").OnServerEvent:Connect(function(player, weaponUid)
 		WeaponService.Merge(player, weaponUid)
 	end)
+	Remotes.Event("TransferEnchant").OnServerEvent:Connect(function(player, sourceUid, targetUid)
+		WeaponService.TransferEnchant(player, sourceUid, targetUid)
+	end)
 end
 
 local function findWeapon(profile: any, uid: string)
@@ -287,6 +290,33 @@ function WeaponService.Ban(player: Player, kind: string, id: string, banned: boo
 	elseif kind == "aura" then
 		profile.bannedAuraIds[id] = banned and true or nil
 	end
+	ProfileService.Push(player)
+end
+
+function WeaponService.TransferEnchant(player: Player, sourceUid: string, targetUid: string)
+	local profile = ProfileService.Get(player)
+	if not profile then
+		return
+	end
+	local srcW = findWeapon(profile, sourceUid)
+	local tgtW = findWeapon(profile, targetUid)
+	if not srcW or not tgtW or sourceUid == targetUid then
+		return
+	end
+	if not srcW.enchants or #srcW.enchants == 0 then
+		Remotes.Event("Notify"):FireClient(player, { text = "Source weapon has no enchants!", color = "red" })
+		return
+	end
+	local DUST_COST = 5
+	if (profile.enchantDust or 0) < DUST_COST then
+		Remotes.Event("Notify"):FireClient(player, { text = "Need " .. DUST_COST .. " Enchant Dust to transfer!", color = "red" })
+		return
+	end
+	profile.enchantDust -= DUST_COST
+	tgtW.enchants = srcW.enchants
+	srcW.enchants = {}
+
+	Remotes.Event("Notify"):FireClient(player, { text = "Transferred enchants to target weapon! (-5 Dust)", color = "gold" })
 	ProfileService.Push(player)
 end
 
