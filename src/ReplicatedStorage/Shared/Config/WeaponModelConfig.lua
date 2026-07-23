@@ -20,6 +20,8 @@ export type HiltOverride = {
 	tipDirection: Vector3?,
 	tipSign: number?, -- legacy
 	flipTip: boolean?,
+	-- Custom scale multiplier (1.0 = standard ~4.2 studs, 0.7 = dagger, 1.3 = giant weapon)
+	scaleMult: number?,
 	-- Inventory only: 180° after tip-up when mesh still looks upside-down
 	iconInvert: boolean?,
 	iconEuler: Vector3?,
@@ -68,8 +70,10 @@ local WeaponModelConfig = {
 		DF_UmbralBough = "LastSword",
 	} :: { [string]: string },
 
-	-- Hand / world size only (does NOT drive inventory card size)
-	DefaultScale = 0.52,
+	-- Automatic length normalization: target sword length in world studs (~4.2 studs for full-size anime sword).
+	-- Any imported FBX / Toolbox mesh is automatically scaled to fit this target.
+	TargetLengthStuds = 4.2,
+	DefaultScale = 1.30,
 
 	--[[
 		ICON CARD standard (same for every weapon, including future giants):
@@ -109,25 +113,23 @@ local WeaponModelConfig = {
 		IronSword = { iconInvert = false },
 		RubySword = { iconInvert = true },
 		SupeSport = {
-			hiltEnd = -1,
 			hiltBias = 0.98,
 			iconInvert = true,
 		},
 		KawashimaSword = {
-			hiltEnd = -1,
 			hiltBias = 0.98,
 			iconInvert = true,
 		},
-		-- Dark Forest set (inventory tip-up QA)
+		-- Dark Forest set (automatic size normalization with category variance)
 		DF_StarterStick = { iconInvert = false },
 		DF_MossRust = { iconInvert = false },
-		DF_BoneThorn = { iconInvert = false },
-		DF_RootMace = { iconInvert = false },
+		DF_BoneThorn = { scaleMult = 0.72, iconInvert = false }, -- Dagger ~3.0 studs
+		DF_RootMace = { scaleMult = 0.92, iconInvert = false },
 		DF_Twinleaf = { iconInvert = false },
-		DF_SpiritBranch = { iconInvert = false },
+		DF_SpiritBranch = { scaleMult = 1.22, iconInvert = false }, -- Staff ~5.1 studs
 		DF_Amberheart = { iconInvert = false },
-		DF_CanopyFang = { iconInvert = false },
-		DF_UmbralBough = { iconInvert = false },
+		DF_CanopyFang = { scaleMult = 1.10, iconInvert = false }, -- Greatsword ~4.6 studs
+		DF_UmbralBough = { scaleMult = 1.15, iconInvert = false },
 	} :: { [string]: HiltOverride },
 
 	-- Optional recolor if Place mesh is grey after FBX import (not used for multi-part DF builds).

@@ -275,8 +275,22 @@ function WeaponModels.PrepareClone(weaponId: string): (Model?, CFrame)
 	clone.PrimaryPart = handle
 	weldLooseParts(handle, clone)
 
-	local scale = WeaponModelConfig.DefaultScale
-	if type(scale) == "number" and scale > 0 and scale ~= 1 then
+	-- Automatic size normalization: any 3D mesh is scaled to TargetLengthStuds (default ~4.2 studs) * scaleMult
+	local ov = WeaponModelConfig.ResolveOverride(modelName)
+	local scaleMult = if ov and type(ov.scaleMult) == "number" and ov.scaleMult > 0 then ov.scaleMult else 1.0
+	local targetLen = (WeaponModelConfig :: any).TargetLengthStuds
+
+	local scale = 1.0
+	if type(targetLen) == "number" and targetLen > 0 then
+		local _axis, length = longestLocalAxis(handle)
+		if length > 0.01 then
+			scale = (targetLen * scaleMult) / length
+		end
+	elseif type(WeaponModelConfig.DefaultScale) == "number" and WeaponModelConfig.DefaultScale > 0 then
+		scale = WeaponModelConfig.DefaultScale * scaleMult
+	end
+
+	if scale > 0 and math.abs(scale - 1) > 0.001 then
 		local okScale = pcall(function()
 			(clone :: any):ScaleTo(scale)
 		end)
