@@ -249,6 +249,15 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	local locId = profile.currentLocation or 1
 	local mob = pickTarget(player, targetMobUid, locId, isAuto)
 	if not mob or not mob.alive then
+		-- Air Click (clicking empty space or no target in range): still grants Power gain!
+		CombatService._lastSwing[player.UserId] = now
+		local clickGain = math.max(1, math.floor(Formulas.GetTotalPower(profile) * 0.1))
+		profile.lifetimePower = (profile.lifetimePower or 0) + clickGain
+		profile.totalClicks = (profile.totalClicks or 0) + 1
+		QuestService.OnClick(profile)
+		if not isAuto or (profile.totalClicks % 2 == 0) then
+			ProfileService.Push(player)
+		end
 		return
 	end
 
@@ -261,6 +270,15 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	local mobPos = getMobPos(mob)
 	local dist = (mobPos - hrp.Position).Magnitude
 	if dist > hitRange(isAuto) then
+		-- Target too far: treat as Air Click
+		CombatService._lastSwing[player.UserId] = now
+		local clickGain = math.max(1, math.floor(Formulas.GetTotalPower(profile) * 0.1))
+		profile.lifetimePower = (profile.lifetimePower or 0) + clickGain
+		profile.totalClicks = (profile.totalClicks or 0) + 1
+		QuestService.OnClick(profile)
+		if not isAuto or (profile.totalClicks % 2 == 0) then
+			ProfileService.Push(player)
+		end
 		return
 	end
 
@@ -277,6 +295,8 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	damage = math.max(1, damage - armor)
 
 	mob.hp -= damage
+	local hitGain = math.max(1, math.floor(Formulas.GetTotalPower(profile) * 0.1))
+	profile.lifetimePower = (profile.lifetimePower or 0) + hitGain
 	profile.lifetimeDamage += damage
 	profile.totalClicks = (profile.totalClicks or 0) + 1
 	QuestService.OnClick(profile)
@@ -302,7 +322,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 		CombatService.OnKill(player, profile, mob)
 	end
 
-	if not isAuto or (profile.totalClicks % 4 == 0) then
+	if not isAuto or (profile.totalClicks % 2 == 0) then
 		ProfileService.Push(player)
 	end
 end
