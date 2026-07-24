@@ -33,6 +33,10 @@ function Net.BuyUpgrade(id: string)
 	Net.Event("BuyUpgrade"):FireServer(id)
 end
 
+function Net.UnlockTalentNode(nodeId: string)
+	Net.Event("UnlockTalentNode"):FireServer(nodeId)
+end
+
 function Net.EquipWeapon(uid: string, slot: string?)
 	Net.Event("EquipWeapon"):FireServer(uid, slot or "main")
 end

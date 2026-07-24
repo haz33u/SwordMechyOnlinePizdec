@@ -86,6 +86,13 @@ function ProgressConfig.ComputePetSlots(profile: any): number
 		slots += math.floor(qSlots)
 	end
 
+	-- Talent Tree Keystone Perks (+1 Pet Slot)
+	local TalentTreeConfig = require(script.Parent.TalentTreeConfig)
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	if (talentStats.petSlots or 0) > 0 then
+		slots += talentStats.petSlots
+	end
+
 	return math.clamp(slots, ProgressConfig.START_PET_SLOTS, ProgressConfig.MAX_PET_SLOTS)
 end
 

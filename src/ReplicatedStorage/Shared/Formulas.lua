@@ -16,6 +16,7 @@ local EnchantConfig = require(script.Parent.Config.EnchantConfig)
 local ClickConfig = require(script.Parent.Config.ClickConfig)
 local ProgressConfig = require(script.Parent.Config.ProgressConfig)
 local AnomalyConfig = require(script.Parent.Config.AnomalyConfig)
+local TalentTreeConfig = require(script.Parent.Config.TalentTreeConfig)
 
 local Formulas = {}
 
@@ -316,7 +317,8 @@ function Formulas.GetTotalPower(profile: any, player: Player?): number
 	local premiumMult = Formulas.GetPremiumMult(player)
 
 	local anom = Formulas.GetAnomalyMods()
-	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct + (talentStats.damagePct or 0)
 
 	local total = base
 		* rebirthMult
@@ -349,7 +351,8 @@ function Formulas.GetClickPowerGain(profile: any, player: Player?): number
 	local premiumMult = Formulas.GetPremiumMult(player)
 
 	local anom = Formulas.GetAnomalyMods()
-	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct + (talentStats.damagePct or 0)
 
 	local gain = baseGain
 		* rebirthMult
@@ -367,7 +370,8 @@ function Formulas.GetAttackSpeedPercent(profile: any): number
 	local ench = Formulas.GetEnchantPools(profile)
 	local clickLvl = Formulas.GetUpgradeLevel(profile, "ClickSpeed")
 	local clickPct = clickLvl * (UpgradeConfig.Defs.ClickSpeed.effectPerLevel * 100)
-	local speedPct = ench.attackSpeed + clickPct
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	local speedPct = ench.attackSpeed + clickPct + (talentStats.clickSpeed or 0)
 
 	for _, uid in profile.petTeam do
 		for _, pet in profile.pets do
@@ -441,14 +445,16 @@ function Formulas.GetCritChance(profile: any): number
 	local lvl = Formulas.GetUpgradeLevel(profile, "CritChance")
 	local per = (UpgradeConfig.Defs.CritChance and UpgradeConfig.Defs.CritChance.effectPerLevel) or 0.01
 	local _, _, _, auraCrit = Formulas.GetAuraBonuses(profile)
-	return math.clamp(lvl * per + ench.crit / 100 + (auraCrit or 0) / 100, 0, 0.85)
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	return math.clamp(lvl * per + ench.crit / 100 + (auraCrit or 0) / 100 + (talentStats.critChance or 0) / 100, 0, 0.85)
 end
 
 function Formulas.GetMultiCritChance(profile: any): number
 	local lvl = Formulas.GetUpgradeLevel(profile, "MultiCrit")
 	local per = (UpgradeConfig.Defs.MultiCrit and UpgradeConfig.Defs.MultiCrit.effectPerLevel) or 0.01
 	local _, _, _, _, auraMulti = Formulas.GetAuraBonuses(profile)
-	return math.clamp(lvl * per + (auraMulti or 0) / 100, 0, 0.5)
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	return math.clamp(lvl * per + (auraMulti or 0) / 100 + (talentStats.multiCrit or 0) / 100, 0, 0.5)
 end
 
 --- Returns damage multiplier factor (1 + damagePct / 100)
@@ -551,7 +557,8 @@ function Formulas.GetCoinMult(profile: any): number
 		end
 	end
 	local boostCoins = Formulas.GetBoostPct(profile, "money")
-	local base = 1 + (ench.coins + petCoins + auraCoins + relicCoins + boostCoins) / 100
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	local base = 1 + (ench.coins + petCoins + auraCoins + relicCoins + boostCoins + (talentStats.coinPct or 0)) / 100
 	local anom = Formulas.GetAnomalyMods()
 	return base * (anom.coinMult or 1)
 end
@@ -561,7 +568,8 @@ function Formulas.GetLuck(profile: any): number
 	local lvl = Formulas.GetUpgradeLevel(profile, "Luck")
 	local anom = Formulas.GetAnomalyMods()
 	local questLuck = (profile and profile.questLuckPct or 0) / 100
-	return lvl * 0.02 + ench.luck / 100 + (anom.luckAdd or 0) + questLuck
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	return lvl * 0.02 + ench.luck / 100 + (anom.luckAdd or 0) + questLuck + (talentStats.luckPct or 0) / 100
 end
 
 --- Multiplier on mob respawn delay (<1 = faster).
@@ -593,7 +601,8 @@ end
 
 function Formulas.GetWalkSpeed(profile: any): number
 	local lvl = Formulas.GetUpgradeLevel(profile, "RunSpeed")
-	return 16 + lvl * UpgradeConfig.Defs.RunSpeed.effectPerLevel
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	return 16 + lvl * UpgradeConfig.Defs.RunSpeed.effectPerLevel + (talentStats.walkSpeed or 0)
 end
 
 --[[
