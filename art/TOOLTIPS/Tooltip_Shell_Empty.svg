@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="280" viewBox="0 0 480 280">
+  <defs>
+    <linearGradient id="plateBody" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3d52ff;stop-opacity:1" />
+      <stop offset="25%" style="stop-color:#2a28c8;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3a12a8;stop-opacity:1" />
+      <stop offset="75%" style="stop-color:#140538;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="plateRim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#7cf0ff;stop-opacity:0.85" />
+      <stop offset="25%" style="stop-color:#c56bff;stop-opacity:0.85" />
+      <stop offset="50%" style="stop-color:#ff5ad6;stop-opacity:0.85" />
+      <stop offset="75%" style="stop-color:#6b8cff;stop-opacity:0.85" />
+      <stop offset="100%" style="stop-color:#55f0ff;stop-opacity:0.85" />
+    </linearGradient>
+  </defs>
+
+  <!-- Muted tooltip plate body (lower opacity rim) -->
+  <rect x="18" y="18" width="444" height="244" rx="18" ry="18" 
+        fill="url(#plateBody)" stroke="url(#plateRim)" stroke-width="6" />
+
+  <!-- Dark empty center with ~18px padding -->
+  <rect x="36" y="36" width="408" height="208" rx="14" ry="14" fill="#2a28c8" />
+
+</svg>
