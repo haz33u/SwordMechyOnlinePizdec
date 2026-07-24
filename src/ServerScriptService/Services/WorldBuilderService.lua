@@ -229,9 +229,9 @@ function WorldBuilderService.Init()
 		end)
 	end
 
-	makeCaseChest("Pet Case (500)", Vector3.new(-14, 3, 105), Color3.fromRGB(0, 160, 120), "pet", "loc1_500")
-	makeCaseChest("Pet Case (50K)", Vector3.new(-6, 3, 105), Color3.fromRGB(0, 120, 180), "pet", "loc1_50k")
-	makeCaseChest("Aura Case", Vector3.new(6, 3, 105), Color3.fromRGB(150, 60, 220), "aura", nil)
+	makeCaseChest("Pet Case (500)", Vector3.new(-9, 3, 20), Color3.fromRGB(0, 160, 120), "pet", "loc1_500")
+	makeCaseChest("Pet Case (50K)", Vector3.new(0, 3, 20), Color3.fromRGB(0, 120, 180), "pet", "loc1_50k")
+	makeCaseChest("Aura Case", Vector3.new(9, 3, 20), Color3.fromRGB(150, 60, 220), "aura", nil)
 
 	print("[WorldBuilder] Dark Goblin Forest procedural scaffold + 3D Hub Case Chests successfully built!")
 end

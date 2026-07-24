@@ -1511,11 +1511,11 @@ function Inventory.Bind(
 
 			keybind(row, 1, "LMB", "Equip")
 			actBtn(row, "Case 1x", Color3.fromRGB(0, 90, 80), 3, function()
-				openModal("case", { kind = "pet", count = 1 })
+				openModal("caseOpen", { kind = "pet", poolId = "loc1_500", count = 1 })
 			end)
 			actBtn(row, hasChest3 and "Case 3x" or "Case 3x 🔒", Color3.fromRGB(0, 80, 110), 3.5, function()
 				if hasChest3 then
-					openModal("case", { kind = "pet", count = 3 })
+					openModal("caseOpen", { kind = "pet", poolId = "loc1_500", count = 3 })
 				else
 					local pass = GamePassConfig.Get("openChest3")
 					if pass then Net.PromptGamePass(pass.gamePassId) end
@@ -1523,7 +1523,7 @@ function Inventory.Bind(
 			end)
 			actBtn(row, hasChest5 and "Case 5x" or "Case 5x 🔒", Color3.fromRGB(0, 70, 130), 4, function()
 				if hasChest5 then
-					openModal("case", { kind = "pet", count = 5 })
+					openModal("caseOpen", { kind = "pet", poolId = "loc1_500", count = 5 })
 				else
 					local pass = GamePassConfig.Get("openChest5")
 					if pass then Net.PromptGamePass(pass.gamePassId) end
@@ -1628,11 +1628,11 @@ function Inventory.Bind(
 				end
 			end)
 			actBtn(row, "Case 1x", Color3.fromRGB(80, 50, 120), 3, function()
-				openModal("case", { kind = "aura", count = 1 })
+				openModal("caseOpen", { kind = "aura", count = 1 })
 			end)
 			actBtn(row, hasChest3 and "Case 3x" or "Case 3x 🔒", Color3.fromRGB(90, 50, 140), 3.5, function()
 				if hasChest3 then
-					openModal("case", { kind = "aura", count = 3 })
+					openModal("caseOpen", { kind = "aura", count = 3 })
 				else
 					local pass = GamePassConfig.Get("openChest3")
 					if pass then Net.PromptGamePass(pass.gamePassId) end
@@ -1640,7 +1640,7 @@ function Inventory.Bind(
 			end)
 			actBtn(row, hasChest5 and "Case 5x" or "Case 5x 🔒", Color3.fromRGB(100, 50, 160), 4, function()
 				if hasChest5 then
-					openModal("case", { kind = "aura", count = 5 })
+					openModal("caseOpen", { kind = "aura", count = 5 })
 				else
 					local pass = GamePassConfig.Get("openChest5")
 					if pass then Net.PromptGamePass(pass.gamePassId) end
