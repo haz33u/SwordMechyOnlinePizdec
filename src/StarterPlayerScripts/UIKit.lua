@@ -271,6 +271,7 @@ function UIKit.Button(props: {
 	-- Always pure white readable label
 	local label = Instance.new("TextLabel")
 	label.Name = "Label"
+	label.Active = false
 	label.BackgroundTransparency = 1
 	label.Size = UDim2.fromScale(1, 1)
 	label.Font = T.Font.Title

@@ -185,10 +185,16 @@ function Modals.Mount(gui: ScreenGui, store: any)
 				etaLabel.TextColor3 = Color3.fromRGB(100, 230, 140)
 			end
 
-			primary.Text = "Rebirth"
+			if pct >= 1 then
+				primary.Text = "Rebirth Now!"
+			else
+				primary.Text = "Rebirth"
+			end
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				Net.Rebirth()
-				store:CloseModal()
+				if pct >= 1 then
+					store:CloseModal()
+				end
 			end)
 		elseif m.kind == "sell" then
 			local w = m.payload

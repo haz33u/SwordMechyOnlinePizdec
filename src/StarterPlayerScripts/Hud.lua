@@ -424,6 +424,7 @@ function Hud.Mount(
 		-- Always-visible glyph fallback (Decals often fail to load in place)
 		local glyph = Instance.new("TextLabel")
 		glyph.Name = "Glyph"
+		glyph.Active = false
 		glyph.BackgroundTransparency = 1
 		glyph.Size = UDim2.fromOffset(52, 52)
 		glyph.Position = UDim2.new(0.5, 0, 0, 10)
@@ -437,6 +438,7 @@ function Hud.Mount(
 
 		local img = Instance.new("ImageLabel")
 		img.Name = "Icon"
+		img.Active = false
 		img.BackgroundTransparency = 1
 		img.Size = UDim2.fromOffset(52, 52)
 		img.Position = UDim2.new(0.5, 0, 0, 10)
@@ -448,6 +450,7 @@ function Hud.Mount(
 
 		local hintLab = Instance.new("TextLabel")
 		hintLab.Name = "KeyHint"
+		hintLab.Active = false
 		hintLab.BackgroundTransparency = 1
 		hintLab.Size = UDim2.new(1, 0, 0, 18)
 		hintLab.Position = UDim2.new(0, 0, 1, -22)
