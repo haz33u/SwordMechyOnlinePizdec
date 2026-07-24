@@ -5,6 +5,8 @@
 ]]
 
 local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
 
 local WorldBuilderService = {}
 
@@ -205,7 +207,33 @@ function WorldBuilderService.Init()
 	-- Boss Spawn Marker (L1_GoblinKing)
 	makeMarker(spawnsFolder, "Spawn_Boss", "L1_GoblinKing", "Boss", Vector3.new(0, 3, -190))
 
-	print("[WorldBuilder] Dark Goblin Forest procedural scaffold successfully built!")
+	-- ═══════════════════════════════════════
+	-- HUB 3D CASE CHESTS & QUESIONS NPCS
+	-- ═══════════════════════════════════════
+	local hubCases = ensureFolder(art, "HubCases")
+
+	local function makeCaseChest(name: string, pos: Vector3, color: Color3, kind: string, poolId: string?)
+		local box = makePart(hubCases, name .. "_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(pos + Vector3.new(0, 1.5, 0)), color, Enum.Material.Metal)
+		local lid = makePart(hubCases, name .. "_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(pos + Vector3.new(0, 3.2, 0)), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
+		
+		local prompt = Instance.new("ProximityPrompt")
+		prompt.ObjectText = name
+		prompt.ActionText = "Inspect Drop Rates & Open"
+		prompt.HoldDuration = 0
+		prompt.MaxActivationDistance = 14
+		prompt.Parent = box
+
+		prompt.Triggered:Connect(function(player)
+			local Remotes = require(Shared.Remotes)
+			Remotes.Event("OpenCasePreview"):FireClient(player, { kind = kind, poolId = poolId })
+		end)
+	end
+
+	makeCaseChest("Pet Case (500)", Vector3.new(-14, 3, 105), Color3.fromRGB(0, 160, 120), "pet", "loc1_500")
+	makeCaseChest("Pet Case (50K)", Vector3.new(-6, 3, 105), Color3.fromRGB(0, 120, 180), "pet", "loc1_50k")
+	makeCaseChest("Aura Case", Vector3.new(6, 3, 105), Color3.fromRGB(150, 60, 220), "aura", nil)
+
+	print("[WorldBuilder] Dark Goblin Forest procedural scaffold + 3D Hub Case Chests successfully built!")
 end
 
 function WorldBuilderService.GenerateStudioMarkers()

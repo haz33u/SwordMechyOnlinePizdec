@@ -160,7 +160,7 @@ function App.Start()
 	local onCombatFx: any = nil
 
 	local function openModal(kind: string, payload: any?)
-		if kind == "case" or kind == "caseOpen" then
+		if kind == "caseOpen" then
 			if caseApi then
 				local ok, reason, cost = caseApi.Begin(payload)
 				if ok == false and toastApi then
@@ -279,6 +279,12 @@ function App.Start()
 		Net.Event("OpenTravel").OnClientEvent:Connect(function()
 			store:OpenPanel("locations")
 			refreshAll()
+		end)
+	end)
+
+	pcall(function()
+		Net.Event("OpenCasePreview").OnClientEvent:Connect(function(payload)
+			openModal("case", payload)
 		end)
 	end)
 

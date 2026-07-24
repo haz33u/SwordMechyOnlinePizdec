@@ -57,6 +57,7 @@ function Remotes.InitAll()
 	Remotes.Event("MergeWeapon") -- MMB inventory: 5×L1→L2, 3×L2→L3
 	Remotes.Event("OpenPetCase") -- optional poolId string
 	Remotes.Event("OpenAuraCase")
+	Remotes.Event("OpenCasePreview")
 	Remotes.Event("EquipPet")
 	Remotes.Event("UnequipPet")
 	Remotes.Event("EquipAura")
