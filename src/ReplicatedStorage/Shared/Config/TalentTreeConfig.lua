@@ -1,18 +1,16 @@
 --!strict
 --[[
-	TALENT TREE CONFIG (RNG-Style Hexagonal Skill Network — 114 Nodes Scaling to Loc 19)
+	TALENT TREE CONFIG (Hexagonal Honeycomb Lattice — Chemical Table Skill Grid)
 	
-	Extensive node graph with 5 radiating constellations from central C_Core hub:
-	  1. COMBAT (Up-Left): 32 Nodes (Damage I..X, Crit I..VIII, Multi-Crit I..V, Keystones)
-	  2. LUCK & RNG (Up-Right): 24 Nodes (Luck I..X, Pet Luck I..V, Key Finder I..V, Keystones)
-	  3. SPEED (Down-Left): 19 Nodes (Walk Speed I..VIII, Attack Speed I..VIII, Keystones)
-	  4. UTILITY (Down-Right): 21 Nodes (Coins I..X, Backpack I..VIII, Relic Keystones)
-	  5. PRESTIGE (Straight Up): 17 Nodes (Rebirth Dmg, Luck, Coins, Master Ascendant)
+	Nodes arranged on a tight axial hex grid (q, r).
+	Hexes touch edge-to-edge without connecting line gaps.
 	
-	Quest Gating:
-	  - Attack Speed nodes require Click Quester (Sam) completed steps.
-	  - Pet Slot Keystones require Case Quester (Frost) completed steps.
-	  - Relic Slot Keystones require Power Quester (Grim) completed steps.
+	Branches radiating from central "C_Core" (0, 0):
+	  - Combat (Left / Up-Left): Damage, Crit, Multi-Crit, Boss Slayer
+	  - Luck & RNG (Right / Up-Right): Luck, Pet Slots, Key Drop
+	  - Speed & Agility (Down-Left): Walk Speed, Attack Speed
+	  - Utility & Coins (Down-Right): Coins, Backpack, Relic Slots
+	  - Prestige / Rebirth (Straight Up): Talent Points Perks
 ]]
 
 export type NodeType = "minor" | "major" | "keystone"
@@ -24,16 +22,18 @@ export type TalentNodeDef = {
 	desc: string,
 	branch: "combat" | "luck" | "speed" | "utility" | "prestige",
 	nodeType: NodeType,
-	gridPos: Vector2,
+	hexPos: Vector2, -- Axial coordinates (q, r)
 	icon: string,
 	parents: { string },
 	costType: CurrencyType,
-	cost: number,
+	baseCost: number,
+	costGrowth: number,
+	maxLevel: number,
 	reqSamTier: number?,
 	reqFrostTier: number?,
 	reqGrimTier: number?,
 	reqLocation: number?,
-	effects: {
+	effectsPerLevel: {
 		damagePct: number?,
 		coinPct: number?,
 		luckPct: number?,
@@ -50,22 +50,8 @@ export type TalentNodeDef = {
 local TalentTreeConfig = {}
 local Nodes: { [string]: TalentNodeDef } = {}
 
--- Costs for Tiers 1..10 (Loc 1 to Loc 19 Economy Curve)
-local COIN_TIERS = {
-	[1] = 100,
-	[2] = 1_000,
-	[3] = 15_000,
-	[4] = 150_000,
-	[5] = 2_000_000, -- 2M
-	[6] = 35_000_000, -- 35M
-	[7] = 500_000_000, -- 500M
-	[8] = 10_000_000_000, -- 10B
-	[9] = 250_000_000_000, -- 250B
-	[10] = 5_000_000_000_000, -- 5T
-}
-
 -- ═══════════════════════════════════════
--- CENTRAL CORE HUB
+-- CENTRAL CORE HUB (0, 0)
 -- ═══════════════════════════════════════
 Nodes["C_Core"] = {
 	id = "C_Core",
@@ -73,105 +59,118 @@ Nodes["C_Core"] = {
 	desc = "The origin of your inner power.",
 	branch = "combat",
 	nodeType = "keystone",
-	gridPos = Vector2.new(0, 0),
+	hexPos = Vector2.new(0, 0),
 	icon = "☸",
 	parents = {},
 	costType = "coins",
-	cost = 0,
-	effects = {},
+	baseCost = 0,
+	costGrowth = 1.0,
+	maxLevel = 1,
+	effectsPerLevel = {},
 }
 
 -- ═══════════════════════════════════════
--- 1. COMBAT CONSTELLATION (Up-Left / Left)
+-- 1. COMBAT BRANCH (Up-Left / Left Hex Lattice)
 -- ═══════════════════════════════════════
+-- Chain: q = -1..-8, r = 0..-4
 local prevDmg = "C_Core"
-for i = 1, 10 do
+for i = 1, 8 do
 	local id = "C_Dmg_" .. i
-	local isMajor = (i % 3 == 0)
-	local isKeystone = (i == 10)
+	local q = -i
+	local r = -math.floor(i / 2)
 	Nodes[id] = {
 		id = id,
 		name = "Sharp Blade " .. string.rep("I", i),
-		desc = string.format("+%d%% Damage", if isKeystone then 100 elseif isMajor then 25 else 5),
+		desc = "+5% Damage per level",
 		branch = "combat",
-		nodeType = if isKeystone then "keystone" elseif isMajor then "major" else "minor",
-		gridPos = Vector2.new(-100 * i - 20, -50 * i - 30),
-		icon = if isKeystone then "👑" elseif isMajor then "💥" else "⚔",
+		nodeType = if i % 3 == 0 then "major" else "minor",
+		hexPos = Vector2.new(q, r),
+		icon = if i % 3 == 0 then "💥" else "⚔",
 		parents = { prevDmg },
 		costType = "coins",
-		cost = COIN_TIERS[i],
+		baseCost = 100 * (4 ^ (i - 1)),
+		costGrowth = 1.35,
+		maxLevel = 50,
 		reqLocation = if i > 3 then math.min(19, i * 2) else nil,
-		effects = { damagePct = if isKeystone then 100 elseif isMajor then 25 else 5 },
+		effectsPerLevel = { damagePct = 5 },
 	}
 	prevDmg = id
 end
 
--- Crit Branch off Dmg_2
+-- Crit Branch (Adjacent to Dmg_2: q = -2, r = -2)
 local prevCrit = "C_Dmg_2"
-for i = 1, 8 do
+for i = 1, 6 do
 	local id = "C_Crit_" .. i
-	local isMajor = (i % 4 == 0)
+	local q = -2 - i
+	local r = -1 - i
 	Nodes[id] = {
 		id = id,
 		name = "Lethal Precision " .. i,
-		desc = string.format("+%d%% Crit Chance", if isMajor then 5 else 2),
+		desc = "+1% Crit Chance per level",
 		branch = "combat",
-		nodeType = if isMajor then "major" else "minor",
-		gridPos = Vector2.new(-220 - 70 * i, -200 - 60 * i),
+		nodeType = if i % 3 == 0 then "major" else "minor",
+		hexPos = Vector2.new(q, r),
 		icon = "🎯",
 		parents = { prevCrit },
 		costType = "coins",
-		cost = COIN_TIERS[math.min(10, i + 1)],
-		effects = { critChance = if isMajor then 5 else 2 },
+		baseCost = 1000 * (5 ^ (i - 1)),
+		costGrowth = 1.4,
+		maxLevel = 25,
+		effectsPerLevel = { critChance = 1 },
 	}
 	prevCrit = id
 end
 
 -- Multi-Crit Branch off Crit_3
 local prevMulti = "C_Crit_3"
-for i = 1, 5 do
+for i = 1, 4 do
 	local id = "C_MultiCrit_" .. i
+	local q = -5 - i
+	local r = -4
 	Nodes[id] = {
 		id = id,
 		name = "Overkill Multi-Crit " .. i,
-		desc = "+1% Multi-Crit Chance",
+		desc = "+1% Multi-Crit Chance per level",
 		branch = "combat",
-		nodeType = if i == 5 then "keystone" else "major",
-		gridPos = Vector2.new(-380 - 80 * i, -320 - 40 * i),
+		nodeType = if i == 4 then "keystone" else "major",
+		hexPos = Vector2.new(q, r),
 		icon = "🔥",
 		parents = { prevMulti },
 		costType = "coins",
-		cost = COIN_TIERS[math.min(10, i + 3)],
-		effects = { multiCrit = 1 },
+		baseCost = 50000 * (8 ^ (i - 1)),
+		costGrowth = 1.5,
+		maxLevel = 10,
+		effectsPerLevel = { multiCrit = 1 },
 	}
 	prevMulti = id
 end
 
 -- ═══════════════════════════════════════
--- 2. LUCK & RNG CONSTELLATION (Up-Right / Right)
+-- 2. LUCK & RNG BRANCH (Up-Right / Right Hex Lattice)
 -- ═══════════════════════════════════════
 local prevLuck = "C_Core"
-for i = 1, 10 do
+for i = 1, 8 do
 	local id = "L_Luck_" .. i
-	local isMajor = (i % 3 == 0)
-	local isKeystone = (i == 5 or i == 10)
-	local effectVal = if isKeystone then 50 elseif isMajor then 20 else 5
-	local icon = if i == 5 then "🐾" elseif i == 10 then "👑" elseif isMajor then "🌟" else "🍀"
+	local q = i
+	local r = -math.floor(i / 2)
+	local isKeystone = (i == 4 or i == 8)
 	
 	Nodes[id] = {
 		id = id,
-		name = if i == 5 then "Beastmaster Domain" elseif i == 10 then "PET EMPEROR" else ("Four-Leaf Clover " .. i),
-		desc = if i == 5 then "+1 Pet Equip Slot & +25% Luck [Requires Case Quester Step 5]" elseif i == 10 then "+1 Pet Equip Slot & +100% Luck [Requires Case Quester Step 15]" else string.format("+%d%% Luck", effectVal),
+		name = if i == 4 then "Beastmaster Domain" elseif i == 8 then "PET EMPEROR" else ("Four-Leaf Clover " .. i),
+		desc = if i == 4 then "+1 Pet Slot & +5% Luck/lvl [Case Quester Step 5]" elseif i == 8 then "+1 Pet Slot & +10% Luck/lvl [Case Quester Step 15]" else "+5% Luck per level",
 		branch = "luck",
-		nodeType = if isKeystone then "keystone" elseif isMajor then "major" else "minor",
-		gridPos = Vector2.new(100 * i + 20, -50 * i - 30),
-		icon = icon,
+		nodeType = if isKeystone then "keystone" elseif i % 3 == 0 then "major" else "minor",
+		hexPos = Vector2.new(q, r),
+		icon = if i == 4 then "🐾" elseif i == 8 then "👑" else "🍀",
 		parents = { prevLuck },
 		costType = "coins",
-		cost = COIN_TIERS[i],
-		reqFrostTier = if i == 5 then 5 elseif i == 10 then 15 else nil,
-		effects = {
-			luckPct = effectVal,
+		baseCost = 150 * (4 ^ (i - 1)),
+		costGrowth = 1.35,
+		maxLevel = if isKeystone then 1 else 40,
+		reqFrostTier = if i == 4 then 5 elseif i == 8 then 15 else nil,
+		effectsPerLevel = {
+			luckPct = 5,
 			petSlots = if isKeystone then 1 else nil,
 		},
 	}
@@ -180,45 +179,52 @@ end
 
 -- Key Finder Branch off Luck_2
 local prevKeyLuck = "L_Luck_2"
-for i = 1, 5 do
+for i = 1, 4 do
 	local id = "L_KeyLuck_" .. i
+	local q = 2 + i
+	local r = -1 - i
 	Nodes[id] = {
 		id = id,
 		name = "Key Finder " .. i,
-		desc = "+5% Case Key Drop Luck",
+		desc = "+5% Key Drop Luck per level",
 		branch = "luck",
-		nodeType = if i == 5 then "major" else "minor",
-		gridPos = Vector2.new(220 + 70 * i, -200 - 60 * i),
+		nodeType = if i == 4 then "major" else "minor",
+		hexPos = Vector2.new(q, r),
 		icon = "🔑",
 		parents = { prevKeyLuck },
 		costType = "coins",
-		cost = COIN_TIERS[math.min(10, i + 2)],
-		effects = { luckPct = 5 },
+		baseCost = 2000 * (6 ^ (i - 1)),
+		costGrowth = 1.4,
+		maxLevel = 20,
+		effectsPerLevel = { luckPct = 5 },
 	}
 	prevKeyLuck = id
 end
 
 -- ═══════════════════════════════════════
--- 3. SPEED & AGILITY CONSTELLATION (Down-Left)
+-- 3. SPEED & AGILITY BRANCH (Down-Left Hex Lattice)
 -- ═══════════════════════════════════════
 local prevSpeed = "C_Core"
-for i = 1, 8 do
+for i = 1, 6 do
 	local id = "S_Speed_" .. i
-	local isKeystone = (i == 8)
+	local q = -math.floor(i / 2)
+	local r = i
 	Nodes[id] = {
 		id = id,
-		name = if isKeystone then "LIGHT FOOTING" else ("Swift Boots " .. i),
-		desc = if isKeystone then "+5 Walk Speed & +10% Attack Speed" else "+1 Walk Speed",
+		name = if i == 6 then "LIGHT FOOTING" else ("Swift Boots " .. i),
+		desc = if i == 6 then "+5 Walk Speed & +10% Atk Speed" else "+1 Walk Speed per level",
 		branch = "speed",
-		nodeType = if isKeystone then "keystone" elseif i % 3 == 0 then "major" else "minor",
-		gridPos = Vector2.new(-90 * i - 20, 80 * i + 30),
-		icon = if isKeystone then "🌪" else "⚡",
+		nodeType = if i == 6 then "keystone" elseif i % 3 == 0 then "major" else "minor",
+		hexPos = Vector2.new(q, r),
+		icon = if i == 6 then "🌪" else "⚡",
 		parents = { prevSpeed },
 		costType = "coins",
-		cost = COIN_TIERS[math.min(10, i)],
-		effects = {
-			walkSpeed = if isKeystone then 5 else 1,
-			clickSpeed = if isKeystone then 10 else nil,
+		baseCost = 80 * (4 ^ (i - 1)),
+		costGrowth = 1.3,
+		maxLevel = if i == 6 then 1 else 30,
+		effectsPerLevel = {
+			walkSpeed = if i == 6 then 5 else 1,
+			clickSpeed = if i == 6 then 10 else nil,
 		},
 	}
 	prevSpeed = id
@@ -226,47 +232,54 @@ end
 
 -- Attack Speed Branch off Speed_2 (Gated by Click Quester Sam Tier)
 local prevAtkSpeed = "S_Speed_2"
-for i = 1, 8 do
+for i = 1, 6 do
 	local id = "S_AtkSpeed_" .. i
+	local q = -1 - i
+	local r = 2 + i
 	Nodes[id] = {
 		id = id,
 		name = "Quick Hands " .. i,
-		desc = string.format("+2%% Attack Speed [Requires Click Quester Step %d]", i),
+		desc = string.format("+2%% Attack Speed per level [Click Quester Step %d]", i),
 		branch = "speed",
 		nodeType = if i % 3 == 0 then "major" else "minor",
-		gridPos = Vector2.new(-180 - 60 * i, 160 + 70 * i),
+		hexPos = Vector2.new(q, r),
 		icon = "🗡",
 		parents = { prevAtkSpeed },
 		costType = "coins",
-		cost = COIN_TIERS[math.min(10, i + 1)],
+		baseCost = 1500 * (5 ^ (i - 1)),
+		costGrowth = 1.35,
+		maxLevel = 20,
 		reqSamTier = i,
-		effects = { clickSpeed = 2 },
+		effectsPerLevel = { clickSpeed = 2 },
 	}
 	prevAtkSpeed = id
 end
 
 -- ═══════════════════════════════════════
--- 4. UTILITY & COINS CONSTELLATION (Down-Right)
+-- 4. UTILITY & COINS BRANCH (Down-Right Hex Lattice)
 -- ═══════════════════════════════════════
 local prevCoins = "C_Core"
-for i = 1, 10 do
+for i = 1, 8 do
 	local id = "U_Coins_" .. i
-	local isKeystone = (i == 5 or i == 10)
-	local isMajor = (i % 3 == 0)
+	local q = math.floor(i / 2)
+	local r = i
+	local isKeystone = (i == 4 or i == 8)
 	Nodes[id] = {
 		id = id,
-		name = if i == 5 then "RELIC MASTERY I" elseif i == 10 then "RELIC MASTERY II" else ("Golden Pouch " .. i),
-		desc = if i == 5 then "+1 Relic Equip Slot & +25% Coins [Requires Power Quester Step 8]" elseif i == 10 then "+1 Relic Equip Slot & +100% Coins [Requires Power Quester Step 15]" else string.format("+%d%% Coins", if isMajor then 15 else 5),
+		name = if i == 4 then "RELIC MASTERY I" elseif i == 8 then "RELIC MASTERY II" else ("Golden Pouch " .. i),
+		desc = if i == 4 then "+1 Relic Slot & +25% Coins [Power Quester Step 8]" elseif i == 8 then "+1 Relic Slot & +100% Coins [Power Quester Step 15]" else "+5% Coins per level",
 		branch = "utility",
-		nodeType = if isKeystone then "keystone" elseif isMajor then "major" else "minor",
-		gridPos = Vector2.new(90 * i + 20, 80 * i + 30),
-		icon = if isKeystone then "🔮" elseif isMajor then "💎" else "💰",
+		nodeType = if isKeystone then "keystone" elseif i % 3 == 0 then "major" else "minor",
+		hexPos = Vector2.new(q, r),
+		icon = if isKeystone then "🔮" else "💰",
 		parents = { prevCoins },
 		costType = "coins",
-		cost = COIN_TIERS[i],
-		reqGrimTier = if i == 5 then 8 elseif i == 10 then 15 else nil,
-		effects = {
-			coinPct = if isKeystone then 50 elseif isMajor then 15 else 5,
+		baseCost = 100 * (4 ^ (i - 1)),
+		costGrowth = 1.35,
+		maxLevel = if isKeystone then 1 else 50,
+		reqGrimTier = if i == 4 then 8 elseif i == 8 then 15 else nil,
+		effectsPerLevel = {
+			coinPct = if isKeystone then 25 else 5,
 			relicSlots = if isKeystone then 1 else nil,
 		},
 	}
@@ -275,26 +288,30 @@ end
 
 -- Backpack Branch off Coins_2
 local prevBag = "U_Coins_2"
-for i = 1, 8 do
+for i = 1, 6 do
 	local id = "U_Backpack_" .. i
+	local q = 1 + i
+	local r = 2 + i
 	Nodes[id] = {
 		id = id,
 		name = "Expanded Bag " .. i,
-		desc = "+4 Inventory Slots to all Bags",
+		desc = "+2 Inventory Slots per level to all Bags",
 		branch = "utility",
 		nodeType = if i % 3 == 0 then "major" else "minor",
-		gridPos = Vector2.new(180 + 60 * i, 160 + 70 * i),
+		hexPos = Vector2.new(q, r),
 		icon = "🎒",
 		parents = { prevBag },
 		costType = "coins",
-		cost = COIN_TIERS[math.min(10, i + 1)],
-		effects = { bagSlots = 4 },
+		costGrowth = 1.35,
+		baseCost = 800 * (5 ^ (i - 1)),
+		maxLevel = 30,
+		effectsPerLevel = { bagSlots = 2 },
 	}
 	prevBag = id
 end
 
 -- ═══════════════════════════════════════
--- 5. PRESTIGE & REBIRTH CONSTELLATION (Straight Up)
+-- 5. PRESTIGE & REBIRTH BRANCH (Straight Up: q = 0, r = -1..-5)
 -- Uses Talent Points from Rebirths!
 -- ═══════════════════════════════════════
 local prevPrestigeDmg = "C_Core"
@@ -303,52 +320,20 @@ for i = 1, 5 do
 	Nodes[id] = {
 		id = id,
 		name = "Ascendant Might " .. i,
-		desc = "+25% All Damage",
+		desc = "+20% All Damage per level",
 		branch = "prestige",
 		nodeType = if i == 5 then "keystone" else "major",
-		gridPos = Vector2.new(-60, -140 * i),
+		hexPos = Vector2.new(0, -i),
 		icon = "🔱",
 		parents = { prevPrestigeDmg },
 		costType = "talentPoints",
-		cost = i,
-		effects = { damagePct = 25 },
+		baseCost = i,
+		costGrowth = 1.0,
+		maxLevel = 10,
+		effectsPerLevel = { damagePct = 20 },
 	}
 	prevPrestigeDmg = id
 end
-
-local prevPrestigeLuck = "C_Core"
-for i = 1, 5 do
-	local id = "P_RebirthLuck_" .. i
-	Nodes[id] = {
-		id = id,
-		name = "Divine Fortune " .. i,
-		desc = "+25% Luck",
-		branch = "prestige",
-		nodeType = if i == 5 then "keystone" else "major",
-		gridPos = Vector2.new(60, -140 * i),
-		icon = "☀️",
-		parents = { prevPrestigeLuck },
-		costType = "talentPoints",
-		cost = i,
-		effects = { luckPct = 25 },
-	}
-	prevPrestigeLuck = id
-end
-
--- Master Ascendant Keystone (requires RebirthDmg_5 AND RebirthLuck_5)
-Nodes["P_KeystoneMaster"] = {
-	id = "P_KeystoneMaster",
-	name = "MASTER ASCENDANT",
-	desc = "+200% Global Power Multiplier",
-	branch = "prestige",
-	nodeType = "keystone",
-	gridPos = Vector2.new(0, -840),
-	icon = "🌌",
-	parents = { "P_RebirthDmg_5", "P_RebirthLuck_5" },
-	costType = "talentPoints",
-	cost = 10,
-	effects = { damagePct = 200 },
-}
 
 TalentTreeConfig.Nodes = Nodes
 
@@ -360,8 +345,19 @@ function TalentTreeConfig.GetAll(): { [string]: TalentNodeDef }
 	return TalentTreeConfig.Nodes
 end
 
---- Aggregates all stat bonuses from an array of unlocked node IDs
-function TalentTreeConfig.ComputeStats(unlockedTalents: { [string]: boolean }?)
+--- Calculates cost for upgrading a node to next level
+function TalentTreeConfig.GetUpgradeCost(def: TalentNodeDef, currentLevel: number): number
+	if currentLevel >= def.maxLevel then
+		return 0
+	end
+	if def.costType == "talentPoints" then
+		return def.baseCost
+	end
+	return math.floor(def.baseCost * (def.costGrowth ^ currentLevel))
+end
+
+--- Aggregates all stat bonuses from an array or map of node levels
+function TalentTreeConfig.ComputeStats(unlockedTalents: { [string]: any }?)
 	local totals = {
 		damagePct = 0,
 		coinPct = 0,
@@ -377,13 +373,14 @@ function TalentTreeConfig.ComputeStats(unlockedTalents: { [string]: boolean }?)
 	if not unlockedTalents then
 		return totals
 	end
-	for nodeId, isUnlocked in unlockedTalents do
-		if isUnlocked then
+	for nodeId, levelVal in unlockedTalents do
+		local lvl = if type(levelVal) == "number" then levelVal else (if levelVal == true then 1 else 0)
+		if lvl > 0 then
 			local def = TalentTreeConfig.Nodes[nodeId]
-			if def and def.effects then
-				for stat, val in def.effects do
+			if def and def.effectsPerLevel then
+				for stat, val in def.effectsPerLevel do
 					if type(val) == "number" and totals[stat] ~= nil then
-						totals[stat] += val
+						totals[stat] += val * lvl
 					end
 				end
 			end

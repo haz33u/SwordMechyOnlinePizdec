@@ -1,12 +1,16 @@
 --!strict
 --[[
-	TALENT TREE UI — Modern Category-Branch Skill Network
+	TALENT TREE UI — Hexagonal Honeycomb Skill Lattice (Chemical Table Layout)
 	
-	Renders a structured talent tree with category tabs, progress indicators,
-	branch cards, quest gating badges, and cost unlock buttons.
+	Renders a tightly-packed 2D hex grid where hexes touch edge-to-edge
+	in an axial honeycomb pattern (q, r).
+	
+	Supports multi-level node upgrading (Lv 1 to 100+), Pan & Zoom canvas,
+	and quest-gating requirement indicators.
 ]]
 
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -19,6 +23,13 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local TalentTreeConfig = require(Shared.Config.TalentTreeConfig)
 
 local TalentTreeUI = {}
+
+--- Converts axial hex coordinates (q, r) to 2D pixel offset
+local function hexToPixel(q: number, r: number, size: number): Vector2
+	local x = size * 1.732 * (q + r * 0.5)
+	local y = size * 1.5 * r
+	return Vector2.new(x, y)
+end
 
 function TalentTreeUI.Mount(parent: Instance, store: any)
 	local layer = Instance.new("Frame")
@@ -35,7 +46,7 @@ function TalentTreeUI.Mount(parent: Instance, store: any)
 	card.Size = UDim2.fromScale(0.88, 0.88)
 	card.Position = UDim2.fromScale(0.5, 0.5)
 	card.AnchorPoint = Vector2.new(0.5, 0.5)
-	card.BackgroundColor3 = Color3.fromRGB(14, 17, 26)
+	card.BackgroundColor3 = Color3.fromRGB(12, 15, 24)
 	card.BorderSizePixel = 0
 	card.ZIndex = 51
 	card.Parent = layer
@@ -54,26 +65,26 @@ function TalentTreeUI.Mount(parent: Instance, store: any)
 
 	local titleLab = Instance.new("TextLabel")
 	titleLab.Name = "Title"
-	titleLab.Size = UDim2.new(0.35, 0, 1, 0)
+	titleLab.Size = UDim2.new(0.4, 0, 1, 0)
 	titleLab.Position = UDim2.fromOffset(20, 0)
 	titleLab.BackgroundTransparency = 1
 	titleLab.Font = Enum.Font.GothamBold
 	titleLab.TextSize = 18
 	titleLab.TextColor3 = Color3.fromRGB(0, 230, 255)
-	titleLab.Text = "TALENT TREE  ·  SKILL NETWORK"
+	titleLab.Text = "TALENT TREE  ·  HONEYCOMB NETWORK"
 	titleLab.TextXAlignment = Enum.TextXAlignment.Left
 	titleLab.ZIndex = 53
 	titleLab.Parent = header
 
 	local statsLab = Instance.new("TextLabel")
 	statsLab.Name = "Stats"
-	statsLab.Size = UDim2.new(0.55, -60, 1, 0)
-	statsLab.Position = UDim2.new(0.38, 0, 0, 0)
+	statsLab.Size = UDim2.new(0.5, -60, 1, 0)
+	statsLab.Position = UDim2.new(0.45, 0, 0, 0)
 	statsLab.BackgroundTransparency = 1
 	statsLab.Font = Enum.Font.GothamBold
 	statsLab.TextSize = 13
 	statsLab.TextColor3 = Color3.fromRGB(240, 200, 80)
-	statsLab.Text = "Coins: 0  |  Talent Points: 0  |  Total: 0/114"
+	statsLab.Text = "Coins: 0  |  Talent Points: 0  |  Nodes: 0/47"
 	statsLab.TextXAlignment = Enum.TextXAlignment.Right
 	statsLab.ZIndex = 53
 	statsLab.Parent = header
@@ -94,158 +105,207 @@ function TalentTreeUI.Mount(parent: Instance, store: any)
 		layer.Visible = false
 	end)
 
-	-- Branch Category Tabs Bar
-	local tabsRow = Instance.new("Frame")
-	tabsRow.Name = "TabsRow"
-	tabsRow.Size = UDim2.new(1, -24, 0, 44)
-	tabsRow.Position = UDim2.fromOffset(12, 60)
-	tabsRow.BackgroundTransparency = 1
-	tabsRow.ZIndex = 52
-	tabsRow.Parent = card
+	-- Viewport (ClipDescendants for pan & zoom canvas)
+	local viewport = Instance.new("Frame")
+	viewport.Name = "Viewport"
+	viewport.Size = UDim2.new(1, -24, 1, -140)
+	viewport.Position = UDim2.fromOffset(12, 60)
+	viewport.BackgroundColor3 = Color3.fromRGB(8, 10, 16)
+	viewport.ClipsDescendants = true
+	viewport.BorderSizePixel = 0
+	viewport.ZIndex = 52
+	viewport.Parent = card
+	UIKit.Corner(viewport, 12)
 
-	local tabList = Instance.new("UIListLayout")
-	tabList.FillDirection = Enum.FillDirection.Horizontal
-	tabList.HorizontalAlignment = Enum.HorizontalAlignment.Left
-	tabList.Padding = UDim.new(0, 8)
-	tabList.Parent = tabsRow
+	-- Grid Background Pattern
+	local gridBg = Instance.new("ImageLabel")
+	gridBg.Name = "GridBg"
+	gridBg.Size = UDim2.fromScale(1, 1)
+	gridBg.BackgroundTransparency = 1
+	gridBg.Image = "rbxassetid://6071575915"
+	gridBg.ImageColor3 = Color3.fromRGB(30, 40, 60)
+	gridBg.ImageTransparency = 0.88
+	gridBg.ScaleType = Enum.ScaleType.Tile
+	gridBg.TileSize = UDim2.fromOffset(64, 64)
+	gridBg.ZIndex = 53
+	gridBg.Parent = viewport
 
-	local CATEGORIES = {
-		{ id = "combat", name = "⚔ COMBAT", color = Color3.fromRGB(220, 70, 50) },
-		{ id = "luck", name = "🍀 LUCK & RNG", color = Color3.fromRGB(40, 190, 110) },
-		{ id = "speed", name = "⚡ SPEED", color = Color3.fromRGB(240, 180, 40) },
-		{ id = "utility", name = "💰 UTILITY", color = Color3.fromRGB(160, 80, 220) },
-		{ id = "prestige", name = "🔱 PRESTIGE", color = Color3.fromRGB(0, 200, 255) },
-	}
+	-- Draggable Honeycomb Canvas Host
+	local canvas = Instance.new("Frame")
+	canvas.Name = "Canvas"
+	canvas.Size = UDim2.fromOffset(3000, 3000)
+	canvas.Position = UDim2.new(0.5, -1500, 0.5, -1500)
+	canvas.BackgroundTransparency = 1
+	canvas.ZIndex = 54
+	canvas.Parent = viewport
 
-	local activeCategory = "combat"
-	local tabBtns: { [string]: TextButton } = {}
+	local canvasScale = Instance.new("UIScale")
+	canvasScale.Scale = 1.0
+	canvasScale.Parent = canvas
 
-	-- Branch Progress Subheader
-	local subheader = Instance.new("Frame")
-	subheader.Name = "Subheader"
-	subheader.Size = UDim2.new(1, -24, 0, 36)
-	subheader.Position = UDim2.fromOffset(12, 110)
-	subheader.BackgroundColor3 = Color3.fromRGB(20, 24, 36)
-	subheader.ZIndex = 52
-	subheader.Parent = card
-	UIKit.Corner(subheader, 8)
+	local nodesFolder = Instance.new("Folder")
+	nodesFolder.Name = "Nodes"
+	nodesFolder.Parent = canvas
 
-	local branchProgLab = Instance.new("TextLabel")
-	branchProgLab.Name = "BranchProgLab"
-	branchProgLab.Size = UDim2.new(0.5, 0, 1, 0)
-	branchProgLab.Position = UDim2.fromOffset(12, 0)
-	branchProgLab.BackgroundTransparency = 1
-	branchProgLab.Font = Enum.Font.GothamBold
-	branchProgLab.TextSize = 13
-	branchProgLab.TextColor3 = Color3.fromRGB(0, 220, 255)
-	branchProgLab.Text = "Branch Progress: 0/0"
-	branchProgLab.TextXAlignment = Enum.TextXAlignment.Left
-	branchProgLab.ZIndex = 53
-	branchProgLab.Parent = subheader
+	-- Tooltip & Upgrade Inspector (Bottom Bar)
+	local inspector = Instance.new("Frame")
+	inspector.Name = "Inspector"
+	inspector.Size = UDim2.new(1, -24, 0, 68)
+	inspector.Position = UDim2.new(0, 12, 1, -76)
+	inspector.BackgroundColor3 = Color3.fromRGB(18, 22, 34)
+	inspector.ZIndex = 60
+	inspector.Parent = card
+	UIKit.Corner(inspector, 12)
+	UIKit.Stroke(inspector, Color3.fromRGB(50, 70, 110), 1.2, 0.4)
 
-	local branchEffectLab = Instance.new("TextLabel")
-	branchEffectLab.Name = "BranchEffectLab"
-	branchEffectLab.Size = UDim2.new(0.5, -12, 1, 0)
-	branchEffectLab.Position = UDim2.new(0.5, 0, 0, 0)
-	branchEffectLab.BackgroundTransparency = 1
-	branchEffectLab.Font = Enum.Font.Gotham
-	branchEffectLab.TextSize = 12
-	branchEffectLab.TextColor3 = Color3.fromRGB(180, 190, 210)
-	branchEffectLab.Text = "Active Branch Boosts: None"
-	branchEffectLab.TextXAlignment = Enum.TextXAlignment.Right
-	branchEffectLab.ZIndex = 53
-	branchEffectLab.Parent = subheader
+	local nodeTitle = Instance.new("TextLabel")
+	nodeTitle.Name = "NodeTitle"
+	nodeTitle.Size = UDim2.new(0.4, 0, 0, 24)
+	nodeTitle.Position = UDim2.fromOffset(16, 10)
+	nodeTitle.BackgroundTransparency = 1
+	nodeTitle.Font = Enum.Font.GothamBold
+	nodeTitle.TextSize = 16
+	nodeTitle.TextColor3 = Color3.fromRGB(240, 200, 80)
+	nodeTitle.Text = "Select a hex node"
+	nodeTitle.TextXAlignment = Enum.TextXAlignment.Left
+	nodeTitle.ZIndex = 61
+	nodeTitle.Parent = inspector
 
-	-- Scrollable Cards Grid Container
-	local scroll = Instance.new("ScrollingFrame")
-	scroll.Name = "Scroll"
-	scroll.Size = UDim2.new(1, -24, 1, -160)
-	scroll.Position = UDim2.fromOffset(12, 152)
-	scroll.BackgroundTransparency = 1
-	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
-	scroll.ScrollBarThickness = 6
-	scroll.ScrollBarImageColor3 = Color3.fromRGB(0, 200, 240)
-	scroll.ZIndex = 52
-	scroll.Parent = card
+	local nodeDesc = Instance.new("TextLabel")
+	nodeDesc.Name = "NodeDesc"
+	nodeDesc.Size = UDim2.new(0.55, 0, 0, 24)
+	nodeDesc.Position = UDim2.fromOffset(16, 34)
+	nodeDesc.BackgroundTransparency = 1
+	nodeDesc.Font = Enum.Font.Gotham
+	nodeDesc.TextSize = 12
+	nodeDesc.TextColor3 = Color3.fromRGB(180, 190, 210)
+	nodeDesc.Text = "Click any node on the honeycomb table to inspect and upgrade."
+	nodeDesc.TextXAlignment = Enum.TextXAlignment.Left
+	nodeDesc.ZIndex = 61
+	nodeDesc.Parent = inspector
 
-	local grid = Instance.new("UIGridLayout")
-	grid.CellSize = UDim2.fromOffset(265, 115)
-	grid.CellPadding = UDim2.fromOffset(10, 10)
-	grid.SortOrder = Enum.SortOrder.LayoutOrder
-	grid.Parent = scroll
+	local upgradeBtn = Instance.new("TextButton")
+	upgradeBtn.Name = "UpgradeBtn"
+	upgradeBtn.Size = UDim2.fromOffset(170, 44)
+	upgradeBtn.Position = UDim2.new(1, -182, 0.5, -22)
+	upgradeBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 120)
+	upgradeBtn.Font = Enum.Font.GothamBold
+	upgradeBtn.TextSize = 13
+	upgradeBtn.TextColor3 = Color3.new(1, 1, 1)
+	upgradeBtn.Text = "Upgrade"
+	upgradeBtn.Visible = false
+	upgradeBtn.ZIndex = 62
+	upgradeBtn.Parent = inspector
+	UIKit.Corner(upgradeBtn, 10)
 
-	local function refreshUI()
+	-- Pan / Drag Controls State
+	local isDragging = false
+	local dragStart = Vector2.zero
+	local startPos = UDim2.new()
+	local selectedNodeId: string? = nil
+
+	viewport.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			isDragging = true
+			dragStart = input.Position
+			startPos = canvas.Position
+		end
+	end)
+
+	viewport.InputChanged:Connect(function(input)
+		if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+			local delta = input.Position - dragStart
+			canvas.Position = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+
+	viewport.InputEnded:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+			isDragging = false
+		end
+	end)
+
+	-- Mouse Wheel Zoom
+	viewport.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseWheel then
+			local delta = input.Position.Z
+			local curScale = canvasScale.Scale
+			local nextScale = math.clamp(curScale + (delta * 0.1), 0.6, 1.8)
+			canvasScale.Scale = nextScale
+		end
+	end)
+
+	-- Center Viewport Button
+	local centerBtn = Instance.new("TextButton")
+	centerBtn.Name = "CenterBtn"
+	centerBtn.Size = UDim2.fromOffset(36, 36)
+	centerBtn.Position = UDim2.new(1, -48, 1, -48)
+	centerBtn.BackgroundColor3 = Color3.fromRGB(30, 40, 60)
+	centerBtn.Font = Enum.Font.GothamBold
+	centerBtn.TextSize = 18
+	centerBtn.TextColor3 = Color3.fromRGB(0, 230, 255)
+	centerBtn.Text = "🎯"
+	centerBtn.ZIndex = 65
+	centerBtn.Parent = viewport
+	UIKit.Corner(centerBtn, 18)
+	centerBtn.MouseButton1Click:Connect(function()
+		canvas.Position = UDim2.new(0.5, -1500, 0.5, -1500)
+		canvasScale.Scale = 1.0
+	end)
+
+	-- Refresh Honeycomb Lattice
+	local function refreshLattice()
 		local profile = store:PeekProfile()
 		local stats = store:PeekStats()
-		local unlockedMap = (profile and profile.unlockedTalents) or { C_Core = true }
+		local unlockedMap = (profile and profile.unlockedTalents) or { C_Core = 1 }
 		local coins = (stats and stats.coins) or (profile and profile.coins) or 0
 		local talentPts = (profile and profile.talentPoints) or 0
 
 		local totalNodes = 0
-		local totalUnlocked = 0
+		local activeNodes = 0
 		for id, node in TalentTreeConfig.Nodes do
 			totalNodes += 1
-			if unlockedMap[id] == true then
-				totalUnlocked += 1
+			local val = unlockedMap[id]
+			local lvl = if type(val) == "number" then val else (if val == true then 1 else 0)
+			if lvl > 0 then
+				activeNodes += 1
 			end
 		end
 
 		statsLab.Text = string.format(
-			"Coins: %s  |  Talent Points: %s  |  Total Unlocked: %d/%d",
+			"Coins: %s  |  Talent Points: %s  |  Nodes Active: %d/%d",
 			Format.Num(coins),
 			Format.Num(talentPts),
-			totalUnlocked,
+			activeNodes,
 			totalNodes
 		)
 
-		-- Update Category Tabs
-		for _, cat in ipairs(CATEGORIES) do
-			local btn = tabBtns[cat.id]
-			if btn then
-				if cat.id == activeCategory then
-					btn.BackgroundColor3 = cat.color
-					btn.TextColor3 = Color3.new(1, 1, 1)
-				else
-					btn.BackgroundColor3 = Color3.fromRGB(24, 28, 42)
-					btn.TextColor3 = Color3.fromRGB(150, 160, 180)
-				end
-			end
+		for _, child in nodesFolder:GetChildren() do
+			child:Destroy()
 		end
 
-		-- Clear Grid Cards
-		for _, child in scroll:GetChildren() do
-			if child:IsA("Frame") then
-				child:Destroy()
-			end
-		end
-
-		-- Collect nodes for active category
-		local catNodes = {}
-		local branchUnlocked = 0
-		local branchTotal = 0
+		local centerOrigin = Vector2.new(1500, 1500)
+		local HEX_SIZE = 38 -- Hex Radius for tight edge-to-edge packing
 
 		for id, node in TalentTreeConfig.Nodes do
-			if node.branch == activeCategory or (activeCategory == "combat" and id == "C_Core") then
-				branchTotal += 1
-				if unlockedMap[id] == true then
-					branchUnlocked += 1
-				end
-				table.insert(catNodes, node)
-			end
-		end
+			local val = unlockedMap[id]
+			local curLvl = if type(val) == "number" then val else (if val == true then 1 else 0)
+			local isUnlocked = curLvl > 0
 
-		branchProgLab.Text = string.format("Branch Progress: %d / %d Unlocked (%d%%)", branchUnlocked, branchTotal, math.floor((branchUnlocked / math.max(1, branchTotal)) * 100))
-
-		-- Render Cards
-		for order, node in ipairs(catNodes) do
-			local isUnlocked = unlockedMap[node.id] == true
 			local isAvailable = false
 			if not isUnlocked then
 				if #node.parents == 0 then
 					isAvailable = true
 				else
 					for _, pId in ipairs(node.parents) do
-						if unlockedMap[pId] == true then
+						local pVal = unlockedMap[pId]
+						local pLvl = if type(pVal) == "number" then pVal else (if pVal == true then 1 else 0)
+						if pLvl > 0 then
 							isAvailable = true
 							break
 						end
@@ -259,136 +319,111 @@ function TalentTreeUI.Mount(parent: Instance, store: any)
 			local locOk = not node.reqLocation or ((profile and profile.currentLocation or 1) >= node.reqLocation)
 			local questsOk = samOk and frostOk and grimOk and locOk
 
-			local nodeCard = Instance.new("Frame")
-			nodeCard.Name = "Card_" .. node.id
-			nodeCard.BackgroundColor3 = Color3.fromRGB(20, 25, 38)
-			nodeCard.LayoutOrder = order
-			nodeCard.ZIndex = 53
-			nodeCard.Parent = scroll
-			UIKit.Corner(nodeCard, 10)
+			local pix = centerOrigin + hexToPixel(node.hexPos.X, node.hexPos.Y, HEX_SIZE)
+
+			-- Hexagon Container
+			local hexBtn = Instance.new("TextButton")
+			hexBtn.Name = "Hex_" .. id
+			hexBtn.Size = UDim2.fromOffset(HEX_SIZE * 1.65, HEX_SIZE * 1.65)
+			hexBtn.Position = UDim2.fromOffset(pix.X, pix.Y)
+			hexBtn.AnchorPoint = Vector2.new(0.5, 0.5)
+			hexBtn.Font = Enum.Font.GothamBold
+			hexBtn.TextSize = 18
+			hexBtn.Text = ""
+			hexBtn.ZIndex = 55
+			hexBtn.Parent = nodesFolder
+			UIKit.Corner(hexBtn, 14) -- Hexagonal-like rounded chip
 
 			local strokeColor = Color3.fromRGB(40, 50, 70)
 			if isUnlocked then
-				strokeColor = Color3.fromRGB(0, 200, 120)
+				hexBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 180)
+				strokeColor = Color3.fromRGB(0, 230, 255)
 			elseif isAvailable and questsOk then
+				hexBtn.BackgroundColor3 = Color3.fromRGB(24, 34, 52)
 				strokeColor = Color3.fromRGB(0, 200, 240)
 			elseif isAvailable and not questsOk then
-				strokeColor = Color3.fromRGB(220, 120, 30)
+				hexBtn.BackgroundColor3 = Color3.fromRGB(34, 24, 20)
+				strokeColor = Color3.fromRGB(220, 110, 30)
+			else
+				hexBtn.BackgroundColor3 = Color3.fromRGB(16, 20, 30)
+				strokeColor = Color3.fromRGB(35, 42, 58)
 			end
-			UIKit.Stroke(nodeCard, strokeColor, 1.5, 0.2)
+			UIKit.Stroke(hexBtn, strokeColor, if node.nodeType == "keystone" then 2.5 else 1.8, 0.15)
 
 			local iconLab = Instance.new("TextLabel")
-			iconLab.Size = UDim2.fromOffset(36, 36)
-			iconLab.Position = UDim2.fromOffset(10, 10)
+			iconLab.Size = UDim2.fromScale(1, 0.55)
+			iconLab.Position = UDim2.fromScale(0, 0.05)
 			iconLab.BackgroundTransparency = 1
 			iconLab.Font = Enum.Font.GothamBold
-			iconLab.TextSize = 22
-			iconLab.TextColor3 = if isUnlocked then Color3.fromRGB(240, 200, 80) else Color3.fromRGB(200, 210, 230)
+			iconLab.TextSize = if node.nodeType == "keystone" then 22 else 18
+			iconLab.TextColor3 = if isUnlocked then Color3.fromRGB(255, 230, 100) else Color3.fromRGB(200, 210, 230)
 			iconLab.Text = node.icon or "⚔"
-			iconLab.ZIndex = 54
-			iconLab.Parent = nodeCard
+			iconLab.ZIndex = 56
+			iconLab.Parent = hexBtn
 
-			local titleLabCard = Instance.new("TextLabel")
-			titleLabCard.Size = UDim2.new(1, -56, 0, 20)
-			titleLabCard.Position = UDim2.fromOffset(50, 8)
-			titleLabCard.BackgroundTransparency = 1
-			titleLabCard.Font = Enum.Font.GothamBold
-			titleLabCard.TextSize = 13
-			titleLabCard.TextColor3 = if isUnlocked then Color3.fromRGB(0, 230, 255) else Color3.fromRGB(230, 235, 245)
-			titleLabCard.Text = node.name
-			titleLabCard.TextXAlignment = Enum.TextXAlignment.Left
-			titleLabCard.ZIndex = 54
-			titleLabCard.Parent = nodeCard
+			local lvlLab = Instance.new("TextLabel")
+			lvlLab.Size = UDim2.fromScale(1, 0.35)
+			lvlLab.Position = UDim2.fromScale(0, 0.6)
+			lvlLab.BackgroundTransparency = 1
+			lvlLab.Font = Enum.Font.GothamBold
+			lvlLab.TextSize = 10
+			lvlLab.TextColor3 = if isUnlocked then Color3.fromRGB(220, 245, 255) else Color3.fromRGB(140, 155, 175)
+			lvlLab.Text = if node.maxLevel == 1 then (if isUnlocked then "MAX" else "1/1") else string.format("Lv.%d/%d", curLvl, node.maxLevel)
+			lvlLab.ZIndex = 56
+			lvlLab.Parent = hexBtn
 
-			local descLab = Instance.new("TextLabel")
-			descLab.Size = UDim2.new(1, -20, 0, 36)
-			descLab.Position = UDim2.fromOffset(10, 42)
-			descLab.BackgroundTransparency = 1
-			descLab.Font = Enum.Font.Gotham
-			descLab.TextSize = 11
-			descLab.TextColor3 = Color3.fromRGB(160, 175, 195)
-			descLab.TextWrapped = true
-			descLab.Text = node.desc
-			descLab.TextXAlignment = Enum.TextXAlignment.Left
-			descLab.ZIndex = 54
-			descLab.Parent = nodeCard
+			hexBtn.MouseButton1Click:Connect(function()
+				selectedNodeId = id
+				local cost = TalentTreeConfig.GetUpgradeCost(node, curLvl)
 
-			local buyBtn = Instance.new("TextButton")
-			buyBtn.Size = UDim2.new(1, -20, 0, 26)
-			buyBtn.Position = UDim2.fromOffset(10, 80)
-			buyBtn.Font = Enum.Font.GothamBold
-			buyBtn.TextSize = 11
-			buyBtn.ZIndex = 55
-			buyBtn.Parent = nodeCard
-			UIKit.Corner(buyBtn, 6)
+				nodeTitle.Text = string.format("%s  [Lv.%d/%d]", node.name, curLvl, node.maxLevel)
+				nodeDesc.Text = string.format("%s  ·  Next Upgrade: %s %s", node.desc, Format.Num(cost), if node.costType == "talentPoints" then "Talent Points" else "Coins")
 
-			if isUnlocked then
-				buyBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 90)
-				buyBtn.TextColor3 = Color3.new(1, 1, 1)
-				buyBtn.Text = "UNLOCKED ✓"
-			elseif isAvailable then
-				if not questsOk then
-					buyBtn.BackgroundColor3 = Color3.fromRGB(180, 90, 20)
-					buyBtn.TextColor3 = Color3.new(1, 1, 1)
-					if not samOk then
-						buyBtn.Text = "🔒 Click Step " .. tostring(node.reqSamTier)
-					elseif not frostOk then
-						buyBtn.Text = "🔒 Case Step " .. tostring(node.reqFrostTier)
-					elseif not grimOk then
-						buyBtn.Text = "🔒 Power Step " .. tostring(node.reqGrimTier)
+				if curLvl >= node.maxLevel then
+					upgradeBtn.Visible = true
+					upgradeBtn.BackgroundColor3 = Color3.fromRGB(0, 150, 100)
+					upgradeBtn.Text = "MAX LEVEL ✓"
+				elseif isAvailable or isUnlocked then
+					upgradeBtn.Visible = true
+					local canAfford = if node.costType == "talentPoints" then talentPts >= cost else coins >= cost
+
+					if not questsOk then
+						upgradeBtn.BackgroundColor3 = Color3.fromRGB(180, 90, 20)
+						if not samOk then
+							upgradeBtn.Text = "🔒 Click Step " .. tostring(node.reqSamTier)
+						elseif not frostOk then
+							upgradeBtn.Text = "🔒 Case Step " .. tostring(node.reqFrostTier)
+						elseif not grimOk then
+							upgradeBtn.Text = "🔒 Power Step " .. tostring(node.reqGrimTier)
+						else
+							upgradeBtn.Text = "🔒 Loc " .. tostring(node.reqLocation)
+						end
+					elseif canAfford then
+						upgradeBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 120)
+						upgradeBtn.Text = string.format("UPGRADE (%s)", Format.Num(cost))
 					else
-						buyBtn.Text = "🔒 Loc " .. tostring(node.reqLocation)
+						upgradeBtn.BackgroundColor3 = Color3.fromRGB(65, 70, 85)
+						upgradeBtn.Text = string.format("NEED %s", Format.Num(cost))
 					end
 				else
-					local canAfford = if node.costType == "talentPoints" then talentPts >= node.cost else coins >= node.cost
-					if canAfford then
-						buyBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 120)
-						buyBtn.TextColor3 = Color3.new(1, 1, 1)
-						buyBtn.Text = "UNLOCK (" .. Format.Num(node.cost) .. ")"
-					else
-						buyBtn.BackgroundColor3 = Color3.fromRGB(60, 65, 80)
-						buyBtn.TextColor3 = Color3.fromRGB(180, 185, 200)
-						buyBtn.Text = "NEED " .. Format.Num(node.cost)
-					end
-					buyBtn.MouseButton1Click:Connect(function()
-						Net.UnlockTalentNode(node.id)
-						task.delay(0.3, refreshUI)
-					end)
+					upgradeBtn.Visible = false
 				end
-			else
-				buyBtn.BackgroundColor3 = Color3.fromRGB(30, 35, 45)
-				buyBtn.TextColor3 = Color3.fromRGB(100, 110, 130)
-				buyBtn.Text = "LOCKED 🔒"
-			end
+			end)
 		end
-
-		scroll.CanvasSize = UDim2.fromOffset(0, grid.AbsoluteContentSize.Y + 20)
 	end
 
-	-- Create Category Tabs
-	for _, cat in ipairs(CATEGORIES) do
-		local tabBtn = Instance.new("TextButton")
-		tabBtn.Name = "Tab_" .. cat.id
-		tabBtn.Size = UDim2.fromOffset(130, 38)
-		tabBtn.Font = Enum.Font.GothamBold
-		tabBtn.TextSize = 12
-		tabBtn.Text = cat.name
-		tabBtn.ZIndex = 53
-		tabBtn.Parent = tabsRow
-		UIKit.Corner(tabBtn, 8)
-		tabBtns[cat.id] = tabBtn
-
-		tabBtn.MouseButton1Click:Connect(function()
-			activeCategory = cat.id
-			refreshUI()
-		end)
-	end
+	upgradeBtn.MouseButton1Click:Connect(function()
+		if selectedNodeId then
+			Net.UnlockTalentNode(selectedNodeId)
+			task.delay(0.3, refreshLattice)
+		end
+	end)
 
 	local api = {}
 
 	function api.Show()
 		layer.Visible = true
-		refreshUI()
+		refreshLattice()
 	end
 
 	function api.Hide()
@@ -398,13 +433,13 @@ function TalentTreeUI.Mount(parent: Instance, store: any)
 	function api.Toggle()
 		layer.Visible = not layer.Visible
 		if layer.Visible then
-			refreshUI()
+			refreshLattice()
 		end
 	end
 
 	function api.Refresh()
 		if layer.Visible then
-			refreshUI()
+			refreshLattice()
 		end
 	end
 

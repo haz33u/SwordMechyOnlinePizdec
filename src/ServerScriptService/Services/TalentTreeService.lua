@@ -35,18 +35,23 @@ function TalentTreeService.UnlockNode(player: Player, nodeId: any)
 		return
 	end
 
-	profile.unlockedTalents = profile.unlockedTalents or { C_Core = true }
+	profile.unlockedTalents = profile.unlockedTalents or { C_Core = 1 }
 
-	-- Already unlocked?
-	if profile.unlockedTalents[nodeId] == true then
+	local currentVal = profile.unlockedTalents[nodeId]
+	local currentLvl = if type(currentVal) == "number" then currentVal else (if currentVal == true then 1 else 0)
+
+	if currentLvl >= node.maxLevel then
+		Remotes.Event("Notify"):FireClient(player, { text = "Node already at MAX level", color = "yellow" })
 		return
 	end
 
-	-- Check parent prerequisites
+	-- Check parent prerequisites (must have at least Level 1 of parent)
 	if #node.parents > 0 then
 		local hasParent = false
 		for _, parentId in ipairs(node.parents) do
-			if profile.unlockedTalents[parentId] == true then
+			local pVal = profile.unlockedTalents[parentId]
+			local pLvl = if type(pVal) == "number" then pVal else (if pVal == true then 1 else 0)
+			if pLvl > 0 then
 				hasParent = true
 				break
 			end
@@ -90,35 +95,37 @@ function TalentTreeService.UnlockNode(player: Player, nodeId: any)
 		return
 	end
 
-	-- Check costs
+	-- Check costs for current level -> next level
+	local cost = TalentTreeConfig.GetUpgradeCost(node, currentLvl)
+
 	if node.costType == "talentPoints" then
 		local pts = profile.talentPoints or 0
-		if pts < node.cost then
+		if pts < cost then
 			Remotes.Event("Notify"):FireClient(player, {
-				text = string.format("Need %d Talent Point(s) (have %d)", node.cost, pts),
+				text = string.format("Need %d Talent Point(s) (have %d)", cost, pts),
 				color = "red",
 			})
 			return
 		end
-		profile.talentPoints = pts - node.cost
+		profile.talentPoints = pts - cost
 	else
 		local coins = profile.coins or 0
-		if coins < node.cost then
+		if coins < cost then
 			Remotes.Event("Notify"):FireClient(player, {
-				text = string.format("Need %d coins", node.cost),
+				text = string.format("Need %s coins", require(Shared.Format).Num(cost)),
 				color = "red",
 			})
 			return
 		end
-		profile.coins = coins - node.cost
+		profile.coins = coins - cost
 	end
 
-	-- Unlock node!
-	profile.unlockedTalents[nodeId] = true
+	-- Upgrade node level!
+	profile.unlockedTalents[nodeId] = currentLvl + 1
 
 	-- Broadcast notification & update
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Talent Unlocked: %s! (%s)", node.name, node.desc),
+		text = string.format("%s Upgraded to Lv.%d! (%s)", node.name, currentLvl + 1, node.desc),
 		color = "gold",
 	})
 
