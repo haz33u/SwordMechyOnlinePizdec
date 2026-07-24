@@ -60,6 +60,36 @@ function TalentTreeService.UnlockNode(player: Player, nodeId: any)
 		end
 	end
 
+	-- Check NPC Quest Gating
+	if node.reqSamTier and (profile.samClickTier or 0) < node.reqSamTier then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Requires Click Quester Step %d completed!", node.reqSamTier),
+			color = "red",
+		})
+		return
+	end
+	if node.reqFrostTier and (profile.frostTier or 0) < node.reqFrostTier then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Requires Case Quester Step %d completed!", node.reqFrostTier),
+			color = "red",
+		})
+		return
+	end
+	if node.reqGrimTier and (profile.grimTier or 0) < node.reqGrimTier then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Requires Power Quester Step %d completed!", node.reqGrimTier),
+			color = "red",
+		})
+		return
+	end
+	if node.reqLocation and (profile.currentLocation or 1) < node.reqLocation then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Requires Location %d unlocked!", node.reqLocation),
+			color = "red",
+		})
+		return
+	end
+
 	-- Check costs
 	if node.costType == "talentPoints" then
 		local pts = profile.talentPoints or 0

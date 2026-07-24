@@ -391,12 +391,29 @@ function TalentTreeUI.Mount(parent: Instance, store: any)
 				nodeTitle.Text = node.name .. (if isUnlocked then "  [UNLOCKED ✓]" else "")
 				nodeDesc.Text = string.format("%s  ·  Cost: %s %s", node.desc, Format.Num(node.cost), if node.costType == "talentPoints" then "Talent Points" else "Coins")
 
+				local samOk = not node.reqSamTier or ((profile and profile.samClickTier or 0) >= node.reqSamTier)
+				local frostOk = not node.reqFrostTier or ((profile and profile.frostTier or 0) >= node.reqFrostTier)
+				local grimOk = not node.reqGrimTier or ((profile and profile.grimTier or 0) >= node.reqGrimTier)
+				local locOk = not node.reqLocation or ((profile and profile.currentLocation or 1) >= node.reqLocation)
+				local questsOk = samOk and frostOk and grimOk and locOk
+
 				if isUnlocked then
 					unlockBtn.Visible = false
 				elseif isAvailable then
 					unlockBtn.Visible = true
 					local canAfford = if node.costType == "talentPoints" then talentPts >= node.cost else coins >= node.cost
-					if canAfford then
+					if not questsOk then
+						unlockBtn.BackgroundColor3 = Color3.fromRGB(180, 100, 30)
+						if not samOk then
+							unlockBtn.Text = "🔒 Need Click Step " .. tostring(node.reqSamTier)
+						elseif not frostOk then
+							unlockBtn.Text = "🔒 Need Case Step " .. tostring(node.reqFrostTier)
+						elseif not grimOk then
+							unlockBtn.Text = "🔒 Need Power Step " .. tostring(node.reqGrimTier)
+						else
+							unlockBtn.Text = "🔒 Need Loc " .. tostring(node.reqLocation)
+						end
+					elseif canAfford then
 						unlockBtn.BackgroundColor3 = Color3.fromRGB(0, 180, 120)
 						unlockBtn.Text = "Unlock (" .. Format.Num(node.cost) .. ")"
 					else

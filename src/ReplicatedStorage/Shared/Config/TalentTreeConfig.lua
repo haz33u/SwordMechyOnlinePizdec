@@ -8,6 +8,11 @@
 	  3. SPEED (Down-Left): 19 Nodes (Walk Speed I..VIII, Attack Speed I..VIII, Keystones)
 	  4. UTILITY (Down-Right): 21 Nodes (Coins I..X, Backpack I..VIII, Relic Keystones)
 	  5. PRESTIGE (Straight Up): 17 Nodes (Rebirth Dmg, Luck, Coins, Master Ascendant)
+	
+	Quest Gating:
+	  - Attack Speed nodes require Click Quester (Sam) completed steps.
+	  - Pet Slot Keystones require Case Quester (Frost) completed steps.
+	  - Relic Slot Keystones require Power Quester (Grim) completed steps.
 ]]
 
 export type NodeType = "minor" | "major" | "keystone"
@@ -24,6 +29,10 @@ export type TalentNodeDef = {
 	parents: { string },
 	costType: CurrencyType,
 	cost: number,
+	reqSamTier: number?,
+	reqFrostTier: number?,
+	reqGrimTier: number?,
+	reqLocation: number?,
 	effects: {
 		damagePct: number?,
 		coinPct: number?,
@@ -91,6 +100,7 @@ for i = 1, 10 do
 		parents = { prevDmg },
 		costType = "coins",
 		cost = COIN_TIERS[i],
+		reqLocation = if i > 3 then math.min(19, i * 2) else nil,
 		effects = { damagePct = if isKeystone then 100 elseif isMajor then 25 else 5 },
 	}
 	prevDmg = id
@@ -151,7 +161,7 @@ for i = 1, 10 do
 	Nodes[id] = {
 		id = id,
 		name = if i == 5 then "Beastmaster Domain" elseif i == 10 then "PET EMPEROR" else ("Four-Leaf Clover " .. i),
-		desc = if i == 5 then "+1 Pet Equip Slot & +25% Luck" elseif i == 10 then "+1 Pet Equip Slot & +100% Luck" else string.format("+%d%% Luck", effectVal),
+		desc = if i == 5 then "+1 Pet Equip Slot & +25% Luck [Requires Case Quester Step 5]" elseif i == 10 then "+1 Pet Equip Slot & +100% Luck [Requires Case Quester Step 15]" else string.format("+%d%% Luck", effectVal),
 		branch = "luck",
 		nodeType = if isKeystone then "keystone" elseif isMajor then "major" else "minor",
 		gridPos = Vector2.new(100 * i + 20, -50 * i - 30),
@@ -159,6 +169,7 @@ for i = 1, 10 do
 		parents = { prevLuck },
 		costType = "coins",
 		cost = COIN_TIERS[i],
+		reqFrostTier = if i == 5 then 5 elseif i == 10 then 15 else nil,
 		effects = {
 			luckPct = effectVal,
 			petSlots = if isKeystone then 1 else nil,
@@ -213,14 +224,14 @@ for i = 1, 8 do
 	prevSpeed = id
 end
 
--- Attack Speed Branch off Speed_2
+-- Attack Speed Branch off Speed_2 (Gated by Click Quester Sam Tier)
 local prevAtkSpeed = "S_Speed_2"
 for i = 1, 8 do
 	local id = "S_AtkSpeed_" .. i
 	Nodes[id] = {
 		id = id,
 		name = "Quick Hands " .. i,
-		desc = "+2% Attack Speed",
+		desc = string.format("+2%% Attack Speed [Requires Click Quester Step %d]", i),
 		branch = "speed",
 		nodeType = if i % 3 == 0 then "major" else "minor",
 		gridPos = Vector2.new(-180 - 60 * i, 160 + 70 * i),
@@ -228,6 +239,7 @@ for i = 1, 8 do
 		parents = { prevAtkSpeed },
 		costType = "coins",
 		cost = COIN_TIERS[math.min(10, i + 1)],
+		reqSamTier = i,
 		effects = { clickSpeed = 2 },
 	}
 	prevAtkSpeed = id
@@ -244,7 +256,7 @@ for i = 1, 10 do
 	Nodes[id] = {
 		id = id,
 		name = if i == 5 then "RELIC MASTERY I" elseif i == 10 then "RELIC MASTERY II" else ("Golden Pouch " .. i),
-		desc = if i == 5 then "+1 Relic Equip Slot & +25% Coins" elseif i == 10 then "+1 Relic Equip Slot & +100% Coins" else string.format("+%d%% Coins", if isMajor then 15 else 5),
+		desc = if i == 5 then "+1 Relic Equip Slot & +25% Coins [Requires Power Quester Step 8]" elseif i == 10 then "+1 Relic Equip Slot & +100% Coins [Requires Power Quester Step 15]" else string.format("+%d%% Coins", if isMajor then 15 else 5),
 		branch = "utility",
 		nodeType = if isKeystone then "keystone" elseif isMajor then "major" else "minor",
 		gridPos = Vector2.new(90 * i + 20, 80 * i + 30),
@@ -252,6 +264,7 @@ for i = 1, 10 do
 		parents = { prevCoins },
 		costType = "coins",
 		cost = COIN_TIERS[i],
+		reqGrimTier = if i == 5 then 8 elseif i == 10 then 15 else nil,
 		effects = {
 			coinPct = if isKeystone then 50 elseif isMajor then 15 else 5,
 			relicSlots = if isKeystone then 1 else nil,
