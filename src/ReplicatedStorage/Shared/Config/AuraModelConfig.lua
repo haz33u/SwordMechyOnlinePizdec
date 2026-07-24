@@ -78,12 +78,12 @@ local AuraModelConfig = {
 	-- How to attach (mesh / procedural)
 	AttachMode = {
 		A_Test = "feet",
-		A_Ice = "feet",
-		A_Christmas = "feet",
+		A_Ice = "hrp",
+		A_Christmas = "hrp",
 		A_Light = "hrp",
-		A_IceBreath = "feet",
-		A_Leaf = "feet",
-		A_Darkness = "feet",
+		A_IceBreath = "hrp",
+		A_Leaf = "hrp",
+		A_Darkness = "hrp",
 		A_Protection = "hrp",
 		A_Lightning = "hrp",
 		A_Earth = "feet",

@@ -663,6 +663,15 @@ function AuraVisual.Init()
 	end
 end
 
+local function hasRenderable3DMesh(model: Model): boolean
+	for _, d in ipairs(model:GetDescendants()) do
+		if (d:IsA("MeshPart") or d:IsA("SpecialMesh")) and d.Parent and d.Parent:IsA("BasePart") and d.Parent.Transparency < 1 then
+			return true
+		end
+	end
+	return false
+end
+
 function AuraVisual.TryFillInventoryIcon(parent: GuiObject, auraId: string, zIndex: number?): boolean
 	local ok, result = pcall(function()
 		local existing = parent:FindFirstChild("AuraViewport")
@@ -670,7 +679,10 @@ function AuraVisual.TryFillInventoryIcon(parent: GuiObject, auraId: string, zInd
 			existing:Destroy()
 		end
 		local clone = cloneAuraModel(auraId)
-		if not clone then
+		if not clone or not hasRenderable3DMesh(clone) then
+			if clone then
+				clone:Destroy()
+			end
 			return false
 		end
 		for _, d in clone:GetDescendants() do
