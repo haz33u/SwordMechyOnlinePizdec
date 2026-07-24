@@ -1,9 +1,11 @@
---!strict
-
-local T = require(script.Parent.Theme)
-local UIKit = require(script.Parent.UIKit)
-local Format = require(script.Parent.Format)
-local Net = require(script.Parent.Net)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local PetConfig = require(Shared.Config.PetConfig)
+local AuraConfig = require(Shared.Config.AuraConfig)
+local CaseConfig = require(Shared.Config.CaseConfig)
+local ProgressConfig = require(Shared.Config.ProgressConfig)
+local GamePassConfig = require(Shared.Config.GamePassConfig)
+local Rarity = require(script.Parent.Rarity)
 
 local Modals = {}
 
@@ -207,18 +209,73 @@ function Modals.Mount(gui: ScreenGui, store: any)
 				store:CloseModal()
 			end)
 		elseif m.kind == "case" then
-			local kind = (m.payload and m.payload.kind) or "pet"
-			title.Text = kind == "aura" and "Aura Case" or "Pet Case"
-			body.Text = "Opening…"
-			primary.Text = "OK"
-			task.delay(1.0, function()
-				local cur = store:PeekModal()
-				if cur and cur.kind == "case" then
-					body.Text = "Done — check your list."
+			local p = m.payload or {}
+			local kind = p.kind or "pet"
+			local poolId = p.poolId or "loc1_500"
+
+			title.Text = if kind == "aura" then "✨ Aura Case Preview" else ("🐾 Pet Case (" .. tostring(poolId) .. ")")
+			body.Text = "Drop Chances & Multi-Open Options:"
+
+			local profile = store:PeekProfile()
+			local unlocks = profile and profile.unlocks or {}
+			local debugFree = ProgressConfig.DEBUG_FREE_PAID == true
+			local hasChest3 = debugFree or (unlocks.openChest3 == true)
+			local hasChest5 = debugFree or (unlocks.openChest5 == true)
+
+			-- Build Items List & Drop Chances
+			local dropItems = {}
+			local totalWeight = 0
+
+			if kind == "pet" then
+				for id, pet in PetConfig.Pets do
+					if pet.casePool == poolId or (not pet.casePool and pet.location == 1) then
+						local w = pet.caseWeight or 10
+						totalWeight += w
+						table.insert(dropItems, {
+							id = id,
+							name = pet.name,
+							rarity = pet.rarity or "Common",
+							weight = w,
+							sub = string.format("Power x%.1f", pet.powerMult or 1),
+						})
+					end
 				end
+			else
+				for id, aura in AuraConfig.Auras do
+					local w = aura.dropWeight or 10
+					totalWeight += w
+					table.insert(dropItems, {
+						id = id,
+						name = aura.name,
+						rarity = aura.rarity or "Common",
+						weight = w,
+						sub = string.format("+%.0f%% P  +%.0f%% D", aura.powerPct or 0, aura.damagePct or 0),
+					})
+				end
+			end
+
+			-- Sort items by rarity/chance
+			table.sort(dropItems, function(a, b)
+				return a.weight > b.weight
 			end)
+
+			-- Action Bar
+			primary.Text = "Open 1x"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				store:CloseModal()
+				store:OpenModal("caseOpen", { kind = kind, poolId = poolId, count = 1 })
+			end)
+
+			secondary.Text = if hasChest3 then "Open 3x" else "Open 3x 🔒"
+			secondary.Visible = true
+			secondaryConn = secondary.MouseButton1Click:Connect(function()
+				if hasChest3 then
+					store:CloseModal()
+					store:OpenModal("caseOpen", { kind = kind, poolId = poolId, count = 3 })
+				else
+					local pass = GamePassConfig.Get("openChest3")
+					if pass then Net.PromptGamePass(pass.gamePassId) end
+				end
 			end)
 		elseif m.kind == "stub" then
 			local p = m.payload or {}
