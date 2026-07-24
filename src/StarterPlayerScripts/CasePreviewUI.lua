@@ -458,7 +458,7 @@ function CasePreviewUI.Mount(gui: ScreenGui, store: any, toastApi: any?, caseOpe
 		local loc = (profile and profile.currentLocation) or 1
 		local caseName = if currentKind == "aura"
 			then "Aura Case"
-			else string.format("Pet Case (%s)", if currentPoolId == "loc1_50k" then "50K" else "500")
+			else string.format("Pet Case (%s)", if currentPoolId == "loc1_50k" then "50K" else (if currentPoolId == "loc1_key49" then "49 R$" else "500"))
 
 		title.Text = caseName
 		dim.Visible = true
