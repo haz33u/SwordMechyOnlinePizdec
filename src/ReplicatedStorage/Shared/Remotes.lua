@@ -85,6 +85,7 @@ function Remotes.InitAll()
 	-- case open result (spin accuracy — do not poll profile)
 	Remotes.Event("CaseResult")
 	Remotes.Event("OpenTravel") -- ferryman → open locations panel
+	Remotes.Event("OpenPanel") -- server -> client panel trigger (quests, weapons, etc.)
 
 	Remotes.Function("GetProfile")
 	Remotes.Function("GetPublicProfile") -- inspect online player stats by @username

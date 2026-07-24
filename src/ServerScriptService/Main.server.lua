@@ -33,6 +33,7 @@ local PotionService = require(Services.PotionService)
 local OfflineFarmService = require(Services.OfflineFarmService)
 local FriendService = require(Services.FriendService)
 local TalentTreeService = require(Services.TalentTreeService)
+local NpcService = require(Services.NpcService)
 local DebugService = require(Services.DebugService)
 
 print("[SwordMasters]", GameConfig.VERSION, "backend boot...")
@@ -58,6 +59,7 @@ PotionService.Init()
 OfflineFarmService.Init()
 UnlockService.Init()
 FerrymanService.Init()
+NpcService.Init()
 DebugService.Init()
 
 -- Loc1 mobs + DEBUG dummy as killable placeholders

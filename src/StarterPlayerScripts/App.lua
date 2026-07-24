@@ -282,9 +282,30 @@ function App.Start()
 		end)
 	end)
 
+	-- Generic panel opener (Quest Master, Smith, Dungeon Portal, etc.)
+	pcall(function()
+		Net.Event("OpenPanel").OnClientEvent:Connect(function(panelId)
+			if type(panelId) == "string" then
+				local invStore = store :: any
+				local invTabs = { weapons = true, pets = true, auras = true, relics = true, cases = true, shop = true }
+				if invTabs[panelId] then
+					invStore._invTab = panelId
+					store:OpenPanel("weapons")
+				else
+					store:OpenPanel(panelId)
+				end
+				refreshAll()
+			end
+		end)
+	end)
+
 	pcall(function()
 		Net.Event("OpenCasePreview").OnClientEvent:Connect(function(payload)
-			openModal("case", payload)
+			if payload and type(payload) == "table" then
+				openModal("caseOpen", payload)
+			else
+				openModal("caseOpen", { kind = "pet", poolId = "loc1_500", count = 1 })
+			end
 		end)
 	end)
 
