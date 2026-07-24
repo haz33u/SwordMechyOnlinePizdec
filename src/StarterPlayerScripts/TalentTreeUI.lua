@@ -123,8 +123,8 @@ function TalentTreeUI.Mount(parent: Instance, store: any)
 	-- Draggable Canvas Host
 	local canvas = Instance.new("Frame")
 	canvas.Name = "Canvas"
-	canvas.Size = UDim2.fromOffset(2000, 2000)
-	canvas.Position = UDim2.new(0.5, -1000, 0.5, -1000) -- Center origin C_Core
+	canvas.Size = UDim2.fromOffset(4000, 4000)
+	canvas.Position = UDim2.new(0.5, -2000, 0.5, -2000) -- Center origin C_Core
 	canvas.BackgroundTransparency = 1
 	canvas.ZIndex = 54
 	canvas.Parent = viewport
@@ -251,7 +251,7 @@ function TalentTreeUI.Mount(parent: Instance, store: any)
 	centerBtn.Parent = viewport
 	UIKit.Corner(centerBtn, 18)
 	centerBtn.MouseButton1Click:Connect(function()
-		canvas.Position = UDim2.new(0.5, -1000, 0.5, -1000)
+		canvas.Position = UDim2.new(0.5, -2000, 0.5, -2000)
 		canvasScale.Scale = 1.0
 	end)
 
@@ -261,7 +261,7 @@ function TalentTreeUI.Mount(parent: Instance, store: any)
 			child:Destroy()
 		end
 
-		local centerOrigin = Vector2.new(1000, 1000)
+		local centerOrigin = Vector2.new(2000, 2000)
 
 		for id, node in TalentTreeConfig.Nodes do
 			local p1 = centerOrigin + node.gridPos
@@ -333,7 +333,7 @@ function TalentTreeUI.Mount(parent: Instance, store: any)
 			child:Destroy()
 		end
 
-		local centerOrigin = Vector2.new(1000, 1000)
+		local centerOrigin = Vector2.new(2000, 2000)
 
 		for id, node in TalentTreeConfig.Nodes do
 			local isUnlocked = unlockedMap[id] == true
