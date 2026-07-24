@@ -1,7 +1,7 @@
 --!strict
 --[[
 	Aura visuals under ReplicatedStorage.AuraVfx (Place folder).
-	Missing template → AuraVisual builds procedural ring + particles.
+	All old placeholder models replaced with NEW high-tier VFX models from Workspace.Auras.
 ]]
 
 export type AttachMode = "hrp" | "feet" | "back"
@@ -13,45 +13,45 @@ local AuraModelConfig = {
 	TargetExtentMinFactor = 0.04,
 	TargetExtentMaxFactor = 20,
 
-	-- Exact template model name under ReplicatedStorage.AuraVfx
+	-- Exact NEW template model name under ReplicatedStorage.AuraVfx
 	ModelByAuraId = {
-		A_Test = "Greenpower",
-		A_Ice = "COOLVAPOR",
-		A_Christmas = "SWEETWAVE",
-		A_Light = "Spark",
-		A_IceBreath = "COOLVAPOR",
-		A_Leaf = "Foliage",
+		A_Test = "CORVUS",
+		A_Ice = "CRYOGEN",
+		A_Christmas = "COOLVAPOR",
+		A_Light = "HEAVENLY",
+		A_IceBreath = "InfiniteVortex",
+		A_Leaf = "CELESTIALBODY",
 		A_Darkness = "PureDarknessREVAMP",
-		A_Protection = "Purity",
-		A_Lightning = "ElectricalCharge",
-		A_Earth = "Crystaldetermination",
+		A_Protection = "ChainGod",
+		A_Lightning = "CloakofLightning",
+		A_Earth = "ObsidianHeart",
 		A_Exhaustion = "PLAGUEFUMES",
-		A_Wrath = "CrimsonMoon",
+		A_Wrath = "MUTANTSRAGE",
 		A_Dragon = "RoarofTheJungleDragon",
-		A_Kind = "WolfMist",
+		A_Kind = "ARMAGEDDON",
 		A_Rebirth = "InfiniteReality",
 		A_Lava = "FlameBarrage",
 		A_Confrontation = "Battleship",
 		A_Blaze = "BlueHeat",
 		A_Knowledge = "DaemonofCards",
-		A_Magic = "PSYCHIC",
-		A_Earthen = "ObsidianHeart",
+		A_Magic = "PsychicOrbs",
+		A_Earthen = "Crystaldetermination",
 		A_Vampirism = "RedRingofDeath",
 		A_Fire = "FireEyes",
 		A_Water = "AuroraBorealis",
-		A_Nature = "GuardianWings",
+		A_Nature = "BEAST",
 		A_Voodoo = "POISON",
 		A_Pumpkin = "HonoringFlame",
 		A_Science = "NANO",
-		A_Consciousness = "InfiniteVortex",
+		A_Consciousness = "MUI",
 		A_Blade = "Wano",
 		A_Humility = "PureVessel",
 		A_Instrumental = "Bass",
 		A_Bone = "Rift",
-		A_Cosmic = "CELESTIALBODY",
+		A_Cosmic = "SSJG",
 		A_Snowflake = "CRYOGEN",
 		A_Blackhole = "Blackhole",
-		A_Armageddon = "ARMAGEDDON",
+		A_Armageddon = "ULTIMATEEVIL",
 		A_SuperSonic = "SUPERSONIC",
 		A_UltimateEvil = "ULTIMATEEVIL",
 		A_UltraEgo = "ULTRAEGO",
@@ -66,21 +66,21 @@ local AuraModelConfig = {
 		A_Wormhole = "Wormhole",
 
 		-- legacy aliases
-		A_C1 = "COOLVAPOR",
-		A_C2 = "Foliage",
-		A_U1 = "WolfMist",
-		A_R1 = "RoarofTheJungleDragon",
+		A_C1 = "CRYOGEN",
+		A_C2 = "CELESTIALBODY",
+		A_U1 = "ARMAGEDDON",
+		A_R1 = "MUTANTSRAGE",
 		A_E1 = "BlueHeat",
-		A_L1 = "GuardianWings",
-		A_M1 = "Rift",
+		A_L1 = "BEAST",
+		A_M1 = "Wano",
 	} :: { [string]: string },
 
 	-- How to attach (mesh / procedural)
 	AttachMode = {
-		A_Test = "feet",
+		A_Test = "hrp",
 		A_Ice = "hrp",
 		A_Christmas = "hrp",
-		A_Light = "hrp",
+		A_Light = "back",
 		A_IceBreath = "hrp",
 		A_Leaf = "hrp",
 		A_Darkness = "hrp",
@@ -101,7 +101,7 @@ local AuraModelConfig = {
 		A_Vampirism = "feet",
 		A_Fire = "hrp",
 		A_Water = "feet",
-		A_Nature = "back",
+		A_Nature = "hrp",
 		A_Voodoo = "hrp",
 		A_Pumpkin = "hrp",
 		A_Science = "hrp",
@@ -111,7 +111,7 @@ local AuraModelConfig = {
 		A_Instrumental = "feet",
 		A_Bone = "hrp",
 		A_Cosmic = "hrp",
-		A_Snowflake = "feet",
+		A_Snowflake = "hrp",
 		A_Blackhole = "feet",
 		A_Armageddon = "hrp",
 		A_SuperSonic = "hrp",
@@ -129,12 +129,12 @@ local AuraModelConfig = {
 
 		-- legacy aliases
 		A_C1 = "hrp",
-		A_C2 = "feet",
+		A_C2 = "hrp",
 		A_U1 = "hrp",
-		A_R1 = "feet",
+		A_R1 = "hrp",
 		A_E1 = "hrp",
-		A_L1 = "back",
-		A_M1 = "hrp",
+		A_L1 = "hrp",
+		A_M1 = "back",
 	} :: { [string]: AttachMode },
 
 	-- Local offset from HRP (feet = lower Y, back = +Z behind)
