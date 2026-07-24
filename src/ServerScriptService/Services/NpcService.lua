@@ -1,8 +1,8 @@
 --!strict
 --[[
 	NpcService — Handles physical Hub Cases and World NPCs (Quest Master, Smith, etc.).
-	Prioritizes Studio map models on the Hub platform. Automatically cleans up temporary
-	procedural fallback NPCs when Studio map models exist.
+	Provides clean, single-billboard Hub interactives on the path (AlwaysOnTop = false, MaxDistance = 50).
+	Prevents duplicate overlapping billboards across all Workspace models and Studio scaffolds.
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -14,6 +14,7 @@ local Remotes = require(Shared.Remotes)
 
 local NpcService = {}
 NpcService._boundObjects = {} :: { [Instance]: boolean }
+NpcService._boundPositions = {} :: { Vector3 }
 
 local function ensureFolder(parent: Instance, name: string): Folder
 	local f = parent:FindFirstChild(name)
@@ -37,6 +38,17 @@ local function makePart(parent: Instance, name: string, size: Vector3, cf: CFram
 	p.CanCollide = true
 	p.Parent = parent
 	return p
+end
+
+--- Check if position is near an already bound NPC/Chest of same type
+local function isNearBoundPosition(pos: Vector3, threshold: number?): boolean
+	local maxDist = threshold or 6
+	for _, bPos in ipairs(NpcService._boundPositions) do
+		if (pos - bPos).Magnitude < maxDist then
+			return true
+		end
+	end
+	return false
 end
 
 --- Guarantee EXACTLY ONE BillboardGui across topInstance and all its descendants
@@ -128,11 +140,17 @@ function NpcService.BindCase(object: Instance, caseName: string, kind: string, p
 	if NpcService._boundObjects[topTarget] or NpcService._boundObjects[object] then
 		return
 	end
-	NpcService._boundObjects[topTarget] = true
-	NpcService._boundObjects[object] = true
 
 	local part: BasePart? = if object:IsA("BasePart") then object else object:FindFirstChildWhichIsA("BasePart", true)
 	if not part then return end
+
+	if isNearBoundPosition(part.Position, 4) then
+		return
+	end
+
+	NpcService._boundObjects[topTarget] = true
+	NpcService._boundObjects[object] = true
+	table.insert(NpcService._boundPositions, part.Position)
 
 	local cleanName = getCleanCaseName(caseName)
 	getOrCreateSingleBillboard(topTarget, part, cleanName, "Click or Press [E]", Color3.fromRGB(255, 200, 50))
@@ -169,8 +187,6 @@ function NpcService.BindQuestMaster(object: Instance)
 	if NpcService._boundObjects[topTarget] or NpcService._boundObjects[object] then
 		return
 	end
-	NpcService._boundObjects[topTarget] = true
-	NpcService._boundObjects[object] = true
 
 	local part: BasePart? = if object:IsA("Model")
 		then (object.PrimaryPart or object:FindFirstChild("HumanoidRootPart") or object:FindFirstChildWhichIsA("BasePart"))
@@ -179,6 +195,14 @@ function NpcService.BindQuestMaster(object: Instance)
 	if not part then
 		return
 	end
+
+	if isNearBoundPosition(part.Position, 5) then
+		return
+	end
+
+	NpcService._boundObjects[topTarget] = true
+	NpcService._boundObjects[object] = true
+	table.insert(NpcService._boundPositions, part.Position)
 
 	getOrCreateSingleBillboard(topTarget, part, "Quest Master", "Quests & Rewards", Color3.fromRGB(80, 220, 255))
 
@@ -216,8 +240,6 @@ function NpcService.BindSmith(object: Instance)
 	if NpcService._boundObjects[topTarget] or NpcService._boundObjects[object] then
 		return
 	end
-	NpcService._boundObjects[topTarget] = true
-	NpcService._boundObjects[object] = true
 
 	local part: BasePart? = if object:IsA("Model")
 		then (object.PrimaryPart or object:FindFirstChild("HumanoidRootPart") or object:FindFirstChildWhichIsA("BasePart"))
@@ -226,6 +248,14 @@ function NpcService.BindSmith(object: Instance)
 	if not part then
 		return
 	end
+
+	if isNearBoundPosition(part.Position, 5) then
+		return
+	end
+
+	NpcService._boundObjects[topTarget] = true
+	NpcService._boundObjects[object] = true
+	table.insert(NpcService._boundPositions, part.Position)
 
 	getOrCreateSingleBillboard(topTarget, part, "Smith", "Swords & Enchants", Color3.fromRGB(255, 140, 40))
 
@@ -305,31 +335,20 @@ function NpcService.PurgeAllDuplicates()
 	end
 end
 
---- Spawn physical 3D Hub Cases & NPCs ONLY if no Studio map models exist
-function NpcService.EnsureHubInteractives()
-	-- Check if map already contains Studio models for NPCs or Cases outside of NPCs folder
-	local hasStudioModels = false
+--- Clean up any duplicate HubCases created on the platform
+function NpcService.CleanDuplicateHubCases()
 	for _, desc in Workspace:GetDescendants() do
-		if desc.Parent and desc.Parent.Name ~= "NPCs" then
-			local lower = string.lower(desc.Name)
-			if string.find(lower, "quest") or string.find(lower, "smith") or string.find(lower, "case") or string.find(lower, "chest") then
-				hasStudioModels = true
-				break
-			end
+		if desc:IsA("Folder") and desc.Name == "HubCases" then
+			desc:Destroy()
 		end
 	end
+end
 
-	local npcsFolder = Workspace:FindFirstChild("NPCs")
-	if hasStudioModels then
-		-- Map already has Studio models! Clean up procedural fallback NPCs folder
-		if npcsFolder then
-			npcsFolder:Destroy()
-		end
-		return
-	end
+--- Spawn physical 3D Hub Cases & NPCs near Loc1 spawn
+function NpcService.EnsureHubInteractives()
+	NpcService.CleanDuplicateHubCases()
 
-	-- Procedural fallback ONLY if map has no Studio models at all
-	npcsFolder = ensureFolder(Workspace, "NPCs")
+	local npcsFolder = ensureFolder(Workspace, "NPCs")
 
 	-- 1. Pet Case (500)
 	if not npcsFolder:FindFirstChild("PetCase_500") then
@@ -393,7 +412,7 @@ function NpcService.Init()
 			NpcService.PurgeAllDuplicates()
 		end)
 
-		print("[NpcService] Studio map NPCs bound — procedural fallback cleaned!")
+		print("[NpcService] Clean Hub NPCs online — 1 set of NPCs next to spawn path!")
 	end)
 end
 
