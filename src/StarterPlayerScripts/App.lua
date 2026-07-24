@@ -154,13 +154,18 @@ function App.Start()
 		end
 	end)
 
-	local toastApi, windowsApi, modalsApi, hudApi, caseApi, talentTreeApi
+	local toastApi, windowsApi, modalsApi, hudApi, caseApi, casePreviewApi, talentTreeApi
 	local nameplateApi: any = nil
 	local clickPop: any = nil
 	local onCombatFx: any = nil
 
 	local function openModal(kind: string, payload: any?)
-		if kind == "caseOpen" then
+		if kind == "casePreview" then
+			if casePreviewApi then
+				casePreviewApi.Show(payload)
+			end
+			return
+		elseif kind == "caseOpen" then
 			if caseApi then
 				local ok, reason, cost = caseApi.Begin(payload)
 				if ok == false and toastApi then
@@ -248,6 +253,10 @@ function App.Start()
 	step("CaseOpening", function()
 		caseApi = CaseOpening.Mount(gui, store, toastApi)
 	end)
+	step("CasePreviewUI", function()
+		local CasePreviewUI = require(script.Parent.CasePreviewUI)
+		casePreviewApi = CasePreviewUI.Mount(gui, store, toastApi, caseApi)
+	end)
 	step("TalentTreeUI", function()
 		local TalentTreeUI = require(script.Parent.TalentTreeUI)
 		talentTreeApi = TalentTreeUI.Mount(gui, store)
@@ -301,10 +310,10 @@ function App.Start()
 
 	pcall(function()
 		Net.Event("OpenCasePreview").OnClientEvent:Connect(function(payload)
-			if payload and type(payload) == "table" then
-				openModal("caseOpen", payload)
+			if casePreviewApi then
+				casePreviewApi.Show(payload)
 			else
-				openModal("caseOpen", { kind = "pet", poolId = "loc1_500", count = 1 })
+				openModal("caseOpen", payload)
 			end
 		end)
 	end)

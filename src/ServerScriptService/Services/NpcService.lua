@@ -1,8 +1,8 @@
 --!strict
 --[[
 	NpcService — Handles physical Hub Cases and World NPCs (Quest Master, Smith, etc.).
-	Provides both auto-spawned 3D Hub interactives and dynamic Workspace scanning
-	for Studio-built NPC models and Case chests.
+	Guarantees ZERO duplicate Billboards or ProximityPrompts by binding strictly to
+	the top-level Model or main root part of an NPC / Chest assembly.
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -13,7 +13,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
 
 local NpcService = {}
-NpcService._boundObjects = {} :: { [Instance]: boolean }
+NpcService._boundModels = {} :: { [Instance]: boolean }
 
 local function ensureFolder(parent: Instance, name: string): Folder
 	local f = parent:FindFirstChild(name)
@@ -39,10 +39,36 @@ local function makePart(parent: Instance, name: string, size: Vector3, cf: CFram
 	return p
 end
 
-local function addBillboard(parent: Instance, titleText: string, subtitleText: string?, color: Color3)
+--- Clear any duplicate BillboardGuis or ProximityPrompts inside an instance
+local function cleanDuplicates(target: Instance)
+	local billboards = {}
+	for _, child in target:GetChildren() do
+		if child:IsA("BillboardGui") then
+			table.insert(billboards, child)
+		end
+	end
+	-- Keep at most 1 billboard
+	for i = 2, #billboards do
+		billboards[i]:Destroy()
+	end
+
+	local prompts = {}
+	for _, child in target:GetChildren() do
+		if child:IsA("ProximityPrompt") then
+			table.insert(prompts, child)
+		end
+	end
+	for i = 2, #prompts do
+		prompts[i]:Destroy()
+	end
+end
+
+local function addSingleBillboard(parent: Instance, titleText: string, subtitleText: string?, color: Color3)
+	cleanDuplicates(parent)
 	local bill = parent:FindFirstChildOfClass("BillboardGui")
 	if not bill then
 		bill = Instance.new("BillboardGui")
+		bill.Name = "NPCBillboard"
 		bill.Size = UDim2.fromOffset(180, 48)
 		bill.StudsOffset = Vector3.new(0, 3.8, 0)
 		bill.AlwaysOnTop = true
@@ -85,19 +111,44 @@ local function addBillboard(parent: Instance, titleText: string, subtitleText: s
 	end
 end
 
+--- Get root binding target (Model or parent Assembly)
+local function getBindingTarget(object: Instance): (Instance?, BasePart?)
+	local topTarget: Instance = object
+	if object:IsA("BasePart") then
+		local p = object.Parent
+		if p and (p:IsA("Model") or string.find(string.lower(p.Name), "case") or string.find(string.lower(p.Name), "chest")) then
+			topTarget = p
+		end
+	end
+
+	if NpcService._boundModels[topTarget] then
+		return nil, nil
+	end
+
+	local part: BasePart? = nil
+	if topTarget:IsA("Model") then
+		part = topTarget.PrimaryPart or topTarget:FindFirstChild("HumanoidRootPart") or topTarget:FindFirstChildWhichIsA("BasePart")
+	elseif topTarget:IsA("BasePart") then
+		part = topTarget
+	elseif topTarget:IsA("Folder") then
+		part = topTarget:FindFirstChildWhichIsA("BasePart", true)
+	end
+
+	if not part then
+		return nil, nil
+	end
+	return topTarget, part
+end
+
 --- Bind ProximityPrompt & ClickDetector to any Case object
 function NpcService.BindCase(object: Instance, caseName: string, kind: string, poolId: string?)
-	if NpcService._boundObjects[object] then
+	local topTarget, part = getBindingTarget(object)
+	if not topTarget or not part then
 		return
 	end
-	NpcService._boundObjects[object] = true
+	NpcService._boundModels[topTarget] = true
 
-	local part = if object:IsA("Model") then (object.PrimaryPart or object:FindFirstChildWhichIsA("BasePart")) else object
-	if not part or not part:IsA("BasePart") then
-		return
-	end
-
-	addBillboard(part, caseName, "Click or Press [E]", Color3.fromRGB(255, 200, 50))
+	addSingleBillboard(part, caseName, "Click or Press [E]", Color3.fromRGB(255, 200, 50))
 
 	local prompt = part:FindFirstChildOfClass("ProximityPrompt")
 	if not prompt then
@@ -112,7 +163,6 @@ function NpcService.BindCase(object: Instance, caseName: string, kind: string, p
 
 	prompt.Triggered:Connect(function(player)
 		Remotes.Event("OpenCasePreview"):FireClient(player, { kind = kind, poolId = poolId, count = 1 })
-		Remotes.Event("Notify"):FireClient(player, { text = "Opening " .. caseName .. "...", color = "gold" })
 	end)
 
 	local cd = part:FindFirstChildOfClass("ClickDetector")
@@ -123,23 +173,18 @@ function NpcService.BindCase(object: Instance, caseName: string, kind: string, p
 	end
 	cd.MouseClick:Connect(function(player)
 		Remotes.Event("OpenCasePreview"):FireClient(player, { kind = kind, poolId = poolId, count = 1 })
-		Remotes.Event("Notify"):FireClient(player, { text = "Opening " .. caseName .. "...", color = "gold" })
 	end)
 end
 
 --- Bind ProximityPrompt & ClickDetector to Quest Master NPC
 function NpcService.BindQuestMaster(object: Instance)
-	if NpcService._boundObjects[object] then
+	local topTarget, part = getBindingTarget(object)
+	if not topTarget or not part then
 		return
 	end
-	NpcService._boundObjects[object] = true
+	NpcService._boundModels[topTarget] = true
 
-	local part = if object:IsA("Model") then (object.PrimaryPart or object:FindFirstChildWhichIsA("BasePart")) else object
-	if not part or not part:IsA("BasePart") then
-		return
-	end
-
-	addBillboard(part, "Quest Master", "Quests & Rewards", Color3.fromRGB(80, 220, 255))
+	addSingleBillboard(part, "Quest Master", "Quests & Rewards", Color3.fromRGB(80, 220, 255))
 
 	local prompt = part:FindFirstChildOfClass("ProximityPrompt")
 	if not prompt then
@@ -171,17 +216,13 @@ end
 
 --- Bind ProximityPrompt & ClickDetector to Smith NPC
 function NpcService.BindSmith(object: Instance)
-	if NpcService._boundObjects[object] then
+	local topTarget, part = getBindingTarget(object)
+	if not topTarget or not part then
 		return
 	end
-	NpcService._boundObjects[object] = true
+	NpcService._boundModels[topTarget] = true
 
-	local part = if object:IsA("Model") then (object.PrimaryPart or object:FindFirstChildWhichIsA("BasePart")) else object
-	if not part or not part:IsA("BasePart") then
-		return
-	end
-
-	addBillboard(part, "Smith", "Swords & Enchants", Color3.fromRGB(255, 140, 40))
+	addSingleBillboard(part, "Smith", "Swords & Enchants", Color3.fromRGB(255, 140, 40))
 
 	local prompt = part:FindFirstChildOfClass("ProximityPrompt")
 	if not prompt then
@@ -216,6 +257,19 @@ function NpcService.InspectAndBind(inst: Instance)
 	local name = inst.Name
 	local lowerName = string.lower(name)
 
+	-- Skip child parts if parent is already an NPC model or assembly
+	if inst:IsA("BasePart") then
+		local p = inst.Parent
+		if p and p:IsA("Model") and (NpcService._boundModels[p] or p:FindFirstChildOfClass("BillboardGui")) then
+			return
+		end
+		if string.find(lowerName, "_lid") or string.find(lowerName, "_box") then
+			if p and NpcService._boundModels[p] then
+				return
+			end
+		end
+	end
+
 	if string.find(lowerName, "quest") or string.find(lowerName, "quester") or string.find(lowerName, "sam") then
 		NpcService.BindQuestMaster(inst)
 	elseif string.find(lowerName, "smith") or string.find(lowerName, "blacksmith") or string.find(lowerName, "forge") or string.find(lowerName, "enchant") then
@@ -227,6 +281,26 @@ function NpcService.InspectAndBind(inst: Instance)
 		NpcService.BindCase(inst, name, "aura", nil)
 	elseif string.find(lowerName, "case") or string.find(lowerName, "chest") then
 		NpcService.BindCase(inst, name, "pet", "loc1_500")
+	end
+end
+
+--- Clean up any existing duplicate billboards/prompts across Workspace
+function NpcService.CleanWorkspaceDuplicates()
+	for _, desc in Workspace:GetDescendants() do
+		if desc:IsA("BillboardGui") then
+			local p = desc.Parent
+			if p then
+				local count = 0
+				for _, c in p:GetChildren() do
+					if c:IsA("BillboardGui") then
+						count += 1
+						if count > 1 then
+							c:Destroy()
+						end
+					end
+				end
+			end
+		end
 	end
 end
 
@@ -281,7 +355,7 @@ end
 function NpcService.Init()
 	task.defer(function()
 		task.wait(1.5)
-		-- Ensure hub 3D interactives
+		NpcService.CleanWorkspaceDuplicates()
 		NpcService.EnsureHubInteractives()
 
 		-- Scan Workspace for existing models/parts
@@ -289,13 +363,12 @@ function NpcService.Init()
 			NpcService.InspectAndBind(descendant)
 		end
 
-		-- Dynamic listener for streaming / Studio sync
 		Workspace.DescendantAdded:Connect(function(descendant)
 			task.wait(0.1)
 			NpcService.InspectAndBind(descendant)
 		end)
 
-		print("[NpcService] Hub Cases, Quest Master, and Smith NPCs online with ProximityPrompts & ClickDetectors!")
+		print("[NpcService] Hub Cases, Quest Master, and Smith NPCs online (single clean Billboards)!")
 	end)
 end
 
