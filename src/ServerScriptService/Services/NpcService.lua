@@ -1,8 +1,8 @@
 --!strict
 --[[
 	NpcService — Handles physical Hub Cases and World NPCs (Quest Master, Smith, etc.).
-	Guarantees clean 3D Billboards that stay in local space (AlwaysOnTop = false, MaxDistance = 50)
-	and prevents duplicate titles across Workspace models and case chests.
+	Guarantees EXACTLY ONE 3D Billboard per NPC / Chest assembly (AlwaysOnTop = false, MaxDistance = 50).
+	Strictly purges all duplicate billboards across Model hierarchies.
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -39,32 +39,39 @@ local function makePart(parent: Instance, name: string, size: Vector3, cf: CFram
 	return p
 end
 
---- Clear duplicate billboards & prompts from target or its ancestors/children
-local function removeExistingBillboards(target: Instance)
-	for _, desc in target:GetDescendants() do
+--- Guarantee EXACTLY ONE BillboardGui across topInstance and all its descendants
+local function getOrCreateSingleBillboard(topInstance: Instance, targetPart: BasePart, titleText: string, subtitleText: string?, color: Color3): BillboardGui
+	local existingBills: { BillboardGui } = {}
+	for _, desc in topInstance:GetDescendants() do
 		if desc:IsA("BillboardGui") then
-			desc:Destroy()
+			table.insert(existingBills, desc)
 		end
 	end
-	for _, child in target:GetChildren() do
-		if child:IsA("BillboardGui") then
-			child:Destroy()
-		end
-	end
-end
 
-local function addSingleBillboard(parent: Instance, titleText: string, subtitleText: string?, color: Color3)
-	removeExistingBillboards(parent)
+	-- Keep at most 1 billboard, destroy all others
+	local mainBill: BillboardGui? = existingBills[1]
+	for i = 2, #existingBills do
+		existingBills[i]:Destroy()
+	end
+
+	if mainBill then
+		mainBill.Parent = targetPart
+		mainBill.AlwaysOnTop = false
+		mainBill.MaxDistance = 50
+		mainBill.StudsOffset = Vector3.new(0, 3.6, 0)
+		return mainBill
+	end
 
 	local bill = Instance.new("BillboardGui")
 	bill.Name = "NPCBillboard"
 	bill.Size = UDim2.fromOffset(180, 48)
 	bill.StudsOffset = Vector3.new(0, 3.6, 0)
-	bill.AlwaysOnTop = false -- Stay in 3D world, don't show through walls across the map!
-	bill.MaxDistance = 50 -- Clean distance cutoff so distant labels don't clutter the skybox
-	bill.Parent = parent
+	bill.AlwaysOnTop = false
+	bill.MaxDistance = 50
+	bill.Parent = targetPart
 
 	local frame = Instance.new("Frame")
+	frame.Name = "Frame"
 	frame.Size = UDim2.fromScale(1, 1)
 	frame.BackgroundTransparency = 0.25
 	frame.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
@@ -79,6 +86,7 @@ local function addSingleBillboard(parent: Instance, titleText: string, subtitleT
 	stroke.Parent = frame
 
 	local title = Instance.new("TextLabel")
+	title.Name = "Title"
 	title.Size = UDim2.new(1, 0, subtitleText and 0.55 or 1, 0)
 	title.BackgroundTransparency = 1
 	title.TextColor3 = color
@@ -89,6 +97,7 @@ local function addSingleBillboard(parent: Instance, titleText: string, subtitleT
 
 	if subtitleText then
 		local sub = Instance.new("TextLabel")
+		sub.Name = "Subtitle"
 		sub.Size = UDim2.new(1, 0, 0.45, 0)
 		sub.Position = UDim2.new(0, 0, 0.55, 0)
 		sub.BackgroundTransparency = 1
@@ -98,9 +107,11 @@ local function addSingleBillboard(parent: Instance, titleText: string, subtitleT
 		sub.Text = subtitleText
 		sub.Parent = frame
 	end
+
+	return bill
 end
 
---- Extract clean display name for chests (e.g. "Pet Case (500)_Box" -> "Pet Case (500)")
+--- Extract clean display name for chests
 local function getCleanCaseName(rawName: string): string
 	local name = rawName
 	name = string.gsub(name, "_Box$", "")
@@ -112,14 +123,19 @@ local function getCleanCaseName(rawName: string): string
 end
 
 --- Bind ProximityPrompt & ClickDetector to any Case chest part
-function NpcService.BindCase(part: BasePart, caseName: string, kind: string, poolId: string?)
-	if NpcService._boundObjects[part] then
+function NpcService.BindCase(object: Instance, caseName: string, kind: string, poolId: string?)
+	local topTarget = if object:IsA("BasePart") and object.Parent and (object.Parent:IsA("Model") or string.find(string.lower(object.Parent.Name), "case")) then object.Parent else object
+	if NpcService._boundObjects[topTarget] or NpcService._boundObjects[object] then
 		return
 	end
-	NpcService._boundObjects[part] = true
+	NpcService._boundObjects[topTarget] = true
+	NpcService._boundObjects[object] = true
+
+	local part: BasePart? = if object:IsA("BasePart") then object else object:FindFirstChildWhichIsA("BasePart", true)
+	if not part then return end
 
 	local cleanName = getCleanCaseName(caseName)
-	addSingleBillboard(part, cleanName, "Click or Press [E]", Color3.fromRGB(255, 200, 50))
+	getOrCreateSingleBillboard(topTarget, part, cleanName, "Click or Press [E]", Color3.fromRGB(255, 200, 50))
 
 	local prompt = part:FindFirstChildOfClass("ProximityPrompt")
 	if not prompt then
@@ -149,9 +165,11 @@ end
 
 --- Bind ProximityPrompt & ClickDetector to Quest Master NPC
 function NpcService.BindQuestMaster(object: Instance)
-	if NpcService._boundObjects[object] then
+	local topTarget = if object:IsA("BasePart") and object.Parent and object.Parent:IsA("Model") then object.Parent else object
+	if NpcService._boundObjects[topTarget] or NpcService._boundObjects[object] then
 		return
 	end
+	NpcService._boundObjects[topTarget] = true
 	NpcService._boundObjects[object] = true
 
 	local part: BasePart? = if object:IsA("Model")
@@ -162,7 +180,7 @@ function NpcService.BindQuestMaster(object: Instance)
 		return
 	end
 
-	addSingleBillboard(part, "Quest Master", "Quests & Rewards", Color3.fromRGB(80, 220, 255))
+	getOrCreateSingleBillboard(topTarget, part, "Quest Master", "Quests & Rewards", Color3.fromRGB(80, 220, 255))
 
 	local prompt = part:FindFirstChildOfClass("ProximityPrompt")
 	if not prompt then
@@ -194,9 +212,11 @@ end
 
 --- Bind ProximityPrompt & ClickDetector to Smith NPC
 function NpcService.BindSmith(object: Instance)
-	if NpcService._boundObjects[object] then
+	local topTarget = if object:IsA("BasePart") and object.Parent and object.Parent:IsA("Model") then object.Parent else object
+	if NpcService._boundObjects[topTarget] or NpcService._boundObjects[object] then
 		return
 	end
+	NpcService._boundObjects[topTarget] = true
 	NpcService._boundObjects[object] = true
 
 	local part: BasePart? = if object:IsA("Model")
@@ -207,7 +227,7 @@ function NpcService.BindSmith(object: Instance)
 		return
 	end
 
-	addSingleBillboard(part, "Smith", "Swords & Enchants", Color3.fromRGB(255, 140, 40))
+	getOrCreateSingleBillboard(topTarget, part, "Smith", "Swords & Enchants", Color3.fromRGB(255, 140, 40))
 
 	local prompt = part:FindFirstChildOfClass("ProximityPrompt")
 	if not prompt then
@@ -239,62 +259,48 @@ end
 
 --- Inspect instance and bind if it matches a known NPC or Case
 function NpcService.InspectAndBind(inst: Instance)
-	-- Skip folders
 	if inst:IsA("Folder") then
+		return
+	end
+
+	local topTarget = if inst:IsA("BasePart") and inst.Parent and inst.Parent:IsA("Model") then inst.Parent else inst
+	if NpcService._boundObjects[topTarget] or NpcService._boundObjects[inst] then
 		return
 	end
 
 	local name = inst.Name
 	local lowerName = string.lower(name)
 
-	-- Skip Lid parts to prevent double binding on Lid + Box
+	-- Skip Lid parts
 	if string.find(lowerName, "_lid") or string.find(lowerName, "lid") then
 		return
 	end
 
-	-- Skip child parts if parent Model is already bound
-	if inst:IsA("BasePart") and inst.Parent and inst.Parent:IsA("Model") then
-		if NpcService._boundObjects[inst.Parent] then
-			return
-		end
-	end
-
 	if string.find(lowerName, "quest") or string.find(lowerName, "quester") or string.find(lowerName, "sam") then
-		NpcService.BindQuestMaster(inst)
+		NpcService.BindQuestMaster(topTarget)
 	elseif string.find(lowerName, "smith") or string.find(lowerName, "blacksmith") or string.find(lowerName, "forge") or string.find(lowerName, "enchant") then
-		NpcService.BindSmith(inst)
+		NpcService.BindSmith(topTarget)
 	elseif string.find(lowerName, "pet case") or string.find(lowerName, "petcase") or string.find(lowerName, "pet chest") then
 		local poolId = if string.find(lowerName, "50k") then "loc1_50k" else "loc1_500"
-		if inst:IsA("BasePart") then
-			NpcService.BindCase(inst, name, "pet", poolId)
-		elseif inst:IsA("Model") then
-			local boxPart = inst:FindFirstChildWhichIsA("BasePart")
-			if boxPart then NpcService.BindCase(boxPart, name, "pet", poolId) end
-		end
+		NpcService.BindCase(inst, name, "pet", poolId)
 	elseif string.find(lowerName, "aura case") or string.find(lowerName, "auracase") or string.find(lowerName, "aura chest") then
-		if inst:IsA("BasePart") then
-			NpcService.BindCase(inst, name, "aura", nil)
-		elseif inst:IsA("Model") then
-			local boxPart = inst:FindFirstChildWhichIsA("BasePart")
-			if boxPart then NpcService.BindCase(boxPart, name, "aura", nil) end
-		end
+		NpcService.BindCase(inst, name, "aura", nil)
 	elseif string.find(lowerName, "case") or string.find(lowerName, "chest") then
-		if inst:IsA("BasePart") then
-			NpcService.BindCase(inst, name, "pet", "loc1_500")
-		elseif inst:IsA("Model") then
-			local boxPart = inst:FindFirstChildWhichIsA("BasePart")
-			if boxPart then NpcService.BindCase(boxPart, name, "pet", "loc1_500") end
-		end
+		NpcService.BindCase(inst, name, "pet", "loc1_500")
 	end
 end
 
---- Configure all billboards across Workspace for clean local rendering
-function NpcService.CleanWorkspaceBillboards()
-	for _, desc in Workspace:GetDescendants() do
-		if desc:IsA("BillboardGui") then
-			desc.AlwaysOnTop = false
-			desc.MaxDistance = 50
-			desc.StudsOffset = Vector3.new(0, 3.6, 0)
+--- Purge all duplicate billboards across entire Workspace
+function NpcService.PurgeAllDuplicates()
+	for _, parent in Workspace:GetDescendants() do
+		local bills: { BillboardGui } = {}
+		for _, child in parent:GetChildren() do
+			if child:IsA("BillboardGui") then
+				table.insert(bills, child)
+			end
+		end
+		for i = 2, #bills do
+			bills[i]:Destroy()
 		end
 	end
 end
@@ -357,14 +363,15 @@ function NpcService.Init()
 			NpcService.InspectAndBind(descendant)
 		end
 
-		NpcService.CleanWorkspaceBillboards()
+		NpcService.PurgeAllDuplicates()
 
 		Workspace.DescendantAdded:Connect(function(descendant)
 			task.wait(0.1)
 			NpcService.InspectAndBind(descendant)
+			NpcService.PurgeAllDuplicates()
 		end)
 
-		print("[NpcService] Hub Cases, Quest Master, and Smith NPCs online (AlwaysOnTop=false, MaxDistance=50)!")
+		print("[NpcService] NPC & Case binding complete — ZERO duplicate billboards!")
 	end)
 end
 
