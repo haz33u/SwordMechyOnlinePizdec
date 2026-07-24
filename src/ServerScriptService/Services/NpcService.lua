@@ -1,8 +1,8 @@
 --!strict
 --[[
 	NpcService — Handles physical Hub Cases and World NPCs (Quest Master, Smith, etc.).
-	Guarantees EXACTLY ONE 3D Billboard per NPC / Chest assembly (AlwaysOnTop = false, MaxDistance = 50).
-	Strictly purges all duplicate billboards across Model hierarchies.
+	Prioritizes Studio map models on the Hub platform. Automatically cleans up temporary
+	procedural fallback NPCs when Studio map models exist.
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -305,33 +305,55 @@ function NpcService.PurgeAllDuplicates()
 	end
 end
 
---- Spawn physical 3D Hub Cases & NPCs near Loc1 spawn if missing
+--- Spawn physical 3D Hub Cases & NPCs ONLY if no Studio map models exist
 function NpcService.EnsureHubInteractives()
-	local npcsFolder = ensureFolder(Workspace, "NPCs")
+	-- Check if map already contains Studio models for NPCs or Cases outside of NPCs folder
+	local hasStudioModels = false
+	for _, desc in Workspace:GetDescendants() do
+		if desc.Parent and desc.Parent.Name ~= "NPCs" then
+			local lower = string.lower(desc.Name)
+			if string.find(lower, "quest") or string.find(lower, "smith") or string.find(lower, "case") or string.find(lower, "chest") then
+				hasStudioModels = true
+				break
+			end
+		end
+	end
+
+	local npcsFolder = Workspace:FindFirstChild("NPCs")
+	if hasStudioModels then
+		-- Map already has Studio models! Clean up procedural fallback NPCs folder
+		if npcsFolder then
+			npcsFolder:Destroy()
+		end
+		return
+	end
+
+	-- Procedural fallback ONLY if map has no Studio models at all
+	npcsFolder = ensureFolder(Workspace, "NPCs")
 
 	-- 1. Pet Case (500)
-	if not npcsFolder:FindFirstChild("PetCase_500") and not Workspace:FindFirstChild("PetCase_500", true) then
+	if not npcsFolder:FindFirstChild("PetCase_500") then
 		local box = makePart(npcsFolder, "PetCase_500_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(-12, 1.5, 75), Color3.fromRGB(0, 160, 120), Enum.Material.Metal)
 		local lid = makePart(npcsFolder, "PetCase_500_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(-12, 3.2, 75), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
 		NpcService.BindCase(box, "Pet Case (500)", "pet", "loc1_500")
 	end
 
 	-- 2. Pet Case (50K)
-	if not npcsFolder:FindFirstChild("PetCase_50k") and not Workspace:FindFirstChild("PetCase_50k", true) then
+	if not npcsFolder:FindFirstChild("PetCase_50k") then
 		local box = makePart(npcsFolder, "PetCase_50k_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(-5, 1.5, 75), Color3.fromRGB(0, 120, 180), Enum.Material.Metal)
 		local lid = makePart(npcsFolder, "PetCase_50k_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(-5, 3.2, 75), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
 		NpcService.BindCase(box, "Pet Case (50K)", "pet", "loc1_50k")
 	end
 
 	-- 3. Aura Case
-	if not npcsFolder:FindFirstChild("AuraCase") and not Workspace:FindFirstChild("AuraCase", true) then
+	if not npcsFolder:FindFirstChild("AuraCase") then
 		local box = makePart(npcsFolder, "AuraCase_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(2, 1.5, 75), Color3.fromRGB(150, 60, 220), Enum.Material.Metal)
 		local lid = makePart(npcsFolder, "AuraCase_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(2, 3.2, 75), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
 		NpcService.BindCase(box, "Aura Case", "aura", nil)
 	end
 
 	-- 4. Quest Master NPC
-	if not npcsFolder:FindFirstChild("QuestMaster") and not Workspace:FindFirstChild("QuestMaster", true) then
+	if not npcsFolder:FindFirstChild("QuestMaster") then
 		local model = Instance.new("Model")
 		model.Name = "QuestMaster"
 		local body = makePart(model, "HumanoidRootPart", Vector3.new(2, 5, 2), CFrame.new(12, 2.5, 75), Color3.fromRGB(40, 140, 200), Enum.Material.SmoothPlastic)
@@ -342,7 +364,7 @@ function NpcService.EnsureHubInteractives()
 	end
 
 	-- 5. Smith NPC
-	if not npcsFolder:FindFirstChild("Smith") and not Workspace:FindFirstChild("Smith", true) then
+	if not npcsFolder:FindFirstChild("Smith") then
 		local model = Instance.new("Model")
 		model.Name = "Smith"
 		local body = makePart(model, "HumanoidRootPart", Vector3.new(2.4, 5, 2.2), CFrame.new(19, 2.5, 75), Color3.fromRGB(180, 70, 40), Enum.Material.SmoothPlastic)
@@ -371,7 +393,7 @@ function NpcService.Init()
 			NpcService.PurgeAllDuplicates()
 		end)
 
-		print("[NpcService] NPC & Case binding complete — ZERO duplicate billboards!")
+		print("[NpcService] Studio map NPCs bound — procedural fallback cleaned!")
 	end)
 end
 
