@@ -1,8 +1,7 @@
 --!strict
 --[[
 	NpcService — Handles physical Hub Cases and World NPCs (Quest Master, Smith, etc.).
-	Provides clean, single-billboard Hub interactives on the path (AlwaysOnTop = false, MaxDistance = 50).
-	Prevents duplicate overlapping billboards across all Workspace models and Studio scaffolds.
+	Positions clean Hub interactives directly on the Central Hub platform and purges giant skybox labels.
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -320,6 +319,23 @@ function NpcService.InspectAndBind(inst: Instance)
 	end
 end
 
+--- Purge giant floating distance labels across skybox (CENTRAL HUB, BOSS ARENA, CAMP A, etc.)
+function NpcService.PurgeGiantSkyLabels()
+	for _, desc in Workspace:GetDescendants() do
+		if desc:IsA("BillboardGui") and desc.Name ~= "NPCBillboard" then
+			local titleLab = desc:FindFirstChildWhichIsA("TextLabel", true)
+			if titleLab then
+				local txt = string.upper(titleLab.Text)
+				if string.find(txt, "CENTRAL") or string.find(txt, "BOSS") or string.find(txt, "CAMP") or string.find(txt, "HUB") or string.find(txt, "ARENA") then
+					desc:Destroy()
+				end
+			elseif string.find(string.upper(desc.Name), "LABEL") or string.find(string.upper(desc.Name), "ZONE") then
+				desc:Destroy()
+			end
+		end
+	end
+end
+
 --- Purge all duplicate billboards across entire Workspace
 function NpcService.PurgeAllDuplicates()
 	for _, parent in Workspace:GetDescendants() do
@@ -344,30 +360,35 @@ function NpcService.CleanDuplicateHubCases()
 	end
 end
 
---- Spawn physical 3D Hub Cases & NPCs near Loc1 spawn
+--- Spawn physical 3D Hub Cases & NPCs DIRECTLY ON THE CENTRAL HUB PLATFORM
 function NpcService.EnsureHubInteractives()
 	NpcService.CleanDuplicateHubCases()
 
 	local npcsFolder = ensureFolder(Workspace, "NPCs")
 
+	-- Clean old positions if re-spawning
+	local oldP1 = npcsFolder:FindFirstChild("PetCase_500_Box")
+	if oldP1 and oldP1.Position.Z > 50 then npcsFolder:ClearAllChildren() end
+
+	-- Position on Central Hub platform (Z = 22, Y = 1.8..2.5)
 	-- 1. Pet Case (500)
-	if not npcsFolder:FindFirstChild("PetCase_500") then
-		local box = makePart(npcsFolder, "PetCase_500_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(-12, 1.5, 75), Color3.fromRGB(0, 160, 120), Enum.Material.Metal)
-		local lid = makePart(npcsFolder, "PetCase_500_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(-12, 3.2, 75), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
+	if not npcsFolder:FindFirstChild("PetCase_500_Box") then
+		local box = makePart(npcsFolder, "PetCase_500_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(-10, 1.8, 22), Color3.fromRGB(0, 160, 120), Enum.Material.Metal)
+		local lid = makePart(npcsFolder, "PetCase_500_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(-10, 3.5, 22), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
 		NpcService.BindCase(box, "Pet Case (500)", "pet", "loc1_500")
 	end
 
 	-- 2. Pet Case (50K)
-	if not npcsFolder:FindFirstChild("PetCase_50k") then
-		local box = makePart(npcsFolder, "PetCase_50k_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(-5, 1.5, 75), Color3.fromRGB(0, 120, 180), Enum.Material.Metal)
-		local lid = makePart(npcsFolder, "PetCase_50k_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(-5, 3.2, 75), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
+	if not npcsFolder:FindFirstChild("PetCase_50k_Box") then
+		local box = makePart(npcsFolder, "PetCase_50k_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(-4, 1.8, 22), Color3.fromRGB(0, 120, 180), Enum.Material.Metal)
+		local lid = makePart(npcsFolder, "PetCase_50k_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(-4, 3.5, 22), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
 		NpcService.BindCase(box, "Pet Case (50K)", "pet", "loc1_50k")
 	end
 
 	-- 3. Aura Case
-	if not npcsFolder:FindFirstChild("AuraCase") then
-		local box = makePart(npcsFolder, "AuraCase_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(2, 1.5, 75), Color3.fromRGB(150, 60, 220), Enum.Material.Metal)
-		local lid = makePart(npcsFolder, "AuraCase_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(2, 3.2, 75), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
+	if not npcsFolder:FindFirstChild("AuraCase_Box") then
+		local box = makePart(npcsFolder, "AuraCase_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(2, 1.8, 22), Color3.fromRGB(150, 60, 220), Enum.Material.Metal)
+		local lid = makePart(npcsFolder, "AuraCase_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(2, 3.5, 22), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
 		NpcService.BindCase(box, "Aura Case", "aura", nil)
 	end
 
@@ -375,8 +396,8 @@ function NpcService.EnsureHubInteractives()
 	if not npcsFolder:FindFirstChild("QuestMaster") then
 		local model = Instance.new("Model")
 		model.Name = "QuestMaster"
-		local body = makePart(model, "HumanoidRootPart", Vector3.new(2, 5, 2), CFrame.new(12, 2.5, 75), Color3.fromRGB(40, 140, 200), Enum.Material.SmoothPlastic)
-		local head = makePart(model, "Head", Vector3.new(1.6, 1.6, 1.6), CFrame.new(12, 5.7, 75), Color3.fromRGB(255, 220, 180), Enum.Material.SmoothPlastic)
+		local body = makePart(model, "HumanoidRootPart", Vector3.new(2, 5, 2), CFrame.new(8, 2.8, 22), Color3.fromRGB(40, 140, 200), Enum.Material.SmoothPlastic)
+		local head = makePart(model, "Head", Vector3.new(1.6, 1.6, 1.6), CFrame.new(8, 6.0, 22), Color3.fromRGB(255, 220, 180), Enum.Material.SmoothPlastic)
 		model.PrimaryPart = body
 		model.Parent = npcsFolder
 		NpcService.BindQuestMaster(model)
@@ -386,8 +407,8 @@ function NpcService.EnsureHubInteractives()
 	if not npcsFolder:FindFirstChild("Smith") then
 		local model = Instance.new("Model")
 		model.Name = "Smith"
-		local body = makePart(model, "HumanoidRootPart", Vector3.new(2.4, 5, 2.2), CFrame.new(19, 2.5, 75), Color3.fromRGB(180, 70, 40), Enum.Material.SmoothPlastic)
-		local head = makePart(model, "Head", Vector3.new(1.7, 1.7, 1.7), CFrame.new(19, 5.7, 75), Color3.fromRGB(255, 210, 170), Enum.Material.SmoothPlastic)
+		local body = makePart(model, "HumanoidRootPart", Vector3.new(2.4, 5, 2.2), CFrame.new(14, 2.8, 22), Color3.fromRGB(180, 70, 40), Enum.Material.SmoothPlastic)
+		local head = makePart(model, "Head", Vector3.new(1.7, 1.7, 1.7), CFrame.new(14, 6.0, 22), Color3.fromRGB(255, 210, 170), Enum.Material.SmoothPlastic)
 		model.PrimaryPart = body
 		model.Parent = npcsFolder
 		NpcService.BindSmith(model)
@@ -405,14 +426,16 @@ function NpcService.Init()
 		end
 
 		NpcService.PurgeAllDuplicates()
+		NpcService.PurgeGiantSkyLabels()
 
 		Workspace.DescendantAdded:Connect(function(descendant)
 			task.wait(0.1)
 			NpcService.InspectAndBind(descendant)
 			NpcService.PurgeAllDuplicates()
+			NpcService.PurgeGiantSkyLabels()
 		end)
 
-		print("[NpcService] Clean Hub NPCs online — 1 set of NPCs next to spawn path!")
+		print("[NpcService] Clean Hub NPCs on Central Hub Platform — giant sky labels purged!")
 	end)
 end
 
