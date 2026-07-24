@@ -433,6 +433,105 @@ local AuraConfig = {
 			multiCritPct = 10,
 			dropWeight = 0.1603,
 		},
+		A_Blackhole = {
+			id = "A_Blackhole",
+			name = "Blackhole Aura",
+			rarity = "Mythic",
+			powerPct = 200,
+			damagePct = 200,
+			coinPct = 50,
+			critPct = 25,
+			multiCritPct = 15,
+			dropWeight = 0.05,
+		},
+		A_Armageddon = {
+			id = "A_Armageddon",
+			name = "Armageddon Aura",
+			rarity = "Mythic",
+			powerPct = 300,
+			damagePct = 250,
+			coinPct = 100,
+			critPct = 30,
+			multiCritPct = 20,
+			dropWeight = 0.03,
+		},
+		A_SuperSonic = {
+			id = "A_SuperSonic",
+			name = "Super Sonic Aura",
+			rarity = "Mythic",
+			powerPct = 150,
+			damagePct = 150,
+			coinPct = 150,
+			critPct = 40,
+			multiCritPct = 20,
+			dropWeight = 0.04,
+		},
+		A_UltimateEvil = {
+			id = "A_UltimateEvil",
+			name = "Ultimate Evil Aura",
+			rarity = "Mythic",
+			powerPct = 400,
+			damagePct = 350,
+			coinPct = 0,
+			critPct = 50,
+			multiCritPct = 25,
+			dropWeight = 0.02,
+		},
+		A_UltraEgo = {
+			id = "A_UltraEgo",
+			name = "Ultra Ego Aura",
+			rarity = "Mythic",
+			powerPct = 500,
+			damagePct = 500,
+			coinPct = 200,
+			critPct = 60,
+			multiCritPct = 30,
+			dropWeight = 0.01,
+		},
+		A_Corvus = {
+			id = "A_Corvus",
+			name = "Corvus Aura",
+			rarity = "Mythic",
+			powerPct = 350,
+			damagePct = 300,
+			coinPct = 150,
+			critPct = 35,
+			multiCritPct = 25,
+			dropWeight = 0.02,
+		},
+		A_Heavenly = {
+			id = "A_Heavenly",
+			name = "Heavenly Aura",
+			rarity = "Mythic",
+			powerPct = 250,
+			damagePct = 250,
+			coinPct = 250,
+			critPct = 45,
+			multiCritPct = 25,
+			dropWeight = 0.03,
+		},
+		A_Angel = {
+			id = "A_Angel",
+			name = "Angel Aura",
+			rarity = "Mythic",
+			powerPct = 220,
+			damagePct = 220,
+			coinPct = 220,
+			critPct = 30,
+			multiCritPct = 20,
+			dropWeight = 0.04,
+		},
+		A_Wormhole = {
+			id = "A_Wormhole",
+			name = "Wormhole Aura",
+			rarity = "Mythic",
+			powerPct = 450,
+			damagePct = 450,
+			coinPct = 100,
+			critPct = 55,
+			multiCritPct = 30,
+			dropWeight = 0.015,
+		},
 	} :: { [string]: AuraDef },
 
 	-- coin cost to open (keys primary)
@@ -529,5 +628,37 @@ AuraConfig.LegacyIdMap = {
 function AuraConfig.ResolveId(id: string): string
 	return AuraConfig.LegacyIdMap[id] or id
 end
+
+--- Dynamic scanner: Registers all Models inside Workspace.Auras / ReplicatedStorage.Auras into active Aura Catalog
+function AuraConfig.ScanWorkspaceAuras()
+	local Workspace = game:GetService("Workspace")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local folder = Workspace:FindFirstChild("Auras") or ReplicatedStorage:FindFirstChild("Auras") or ReplicatedStorage:FindFirstChild("AuraVfx")
+	if not folder then return end
+
+	for _, child in folder:GetChildren() do
+		local name = child.Name
+		if not AuraConfig.Auras[name] then
+			local rarity = (child:GetAttribute("Rarity") :: string?) or "Epic"
+			local power = (child:GetAttribute("PowerPct") :: number?) or 100
+			local damage = (child:GetAttribute("DamagePct") :: number?) or 100
+			local coin = (child:GetAttribute("CoinPct") :: number?) or 50
+
+			AuraConfig.Auras[name] = {
+				id = name,
+				name = name,
+				rarity = rarity,
+				powerPct = power,
+				damagePct = damage,
+				coinPct = coin,
+				critPct = 10,
+				multiCritPct = 5,
+				dropWeight = 5.0,
+			}
+		end
+	end
+end
+
+pcall(AuraConfig.ScanWorkspaceAuras)
 
 return AuraConfig

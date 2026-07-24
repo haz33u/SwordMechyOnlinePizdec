@@ -154,13 +154,13 @@ function App.Start()
 		end
 	end)
 
-	local toastApi, windowsApi, modalsApi, hudApi, caseApi
+	local toastApi, windowsApi, modalsApi, hudApi, caseApi, talentTreeApi
 	local nameplateApi: any = nil
 	local clickPop: any = nil
 	local onCombatFx: any = nil
 
 	local function openModal(kind: string, payload: any?)
-		if kind == "case" or kind == "caseOpen" then
+		if kind == "caseOpen" then
 			if caseApi then
 				local ok, reason, cost = caseApi.Begin(payload)
 				if ok == false and toastApi then
@@ -248,6 +248,10 @@ function App.Start()
 	step("CaseOpening", function()
 		caseApi = CaseOpening.Mount(gui, store, toastApi)
 	end)
+	step("TalentTreeUI", function()
+		local TalentTreeUI = require(script.Parent.TalentTreeUI)
+		talentTreeApi = TalentTreeUI.Mount(gui, store)
+	end)
 	step("CombatFx", function()
 		onCombatFx = FloatingDamage.Mount()
 	end)
@@ -275,6 +279,12 @@ function App.Start()
 		Net.Event("OpenTravel").OnClientEvent:Connect(function()
 			store:OpenPanel("locations")
 			refreshAll()
+		end)
+	end)
+
+	pcall(function()
+		Net.Event("OpenCasePreview").OnClientEvent:Connect(function(payload)
+			openModal("case", payload)
 		end)
 	end)
 
@@ -371,6 +381,10 @@ function App.Start()
 		local p = store:PeekPanel()
 		if p ~= lastPanel then
 			lastPanel = p
+			if p == "character" and talentTreeApi then
+				talentTreeApi.Show()
+				store:ClosePanel()
+			end
 			refreshAll()
 		end
 		local md = store:PeekModal()
@@ -470,12 +484,12 @@ function App.Start()
 			openInvTab("cases")
 		elseif input.KeyCode == Enum.KeyCode.B then
 			openInvTab("shop")
-		elseif input.KeyCode == Enum.KeyCode.U then
-			-- Character Upgrade window (stats + BuyUpgrade) — quick debug / Figma test
-			store:OpenPanel("character")
-		elseif input.KeyCode == Enum.KeyCode.K then
-			-- Debug alias: same Character Upgrade panel
-			store:OpenPanel("character")
+		elseif input.KeyCode == Enum.KeyCode.U or input.KeyCode == Enum.KeyCode.K then
+			if talentTreeApi then
+				talentTreeApi.Toggle()
+			else
+				store:OpenPanel("character")
+			end
 		elseif input.KeyCode == Enum.KeyCode.Escape then
 			if caseApi and caseApi.IsOpen() then
 				caseApi.Close()

@@ -55,6 +55,7 @@ function RebirthService.Try(player: Player): boolean
 
 	profile.rebirthLevel = nextLevel
 	profile.rebirthMult = RebirthConfig.GetMultAfter(nextLevel)
+	profile.talentPoints = (profile.talentPoints or 0) + 1
 	local rankName = RebirthConfig.GetRankName(nextLevel)
 
 	-- soft: do NOT wipe weapons/pets/locations

@@ -1,8 +1,10 @@
 {
   "mcpServers": {
     "Roblox_Studio": {
-      "command": "cmd.exe",
-      "args": ["/c", "%LOCALAPPDATA%\\Roblox\\mcp.bat"]
+      "command": "node",
+      "args": [
+        "C:\\Users\\thisi\\AppData\\Local\\Roblox\\roblox-mcp-wrapper.js"
+      ]
     }
   }
 }

@@ -381,6 +381,22 @@ local function makeProcedural(auraId: string, def: any?): Model
 	return m
 end
 
+local function findModelInFolder(folder: Instance, searchName: string): Instance?
+	local exact = folder:FindFirstChild(searchName, true)
+	if exact then return exact end
+	local lowerTarget = string.lower(searchName):gsub("[^%w]", "")
+	if lowerTarget == "" then return nil end
+	for _, desc in ipairs(folder:GetDescendants()) do
+		if desc:IsA("Model") then
+			local lowerDesc = string.lower(desc.Name):gsub("[^%w]", "")
+			if lowerDesc == lowerTarget or (string.len(lowerTarget) >= 4 and string.find(lowerDesc, lowerTarget, 1, true)) then
+				return desc
+			end
+		end
+	end
+	return nil
+end
+
 local function cloneAuraModel(auraId: string): Model?
 	local def = AuraConfig.Get(auraId)
 	local modelName = AuraModelConfig.GetModelName(auraId)
@@ -391,13 +407,13 @@ local function cloneAuraModel(auraId: string): Model?
 	for _, folder in candidates do
 		if folder then
 			if modelName and modelName ~= "" then
-				template = folder:FindFirstChild(modelName, true)
+				template = findModelInFolder(folder, modelName)
 			end
 			if not template then
-				template = folder:FindFirstChild(auraId, true)
+				template = findModelInFolder(folder, auraId)
 			end
 			if not template and def and def.name then
-				template = folder:FindFirstChild(def.name, true)
+				template = findModelInFolder(folder, def.name)
 			end
 			if template then break end
 		end
@@ -647,6 +663,15 @@ function AuraVisual.Init()
 	end
 end
 
+local function hasRenderable3DMesh(model: Model): boolean
+	for _, d in ipairs(model:GetDescendants()) do
+		if (d:IsA("MeshPart") or d:IsA("SpecialMesh")) and d.Parent and d.Parent:IsA("BasePart") and d.Parent.Transparency < 1 then
+			return true
+		end
+	end
+	return false
+end
+
 function AuraVisual.TryFillInventoryIcon(parent: GuiObject, auraId: string, zIndex: number?): boolean
 	local ok, result = pcall(function()
 		local existing = parent:FindFirstChild("AuraViewport")
@@ -654,7 +679,10 @@ function AuraVisual.TryFillInventoryIcon(parent: GuiObject, auraId: string, zInd
 			existing:Destroy()
 		end
 		local clone = cloneAuraModel(auraId)
-		if not clone then
+		if not clone or not hasRenderable3DMesh(clone) then
+			if clone then
+				clone:Destroy()
+			end
 			return false
 		end
 		for _, d in clone:GetDescendants() do
