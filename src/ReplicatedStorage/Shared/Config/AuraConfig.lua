@@ -530,4 +530,36 @@ function AuraConfig.ResolveId(id: string): string
 	return AuraConfig.LegacyIdMap[id] or id
 end
 
+--- Dynamic scanner: Registers all Models inside Workspace.Auras / ReplicatedStorage.Auras into active Aura Catalog
+function AuraConfig.ScanWorkspaceAuras()
+	local Workspace = game:GetService("Workspace")
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	local folder = Workspace:FindFirstChild("Auras") or ReplicatedStorage:FindFirstChild("Auras") or ReplicatedStorage:FindFirstChild("AuraVfx")
+	if not folder then return end
+
+	for _, child in folder:GetChildren() do
+		local name = child.Name
+		if not AuraConfig.Auras[name] then
+			local rarity = (child:GetAttribute("Rarity") :: string?) or "Epic"
+			local power = (child:GetAttribute("PowerPct") :: number?) or 100
+			local damage = (child:GetAttribute("DamagePct") :: number?) or 100
+			local coin = (child:GetAttribute("CoinPct") :: number?) or 50
+
+			AuraConfig.Auras[name] = {
+				id = name,
+				name = name,
+				rarity = rarity,
+				powerPct = power,
+				damagePct = damage,
+				coinPct = coin,
+				critPct = 10,
+				multiCritPct = 5,
+				dropWeight = 5.0,
+			}
+		end
+	end
+end
+
+pcall(AuraConfig.ScanWorkspaceAuras)
+
 return AuraConfig
