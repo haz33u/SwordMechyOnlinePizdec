@@ -62,7 +62,8 @@ local function makeFerryman(locationId: number): Model?
 	local bill = Instance.new("BillboardGui")
 	bill.Size = UDim2.fromOffset(160, 40)
 	bill.StudsOffset = Vector3.new(0, 4.2, 0)
-	bill.AlwaysOnTop = true
+	bill.AlwaysOnTop = false
+	bill.MaxDistance = 50
 	bill.Parent = root
 	local label = Instance.new("TextLabel")
 	label.Size = UDim2.fromScale(1, 1)

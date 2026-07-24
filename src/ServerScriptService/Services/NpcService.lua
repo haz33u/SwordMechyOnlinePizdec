@@ -1,8 +1,8 @@
 --!strict
 --[[
 	NpcService — Handles physical Hub Cases and World NPCs (Quest Master, Smith, etc.).
-	Guarantees ZERO duplicate Billboards or ProximityPrompts by binding strictly to
-	the top-level Model or main root part of an NPC / Chest assembly.
+	Guarantees clean 3D Billboards that stay in local space (AlwaysOnTop = false, MaxDistance = 50)
+	and prevents duplicate titles across Workspace models and case chests.
 ]]
 
 local Workspace = game:GetService("Workspace")
@@ -13,7 +13,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
 
 local NpcService = {}
-NpcService._boundModels = {} :: { [Instance]: boolean }
+NpcService._boundObjects = {} :: { [Instance]: boolean }
 
 local function ensureFolder(parent: Instance, name: string): Folder
 	local f = parent:FindFirstChild(name)
@@ -39,121 +39,92 @@ local function makePart(parent: Instance, name: string, size: Vector3, cf: CFram
 	return p
 end
 
---- Clear any duplicate BillboardGuis or ProximityPrompts inside an instance
-local function cleanDuplicates(target: Instance)
-	local billboards = {}
+--- Clear duplicate billboards & prompts from target or its ancestors/children
+local function removeExistingBillboards(target: Instance)
+	for _, desc in target:GetDescendants() do
+		if desc:IsA("BillboardGui") then
+			desc:Destroy()
+		end
+	end
 	for _, child in target:GetChildren() do
 		if child:IsA("BillboardGui") then
-			table.insert(billboards, child)
+			child:Destroy()
 		end
-	end
-	-- Keep at most 1 billboard
-	for i = 2, #billboards do
-		billboards[i]:Destroy()
-	end
-
-	local prompts = {}
-	for _, child in target:GetChildren() do
-		if child:IsA("ProximityPrompt") then
-			table.insert(prompts, child)
-		end
-	end
-	for i = 2, #prompts do
-		prompts[i]:Destroy()
 	end
 end
 
 local function addSingleBillboard(parent: Instance, titleText: string, subtitleText: string?, color: Color3)
-	cleanDuplicates(parent)
-	local bill = parent:FindFirstChildOfClass("BillboardGui")
-	if not bill then
-		bill = Instance.new("BillboardGui")
-		bill.Name = "NPCBillboard"
-		bill.Size = UDim2.fromOffset(180, 48)
-		bill.StudsOffset = Vector3.new(0, 3.8, 0)
-		bill.AlwaysOnTop = true
-		bill.Parent = parent
+	removeExistingBillboards(parent)
 
-		local frame = Instance.new("Frame")
-		frame.Size = UDim2.fromScale(1, 1)
-		frame.BackgroundTransparency = 0.25
-		frame.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
-		frame.Parent = bill
-		local corner = Instance.new("UICorner")
-		corner.CornerRadius = UDim.new(0, 8)
-		corner.Parent = frame
+	local bill = Instance.new("BillboardGui")
+	bill.Name = "NPCBillboard"
+	bill.Size = UDim2.fromOffset(180, 48)
+	bill.StudsOffset = Vector3.new(0, 3.6, 0)
+	bill.AlwaysOnTop = false -- Stay in 3D world, don't show through walls across the map!
+	bill.MaxDistance = 50 -- Clean distance cutoff so distant labels don't clutter the skybox
+	bill.Parent = parent
 
-		local stroke = Instance.new("UIStroke")
-		stroke.Color = color
-		stroke.Thickness = 1.5
-		stroke.Parent = frame
+	local frame = Instance.new("Frame")
+	frame.Size = UDim2.fromScale(1, 1)
+	frame.BackgroundTransparency = 0.25
+	frame.BackgroundColor3 = Color3.fromRGB(15, 20, 30)
+	frame.Parent = bill
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent = frame
 
-		local title = Instance.new("TextLabel")
-		title.Size = UDim2.new(1, 0, subtitleText and 0.55 or 1, 0)
-		title.BackgroundTransparency = 1
-		title.TextColor3 = color
-		title.Font = Enum.Font.GothamBold
-		title.TextSize = 14
-		title.Text = titleText
-		title.Parent = frame
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color
+	stroke.Thickness = 1.5
+	stroke.Parent = frame
 
-		if subtitleText then
-			local sub = Instance.new("TextLabel")
-			sub.Size = UDim2.new(1, 0, 0.45, 0)
-			sub.Position = UDim2.new(0, 0, 0.55, 0)
-			sub.BackgroundTransparency = 1
-			sub.TextColor3 = Color3.fromRGB(200, 200, 210)
-			sub.Font = Enum.Font.Gotham
-			sub.TextSize = 11
-			sub.Text = subtitleText
-			sub.Parent = frame
-		end
+	local title = Instance.new("TextLabel")
+	title.Size = UDim2.new(1, 0, subtitleText and 0.55 or 1, 0)
+	title.BackgroundTransparency = 1
+	title.TextColor3 = color
+	title.Font = Enum.Font.GothamBold
+	title.TextSize = 14
+	title.Text = titleText
+	title.Parent = frame
+
+	if subtitleText then
+		local sub = Instance.new("TextLabel")
+		sub.Size = UDim2.new(1, 0, 0.45, 0)
+		sub.Position = UDim2.new(0, 0, 0.55, 0)
+		sub.BackgroundTransparency = 1
+		sub.TextColor3 = Color3.fromRGB(200, 200, 210)
+		sub.Font = Enum.Font.Gotham
+		sub.TextSize = 11
+		sub.Text = subtitleText
+		sub.Parent = frame
 	end
 end
 
---- Get root binding target (Model or parent Assembly)
-local function getBindingTarget(object: Instance): (Instance?, BasePart?)
-	local topTarget: Instance = object
-	if object:IsA("BasePart") then
-		local p = object.Parent
-		if p and (p:IsA("Model") or string.find(string.lower(p.Name), "case") or string.find(string.lower(p.Name), "chest")) then
-			topTarget = p
-		end
-	end
-
-	if NpcService._boundModels[topTarget] then
-		return nil, nil
-	end
-
-	local part: BasePart? = nil
-	if topTarget:IsA("Model") then
-		part = topTarget.PrimaryPart or topTarget:FindFirstChild("HumanoidRootPart") or topTarget:FindFirstChildWhichIsA("BasePart")
-	elseif topTarget:IsA("BasePart") then
-		part = topTarget
-	elseif topTarget:IsA("Folder") then
-		part = topTarget:FindFirstChildWhichIsA("BasePart", true)
-	end
-
-	if not part then
-		return nil, nil
-	end
-	return topTarget, part
+--- Extract clean display name for chests (e.g. "Pet Case (500)_Box" -> "Pet Case (500)")
+local function getCleanCaseName(rawName: string): string
+	local name = rawName
+	name = string.gsub(name, "_Box$", "")
+	name = string.gsub(name, "_Lid$", "")
+	name = string.gsub(name, "^PetCase_500$", "Pet Case (500)")
+	name = string.gsub(name, "^PetCase_50k$", "Pet Case (50K)")
+	name = string.gsub(name, "^AuraCase$", "Aura Case")
+	return name
 end
 
---- Bind ProximityPrompt & ClickDetector to any Case object
-function NpcService.BindCase(object: Instance, caseName: string, kind: string, poolId: string?)
-	local topTarget, part = getBindingTarget(object)
-	if not topTarget or not part then
+--- Bind ProximityPrompt & ClickDetector to any Case chest part
+function NpcService.BindCase(part: BasePart, caseName: string, kind: string, poolId: string?)
+	if NpcService._boundObjects[part] then
 		return
 	end
-	NpcService._boundModels[topTarget] = true
+	NpcService._boundObjects[part] = true
 
-	addSingleBillboard(part, caseName, "Click or Press [E]", Color3.fromRGB(255, 200, 50))
+	local cleanName = getCleanCaseName(caseName)
+	addSingleBillboard(part, cleanName, "Click or Press [E]", Color3.fromRGB(255, 200, 50))
 
 	local prompt = part:FindFirstChildOfClass("ProximityPrompt")
 	if not prompt then
 		prompt = Instance.new("ProximityPrompt")
-		prompt.ObjectText = caseName
+		prompt.ObjectText = cleanName
 		prompt.ActionText = "Open Case [E]"
 		prompt.HoldDuration = 0
 		prompt.MaxActivationDistance = 14
@@ -178,11 +149,18 @@ end
 
 --- Bind ProximityPrompt & ClickDetector to Quest Master NPC
 function NpcService.BindQuestMaster(object: Instance)
-	local topTarget, part = getBindingTarget(object)
-	if not topTarget or not part then
+	if NpcService._boundObjects[object] then
 		return
 	end
-	NpcService._boundModels[topTarget] = true
+	NpcService._boundObjects[object] = true
+
+	local part: BasePart? = if object:IsA("Model")
+		then (object.PrimaryPart or object:FindFirstChild("HumanoidRootPart") or object:FindFirstChildWhichIsA("BasePart"))
+		else (if object:IsA("BasePart") then object else nil)
+
+	if not part then
+		return
+	end
 
 	addSingleBillboard(part, "Quest Master", "Quests & Rewards", Color3.fromRGB(80, 220, 255))
 
@@ -216,11 +194,18 @@ end
 
 --- Bind ProximityPrompt & ClickDetector to Smith NPC
 function NpcService.BindSmith(object: Instance)
-	local topTarget, part = getBindingTarget(object)
-	if not topTarget or not part then
+	if NpcService._boundObjects[object] then
 		return
 	end
-	NpcService._boundModels[topTarget] = true
+	NpcService._boundObjects[object] = true
+
+	local part: BasePart? = if object:IsA("Model")
+		then (object.PrimaryPart or object:FindFirstChild("HumanoidRootPart") or object:FindFirstChildWhichIsA("BasePart"))
+		else (if object:IsA("BasePart") then object else nil)
+
+	if not part then
+		return
+	end
 
 	addSingleBillboard(part, "Smith", "Swords & Enchants", Color3.fromRGB(255, 140, 40))
 
@@ -254,19 +239,23 @@ end
 
 --- Inspect instance and bind if it matches a known NPC or Case
 function NpcService.InspectAndBind(inst: Instance)
+	-- Skip folders
+	if inst:IsA("Folder") then
+		return
+	end
+
 	local name = inst.Name
 	local lowerName = string.lower(name)
 
-	-- Skip child parts if parent is already an NPC model or assembly
-	if inst:IsA("BasePart") then
-		local p = inst.Parent
-		if p and p:IsA("Model") and (NpcService._boundModels[p] or p:FindFirstChildOfClass("BillboardGui")) then
+	-- Skip Lid parts to prevent double binding on Lid + Box
+	if string.find(lowerName, "_lid") or string.find(lowerName, "lid") then
+		return
+	end
+
+	-- Skip child parts if parent Model is already bound
+	if inst:IsA("BasePart") and inst.Parent and inst.Parent:IsA("Model") then
+		if NpcService._boundObjects[inst.Parent] then
 			return
-		end
-		if string.find(lowerName, "_lid") or string.find(lowerName, "_box") then
-			if p and NpcService._boundModels[p] then
-				return
-			end
 		end
 	end
 
@@ -276,30 +265,36 @@ function NpcService.InspectAndBind(inst: Instance)
 		NpcService.BindSmith(inst)
 	elseif string.find(lowerName, "pet case") or string.find(lowerName, "petcase") or string.find(lowerName, "pet chest") then
 		local poolId = if string.find(lowerName, "50k") then "loc1_50k" else "loc1_500"
-		NpcService.BindCase(inst, name, "pet", poolId)
+		if inst:IsA("BasePart") then
+			NpcService.BindCase(inst, name, "pet", poolId)
+		elseif inst:IsA("Model") then
+			local boxPart = inst:FindFirstChildWhichIsA("BasePart")
+			if boxPart then NpcService.BindCase(boxPart, name, "pet", poolId) end
+		end
 	elseif string.find(lowerName, "aura case") or string.find(lowerName, "auracase") or string.find(lowerName, "aura chest") then
-		NpcService.BindCase(inst, name, "aura", nil)
+		if inst:IsA("BasePart") then
+			NpcService.BindCase(inst, name, "aura", nil)
+		elseif inst:IsA("Model") then
+			local boxPart = inst:FindFirstChildWhichIsA("BasePart")
+			if boxPart then NpcService.BindCase(boxPart, name, "aura", nil) end
+		end
 	elseif string.find(lowerName, "case") or string.find(lowerName, "chest") then
-		NpcService.BindCase(inst, name, "pet", "loc1_500")
+		if inst:IsA("BasePart") then
+			NpcService.BindCase(inst, name, "pet", "loc1_500")
+		elseif inst:IsA("Model") then
+			local boxPart = inst:FindFirstChildWhichIsA("BasePart")
+			if boxPart then NpcService.BindCase(boxPart, name, "pet", "loc1_500") end
+		end
 	end
 end
 
---- Clean up any existing duplicate billboards/prompts across Workspace
-function NpcService.CleanWorkspaceDuplicates()
+--- Configure all billboards across Workspace for clean local rendering
+function NpcService.CleanWorkspaceBillboards()
 	for _, desc in Workspace:GetDescendants() do
 		if desc:IsA("BillboardGui") then
-			local p = desc.Parent
-			if p then
-				local count = 0
-				for _, c in p:GetChildren() do
-					if c:IsA("BillboardGui") then
-						count += 1
-						if count > 1 then
-							c:Destroy()
-						end
-					end
-				end
-			end
+			desc.AlwaysOnTop = false
+			desc.MaxDistance = 50
+			desc.StudsOffset = Vector3.new(0, 3.6, 0)
 		end
 	end
 end
@@ -310,21 +305,21 @@ function NpcService.EnsureHubInteractives()
 
 	-- 1. Pet Case (500)
 	if not npcsFolder:FindFirstChild("PetCase_500") and not Workspace:FindFirstChild("PetCase_500", true) then
-		local box = makePart(npcsFolder, "PetCase_500", Vector3.new(3.5, 3, 2.5), CFrame.new(-12, 1.5, 75), Color3.fromRGB(0, 160, 120), Enum.Material.Metal)
+		local box = makePart(npcsFolder, "PetCase_500_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(-12, 1.5, 75), Color3.fromRGB(0, 160, 120), Enum.Material.Metal)
 		local lid = makePart(npcsFolder, "PetCase_500_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(-12, 3.2, 75), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
 		NpcService.BindCase(box, "Pet Case (500)", "pet", "loc1_500")
 	end
 
 	-- 2. Pet Case (50K)
 	if not npcsFolder:FindFirstChild("PetCase_50k") and not Workspace:FindFirstChild("PetCase_50k", true) then
-		local box = makePart(npcsFolder, "PetCase_50k", Vector3.new(3.5, 3, 2.5), CFrame.new(-5, 1.5, 75), Color3.fromRGB(0, 120, 180), Enum.Material.Metal)
+		local box = makePart(npcsFolder, "PetCase_50k_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(-5, 1.5, 75), Color3.fromRGB(0, 120, 180), Enum.Material.Metal)
 		local lid = makePart(npcsFolder, "PetCase_50k_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(-5, 3.2, 75), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
 		NpcService.BindCase(box, "Pet Case (50K)", "pet", "loc1_50k")
 	end
 
 	-- 3. Aura Case
 	if not npcsFolder:FindFirstChild("AuraCase") and not Workspace:FindFirstChild("AuraCase", true) then
-		local box = makePart(npcsFolder, "AuraCase", Vector3.new(3.5, 3, 2.5), CFrame.new(2, 1.5, 75), Color3.fromRGB(150, 60, 220), Enum.Material.Metal)
+		local box = makePart(npcsFolder, "AuraCase_Box", Vector3.new(3.5, 3, 2.5), CFrame.new(2, 1.5, 75), Color3.fromRGB(150, 60, 220), Enum.Material.Metal)
 		local lid = makePart(npcsFolder, "AuraCase_Lid", Vector3.new(3.7, 0.8, 2.7), CFrame.new(2, 3.2, 75), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
 		NpcService.BindCase(box, "Aura Case", "aura", nil)
 	end
@@ -355,7 +350,6 @@ end
 function NpcService.Init()
 	task.defer(function()
 		task.wait(1.5)
-		NpcService.CleanWorkspaceDuplicates()
 		NpcService.EnsureHubInteractives()
 
 		-- Scan Workspace for existing models/parts
@@ -363,12 +357,14 @@ function NpcService.Init()
 			NpcService.InspectAndBind(descendant)
 		end
 
+		NpcService.CleanWorkspaceBillboards()
+
 		Workspace.DescendantAdded:Connect(function(descendant)
 			task.wait(0.1)
 			NpcService.InspectAndBind(descendant)
 		end)
 
-		print("[NpcService] Hub Cases, Quest Master, and Smith NPCs online (single clean Billboards)!")
+		print("[NpcService] Hub Cases, Quest Master, and Smith NPCs online (AlwaysOnTop=false, MaxDistance=50)!")
 	end)
 end
 
