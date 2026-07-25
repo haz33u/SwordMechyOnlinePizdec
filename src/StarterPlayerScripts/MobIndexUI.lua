@@ -163,13 +163,29 @@ function MobIndexUI.Mount(parentGui: ScreenGui, store: any)
 		scroll.CanvasSize = UDim2.new(0, 0, 0, math.ceil(#mobs / 2) * 100)
 	end
 
-	for locId = 1, 4 do
+	-- Location Tabs (Scrollable)
+	local tabHolder = Instance.new("ScrollingFrame")
+	tabHolder.Name = "TabHolder"
+	tabHolder.Size = UDim2.new(1, -32, 0, 34)
+	tabHolder.Position = UDim2.new(0, 16, 0, 50)
+	tabHolder.BackgroundTransparency = 1
+	tabHolder.BorderSizePixel = 0
+	tabHolder.ScrollBarThickness = 4
+	tabHolder.CanvasSize = UDim2.new(0, 10 * 105, 0, 0)
+	tabHolder.Parent = modalFrame
+
+	local tabLayout = Instance.new("UIListLayout")
+	tabLayout.FillDirection = Enum.FillDirection.Horizontal
+	tabLayout.Padding = UDim.new(0, 6)
+	tabLayout.Parent = tabHolder
+
+	for locId = 1, 10 do
 		local tabBtn = Instance.new("TextButton")
 		tabBtn.Name = "TabLoc_" .. locId
-		tabBtn.Size = UDim2.fromOffset(110, 28)
+		tabBtn.Size = UDim2.fromOffset(98, 28)
 		tabBtn.BackgroundColor3 = locId == 1 and Color3.fromRGB(60, 130, 230) or Color3.fromRGB(40, 44, 54)
 		tabBtn.Font = Enum.Font.Arcade
-		tabBtn.TextSize = 12
+		tabBtn.TextSize = 11
 		tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 		tabBtn.Text = "Loc " .. locId
 		tabBtn.Parent = tabHolder
