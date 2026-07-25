@@ -395,6 +395,24 @@ CoinShop5 = "rbxassetid://70679769514889",
 
 **Agent rule:** wire via `UiIconConfig.Get("QuestIcon")` / `UiIconConfig.GetCoinShop(1..5)` — do not invent placeholders.
 
+### 8.4 Inventory / Shop / Profile chrome (MechyForge)
+
+**Code source of truth:** `src/ReplicatedStorage/Shared/Config/InventoryAssetConfig.lua`  
+Recorded 2026-07-25 — Figma `*LAYOUT` chrome + Studio upload. **Do not invent placeholders.**
+
+| Area | Keys (examples) |
+|------|-----------------|
+| Shell | `MAINBACKGROUD`, `BG_WeaponGrid`, `TOOLTIPshell`, `BTN_Close_3` |
+| Tab rail | `WEAPONSBUTTON` … `SETTINGSBUTTON`, `TELEPORTERBUTTON` (no Cases tab) |
+| Headers | `INVENTORYWEAPONcard`, `PETScard`, `AURAScard`, `RELICcard`, `CONSUMABLEScard`, `SHOPcard`, `PROFIILEcard`, `SETTINGcard` |
+| Slots | `Slot_Empty_3` … `Slot_Mythic_5` (+ Secret/Limited → Mythic frame until art) |
+| Equip | `MAINswordCARD`, `SECONDswordCARD`, `SELLbutton`, `EQUIPbestFORpowerBUTTON`, `EQUIPbestFORdamageBUTTON`, `MOUSEBINDScard` |
+| Shop | `SECONDswordShopcard`, `A_1PetslotShopcard`, `A_1RELICslotShopcard`, `x3CaseopenShopcard`, `GamePass_card_empty_plate` |
+| Profile | `AVATArcard`, `STATS1card`, `STATS2card`, `OPENtitlesLISTbutton` |
+| Settings | `Toggle_Rainbow_ON` / `OFF` |
+
+**Agent rule:** `InventoryAssetConfig.Get(key)` / `GetSlotFrame(rarity)` — wire inventory UI from this table only.
+
 ---
 
 ## 9. Ежедневный workflow
