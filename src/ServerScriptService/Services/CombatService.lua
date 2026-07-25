@@ -20,6 +20,7 @@ local LootService = require(script.Parent.LootService)
 local MobVisualService = require(script.Parent.MobVisualService)
 local DungeonService = require(script.Parent.DungeonService)
 local MobSpawnMarkerService = require(script.Parent.MobSpawnMarkerService)
+local MasteryService = require(script.Parent.MasteryService)
 
 local CombatService = {}
 CombatService._mobs = {} :: { [string]: any }
@@ -328,6 +329,7 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	profile.lifetimeDamage += damage
 	profile.totalClicks = (profile.totalClicks or 0) + 1
 	QuestService.OnClick(profile)
+	MasteryService.OnSwing(player)
 
 	MobVisualService.UpdateHp(mob)
 
@@ -362,6 +364,7 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 	end
 
 	mob.alive = false
+	MasteryService.OnMobKill(player, def)
 	local spawnDelay = def.respawnSeconds * Formulas.GetAnomalySpawnMult()
 	mob.respawnAt = os.clock() + spawnDelay
 	MobVisualService.SetAlive(mob, false)

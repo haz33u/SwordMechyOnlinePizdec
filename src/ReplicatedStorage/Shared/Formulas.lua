@@ -17,6 +17,7 @@ local ClickConfig = require(script.Parent.Config.ClickConfig)
 local ProgressConfig = require(script.Parent.Config.ProgressConfig)
 local AnomalyConfig = require(script.Parent.Config.AnomalyConfig)
 local TalentTreeConfig = require(script.Parent.Config.TalentTreeConfig)
+local MasteryConfig = require(script.Parent.Config.MasteryConfig)
 
 local Formulas = {}
 
@@ -298,6 +299,25 @@ end
 	Power% boosts this stat directly.
 	Damage% is applied separately during combat hits (GetHitDamage).
 ]]
+function Formulas.GetMasteryBonuses(profile: any): (number, number)
+	if not profile or not profile.masteries then
+		return 0, 0
+	end
+	local powerPct = 0
+	local critPct = 0
+	for id, xp in profile.masteries do
+		local def = MasteryConfig.Get(id)
+		if def then
+			local lvl = MasteryConfig.GetLevel(xp, def)
+			if lvl > 0 then
+				powerPct += lvl * def.bonusPowerPctPerLevel
+				critPct += lvl * def.bonusCritPctPerLevel
+			end
+		end
+	end
+	return powerPct, critPct
+end
+
 function Formulas.GetTotalPower(profile: any, player: Player?): number
 	local base = GameConfig.BASE_POWER + (profile.lifetimePower or 0)
 	local rebirthMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
@@ -312,13 +332,14 @@ function Formulas.GetTotalPower(profile: any, player: Player?): number
 	local upgradePowerPct = upgradePowerLvl * (UpgradeConfig.Defs.Power.effectPerLevel * 100)
 	local questPowerPct = profile.questPowerPct or 0
 	local boostPowerPct = Formulas.GetBoostPct(profile, "power")
+	local masteryPowerPct, _ = Formulas.GetMasteryBonuses(profile)
 
 	local friendMult = Formulas.GetFriendMult(player)
 	local premiumMult = Formulas.GetPremiumMult(player)
 
 	local anom = Formulas.GetAnomalyMods()
 	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
-	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct + (talentStats.damagePct or 0)
+	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct + masteryPowerPct + (talentStats.damagePct or 0)
 
 	local total = base
 		* rebirthMult
@@ -446,7 +467,8 @@ function Formulas.GetCritChance(profile: any): number
 	local per = (UpgradeConfig.Defs.CritChance and UpgradeConfig.Defs.CritChance.effectPerLevel) or 0.01
 	local _, _, _, auraCrit = Formulas.GetAuraBonuses(profile)
 	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
-	return math.clamp(lvl * per + ench.crit / 100 + (auraCrit or 0) / 100 + (talentStats.critChance or 0) / 100, 0, 0.85)
+	local _, masteryCritPct = Formulas.GetMasteryBonuses(profile)
+	return math.clamp(lvl * per + ench.crit / 100 + (auraCrit or 0) / 100 + (talentStats.critChance or 0) / 100 + masteryCritPct / 100, 0, 0.85)
 end
 
 function Formulas.GetMultiCritChance(profile: any): number

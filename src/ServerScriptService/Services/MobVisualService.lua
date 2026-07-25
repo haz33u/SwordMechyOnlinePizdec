@@ -273,6 +273,26 @@ local function buildBody(def: any, position: Vector3): Model
 		light.Parent = root
 	end
 
+	if isBoss then
+		local ring = Instance.new("Part")
+		ring.Name = "BossTelegraphRing"
+		ring.Shape = Enum.PartType.Cylinder
+		ring.Size = Vector3.new(0.2, 14 * scale, 14 * scale)
+		ring.Color = Color3.fromRGB(255, 40, 40)
+		ring.Material = Enum.Material.Neon
+		ring.Transparency = 0.65
+		ring.Anchored = true
+		ring.CanCollide = false
+		ring.CanTouch = false
+		ring.CanQuery = false
+		ring.CFrame = CFrame.new(position + Vector3.new(0, 0.1, 0)) * CFrame.Angles(0, 0, math.rad(90))
+		ring.Parent = model
+		local w = Instance.new("WeldConstraint")
+		w.Part0 = root
+		w.Part1 = ring
+		w.Parent = root
+	end
+
 	local click = Instance.new("ClickDetector")
 	click.MaxActivationDistance = 72
 	click.Parent = root
