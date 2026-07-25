@@ -69,6 +69,7 @@ local InventoryAssetConfig = {
 	EQUIPbestFORpowerBUTTON = "rbxassetid://92110616611889",
 	EQUIPbestFORdamageBUTTON = "rbxassetid://119992767516552",
 	MOUSEBINDScard = "rbxassetid://81765779098261",
+	EQUIPMENTbackground = "rbxassetid://122812087743674",
 
 	-- ── Shop ───────────────────────────────────────────────────
 	SECONDswordShopcard = "rbxassetid://78812232411964",

@@ -3,7 +3,7 @@
 **Дата:** 2026-07-24  
 **Цель:** Генерация 3 ключевых asset в лучшем виде (SVG + PNG, полный ресурс, чикпи)
 
-**Цветопалитра:** Только из `--main` + WORDMARKS_PureText + GamePass_Cards + *BUTTON и *card из Figma (ты загузишь)
+**Цветопалитра:** Только из `main_accets` + WORDMARKS_PureText + GamePass_Cards + *BUTTON и *card из Figma (ты загузишь)
 
 ## 1. Tooltip Shell (пустая тарелка) — Primary Asset
 
@@ -56,7 +56,7 @@
 ---
 
 **Генерация** — начинаем с референсов.  
-Кидай файлы из `--main` + WORDMARKS_PureText + README_GamePass_Cards.txt + Figma (*BUTTON, GamePass_Card_Background 2).
+Кидай файлы из `main_accets` + WORDMARKS_PureText + README_GamePass_Cards.txt + Figma (*BUTTON, GamePass_Card_Background 2).
 
 Я сразу подгоню под них и начну генерацию в лучшем виде. 
 

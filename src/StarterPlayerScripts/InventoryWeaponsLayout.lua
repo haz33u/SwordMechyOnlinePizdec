@@ -1,19 +1,33 @@
 --!strict
 --[[
-	Figma WEAPON INVENTORY LAYOUT (node ~5193:9879) — first page only.
+	WEAPON INVENTORY — rebuilt 1:1 from Figma ref "WEAPON INVENTORY LAYOUT" (11020x7653, aspect 1.44).
 
-	Zones:
-	  MAINBACKGROUD shell
-	  Left EQUIPMENTbackground = equipped loadout (2 swords, 8 pets, 3 relics, 1 aura)
-	  Center BG_WeaponGrid = inventory slots (rarity PNG frame + 3D viewport)
-	  TOOLTIPshell = mouse-follow tooltip (left/right flip)
-	  Bottom tab rail + header card + action buttons
+	Canvas map (fractions of parent frame, measured from the ref):
+	  window (MAINBACKGROUD)  x 0.079..0.986  y 0.056..0.864
+	  header card             top-left, overlaps window corner, slight tilt
+	  bottom tab rail         y 0.875..0.998 (OUTSIDE the window, like the ref)
+	  MOUSEBINDScard          hangs off the left edge, outside the window
 
-	Sell mode / lock / merge: later (after UI pass).
+	Card structure (all grid cards, per spec):
+	  ImageButton "Card" (transparent hit area)
+	  ├─ ImageLabel "Body"  — rarity frame PNG (Limited -> Slot_Limited_Body)
+	  ├─ ImageLabel "Rim"   — Limited only, Slot_Limited_Rim + animated UIGradient
+	  └─ Frame "Content"    — weapon icon, equip mark etc.
+
+	Tooltip (TOOLTIPshell, mouse-follow, left/right flip):
+	  [EQUIPPED MAIN / EQUIPPED OFFHAND]  (only when equipped)
+	  NAME
+	  RARITY (colored via Rarity.Of)
+	  POWER / SELL PRICE / LEVEL
+
+	NOTE: add to InventoryAssetConfig.lua:
+	  EQUIPMENTbackground = "rbxassetid://122812087743674",
+	(this file falls back to the raw id until the key exists)
 ]]
 
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -27,9 +41,6 @@ local AuraVisual = require(script.Parent.AuraVisual)
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponConfig = require(Shared.Config.WeaponConfig)
-local PetConfig = require(Shared.Config.PetConfig)
-local AuraConfig = require(Shared.Config.AuraConfig)
-local RelicConfig = require(Shared.Config.RelicConfig)
 local InventoryAssetConfig = require(Shared.Config.InventoryAssetConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 
@@ -37,8 +48,13 @@ local InventoryWeaponsLayout = {}
 
 local ROOT_NAME = "FigmaWeaponsRoot"
 local HOVER_SCALE = 1.06
-local SLOT_GAP = 10
+local SLOT_GAP = 14 -- ref: gaps noticeably wider than old build
 local GRID_COLS = 6
+local SHIMMER_SPEED = 0.35
+local OUTLINE = Color3.fromRGB(10, 8, 36)
+
+-- until EQUIPMENTbackground lands in InventoryAssetConfig.lua
+local EQUIPMENT_BG_FALLBACK = "rbxassetid://122812087743674"
 
 local FIGMA_TABS = {
 	{ id = "weapons", key = "WEAPONSBUTTON" },
@@ -51,8 +67,26 @@ local FIGMA_TABS = {
 	{ id = "settings", key = "SETTINGSBUTTON" },
 }
 
+-- house rainbow, first stop == last stop (no seam)
+local RAINBOW = ColorSequence.new({
+	ColorSequenceKeypoint.new(0.0, Color3.fromRGB(95, 216, 245)),
+	ColorSequenceKeypoint.new(0.2, Color3.fromRGB(127, 111, 255)),
+	ColorSequenceKeypoint.new(0.4, Color3.fromRGB(176, 92, 255)),
+	ColorSequenceKeypoint.new(0.6, Color3.fromRGB(255, 90, 214)),
+	ColorSequenceKeypoint.new(0.8, Color3.fromRGB(255, 184, 79)),
+	ColorSequenceKeypoint.new(1.0, Color3.fromRGB(95, 216, 245)),
+})
+
 local function art(key: string): string
 	return InventoryAssetConfig.Get(key)
+end
+
+local function artOr(key: string, fallback: string): string
+	local ok, v = pcall(InventoryAssetConfig.Get, key)
+	if ok and type(v) == "string" and v ~= "" and v ~= "rbxassetid://0" then
+		return v
+	end
+	return fallback
 end
 
 local function img(parent: Instance, name: string, assetKey: string, size: UDim2, pos: UDim2?, z: number?): ImageLabel
@@ -66,9 +100,59 @@ local function img(parent: Instance, name: string, assetKey: string, size: UDim2
 	if pos then
 		i.Position = pos
 	end
-	i.ZIndex = z or 10
+	i.ZIndex = z or 40
 	i.Parent = parent
 	return i
+end
+
+local function hoverify(b: GuiButton, scale: number?)
+	local sc = Instance.new("UIScale")
+	sc.Parent = b
+	b.MouseEnter:Connect(function()
+		TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { Scale = scale or 1.05 }):Play()
+	end)
+	b.MouseLeave:Connect(function()
+		TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+	end)
+	return sc
+end
+
+local function imgBtn(parent: Instance, key: string, size: UDim2, pos: UDim2?, z: number?, onClick: (() -> ())?): ImageButton
+	local b = Instance.new("ImageButton")
+	b.Name = key
+	b.BackgroundTransparency = 1
+	b.AutoButtonColor = false
+	b.Image = art(key)
+	b.ScaleType = Enum.ScaleType.Fit
+	b.Size = size
+	if pos then
+		b.Position = pos
+	end
+	b.ZIndex = z or 40
+	b.Parent = parent
+	hoverify(b)
+	if onClick then
+		b.MouseButton1Click:Connect(onClick)
+	end
+	return b
+end
+
+-- canonical Limited shimmer: horizontal offset sweep, NOT rotation
+local function attachShimmer(rim: ImageLabel)
+	local g = Instance.new("UIGradient")
+	g.Rotation = 20
+	g.Color = RAINBOW
+	g.Parent = rim
+	local t = 0
+	local conn: RBXScriptConnection
+	conn = RunService.RenderStepped:Connect(function(dt: number)
+		if not rim.Parent then
+			conn:Disconnect()
+			return
+		end
+		t = (t + dt * SHIMMER_SPEED) % 1
+		g.Offset = Vector2.new(t * 2 - 1, 0)
+	end)
 end
 
 local function tipText(parent: Instance, order: number, text: string, grad: string?, h: number?): TextLabel
@@ -84,6 +168,27 @@ local function tipText(parent: Instance, order: number, text: string, grad: stri
 	l.ZIndex = (parent :: GuiObject).ZIndex + 2
 	l.Parent = parent
 	UIKit.StyleText(l, grad or "purple", 3)
+	return l
+end
+
+-- rarity line colored via Rarity.Of (Luckiest Guy + dark stroke, house style)
+local function tipRarity(parent: Instance, order: number, rar: string): TextLabel
+	local l = Instance.new("TextLabel")
+	l.Name = "T" .. order
+	l.BackgroundTransparency = 1
+	l.Size = UDim2.new(1, -16, 0, 22)
+	l.LayoutOrder = order
+	l.Text = string.upper(rar)
+	l.Font = Enum.Font.LuckiestGuy
+	l.TextScaled = true
+	l.TextColor3 = Rarity.Of(rar)
+	l.ZIndex = (parent :: GuiObject).ZIndex + 2
+	l.Parent = parent
+	local s = Instance.new("UIStroke")
+	s.Color = OUTLINE
+	s.Thickness = 2
+	s.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+	s.Parent = l
 	return l
 end
 
@@ -110,73 +215,98 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	root.Name = ROOT_NAME
 	root.BackgroundTransparency = 1
 	root.Size = UDim2.fromScale(1, 1)
-	root.ClipsDescendants = true
 	root.ZIndex = 30
 	root.Parent = parent
 
-	-- Full-bleed shell
-	local bg = Instance.new("ImageLabel")
-	bg.Name = "MAINBACKGROUD"
-	bg.BackgroundColor3 = Color3.fromRGB(12, 8, 28)
-	bg.BackgroundTransparency = 0
-	bg.BorderSizePixel = 0
-	bg.Image = art("MAINBACKGROUD")
-	bg.ScaleType = Enum.ScaleType.Stretch
-	bg.Size = UDim2.fromScale(1, 1)
-	bg.ZIndex = 30
-	bg.Parent = root
+	----------------------------------------------------------------
+	-- WINDOW (not full-bleed! header, tabs and binds live outside)
+	----------------------------------------------------------------
+	local window = Instance.new("ImageLabel")
+	window.Name = "Window"
+	window.BackgroundTransparency = 1
+	window.BorderSizePixel = 0
+	window.Image = art("MAINBACKGROUD")
+	window.ScaleType = Enum.ScaleType.Stretch
+	window.Position = UDim2.fromScale(0.079, 0.056)
+	window.Size = UDim2.fromScale(0.907, 0.808)
+	window.ZIndex = 30
+	window.Parent = root
 
-	-- Close
+	-- Header card, overlaps the window's top-left corner, slight tilt (as in ref)
+	local header = img(root, "INVENTORYWEAPONcard", "INVENTORYWEAPONcard", UDim2.fromScale(0.315, 0.125), UDim2.fromScale(0.002, 0.008), 60)
+	header.Rotation = -2
+
+	-- TITLE | NICK plate (btn_neutral_2_1 behind dynamic text)
+	local nickPlate = Instance.new("ImageLabel")
+	nickPlate.Name = "TitleNick"
+	nickPlate.BackgroundTransparency = 1
+	nickPlate.Image = art("btn_neutral_2_1")
+	nickPlate.ScaleType = Enum.ScaleType.Fit
+	nickPlate.Position = UDim2.fromScale(0.75, 0.025)
+	nickPlate.Size = UDim2.fromScale(0.19, 0.055)
+	nickPlate.ZIndex = 40
+	nickPlate.Parent = window
+
+	local nickText = Instance.new("TextLabel")
+	nickText.Name = "Text"
+	nickText.BackgroundTransparency = 1
+	nickText.AnchorPoint = Vector2.new(0.5, 0.5)
+	nickText.Position = UDim2.fromScale(0.5, 0.5)
+	nickText.Size = UDim2.fromScale(0.82, 0.6)
+	local nick = (Players.LocalPlayer and Players.LocalPlayer.Name) or "PLAYER"
+	local title = (profile and (profile.equippedTitle or profile.title)) or nil
+	nickText.Text = string.upper(if title and title ~= "" then (tostring(title) .. " | " .. nick) else nick)
+	nickText.ZIndex = 41
+	nickText.Parent = nickPlate
+	UIKit.StyleText(nickText, "gray", 2)
+
+	-- Close (red X, top-right corner of the window)
 	local close = Instance.new("ImageButton")
 	close.Name = "Close"
 	close.BackgroundTransparency = 1
+	close.AutoButtonColor = false
 	close.Image = art("BTN_Close_3")
 	close.ScaleType = Enum.ScaleType.Fit
-	close.Size = UDim2.fromScale(0.055, 0.09)
-	close.Position = UDim2.fromScale(0.93, 0.03)
+	close.Position = UDim2.fromScale(0.952, 0.022)
+	close.Size = UDim2.fromScale(0.045, 0.075)
 	close.ZIndex = 80
-	close.Parent = root
+	close.Parent = window
+	hoverify(close, 1.08)
 	close.MouseButton1Click:Connect(args.onClose)
 
-	-- Header wordmark
-	img(root, "INVENTORYWEAPONcard", "INVENTORYWEAPONcard", UDim2.fromScale(0.32, 0.12), UDim2.fromScale(0.02, 0.02), 40)
-
-	-- Title / nick strip (dynamic)
-	local nickStrip = Instance.new("TextLabel")
-	nickStrip.Name = "NickStrip"
-	nickStrip.BackgroundTransparency = 1
-	nickStrip.Size = UDim2.fromScale(0.22, 0.05)
-	nickStrip.Position = UDim2.fromScale(0.55, 0.04)
-	nickStrip.Text = string.upper((Players.LocalPlayer and Players.LocalPlayer.Name) or "PLAYER")
-	nickStrip.ZIndex = 40
-	nickStrip.Parent = root
-	UIKit.StyleText(nickStrip, "gold", 2)
+	-- Divider with the glowing dot, under the title row
+	img(window, "Divider", "Divider_3_Minimal_1", UDim2.fromScale(0.69, 0.04), UDim2.fromScale(0.265, 0.068), 36)
 
 	----------------------------------------------------------------
-	-- LEFT: Equipment loadout (Panel_EquipInfo / EQUIPMENTbackground)
+	-- LEFT: EQUIPMENT panel (EQUIPMENTbackground asset)
 	----------------------------------------------------------------
-	local equip = Instance.new("Frame")
+	local equip = Instance.new("ImageLabel")
 	equip.Name = "Panel_EquipInfo"
 	equip.BackgroundTransparency = 1
-	equip.Size = UDim2.fromScale(0.22, 0.62)
-	equip.Position = UDim2.fromScale(0.02, 0.14)
+	equip.Image = artOr("EQUIPMENTbackground", EQUIPMENT_BG_FALLBACK)
+	equip.ScaleType = Enum.ScaleType.Stretch
+	equip.Position = UDim2.fromScale(0.012, 0.115)
+	equip.Size = UDim2.fromScale(0.19, 0.5)
 	equip.ZIndex = 35
-	equip.Parent = root
+	equip.Parent = window
 
+	-- If the EQUIPMENT title is baked into the bg asset, set Visible = false here.
 	local equipTitle = Instance.new("TextLabel")
+	equipTitle.Name = "EquipTitle"
 	equipTitle.BackgroundTransparency = 1
-	equipTitle.Size = UDim2.fromScale(1, 0.07)
+	equipTitle.Size = UDim2.fromScale(0.8, 0.07)
+	equipTitle.Position = UDim2.fromScale(0.1, 0.008)
 	equipTitle.Text = "EQUIPMENT"
-	equipTitle.ZIndex = 36
+	equipTitle.ZIndex = 37
 	equipTitle.Parent = equip
 	UIKit.StyleText(equipTitle, "purple", 3)
 
-	-- 2 swords
+	-- 2 swords (main / offhand)
 	local swordRow = Instance.new("Frame")
 	swordRow.Name = "Swords"
 	swordRow.BackgroundTransparency = 1
-	swordRow.Size = UDim2.fromScale(1, 0.28)
-	swordRow.Position = UDim2.fromScale(0, 0.08)
+	swordRow.Position = UDim2.fromScale(0.08, 0.1)
+	swordRow.Size = UDim2.fromScale(0.84, 0.22)
 	swordRow.ZIndex = 36
 	swordRow.Parent = equip
 	UIKit.List(swordRow, 8, true, Enum.HorizontalAlignment.Center)
@@ -185,7 +315,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local holder = Instance.new("Frame")
 		holder.Name = assetKey
 		holder.BackgroundTransparency = 1
-		holder.Size = UDim2.fromScale(0.46, 1)
+		holder.Size = UDim2.fromScale(0.47, 1)
 		holder.LayoutOrder = order
 		holder.ZIndex = 37
 		holder.Parent = swordRow
@@ -203,23 +333,19 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		vpHost.Name = "VpHost"
 		vpHost.BackgroundTransparency = 1
 		vpHost.Size = UDim2.fromScale(0.7, 0.7)
-		vpHost.Position = UDim2.fromScale(0.5, 0.48)
+		vpHost.Position = UDim2.fromScale(0.5, 0.5)
 		vpHost.AnchorPoint = Vector2.new(0.5, 0.5)
 		vpHost.ZIndex = 38
 		vpHost.Parent = holder
 
 		if weaponUid then
-			local w = nil
-			for _, ww in ipairs(profile.weapons or {}) do
-				if ww.uid == weaponUid then
-					w = ww
+			for _, w in ipairs(profile.weapons or {}) do
+				if w.uid == weaponUid then
+					pcall(function()
+						WeaponModels.TryFillInventoryIcon(vpHost, w.id, 48)
+					end)
 					break
 				end
-			end
-			if w then
-				pcall(function()
-					WeaponModels.TryFillInventoryIcon(vpHost, w.id, 48)
-				end)
 			end
 		end
 	end
@@ -227,17 +353,17 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	swordCard("MAINswordCARD", profile.equippedMain, 1)
 	swordCard("SECONDswordCARD", profile.equippedOffhand, 2)
 
-	-- 8 pets (2x4)
+	-- 8 pets (4x2)
 	local petsGrid = Instance.new("Frame")
 	petsGrid.Name = "Pets"
 	petsGrid.BackgroundTransparency = 1
-	petsGrid.Size = UDim2.fromScale(1, 0.28)
-	petsGrid.Position = UDim2.fromScale(0, 0.38)
+	petsGrid.Position = UDim2.fromScale(0.08, 0.35)
+	petsGrid.Size = UDim2.fromScale(0.84, 0.22)
 	petsGrid.ZIndex = 36
 	petsGrid.Parent = equip
 	local petLayout = Instance.new("UIGridLayout")
-	petLayout.CellSize = UDim2.fromScale(0.23, 0.48)
-	petLayout.CellPadding = UDim2.fromScale(0.02, 0.04)
+	petLayout.CellSize = UDim2.fromScale(0.23, 0.46)
+	petLayout.CellPadding = UDim2.fromScale(0.0266, 0.08)
 	petLayout.SortOrder = Enum.SortOrder.LayoutOrder
 	petLayout.Parent = petsGrid
 
@@ -271,97 +397,55 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end
 	end
 
-	-- 3 relics + 1 aura
+	-- 3 relics
 	local relicRow = Instance.new("Frame")
-	relicRow.Name = "RelicsAura"
+	relicRow.Name = "Relics"
 	relicRow.BackgroundTransparency = 1
-	relicRow.Size = UDim2.fromScale(1, 0.18)
-	relicRow.Position = UDim2.fromScale(0, 0.68)
+	relicRow.Position = UDim2.fromScale(0.08, 0.585)
+	relicRow.Size = UDim2.fromScale(0.84, 0.13)
 	relicRow.ZIndex = 36
 	relicRow.Parent = equip
 	UIKit.List(relicRow, 6, true, Enum.HorizontalAlignment.Center)
-
-	local equippedRelics = profile.equippedRelics or profile.relicsEquipped or {}
-	-- support array of uids or map
-	local relicUids: { string } = {}
-	if type(equippedRelics) == "table" then
-		for k, v in pairs(equippedRelics) do
-			if type(v) == "string" then
-				table.insert(relicUids, v)
-			elseif type(k) == "number" and type(v) == "string" then
-				table.insert(relicUids, v)
-			end
-		end
-	end
 	for i = 1, 3 do
 		local cell = Instance.new("ImageLabel")
 		cell.Name = "RELICcard" .. i
 		cell.BackgroundTransparency = 1
 		cell.Image = art("RELICcard" .. i)
 		cell.ScaleType = Enum.ScaleType.Fit
-		cell.Size = UDim2.fromScale(0.28, 1)
+		cell.Size = UDim2.fromScale(0.29, 1)
 		cell.LayoutOrder = i
 		cell.ZIndex = 37
 		cell.Parent = relicRow
 	end
-	do
-		local cell = Instance.new("ImageLabel")
-		cell.Name = "AURAcard"
-		cell.BackgroundTransparency = 1
-		-- reuse PETcard style frame if no dedicated empty; use AURAScard crop via generic
-		cell.Image = art("RELICcard1")
-		cell.ScaleType = Enum.ScaleType.Fit
-		cell.Size = UDim2.fromScale(0.28, 1)
-		cell.LayoutOrder = 4
-		cell.ZIndex = 37
-		cell.Parent = relicRow
-		if profile.equippedAura then
-			local host = Instance.new("Frame")
-			host.BackgroundTransparency = 1
-			host.Size = UDim2.fromScale(0.8, 0.8)
-			host.Position = UDim2.fromScale(0.5, 0.5)
-			host.AnchorPoint = Vector2.new(0.5, 0.5)
-			host.ZIndex = 38
-			host.Parent = cell
-			pcall(function()
-				AuraVisual.TryFillInventoryIcon(host, profile.equippedAura, 36)
-			end)
-		end
+
+	-- 1 aura, centered (no dedicated empty asset yet — reuses relic frame)
+	local auraCell = Instance.new("ImageLabel")
+	auraCell.Name = "AURAcard"
+	auraCell.BackgroundTransparency = 1
+	auraCell.Image = art("RELICcard1")
+	auraCell.ScaleType = Enum.ScaleType.Fit
+	auraCell.AnchorPoint = Vector2.new(0.5, 0)
+	auraCell.Position = UDim2.fromScale(0.5, 0.755)
+	auraCell.Size = UDim2.fromScale(0.24, 0.14)
+	auraCell.ZIndex = 37
+	auraCell.Parent = equip
+	if profile.equippedAura then
+		local host = Instance.new("Frame")
+		host.BackgroundTransparency = 1
+		host.Size = UDim2.fromScale(0.8, 0.8)
+		host.Position = UDim2.fromScale(0.5, 0.5)
+		host.AnchorPoint = Vector2.new(0.5, 0.5)
+		host.ZIndex = 38
+		host.Parent = auraCell
+		pcall(function()
+			AuraVisual.TryFillInventoryIcon(host, profile.equippedAura, 36)
+		end)
 	end
 
-	-- Equip best + sell buttons (art only for now — logic later for sell mode)
-	local actCol = Instance.new("Frame")
-	actCol.Name = "Actions"
-	actCol.BackgroundTransparency = 1
-	actCol.Size = UDim2.fromScale(1, 0.14)
-	actCol.Position = UDim2.fromScale(0, 0.86)
-	actCol.ZIndex = 36
-	actCol.Parent = equip
-	UIKit.List(actCol, 4, false, Enum.HorizontalAlignment.Center)
-
-	local function imgBtn(parent: Instance, key: string, order: number, onClick: () -> ())
-		local b = Instance.new("ImageButton")
-		b.Name = key
-		b.BackgroundTransparency = 1
-		b.Image = art(key)
-		b.ScaleType = Enum.ScaleType.Fit
-		b.Size = UDim2.fromScale(0.95, 0.45)
-		b.LayoutOrder = order
-		b.ZIndex = 37
-		b.Parent = parent
-		local sc = Instance.new("UIScale")
-		sc.Parent = b
-		b.MouseEnter:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.12), { Scale = 1.05 }):Play()
-		end)
-		b.MouseLeave:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
-		end)
-		b.MouseButton1Click:Connect(onClick)
-		return b
-	end
-
-	imgBtn(actCol, "EQUIPbestFORpowerBUTTON", 1, function()
+	----------------------------------------------------------------
+	-- Buttons column under the panel (order per ref: DAMAGE, POWER)
+	----------------------------------------------------------------
+	local function equipBest(sortDamage: boolean)
 		local ranked = {}
 		for _, w in ipairs(profile.weapons or {}) do
 			local d = WeaponConfig.Get(w.id)
@@ -376,41 +460,57 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		if ranked[1] then
 			Net.EquipWeapon(ranked[1].uid, "main")
 		end
-		if ranked[2] then
+		if not sortDamage and ranked[2] then
 			Net.EquipWeapon(ranked[2].uid, "offhand")
 		end
 		args.onRefresh()
+	end
+
+	imgBtn(window, "EQUIPbestFORdamageBUTTON", UDim2.fromScale(0.15, 0.062), UDim2.fromScale(0.032, 0.635), 40, function()
+		equipBest(true)
 	end)
-	imgBtn(actCol, "EQUIPbestFORdamageBUTTON", 2, function()
-		-- same ranking for now (damage ≈ power in this game)
-		local ranked = {}
-		for _, w in ipairs(profile.weapons or {}) do
-			local d = WeaponConfig.Get(w.id)
-			table.insert(ranked, { uid = w.uid, power = (d and d.powerMult) or 0, level = w.level or 1 })
-		end
-		table.sort(ranked, function(a, b)
-			return a.power > b.power
-		end)
-		if ranked[1] then
-			Net.EquipWeapon(ranked[1].uid, "main")
-		end
-		args.onRefresh()
+	imgBtn(window, "EQUIPbestFORpowerBUTTON", UDim2.fromScale(0.15, 0.062), UDim2.fromScale(0.032, 0.705), 40, function()
+		equipBest(false)
 	end)
 
+	-- Presets
+	img(window, "PresetsWordmark", "WORDMARK_presets__click_to_equip_1", UDim2.fromScale(0.15, 0.045), UDim2.fromScale(0.032, 0.782), 40)
+	local presetRow = Instance.new("Frame")
+	presetRow.Name = "Presets"
+	presetRow.BackgroundTransparency = 1
+	presetRow.Position = UDim2.fromScale(0.032, 0.833)
+	presetRow.Size = UDim2.fromScale(0.15, 0.058)
+	presetRow.ZIndex = 40
+	presetRow.Parent = window
+	UIKit.List(presetRow, 6, true, Enum.HorizontalAlignment.Center)
+	for i = 1, 4 do
+		local b = imgBtn(presetRow, "PRESETcard" .. i, UDim2.fromScale(0.22, 1), nil, 41, function()
+			-- TODO: preset equip logic (server side) — art pass first
+		end)
+		b.LayoutOrder = i
+	end
+
+	-- Sell row
 	local sellRow = Instance.new("Frame")
+	sellRow.Name = "SellRow"
 	sellRow.BackgroundTransparency = 1
-	sellRow.Size = UDim2.fromScale(1, 0.42)
-	sellRow.LayoutOrder = 3
-	sellRow.ZIndex = 37
-	sellRow.Parent = actCol
+	sellRow.Position = UDim2.fromScale(0.012, 0.905)
+	sellRow.Size = UDim2.fromScale(0.19, 0.062)
+	sellRow.ZIndex = 40
+	sellRow.Parent = window
 	UIKit.List(sellRow, 6, true, Enum.HorizontalAlignment.Center)
-	imgBtn(sellRow, "SELLbutton", 1, function()
-		-- stub: sell selected later
+	local sellBtn = imgBtn(sellRow, "SELLbutton", UDim2.fromScale(0.47, 1), nil, 41, function()
+		-- TODO: sell mode (select + sell) — later pass
 	end)
-	imgBtn(sellRow, "SELLallUNLOCKEDbutton", 2, function()
+	sellBtn.LayoutOrder = 1
+	local sellAllBtn = imgBtn(sellRow, "SELLallUNLOCKEDbutton", UDim2.fromScale(0.47, 1), nil, 41, function()
 		Net.SellAllWeapons()
 		args.onRefresh()
 	end)
+	sellAllBtn.LayoutOrder = 2
+
+	-- MOUSEBINDScard hangs off the left edge, outside the window (as in ref)
+	img(root, "MOUSEBINDScard", "MOUSEBINDScard", UDim2.fromScale(0.088, 0.17), UDim2.fromScale(0.002, 0.69), 60)
 
 	----------------------------------------------------------------
 	-- CENTER: weapon grid
@@ -418,10 +518,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local gridHost = Instance.new("Frame")
 	gridHost.Name = "BG_WeaponGrid"
 	gridHost.BackgroundTransparency = 1
-	gridHost.Size = UDim2.fromScale(0.72, 0.58)
-	gridHost.Position = UDim2.fromScale(0.26, 0.16)
+	gridHost.Position = UDim2.fromScale(0.235, 0.115)
+	gridHost.Size = UDim2.fromScale(0.748, 0.855)
 	gridHost.ZIndex = 35
-	gridHost.Parent = root
+	gridHost.Parent = window
 
 	local gridBg = Instance.new("ImageLabel")
 	gridBg.Name = "GridBg"
@@ -430,7 +530,6 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	gridBg.ScaleType = Enum.ScaleType.Stretch
 	gridBg.Size = UDim2.fromScale(1, 1)
 	gridBg.ZIndex = 35
-	gridBg.ImageTransparency = 0.15
 	gridBg.Parent = gridHost
 
 	local scroll = Instance.new("ScrollingFrame")
@@ -459,14 +558,14 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local pad = 16
 		local inner = w - pad - scroll.ScrollBarThickness
 		local cell = math.floor((inner - SLOT_GAP * (GRID_COLS - 1)) / GRID_COLS)
-		cell = math.clamp(cell, 56, 120)
+		cell = math.clamp(cell, 56, 140)
 		grid.CellSize = UDim2.fromOffset(cell, cell)
 	end
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
 	task.defer(relayout)
 
 	----------------------------------------------------------------
-	-- TOOLTIP (mouse follow, TOOLTIPshell)
+	-- TOOLTIP (TOOLTIPshell, mouse-follow, left/right flip)
 	----------------------------------------------------------------
 	local tip = Instance.new("Frame")
 	tip.Name = "Tooltip"
@@ -494,7 +593,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	tipList.Parent = tip
 	local tipMax = Instance.new("UISizeConstraint")
 	tipMax.MinSize = Vector2.new(220, 90)
-	tipMax.MaxSize = Vector2.new(300, 280)
+	tipMax.MaxSize = Vector2.new(300, 300)
 	tipMax.Parent = tip
 
 	local function clearTip()
@@ -538,17 +637,17 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		tip.Position = UDim2.fromOffset(math.floor(screenX - parentAbs.X + 0.5), math.floor(screenY - parentAbs.Y + 0.5))
 	end
 
-	local function showTip(title: string, rarity: string?, power: number, sell: number, level: number, equippedLine: string?)
+	local function showTip(name: string, rar: string?, power: number, sell: number, level: number, equippedLine: string?)
 		clearTip()
 		local order = 1
 		if equippedLine then
 			tipText(tip, order, equippedLine, "gold", 24)
 			order += 1
 		end
-		tipText(tip, order, title, "purple", 30)
+		tipText(tip, order, name, "purple", 30)
 		order += 1
-		if rarity then
-			tipText(tip, order, rarity, "gray", 22)
+		if rar then
+			tipRarity(tip, order, rar)
 			order += 1
 		end
 		tipText(tip, order, string.format("POWER: ×%.2f", power), "purple", 22)
@@ -572,7 +671,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end)
 
 	----------------------------------------------------------------
-	-- Slots
+	-- Slots (Card = Body [+ Rim for Limited] + Content)
 	----------------------------------------------------------------
 	local weapons = profile.weapons or {}
 	local function makeSlot(order: number, w: any?)
@@ -590,55 +689,45 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local def = WeaponConfig.Get(w.id)
 			rar = (def and def.rarity) or "Common"
 		end
-		btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
-		btn.ScaleType = Enum.ScaleType.Fit
 
-		-- Limited rim layer
+		local body = Instance.new("ImageLabel")
+		body.Name = "Body"
+		body.BackgroundTransparency = 1
+		body.ScaleType = Enum.ScaleType.Fit
+		body.Size = UDim2.fromScale(1, 1)
+		body.ZIndex = 40
+		body.Parent = btn
+
 		if rar == "Limited" then
-			local body, rim = InventoryAssetConfig.GetLimitedLayers()
-			btn.Image = body
-			local rimImg = Instance.new("ImageLabel")
-			rimImg.Name = "Rim"
-			rimImg.BackgroundTransparency = 1
-			rimImg.Image = rim
-			rimImg.ScaleType = Enum.ScaleType.Fit
-			rimImg.Size = UDim2.fromScale(1, 1)
-			rimImg.ZIndex = 41
-			rimImg.Parent = btn
-			local g = Instance.new("UIGradient")
-			g.Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 120, 220)),
-				ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 220, 255)),
-				ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 220, 100)),
-			})
-			g.Parent = rimImg
-			task.spawn(function()
-				while rimImg.Parent do
-					for rot = 0, 359, 4 do
-						if not rimImg.Parent then
-							return
-						end
-						g.Rotation = rot
-						task.wait(0.03)
-					end
-				end
-			end)
+			local bodyId, rimId = InventoryAssetConfig.GetLimitedLayers()
+			body.Image = bodyId
+			local rim = Instance.new("ImageLabel")
+			rim.Name = "Rim"
+			rim.BackgroundTransparency = 1
+			rim.Image = rimId
+			rim.ScaleType = Enum.ScaleType.Fit
+			rim.Size = UDim2.fromScale(1, 1)
+			rim.ZIndex = 41
+			rim.Parent = btn
+			attachShimmer(rim)
+		else
+			body.Image = InventoryAssetConfig.GetSlotFrame(rar)
 		end
 
 		if w then
-			local host = Instance.new("Frame")
-			host.Name = "IconHost"
-			host.BackgroundTransparency = 1
-			host.Size = UDim2.fromScale(0.72, 0.72)
-			host.Position = UDim2.fromScale(0.5, 0.5)
-			host.AnchorPoint = Vector2.new(0.5, 0.5)
-			host.ZIndex = 42
-			host.Active = false
-			host.Parent = btn
+			local content = Instance.new("Frame")
+			content.Name = "Content"
+			content.BackgroundTransparency = 1
+			content.Size = UDim2.fromScale(0.72, 0.72)
+			content.Position = UDim2.fromScale(0.5, 0.5)
+			content.AnchorPoint = Vector2.new(0.5, 0.5)
+			content.ZIndex = 42
+			content.Active = false
+			content.Parent = btn
 
 			local used = false
 			pcall(function()
-				used = WeaponModels.TryFillInventoryIcon(host, w.id, 44) == true
+				used = WeaponModels.TryFillInventoryIcon(content, w.id, 44) == true
 			end)
 			if not used and IconConfig.HasWeaponImage(w.id) then
 				local ic = Instance.new("ImageLabel")
@@ -647,11 +736,14 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				ic.Image = IconConfig.GetWeaponImage(w.id)
 				ic.ScaleType = Enum.ScaleType.Fit
 				ic.ZIndex = 42
-				ic.Parent = host
+				ic.Parent = content
 			end
 
-			if profile.equippedMain == w.uid or profile.equippedOffhand == w.uid then
+			local isMain = profile.equippedMain == w.uid
+			local isOff = profile.equippedOffhand == w.uid
+			if isMain or isOff then
 				local mark = Instance.new("Frame")
+				mark.Name = "EquipMark"
 				mark.Size = UDim2.fromOffset(10, 10)
 				mark.Position = UDim2.fromOffset(6, 6)
 				mark.BackgroundColor3 = Rarity.Of(rar)
@@ -667,14 +759,15 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local sellP = (def and def.sellPrice) or 5
 			local lv = w.level or 1
 
+			-- only the hovered card pops; the rest stay static
 			local sc = Instance.new("UIScale")
 			sc.Parent = btn
 			btn.MouseEnter:Connect(function()
 				TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { Scale = HOVER_SCALE }):Play()
 				local eq: string? = nil
-				if profile.equippedMain == w.uid then
+				if isMain then
 					eq = "EQUIPPED MAIN"
-				elseif profile.equippedOffhand == w.uid then
+				elseif isOff then
 					eq = "EQUIPPED OFFHAND"
 				end
 				showTip(name, rar, mult, sellP, lv, eq)
@@ -699,84 +792,68 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	----------------------------------------------------------------
-	-- Presets row
-	----------------------------------------------------------------
-	local presets = Instance.new("Frame")
-	presets.Name = "Presets"
-	presets.BackgroundTransparency = 1
-	presets.Size = UDim2.fromScale(0.28, 0.08)
-	presets.Position = UDim2.fromScale(0.02, 0.78)
-	presets.ZIndex = 40
-	presets.Parent = root
-	UIKit.List(presets, 6, true, Enum.HorizontalAlignment.Left)
-	for i = 1, 4 do
-		local p = Instance.new("ImageLabel")
-		p.Name = "PRESETcard" .. i
-		p.BackgroundTransparency = 1
-		p.Image = art("PRESETcard" .. i)
-		p.ScaleType = Enum.ScaleType.Fit
-		p.Size = UDim2.fromScale(0.22, 1)
-		p.LayoutOrder = i
-		p.ZIndex = 41
-		p.Parent = presets
-	end
-	local presetWm = Instance.new("ImageLabel")
-	presetWm.BackgroundTransparency = 1
-	presetWm.Image = art("WORDMARK_presets__click_to_equip_1")
-	presetWm.ScaleType = Enum.ScaleType.Fit
-	presetWm.Size = UDim2.fromScale(0.5, 0.05)
-	presetWm.Position = UDim2.fromScale(0.02, 0.74)
-	presetWm.ZIndex = 40
-	presetWm.Parent = root
-
-	----------------------------------------------------------------
-	-- Bottom tab rail (Figma only — no Cases)
+	-- Bottom tab rail (OUTSIDE the window, gap before SETTINGS)
 	----------------------------------------------------------------
 	local tabRail = Instance.new("Frame")
 	tabRail.Name = "TabRail"
 	tabRail.BackgroundTransparency = 1
-	tabRail.Size = UDim2.fromScale(0.96, 0.14)
-	tabRail.Position = UDim2.fromScale(0.02, 0.85)
+	tabRail.AnchorPoint = Vector2.new(0.5, 1)
+	tabRail.Position = UDim2.fromScale(0.5, 0.998)
+	tabRail.Size = UDim2.fromScale(0.85, 0.115)
 	tabRail.ZIndex = 50
 	tabRail.Parent = root
-	UIKit.List(tabRail, 8, true, Enum.HorizontalAlignment.Center)
+	UIKit.List(tabRail, 10, true, Enum.HorizontalAlignment.Center)
 
-	for _, def in ipairs(FIGMA_TABS) do
+	for idx, def in ipairs(FIGMA_TABS) do
+		if def.id == "settings" then
+			-- ref has a visible gap before SETTINGS
+			local spacer = Instance.new("Frame")
+			spacer.Name = "Spacer"
+			spacer.BackgroundTransparency = 1
+			spacer.Size = UDim2.fromScale(0.025, 1)
+			spacer.LayoutOrder = idx * 10 - 5
+			spacer.Parent = tabRail
+		end
 		local b = Instance.new("ImageButton")
 		b.Name = def.id
 		b.BackgroundTransparency = 1
+		b.AutoButtonColor = false
 		b.Image = art(def.key)
 		b.ScaleType = Enum.ScaleType.Fit
-		b.Size = UDim2.fromScale(0.11, 1)
+		b.Size = UDim2.fromScale(1, 1)
+		b.LayoutOrder = idx * 10
 		b.ImageTransparency = if def.id == "weapons" then 0 else 0.25
 		b.ZIndex = 51
 		b.Parent = tabRail
+		local ar = Instance.new("UIAspectRatioConstraint")
+		ar.AspectRatio = 1
+		ar.DominantAxis = Enum.DominantAxis.Height
+		ar.Parent = b
 		local sc = Instance.new("UIScale")
 		sc.Scale = if def.id == "weapons" then 1.06 else 1
 		sc.Parent = b
+		b.MouseEnter:Connect(function()
+			if def.id ~= "weapons" then
+				TweenService:Create(b, TweenInfo.new(0.12), { ImageTransparency = 0 }):Play()
+			end
+		end)
+		b.MouseLeave:Connect(function()
+			if def.id ~= "weapons" then
+				TweenService:Create(b, TweenInfo.new(0.12), { ImageTransparency = 0.25 }):Play()
+			end
+		end)
 		b.MouseButton1Click:Connect(function()
 			if def.id == "weapons" then
 				return
 			end
 			if def.id == "settings" then
-				-- settings not in old tabs — notify via shop fallback later
+				-- settings window not wired into onTab yet — keep old fallback
 				args.onTab("shop")
 				return
 			end
 			args.onTab(def.id)
 		end)
 	end
-
-	-- Binds card (hint only this pass)
-	local binds = Instance.new("ImageLabel")
-	binds.Name = "MOUSEBINDScard"
-	binds.BackgroundTransparency = 1
-	binds.Image = art("MOUSEBINDScard")
-	binds.ScaleType = Enum.ScaleType.Fit
-	binds.Size = UDim2.fromScale(0.1, 0.18)
-	binds.Position = UDim2.fromScale(0.88, 0.62)
-	binds.ZIndex = 45
-	binds.Parent = root
 end
 
 return InventoryWeaponsLayout
