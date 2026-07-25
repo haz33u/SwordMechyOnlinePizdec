@@ -8,6 +8,14 @@ local T = require(script.Parent.Theme)
 
 local UIKit = {}
 
+local TEXT_GRADIENTS: { [string]: ColorSequence } = {
+	purple = ColorSequence.new(Color3.fromRGB(207, 178, 255), Color3.fromRGB(143, 92, 255)),
+	gold = ColorSequence.new(Color3.fromRGB(255, 243, 176), Color3.fromRGB(255, 207, 63)),
+	green = ColorSequence.new(Color3.fromRGB(186, 247, 164), Color3.fromRGB(95, 212, 79)),
+	red = ColorSequence.new(Color3.fromRGB(255, 184, 189), Color3.fromRGB(255, 90, 102)),
+	gray = ColorSequence.new(Color3.fromRGB(214, 220, 245), Color3.fromRGB(152, 160, 204)),
+}
+
 local function tween(inst: Instance, props: { [string]: any }, dur: number?)
 	TweenService:Create(inst, TweenInfo.new(dur or 0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
 end
@@ -93,6 +101,39 @@ function UIKit.Aspect(parent: Instance, ratio: number?)
 	a.AspectRatio = ratio or 1
 	a.Parent = parent
 	return a
+end
+
+--- Brand ALL-CAPS text: white + dark stroke + vertical gradient.
+function UIKit.StyleText(label: TextLabel | TextButton, gradientName: string?, strokeThick: number?)
+	local okFont = pcall(function()
+		label.FontFace = Font.fromEnum(Enum.Font.LuckiestGuy)
+	end)
+	if not okFont then
+		label.Font = Enum.Font.GothamBold
+	end
+	label.TextColor3 = Color3.new(1, 1, 1)
+	if label:IsA("TextLabel") then
+		label.BackgroundTransparency = 1
+	end
+	label.TextScaled = true
+
+	local stroke = label:FindFirstChildOfClass("UIStroke")
+	if not stroke then
+		stroke = Instance.new("UIStroke")
+		stroke.Parent = label
+	end
+	stroke.Color = Color3.fromRGB(10, 8, 36)
+	stroke.Thickness = strokeThick or 3
+	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
+
+	local grad = label:FindFirstChildOfClass("UIGradient")
+	if not grad then
+		grad = Instance.new("UIGradient")
+		grad.Parent = label
+	end
+	grad.Color = TEXT_GRADIENTS[gradientName or "purple"] or TEXT_GRADIENTS.purple
+	grad.Rotation = 90
+	return label
 end
 
 function UIKit.TextConstraint(parent: Instance, minPx: number?, maxPx: number?)

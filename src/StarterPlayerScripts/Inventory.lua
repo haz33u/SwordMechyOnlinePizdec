@@ -31,6 +31,9 @@ local WorldConfig = require(Shared.Config.WorldConfig)
 local WeaponModels = require(script.Parent.WeaponModels)
 local PetVisual = require(script.Parent.PetVisual)
 local AuraVisual = require(script.Parent.AuraVisual)
+local InventoryWeaponsLayout = require(script.Parent.InventoryWeaponsLayout)
+
+local ROOT_FIGMA_HOST = "FigmaWeaponsHost"
 
 local Inventory = {}
 
@@ -1105,6 +1108,22 @@ function Inventory.Bind(
 		hideTooltip()
 		preloadPrices()
 
+		-- Leave Figma weapons page when switching tabs
+		if tab ~= "weapons" then
+			InventoryWeaponsLayout.Destroy(body)
+			local figmaHost = body:FindFirstChild(ROOT_FIGMA_HOST)
+			if figmaHost then
+				figmaHost:Destroy()
+			end
+			if canvas then
+				for _, ch in canvas:GetChildren() do
+					if ch:IsA("GuiObject") then
+						ch.Visible = true
+					end
+				end
+			end
+		end
+
 		for id, b in tabButtons do
 			local on = id == tab
 			b.ImageTransparency = on and 0 or 0.28
@@ -1123,7 +1142,9 @@ function Inventory.Bind(
 			shop = "Donate Shop",
 			profile = "Player Profile",
 		}
-		titleLab.Text = titles[tab] or "Inventory"
+		if titleLab then
+			titleLab.Text = titles[tab] or "Inventory"
+		end
 
 		local lp = Players.LocalPlayer
 		local showNick = inspectName
@@ -1177,238 +1198,37 @@ function Inventory.Bind(
 
 		---------------------------------------------------------------- WEAPONS
 		if tab == "weapons" then
-			setPreviewAvatar(nil, "⚔")
-			local weapons = profile.weapons or {}
-			countLab.Text = string.format("%d OF %d", #weapons, INV_CAP)
-
-			local scroll = makeSlotGrid(main)
-			local offUnlocked = (stats and stats.offhandUnlocked) == true
-				or (profile.unlocks and profile.unlocks.offhand) == true
-
-			local function makeWeaponSlot(i: number, w: any?)
-				if not w then
-					emptySlot(scroll, i)
-					return
-				end
-				local def = WeaponConfig.Get(w.id)
-				local edge = rarityBorder(def and def.rarity)
-				-- Always rarity stroke (idle + hover). No sticky cyan "selected" border.
-				local btn, plate = makeItemSlot(scroll, i, edge)
-				plate.BackgroundColor3 = BG_SLOT
-				btn.Name = "W_" .. w.uid
-				-- Keep slot clickable above icon overlays
-				btn.Active = true
-				btn.Selectable = true
-
-				-- Icon priority (pro hybrid — see docs/WEAPON_ICONS.md):
-				--   1) live 3D if mesh  2) NEW authored 2D only  3) "?"
-				-- Legacy balance dump art is NOT used (looks like wrong stubs).
-				local usedIcon = false
-				local hasMesh = false
-				pcall(function()
-					hasMesh = WeaponModels.HasVisual(w.id)
-				end)
-				if hasMesh then
-					local ok3d, res3d = pcall(function()
-						return WeaponModels.TryFillInventoryIcon(btn, w.id, 40)
-					end)
-					usedIcon = ok3d and res3d == true
-					if not usedIcon then
-						warn("[Inventory] 3D icon failed for", w.id, "ok=", ok3d, "res=", res3d)
+			-- Full Figma weapons page (hides legacy chrome for this tab only)
+			if canvas then
+				for _, ch in canvas:GetChildren() do
+					if ch:IsA("GuiObject") and ch.Name ~= ROOT_FIGMA_HOST then
+						ch.Visible = false
 					end
 				end
-				if not usedIcon then
-					local has2d = false
-					pcall(function()
-						has2d = IconConfig.HasWeaponImage(w.id)
-					end)
-					if has2d then
-						local img = Instance.new("ImageLabel")
-						img.Name = "Icon"
-						img.BackgroundTransparency = 1
-						img.BorderSizePixel = 0
-						img.Size = UDim2.fromScale(0.82, 0.82)
-						img.Position = UDim2.fromScale(0.5, 0.48)
-						img.AnchorPoint = Vector2.new(0.5, 0.5)
-						img.ScaleType = Enum.ScaleType.Fit
-						img.ZIndex = 36
-						img.Active = false
-						img.Image = IconConfig.GetWeaponImage(w.id)
-						img.Parent = btn
-						usedIcon = true
-					end
-				end
-				if not usedIcon then
-					local fail = Instance.new("TextLabel")
-					fail.Name = "IconFail"
-					fail.BackgroundTransparency = 1
-					fail.Size = UDim2.fromScale(1, 1)
-					fail.Font = Enum.Font.Arcade
-					fail.TextSize = 18
-					fail.TextColor3 = TD
-					fail.Text = "?"
-					fail.ZIndex = 40
-					fail.Active = false
-					fail.Parent = btn
-				end
-
-				if profile.equippedMain == w.uid or profile.equippedOffhand == w.uid then
-					local dot = Instance.new("Frame")
-					dot.Size = UDim2.fromOffset(8, 8)
-					dot.Position = UDim2.fromOffset(5, 5)
-					-- Equipped marker uses rarity edge, not cyan selection
-					dot.BackgroundColor3 = edge
-					dot.BackgroundTransparency = 0
-					dot.BorderSizePixel = 0
-					dot.ZIndex = 38
-					dot.Active = false
-					dot.Parent = btn
-					UIKit.Corner(dot, 99)
-				end
-
-				if (w.level or 1) > 1 then
-					local badge = Instance.new("TextLabel")
-					badge.Name = "LevelBadge"
-					badge.BackgroundTransparency = 0
-					badge.BackgroundColor3 = Color3.fromRGB(240, 180, 40)
-					badge.Size = UDim2.fromOffset(22, 14)
-					badge.Position = UDim2.new(1, -24, 1, -16)
-					badge.Font = Enum.Font.GothamBold
-					badge.TextSize = 10
-					badge.TextColor3 = Color3.fromRGB(20, 20, 20)
-					badge.Text = "L" .. tostring(w.level)
-					badge.ZIndex = 40
-					badge.Active = false
-					badge.Parent = btn
-					UIKit.Corner(badge, 4)
-				end
-
-				local name = (def and def.name) or WeaponConfig.GetDisplayName(w.id)
-				local rar = (def and def.rarity) or "Common"
-				local mult = (def and def.powerMult) or 1
-				local sellP = (def and def.sellPrice) or 5
-				local wLevel = w.level or 1
-				btn.MouseEnter:Connect(function()
-					local eq = profile.equippedMain == w.uid and "● Equipped main"
-						or (profile.equippedOffhand == w.uid and "● Equipped off" or nil)
-					setTooltip(
-						name,
-						rar,
-						string.format("Power: ×%.2f\nSell: %d\nLevel: %d", mult, sellP, wLevel),
-						eq,
-						edge
-					)
-				end)
-				btn.MouseLeave:Connect(hideTooltip)
-				do
-					local lastClick = 0
-					btn.MouseButton1Click:Connect(function()
-						local now = os.clock()
-						local double = (now - lastClick) < 0.35 and selectedWeaponUid == w.uid
-						lastClick = now
-						-- Single click: select for action bar. Double: equip main.
-						selectedWeaponUid = w.uid
-						if double then
-							Net.EquipWeapon(w.uid, "main")
-						end
-						api:Refresh()
-					end)
-				end
 			end
-
-			for i, w in ipairs(weapons) do
-				makeWeaponSlot(i, w)
+			local host = body:FindFirstChild(ROOT_FIGMA_HOST) :: Frame?
+			if not host then
+				host = Instance.new("Frame")
+				host.Name = ROOT_FIGMA_HOST
+				host.BackgroundTransparency = 1
+				host.Size = UDim2.fromScale(1, 1)
+				host.ZIndex = 100
+				host.Parent = body
 			end
-			for i = #weapons + 1, MAX_SLOTS do
-				makeWeaponSlot(i, nil)
-			end
-
-			local selected = nil
-			for _, w in ipairs(weapons) do
-				if w.uid == selectedWeaponUid then
-					selected = w
-					break
-				end
-			end
-			if not selected and weapons[1] then
-				selected = weapons[1]
-				selectedWeaponUid = selected.uid
-			end
-
-			local row = actionsRow()
-			-- Equip best: highest powerMult → main; 2nd → offhand if pass/unlock
-			actBtn(row, "Equip best", Color3.fromRGB(0, 110, 95), 1, function()
-				local ranked: { { uid: string, power: number, level: number } } = {}
-				for _, w in ipairs(weapons) do
-					local d = WeaponConfig.Get(w.id)
-					table.insert(ranked, {
-						uid = w.uid,
-						power = (d and d.powerMult) or 0,
-						level = w.level or 1,
-					})
-				end
-				table.sort(ranked, function(a, b)
-					if a.power ~= b.power then
-						return a.power > b.power
-					end
-					return a.level > b.level
-				end)
-				if ranked[1] then
-					Net.EquipWeapon(ranked[1].uid, "main")
-				end
-				if offUnlocked and ranked[2] and ranked[2].uid ~= ranked[1].uid then
-					Net.EquipWeapon(ranked[2].uid, "offhand")
-				end
-			end)
-			if selected then
-				local selUid = selected.uid
-				local def = WeaponConfig.Get(selected.id)
-				lbl(row, (def and def.name) or WeaponConfig.GetDisplayName(selected.id), UDim2.fromOffset(110, 32), nil, 12, rarityBorder(def and def.rarity), 35)
-				actBtn(row, "Equip main", Color3.fromRGB(0, 90, 80), 2, function()
-					Net.EquipWeapon(selUid, "main")
-				end)
-				actBtn(row, offUnlocked and "Equip off" or "Off 🔒", Color3.fromRGB(50, 50, 50), 3, function()
-					if offUnlocked then
-						Net.EquipWeapon(selUid, "offhand")
-					else
-						local gp = GamePassConfig.Get("offhand")
-						if gp then
-							Net.PromptGamePass(gp.gamePassId)
-						end
-					end
-				end)
-
-				-- Merge button for 5x L1 -> L2 and 3x L2 -> L3
-				local selLevel = selected.level or 1
-				local needCount = if selLevel == 1 then 5 else (if selLevel == 2 then 3 else nil)
-				if needCount then
-					local matchesCount = 0
-					for _, w in ipairs(weapons) do
-						if w.id == selected.id and (w.level or 1) == selLevel then
-							matchesCount += 1
-						end
-					end
-					local canMerge = matchesCount >= needCount
-					local mergeText = string.format("Merge (%d/%d)", matchesCount, needCount)
-					local mergeCol = if canMerge then Color3.fromRGB(210, 130, 20) else Color3.fromRGB(60, 60, 60)
-					actBtn(row, mergeText, mergeCol, 3.5, function()
-						Net.MergeWeapon(selUid)
-					end)
-				end
-
-				actBtn(row, "Enchant", Color3.fromRGB(70, 40, 100), 4, function()
-					Net.EnchantWeapon(selUid)
-					openModal("enchant", selected)
-				end)
-				actBtn(row, "Sell", Color3.fromRGB(120, 30, 30), 5, function()
-					openModal("sell", selected)
-				end)
-			else
-				keybind(row, 1, "LMB", "Select · double = Equip")
-			end
-			actBtn(row, "Sell all unequipped", Color3.fromRGB(140, 40, 40), 10, function()
-				Net.SellAllWeapons()
-			end)
+			host.Visible = true
+			countLab.Text = string.format("%d OF %d", #(profile.weapons or {}), INV_CAP)
+			InventoryWeaponsLayout.Render(host, {
+				profile = profile,
+				stats = stats,
+				onClose = onClose,
+				onTab = function(tabId: string)
+					tab = tabId
+					api:Refresh()
+				end,
+				onRefresh = function()
+					api:Refresh()
+				end,
+			})
 
 		---------------------------------------------------------------- PETS
 		elseif tab == "pets" then
