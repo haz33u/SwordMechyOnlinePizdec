@@ -6,6 +6,8 @@ local CaseConfig = require(Shared.Config.CaseConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
 local GamePassConfig = require(Shared.Config.GamePassConfig)
 local Rarity = require(script.Parent.Rarity)
+local UIKit = require(script.Parent.UIKit)
+local T = require(script.Parent.Theme)
 
 local Modals = {}
 

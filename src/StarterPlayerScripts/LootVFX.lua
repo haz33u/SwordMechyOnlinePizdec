@@ -155,20 +155,21 @@ function LootVFX.SpawnDrop(startPos: Vector3, lootType: string?, amount: number?
 end
 
 function LootVFX.Init()
-	-- Listen for Notify or custom LootDrop events from server if available
-	Remotes.OnClientEvent("Notify", function(data)
-		if typeof(data) == "table" and data.text then
-			local str = tostring(data.text)
-			local char = localPlayer.Character
-			if char and char:FindFirstChild("HumanoidRootPart") then
-				local pos = (char.HumanoidRootPart :: BasePart).Position + (char.HumanoidRootPart :: BasePart).CFrame.LookVector * 4
-				if string.find(str, "coins") or string.find(str, "Coins") then
-					LootVFX.SpawnDrop(pos, "Coin", 3)
-				elseif string.find(str, "dust") or string.find(str, "Dust") then
-					LootVFX.SpawnDrop(pos, "Dust", 2)
+	pcall(function()
+		Remotes.Event("Notify").OnClientEvent:Connect(function(data)
+			if typeof(data) == "table" and data.text then
+				local str = tostring(data.text)
+				local char = localPlayer.Character
+				if char and char:FindFirstChild("HumanoidRootPart") then
+					local pos = (char.HumanoidRootPart :: BasePart).Position + (char.HumanoidRootPart :: BasePart).CFrame.LookVector * 4
+					if string.find(str, "coins") or string.find(str, "Coins") then
+						LootVFX.SpawnDrop(pos, "Coin", 3)
+					elseif string.find(str, "dust") or string.find(str, "Dust") then
+						LootVFX.SpawnDrop(pos, "Dust", 2)
+					end
 				end
 			end
-		end
+		end)
 	end)
 end
 
