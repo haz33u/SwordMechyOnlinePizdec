@@ -53,6 +53,19 @@ local DungeonConfig = {
 			gateSeconds = 120,
 		},
 	} :: { [string]: DungeonTier },
+
+	Floors = {
+		{ floor = 1, name = "Floor 1: Grasslands Tower", mobsToKill = 5, timeLimitSeconds = 120, coinReward = 1_000, powerReward = 100 },
+		{ floor = 2, name = "Floor 2: Goblin Keep", mobsToKill = 8, timeLimitSeconds = 120, coinReward = 5_000, powerReward = 300 },
+		{ floor = 3, name = "Floor 3: Pirate Cavern", mobsToKill = 10, timeLimitSeconds = 120, coinReward = 25_000, powerReward = 1_000 },
+		{ floor = 4, name = "Floor 4: Sea Fortress", mobsToKill = 12, timeLimitSeconds = 120, coinReward = 120_000, powerReward = 4_000 },
+		{ floor = 5, name = "Floor 5: Shinobi Pagoda", mobsToKill = 15, timeLimitSeconds = 120, coinReward = 600_000, powerReward = 15_000 },
+		{ floor = 6, name = "Floor 6: Shadow Temple", mobsToKill = 18, timeLimitSeconds = 120, coinReward = 3_000_000, powerReward = 60_000 },
+		{ floor = 7, name = "Floor 7: Frost Citadel", mobsToKill = 20, timeLimitSeconds = 120, coinReward = 15_000_000, powerReward = 250_000 },
+		{ floor = 8, name = "Floor 8: Glacier Spire", mobsToKill = 22, timeLimitSeconds = 120, coinReward = 80_000_000, powerReward = 1_000_000 },
+		{ floor = 9, name = "Floor 9: Obsidian Gate", mobsToKill = 25, timeLimitSeconds = 120, coinReward = 400_000_000, powerReward = 5_000_000 },
+		{ floor = 10, name = "Floor 10: Aincrad Peak Boss", mobsToKill = 30, timeLimitSeconds = 180, coinReward = 2_500_000_000, powerReward = 25_000_000 },
+	},
 }
 
 return DungeonConfig

@@ -318,6 +318,76 @@ local MobConfig = {
 			visual = { preferredModelName = "L3_Boss", color = "#4A235A", scale = 2.0, shape = "humanoid" },
 			description = "Loc3 boss ~50T HP.",
 		},
+
+		----------------------------------------------------------------------
+		-- LOC 4 — Polar Tundra (4 mobs + boss)
+		----------------------------------------------------------------------
+		L4_FrostWolf = {
+			id = "L4_FrostWolf",
+			name = "Frost Wolf",
+			location = 4,
+			tier = "simple",
+			defaultZone = "A",
+			hp = 500_000_000_000_000, -- 500T
+			powerReward = 1_200_000,
+			coinReward = 15_000_000_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 4,
+			visual = { preferredModelName = "L4_FrostWolf", color = "#85C1E9", scale = 1.3, shape = "quad" },
+			description = "Loc4 T1 ~500T HP.",
+		},
+		L4_IceGolem = {
+			id = "L4_IceGolem",
+			name = "Ice Golem",
+			location = 4,
+			tier = "medium",
+			defaultZone = "B",
+			hp = 3_000_000_000_000_000, -- 3Qa
+			powerReward = 4_000_000,
+			coinReward = 80_000_000_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 5,
+			visual = { preferredModelName = "L4_IceGolem", color = "#5DADE2", scale = 1.6, shape = "humanoid" },
+			description = "Loc4 T2 ~3Qa HP.",
+		},
+		L4_TundraYeti = {
+			id = "L4_TundraYeti",
+			name = "Tundra Yeti",
+			location = 4,
+			tier = "hard",
+			defaultZone = "C",
+			hp = 25_000_000_000_000_000, -- 25Qa
+			powerReward = 15_000_000,
+			coinReward = 500_000_000_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 7,
+			visual = { preferredModelName = "L4_TundraYeti", color = "#EBF5FB", scale = 1.8, shape = "humanoid" },
+			description = "Loc4 T3 ~25Qa HP.",
+		},
+		L4_GlacierDragonBoss = {
+			id = "L4_GlacierDragonBoss",
+			name = "Glacier Dragon",
+			location = 4,
+			tier = "boss",
+			defaultZone = "Boss",
+			hp = 150_000_000_000_000_000, -- 150Qa
+			powerReward = 80_000_000,
+			coinReward = 5_000_000_000_000,
+			weaponDropChance = 1,
+			weaponDropScale = 1,
+			weaponPool = {},
+			respawnSeconds = 600,
+			isBoss = true,
+			armorFlat = 0,
+			visual = { preferredModelName = "L4_GlacierDragonBoss", color = "#2874A6", scale = 2.4, shape = "humanoid" },
+			description = "Loc4 Boss ~150Qa HP.",
+		},
 	} :: { [string]: MobDef },
 
 	--[[

@@ -241,6 +241,26 @@ add("emerald_blade", "Emerald Blade", "Epic", 2, 1500, 50_000_000, "Dump strengt
 add("sea_dagger", "Sea Dagger", "Legendary", 2, 4250, 120_000_000, "Dump strength 4.25K")
 
 ----------------------------------------------------------------------
+-- LOC 3 — Shinobi Lands
+----------------------------------------------------------------------
+add("shinobi_katana", "Shinobi Katana", "Common", 3, 10_000, 2_500_000, "Loc3 Katana")
+add("shadow_kunai", "Shadow Kunai", "Rare", 3, 35_000, 10_000_000, "Loc3 Kunai")
+add("dragon_tanto", "Dragon Tanto", "Epic", 3, 120_000, 50_000_000, "Loc3 Tanto")
+add("muramasa_blade", "Muramasa Blade", "Legendary", 3, 500_000, 250_000_000, "Loc3 Katana")
+add("samurai_god_katana", "Samurai God Katana", "Mythic", 3, 2_500_000, 1_000_000_000, "Loc3 Mythic Katana")
+add("shadow_shogun_blade", "Shadow Shogun Blade", "Secret", 3, 10_000_000, 5_000_000_000, "Loc3 Secret Blade")
+
+----------------------------------------------------------------------
+-- LOC 4 — Polar Tundra
+----------------------------------------------------------------------
+add("ice_dagger", "Ice Dagger", "Common", 4, 50_000_000, 25_000_000_000, "Loc4 Dagger")
+add("frost_cleaver", "Frost Cleaver", "Rare", 4, 250_000_000, 100_000_000_000, "Loc4 Cleaver")
+add("glacier_scythe", "Glacier Scythe", "Epic", 4, 1_200_000_000, 500_000_000_000, "Loc4 Scythe")
+add("blizzard_sword", "Blizzard Sword", "Legendary", 4, 5_000_000_000, 2_500_000_000_000, "Loc4 Sword")
+add("ice_dragon_fang", "Ice Dragon Fang", "Mythic", 4, 25_000_000_000, 10_000_000_000_000, "Loc4 Mythic Fang")
+add("polar_sovereign_blade", "Polar Sovereign Blade", "Secret", 4, 120_000_000_000, 50_000_000_000_000, "Loc4 Secret Blade")
+
+----------------------------------------------------------------------
 -- API
 ----------------------------------------------------------------------
 
