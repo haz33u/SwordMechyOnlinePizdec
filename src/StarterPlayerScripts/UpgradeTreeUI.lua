@@ -1,17 +1,18 @@
 --!strict
 --[[
 	UpgradeTreeUI.lua
-	Complete 1-to-1 Noob Incremental visual Skill & Upgrade Tree.
-	Renders explicit node positions for all branches (Damage, Prestige/TP, Luck, Key Finder, Speed)
-	with clean line connections, level progression, and backend Net purchases.
+	Complete working implementation of the Noob Incremental Skill & Upgrade Tree UI.
+	Uses the original UIUpgradeTree.lua config and Icons.lua module.
 ]]
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
-local TalentTreeConfig = require(Shared.Config.TalentTreeConfig)
+local UIUpgradeTree = require(Shared.Modules.UIUpgradeTree)
+local Icons = require(Shared.Modules.Icons)
 local NumberFormat = require(Shared.NumberFormat)
 local T = require(script.Parent.Theme)
 local UIKit = require(script.Parent.UIKit)
@@ -21,229 +22,29 @@ local UpgradeTreeUI = {}
 local currentGui: ScreenGui? = nil
 local frame: Frame? = nil
 local mapCanvas: Frame? = nil
+local hoverFrame: Frame? = nil
 local storeRef: any = nil
 local player = Players.LocalPlayer
 
--- Explicit 2D canvas coordinates for all tree nodes
-local TREE_NODE_MAP = {
-	-- Start Hub
-	TheStart = {
-		id = "TheStart",
-		configId = "C_Core",
-		name = "The Start",
-		desc = "The origin of your inner power.",
-		icon = "☸",
-		pos = Vector2.new(375, 500),
-		unlocks = { "SharpBlade_1", "AscendantMight_1", "FourLeafClover_1" },
-		maxLvl = 1,
-		baseCost = 0,
-		costType = "coins",
-	},
-
-	-- Damage Branch (Left)
-	SharpBlade_1 = {
-		id = "SharpBlade_1",
-		configId = "C_Dmg_1",
-		name = "Sharp Blade I",
-		desc = "+10% Sword Damage",
-		icon = "⚔️",
-		pos = Vector2.new(240, 500),
-		unlocks = { "SharpBlade_2" },
-		maxLvl = 50,
-		baseCost = 150,
-		costType = "coins",
-	},
-	SharpBlade_2 = {
-		id = "SharpBlade_2",
-		configId = "C_Dmg_2",
-		name = "Sharp Blade II",
-		desc = "+25% Sword Damage",
-		icon = "⚔️",
-		pos = Vector2.new(120, 500),
-		unlocks = { "SharpBlade_3" },
-		maxLvl = 50,
-		baseCost = 540,
-		costType = "coins",
-	},
-	SharpBlade_3 = {
-		id = "SharpBlade_3",
-		configId = "C_Dmg_3",
-		name = "Sharp Blade III",
-		desc = "+50% Sword Damage",
-		icon = "⚔️",
-		pos = Vector2.new(40, 410),
-		unlocks = {},
-		maxLvl = 50,
-		baseCost = 2800,
-		costType = "coins",
-	},
-
-	-- Prestige / TP Branch (Up Center)
-	AscendantMight_1 = {
-		id = "AscendantMight_1",
-		configId = "P_Tp_1",
-		name = "Ascendant Might I",
-		desc = "+1 Talent Point Boost",
-		icon = "✨",
-		pos = Vector2.new(375, 380),
-		unlocks = { "AscendantMight_2" },
-		maxLvl = 10,
-		baseCost = 1,
-		costType = "talentPoints",
-	},
-	AscendantMight_2 = {
-		id = "AscendantMight_2",
-		configId = "P_Tp_2",
-		name = "Ascendant Might II",
-		desc = "+2 Talent Point Boost",
-		icon = "✨",
-		pos = Vector2.new(340, 260),
-		unlocks = { "AscendantMight_3" },
-		maxLvl = 10,
-		baseCost = 2,
-		costType = "talentPoints",
-	},
-	AscendantMight_3 = {
-		id = "AscendantMight_3",
-		configId = "P_Tp_3",
-		name = "Ascendant Might III",
-		desc = "+3 Talent Point Boost",
-		icon = "✨",
-		pos = Vector2.new(310, 140),
-		unlocks = { "AscendantMight_4" },
-		maxLvl = 10,
-		baseCost = 3,
-		costType = "talentPoints",
-	},
-	AscendantMight_4 = {
-		id = "AscendantMight_4",
-		configId = "P_Tp_4",
-		name = "Ascendant Might IV",
-		desc = "+4 Talent Point Boost",
-		icon = "✨",
-		pos = Vector2.new(280, 40),
-		unlocks = {},
-		maxLvl = 10,
-		baseCost = 4,
-		costType = "talentPoints",
-	},
-
-	-- Luck Branch (Right)
-	FourLeafClover_1 = {
-		id = "FourLeafClover_1",
-		configId = "L_Luck_1",
-		name = "Four-Leaf Clover 1",
-		desc = "+15% Luck Boost",
-		icon = "🍀",
-		pos = Vector2.new(510, 500),
-		unlocks = { "FourLeafClover_2", "KeyFinder_1" },
-		maxLvl = 40,
-		baseCost = 150,
-		costType = "coins",
-	},
-	FourLeafClover_2 = {
-		id = "FourLeafClover_2",
-		configId = "L_Luck_2",
-		name = "Four-Leaf Clover 2",
-		desc = "+35% Luck Boost",
-		icon = "🍀",
-		pos = Vector2.new(630, 500),
-		unlocks = { "FourLeafClover_3" },
-		maxLvl = 40,
-		baseCost = 600,
-		costType = "coins",
-	},
-	FourLeafClover_3 = {
-		id = "FourLeafClover_3",
-		configId = "L_Luck_3",
-		name = "Four-Leaf Clover 3",
-		desc = "+75% Luck Boost",
-		icon = "🍀",
-		pos = Vector2.new(710, 410),
-		unlocks = {},
-		maxLvl = 40,
-		baseCost = 2400,
-		costType = "coins",
-	},
-
-	-- Key Finder Branch (Up Right)
-	KeyFinder_1 = {
-		id = "KeyFinder_1",
-		configId = "L_Luck_4",
-		name = "Key Finder 1",
-		desc = "+10% Key Drop Rate",
-		icon = "🔑",
-		pos = Vector2.new(580, 350),
-		unlocks = { "KeyFinder_2" },
-		maxLvl = 20,
-		baseCost = 2000,
-		costType = "coins",
-	},
-	KeyFinder_2 = {
-		id = "KeyFinder_2",
-		configId = "L_Luck_5",
-		name = "Key Finder 2",
-		desc = "+25% Key Drop Rate",
-		icon = "🔑",
-		pos = Vector2.new(650, 240),
-		unlocks = { "KeyFinder_3" },
-		maxLvl = 20,
-		baseCost = 12000,
-		costType = "coins",
-	},
-	KeyFinder_3 = {
-		id = "KeyFinder_3",
-		configId = "L_Luck_6",
-		name = "Key Finder 3",
-		desc = "+50% Key Drop Rate",
-		icon = "🔑",
-		pos = Vector2.new(720, 130),
-		unlocks = {},
-		maxLvl = 20,
-		baseCost = 80000,
-		costType = "coins",
-	},
-
-	-- Speed Branch (Up Left)
-	SwiftHaste_1 = {
-		id = "SwiftHaste_1",
-		configId = "S_Speed_1",
-		name = "Swift Haste 1",
-		desc = "+10% Attack Speed",
-		icon = "⚡",
-		pos = Vector2.new(170, 350),
-		unlocks = { "SwiftHaste_2" },
-		maxLvl = 30,
-		baseCost = 1000,
-		costType = "coins",
-	},
-	SwiftHaste_2 = {
-		id = "SwiftHaste_2",
-		configId = "S_Speed_2",
-		name = "Swift Haste 2",
-		desc = "+25% Attack Speed",
-		icon = "⚡",
-		pos = Vector2.new(100, 240),
-		unlocks = { "SwiftHaste_3" },
-		maxLvl = 30,
-		baseCost = 5000,
-		costType = "coins",
-	},
-	SwiftHaste_3 = {
-		id = "SwiftHaste_3",
-		configId = "S_Speed_3",
-		name = "Swift Haste 3",
-		desc = "+50% Attack Speed",
-		icon = "⚡",
-		pos = Vector2.new(40, 130),
-		unlocks = {},
-		maxLvl = 30,
-		baseCost = 35000,
-		costType = "coins",
-	},
+-- Manual grid layout positions for Noob Incremental tree nodes (X, Y)
+local NODE_CANVAS_POS = {
+	TheStart = Vector2.new(400, 520),
+	PrismGenerationSpeed = Vector2.new(400, 410),
+	MorePrismPlus1 = Vector2.new(340, 310),
+	PrismMultiLeft = Vector2.new(240, 310),
+	MorePrismPlus2 = Vector2.new(140, 310),
+	OofMulti1 = Vector2.new(240, 520),
+	OofMulti2 = Vector2.new(140, 520),
+	OofMulti3 = Vector2.new(40, 520),
+	RuneSpeedMulRight1 = Vector2.new(560, 520),
+	RuneSpeedMulRight2 = Vector2.new(660, 520),
+	RuneSpeedMulRight3 = Vector2.new(760, 520),
+	PrismMulR3_1 = Vector2.new(460, 310),
+	PrismMulR3_2 = Vector2.new(560, 310),
+	PrismMulR3_3 = Vector2.new(660, 310),
 }
 
-local function drawConnection(parent: Frame, p1: Vector2, p2: Vector2, isUnlocked: boolean)
+local function drawLine(parent: Frame, p1: Vector2, p2: Vector2, isUnlocked: boolean)
 	local dist = (p2 - p1).Magnitude
 	local angle = math.atan2(p2.Y - p1.Y, p2.X - p1.X)
 
@@ -253,7 +54,7 @@ local function drawConnection(parent: Frame, p1: Vector2, p2: Vector2, isUnlocke
 	line.Position = UDim2.fromOffset(p1.X, p1.Y)
 	line.Size = UDim2.fromOffset(dist, isUnlocked and 3 or 2)
 	line.Rotation = math.deg(angle)
-	line.BackgroundColor3 = isUnlocked and Color3.fromRGB(80, 200, 255) or Color3.fromRGB(60, 65, 80)
+	line.BackgroundColor3 = isUnlocked and Color3.fromRGB(80, 200, 255) or Color3.fromRGB(55, 60, 75)
 	line.BorderSizePixel = 0
 	line.ZIndex = 51
 	line.Parent = parent
@@ -309,7 +110,57 @@ function UpgradeTreeUI.Mount(parentGui: ScreenGui, store: any)
 		modalFrame.Visible = false
 	end)
 
-	-- Scrollable Map Container
+	-- Hover Tooltip Frame
+	local tooltip = Instance.new("Frame")
+	tooltip.Name = "HoveringFrame"
+	tooltip.Size = UDim2.fromOffset(220, 100)
+	tooltip.BackgroundColor3 = Color3.fromRGB(24, 28, 38)
+	tooltip.BorderSizePixel = 0
+	tooltip.Visible = false
+	tooltip.ZIndex = 100
+	tooltip.Parent = modalFrame
+	UIKit.Corner(tooltip, 8)
+	UIKit.Stroke(tooltip, Color3.fromRGB(100, 180, 255), 1.5, 0.2)
+
+	local ttTitle = Instance.new("TextLabel")
+	ttTitle.Size = UDim2.new(1, -12, 0, 22)
+	ttTitle.Position = UDim2.new(0, 6, 0, 4)
+	ttTitle.BackgroundTransparency = 1
+	ttTitle.Font = Enum.Font.Arcade
+	ttTitle.TextSize = 13
+	ttTitle.TextColor3 = Color3.fromRGB(255, 220, 100)
+	ttTitle.TextXAlignment = Enum.TextXAlignment.Left
+	ttTitle.Text = ""
+	ttTitle.ZIndex = 101
+	ttTitle.Parent = tooltip
+
+	local ttDesc = Instance.new("TextLabel")
+	ttDesc.Size = UDim2.new(1, -12, 0, 36)
+	ttDesc.Position = UDim2.new(0, 6, 0, 26)
+	ttDesc.BackgroundTransparency = 1
+	ttDesc.Font = Enum.Font.Arcade
+	ttDesc.TextSize = 11
+	ttDesc.TextColor3 = Color3.fromRGB(200, 210, 225)
+	ttDesc.TextWrapped = true
+	ttDesc.TextXAlignment = Enum.TextXAlignment.Left
+	ttDesc.Text = ""
+	ttDesc.ZIndex = 101
+	ttDesc.Parent = tooltip
+
+	local ttCost = Instance.new("TextLabel")
+	ttCost.Size = UDim2.new(1, -12, 0, 20)
+	ttCost.Position = UDim2.new(0, 6, 0, 68)
+	ttCost.BackgroundTransparency = 1
+	ttCost.Font = Enum.Font.Arcade
+	ttCost.TextSize = 11
+	ttCost.TextColor3 = Color3.fromRGB(120, 240, 160)
+	ttCost.TextXAlignment = Enum.TextXAlignment.Left
+	ttCost.Text = ""
+	ttCost.ZIndex = 101
+	ttCost.Parent = tooltip
+	hoverFrame = tooltip
+
+	-- Scrollable Canvas Container
 	local scrollMap = Instance.new("ScrollingFrame")
 	scrollMap.Name = "ScrollMap"
 	scrollMap.Size = UDim2.new(1, -32, 1, -66)
@@ -317,7 +168,7 @@ function UpgradeTreeUI.Mount(parentGui: ScreenGui, store: any)
 	scrollMap.BackgroundColor3 = Color3.fromRGB(10, 12, 16)
 	scrollMap.BorderSizePixel = 0
 	scrollMap.ClipsDescendants = true
-	scrollMap.CanvasSize = UDim2.fromOffset(800, 600)
+	scrollMap.CanvasSize = UDim2.fromOffset(840, 640)
 	scrollMap.ScrollBarThickness = 6
 	scrollMap.Parent = modalFrame
 	UIKit.Corner(scrollMap, T.R.sm)
@@ -335,34 +186,35 @@ function UpgradeTreeUI.Mount(parentGui: ScreenGui, store: any)
 		mapCanvas:ClearAllChildren()
 
 		local profile = storeRef:PeekProfile()
-		local unlocked = (profile and profile.unlockedTalents) or { C_Core = 1 }
+		local unlocked = (profile and profile.unlockedTalents) or { TheStart = 1, C_Core = 1 }
+
+		local nodeDefs = UIUpgradeTree.Nodes or {}
 
 		-- 1. Draw connection lines between center points
-		for _, nodeData in pairs(TREE_NODE_MAP) do
-			local p1 = nodeData.pos
-			for _, childId in ipairs(nodeData.unlocks) do
-				local childData = TREE_NODE_MAP[childId]
-				if childData then
-					local p2 = childData.pos
-					local pVal = unlocked[nodeData.configId] or unlocked[nodeData.id]
-					local cVal = unlocked[childData.configId] or unlocked[childData.id]
-					local isUnlocked = (typeof(pVal) == "number" and pVal > 0) or pVal == true
-					drawConnection(mapCanvas, p1, p2, isUnlocked)
+		for nodeId, nodeData in pairs(nodeDefs) do
+			local p1 = NODE_CANVAS_POS[nodeId] or Vector2.new(400, 300)
+			for _, childId in ipairs(nodeData.unlocks or {}) do
+				local childData = nodeDefs[childId]
+				local p2 = NODE_CANVAS_POS[childId]
+				if childData and p2 then
+					local pLvl = unlocked[nodeId] or 0
+					local isUnlocked = (typeof(pLvl) == "number" and pLvl > 0) or pLvl == true
+					drawLine(mapCanvas, p1, p2, isUnlocked)
 				end
 			end
 		end
 
-		-- 2. Render node cards centered at nodeData.pos
-		for _, nodeData in pairs(TREE_NODE_MAP) do
-			local pos = nodeData.pos
-			local configId = nodeData.configId
-			local rawVal = unlocked[configId] or unlocked[nodeData.id]
+		-- 2. Render node cards centered at NODE_CANVAS_POS
+		for nodeId, nodeData in pairs(nodeDefs) do
+			local pos = NODE_CANVAS_POS[nodeId] or Vector2.new(400, 300)
+			local rawVal = unlocked[nodeId]
 			local currentLvl = if typeof(rawVal) == "number" then rawVal else (if rawVal == true then 1 else 0)
-			local isMax = currentLvl >= nodeData.maxLvl
+			local maxLvl = nodeData.maxLevel or 1
+			local isMax = currentLvl >= maxLvl
 			local isUnlocked = currentLvl > 0
 
 			local nodeCard = Instance.new("TextButton")
-			nodeCard.Name = "Node_" .. nodeData.id
+			nodeCard.Name = "Node_" .. nodeId
 			nodeCard.Size = UDim2.fromOffset(108, 56)
 			nodeCard.AnchorPoint = Vector2.new(0.5, 0.5)
 			nodeCard.Position = UDim2.fromOffset(pos.X, pos.Y)
@@ -383,14 +235,16 @@ function UpgradeTreeUI.Mount(parentGui: ScreenGui, store: any)
 			titleLbl.TextSize = 11
 			titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 			titleLbl.TextWrapped = true
-			titleLbl.Text = nodeData.icon .. " " .. nodeData.name
+			titleLbl.Text = nodeData.title or nodeId
 			titleLbl.ZIndex = 61
 			titleLbl.Parent = nodeCard
 
-			-- Calculate cost for next level
-			local costMultiplier = math.pow(1.35, currentLvl)
-			local cost = math.floor(nodeData.baseCost * costMultiplier)
-			local costText = if isMax then "[MAX]" else (if nodeData.costType == "talentPoints" then (cost .. " TP") else (NumberFormat.Num(cost) .. " Coins"))
+			-- Calculate cost using nodeData.getCost
+			local costNum = 0
+			if nodeData.getCost then
+				costNum = nodeData.getCost(currentLvl)
+			end
+			local costText = if isMax then "[MAX]" else (costNum <= 0 and "FREE" or NumberFormat.Num(costNum) .. " Coins")
 
 			local statLbl = Instance.new("TextLabel")
 			statLbl.Size = UDim2.new(1, -6, 0, 18)
@@ -399,14 +253,31 @@ function UpgradeTreeUI.Mount(parentGui: ScreenGui, store: any)
 			statLbl.Font = Enum.Font.Arcade
 			statLbl.TextSize = 10
 			statLbl.TextColor3 = isMax and Color3.fromRGB(180, 255, 200) or (isUnlocked and Color3.fromRGB(180, 230, 255) or Color3.fromRGB(160, 160, 175))
-			statLbl.Text = string.format("Lv.%d/%d • %s", currentLvl, nodeData.maxLvl, costText)
+			statLbl.Text = string.format("Lv.%d/%d • %s", currentLvl, maxLvl, costText)
 			statLbl.ZIndex = 61
 			statLbl.Parent = nodeCard
+
+			-- Mouse Hover Tooltip
+			nodeCard.MouseEnter:Connect(function()
+				if hoverFrame then
+					ttTitle.Text = nodeData.title or nodeId
+					ttDesc.Text = nodeData.desc or ""
+					ttCost.Text = "Cost: " .. costText
+					hoverFrame.Position = UDim2.fromOffset(nodeCard.Position.X.Offset + 60, nodeCard.Position.Y.Offset - 20)
+					hoverFrame.Visible = true
+				end
+			end)
+
+			nodeCard.MouseLeave:Connect(function()
+				if hoverFrame then
+					hoverFrame.Visible = false
+				end
+			end)
 
 			nodeCard.MouseButton1Click:Connect(function()
 				if not isMax then
 					pcall(function()
-						Net.UnlockTalentNode(configId)
+						Net.UnlockTalentNode(nodeId)
 					end)
 					task.delay(0.25, renderTree)
 				end
