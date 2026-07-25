@@ -179,7 +179,13 @@ function UpgradeTreeUI.Mount(parentGui: ScreenGui, store: any)
 
 			nodeCard.MouseButton1Click:Connect(function()
 				if not isUnlocked then
-					Net.BuyTalentNode(nodeId)
+					pcall(function()
+						if Net.UnlockTalentNode then
+							Net.UnlockTalentNode(nodeId)
+						elseif Net.BuyUpgrade then
+							Net.BuyUpgrade(nodeId)
+						end
+					end)
 					task.delay(0.2, renderTree)
 				end
 			end)

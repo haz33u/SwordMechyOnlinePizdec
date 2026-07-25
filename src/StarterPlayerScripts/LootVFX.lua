@@ -31,29 +31,28 @@ local function getVFXFolder(): Folder
 end
 
 local function playDropSound()
-	pcall(function()
-		local sound = Instance.new("Sound")
-		sound.SoundId = "rbxassetid://131886134" -- pop sound
-		sound.Volume = 0.35
-		sound.PlaybackSpeed = math.random(95, 110) / 100
-		sound.Parent = SoundService
-		sound:Play()
-		sound.Ended:Connect(function()
-			sound:Destroy()
+	task.spawn(function()
+		pcall(function()
+			local sound = Instance.new("Sound")
+			sound.SoundId = "rbxassetid://9114221327"
+			sound.Volume = 0.15
+			sound.Parent = SoundService
+			sound:Play()
+			task.delay(1, function() pcall(function() sound:Destroy() end) end)
 		end)
 	end)
 end
 
 local function playCollectSound()
-	pcall(function()
-		local sound = Instance.new("Sound")
-		sound.SoundId = "rbxassetid://461237526" -- chime collect
-		sound.Volume = 0.4
-		sound.PlaybackSpeed = math.random(100, 120) / 100
-		sound.Parent = SoundService
-		sound:Play()
-		sound.Ended:Connect(function()
-			sound:Destroy()
+	task.spawn(function()
+		pcall(function()
+			local sound = Instance.new("Sound")
+			sound.SoundId = "rbxassetid://9114221327"
+			sound.Volume = 0.2
+			sound.PlaybackSpeed = 1.2
+			sound.Parent = SoundService
+			sound:Play()
+			task.delay(1, function() pcall(function() sound:Destroy() end) end)
 		end)
 	end)
 end
