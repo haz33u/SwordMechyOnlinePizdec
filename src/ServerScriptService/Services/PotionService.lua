@@ -29,6 +29,30 @@ function PotionService.Init()
 	Remotes.Event("UsePotion").OnServerEvent:Connect(function(player, potionId)
 		PotionService.UsePotion(player, potionId)
 	end)
+
+	task.spawn(function()
+		while true do
+			task.wait(2)
+			local now = os.time()
+			for _, player in game:GetService("Players"):GetPlayers() do
+				local profile = ProfileService.Get(player)
+				if profile and type(profile.boosts) == "table" then
+					local changed = false
+					for stat, data in pairs(profile.boosts) do
+						if type(data) == "table" and type(data.expiresAt) == "number" then
+							if data.expiresAt <= now then
+								profile.boosts[stat] = nil
+								changed = true
+							end
+						end
+					end
+					if changed then
+						ProfileService.Push(player)
+					end
+				end
+			end
+		end
+	end)
 end
 
 function PotionService.UsePotion(player: Player, potionId: string)

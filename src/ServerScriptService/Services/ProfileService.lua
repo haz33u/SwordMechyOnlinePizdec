@@ -85,6 +85,22 @@ local function defaultProfile()
 		currentLocation = 1,
 		quests = quests,
 		dungeonStage = { easy = 0, medium = 0, hard = 0 },
+		dungeons = {
+			maxFloor = 0,
+			currentFloor = 0,
+		},
+		battlePass = {
+			level = 1,
+			xp = 0,
+			claimedFree = {},
+			claimedPremium = {},
+		},
+		boosts = {
+			money = nil,
+			power = nil,
+			damage = nil,
+			luck = nil,
+		},
 		bannedWeaponIds = {},
 		bannedPetIds = {},
 		bannedAuraIds = {},
@@ -196,6 +212,23 @@ function ProfileService.Load(player: Player)
 	end
 	if type(data.dungeonStage) ~= "table" then
 		data.dungeonStage = { easy = 0, medium = 0, hard = 0 }
+	end
+	if type(data.dungeons) ~= "table" then
+		data.dungeons = { maxFloor = 0, currentFloor = 0 }
+	else
+		if type(data.dungeons.maxFloor) ~= "number" then data.dungeons.maxFloor = 0 end
+		if type(data.dungeons.currentFloor) ~= "number" then data.dungeons.currentFloor = 0 end
+	end
+	if type(data.battlePass) ~= "table" then
+		data.battlePass = { level = 1, xp = 0, claimedFree = {}, claimedPremium = {} }
+	else
+		if type(data.battlePass.level) ~= "number" then data.battlePass.level = 1 end
+		if type(data.battlePass.xp) ~= "number" then data.battlePass.xp = 0 end
+		if type(data.battlePass.claimedFree) ~= "table" then data.battlePass.claimedFree = {} end
+		if type(data.battlePass.claimedPremium) ~= "table" then data.battlePass.claimedPremium = {} end
+	end
+	if type(data.boosts) ~= "table" then
+		data.boosts = {}
 	end
 	-- merge new quests into old saves
 	if type(data.quests) ~= "table" then

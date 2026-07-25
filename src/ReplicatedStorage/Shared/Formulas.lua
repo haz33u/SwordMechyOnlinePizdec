@@ -462,8 +462,9 @@ function Formulas.GetDamageMultiplier(profile: any): number
 	local ench = Formulas.GetEnchantPools(profile)
 	local _, auraD = Formulas.GetAuraPct(profile)
 	local _, relicD = Formulas.GetRelicPct(profile)
+	local boostD = Formulas.GetBoostPct(profile, "damage")
 	local anom = Formulas.GetAnomalyMods()
-	local damagePct = ench.damage + auraD + relicD + (anom.damagePct or 0)
+	local damagePct = ench.damage + auraD + relicD + boostD + (anom.damagePct or 0)
 	return 1 + damagePct / 100
 end
 

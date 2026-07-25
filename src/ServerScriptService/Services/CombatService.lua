@@ -18,6 +18,7 @@ local ProfileService = require(script.Parent.ProfileService)
 local QuestService = require(script.Parent.QuestService)
 local LootService = require(script.Parent.LootService)
 local MobVisualService = require(script.Parent.MobVisualService)
+local DungeonService = require(script.Parent.DungeonService)
 local MobSpawnMarkerService = require(script.Parent.MobSpawnMarkerService)
 
 local CombatService = {}
@@ -243,6 +244,33 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	local last = CombatService._lastSwing[player.UserId] or 0
 	local cd = Formulas.GetSwingCooldown(profile)
 	if now - last < cd * 0.90 then
+		return
+	end
+
+	-- Tower of God Dungeon Session Check
+	local session = DungeonService._sessions[player.UserId]
+	if session and session.mob then
+		CombatService._lastSwing[player.UserId] = now
+		local damage, isCrit, isMultiCrit = Formulas.GetHitDamage(profile, player)
+		if isAuto then
+			damage *= (ClickConfig.AUTO_DAMAGE_MULT or 1)
+		end
+		local hitGain = Formulas.GetClickPowerGain(profile, player)
+		profile.lifetimePower = (profile.lifetimePower or 0) + hitGain
+		profile.lifetimeDamage += damage
+		profile.totalClicks = (profile.totalClicks or 0) + 1
+		QuestService.OnClick(profile)
+
+		DungeonService.DamageTowerMob(player, damage)
+
+		Remotes.Event("CombatFx"):FireClient(player, {
+			mobUid = "TowerGuardian",
+			damage = damage,
+			isCrit = isCrit,
+			isMultiCrit = isMultiCrit,
+			pos = Vector3.new(2000, 53, -25),
+		})
+		ProfileService.Push(player)
 		return
 	end
 
