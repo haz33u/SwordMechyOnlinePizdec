@@ -28,6 +28,7 @@ local Formulas = require(Shared.Formulas)
 local IconConfig = require(Shared.Config.IconConfig)
 local GamePassConfig = require(Shared.Config.GamePassConfig)
 local WorldConfig = require(Shared.Config.WorldConfig)
+local InventoryAssetConfig = require(Shared.Config.InventoryAssetConfig)
 local WeaponModels = require(script.Parent.WeaponModels)
 local PetVisual = require(script.Parent.PetVisual)
 local AuraVisual = require(script.Parent.AuraVisual)
@@ -49,14 +50,14 @@ local GOLD = Color3.fromRGB(232, 184, 0)
 local RED_CLOSE = Color3.fromRGB(204, 34, 0)
 local GREEN = Color3.fromRGB(120, 170, 100)
 
-local SLOT_GAP = 16 -- room for hover scale + neon glow
+local SLOT_GAP = 22 -- room for hover scale; slightly wider than legacy tight grid
 local COLS = 9 -- target columns; cell size fills width
 local MAX_SLOTS = 45
 local INV_CAP = 32
 local TAB_R = 64
 -- Mild hover (strong scale was breaking UIStrokes + flickering on slot change)
 local HOVER_SCALE = 1.06
-local NEIGHBOR_SCALE = 0.97
+local NEIGHBOR_SCALE = 1 -- only hovered card scales; neighbors stay put
 local HOVER_LEAVE_DELAY = 0.07
 
 --[[
@@ -182,6 +183,9 @@ function Inventory.Bind(
 	local mouseMove: RBXScriptConnection? = nil
 	local priceCache: { [number]: string } = {}
 	local pricesReady = false
+	-- Weapons sell mode (RMB enter; LMB toggles red select; check confirms)
+	local sellMode = false
+	local sellSelected: { [string]: boolean } = {}
 
 	-- Profile inspect (other online player)
 	local inspectName: string? = nil
@@ -251,141 +255,104 @@ function Inventory.Bind(
 	end
 
 	--[[
-		Tooltip pinned to cursor edge (refICONTOLLTIP style):
-		- prefer RIGHT of cursor: left edge of tip = mouse + EDGE
-		- if no room, LEFT of cursor: right edge of tip = mouse - EDGE
-		- never floats free of the cursor with a large clamp offset
-		ScreenGui.IgnoreGuiInset = false → subtract GuiInset from mouse.
+		Fixed inspect dock (Figma-style): right side of inventory canvas.
+		Content centered; brand StyleText (ALL CAPS English).
 	]]
 	local function placeTooltip()
 		if not tip.Visible or not tip.Parent then
 			return
 		end
 		local parent = tip.Parent :: GuiObject
-		local inset = GuiService:GetGuiInset()
-		local mouse = UserInputService:GetMouseLocation()
-		-- convert to same space as Gui AbsolutePosition (IgnoreGuiInset=false)
-		local mx = mouse.X - inset.X
-		local my = mouse.Y - inset.Y
-
-		local tipW = tip.AbsoluteSize.X
-		local tipH = tip.AbsoluteSize.Y
-		if tipW < 8 then
-			tipW = 320
-		end
-		if tipH < 8 then
-			tipH = 160
-		end
-
-		local parentAbs = parent.AbsolutePosition
 		local parentSz = parent.AbsoluteSize
-		local EDGE = 10 -- cursor sits on the outer edge of the tooltip
-
-		-- Prefer: tooltip to the RIGHT of cursor
-		local screenX = mx + EDGE
-		local screenY = my + 4
-		local placeRight = true
-		if screenX + tipW > parentAbs.X + parentSz.X - 4 then
-			-- flip: tooltip to the LEFT of cursor
-			placeRight = false
-			screenX = mx - EDGE - tipW
-		end
-		if screenY + tipH > parentAbs.Y + parentSz.Y - 4 then
-			screenY = parentAbs.Y + parentSz.Y - tipH - 4
-		end
-		if screenY < parentAbs.Y + 2 then
-			screenY = parentAbs.Y + 2
-		end
-		-- Keep X glued to cursor edge (only clamp if still out after flip)
-		if placeRight then
-			if screenX < parentAbs.X + 2 then
-				screenX = parentAbs.X + 2
-			end
-		else
-			if screenX + tipW > parentAbs.X + parentSz.X - 2 then
-				screenX = parentAbs.X + parentSz.X - tipW - 2
-			end
-		end
-
-		local localX = math.floor(screenX - parentAbs.X + 0.5)
-		local localY = math.floor(screenY - parentAbs.Y + 0.5)
+		local tipW = math.max(tip.AbsoluteSize.X, 260)
+		local tipH = math.max(tip.AbsoluteSize.Y, 140)
+		local pad = 16
+		local localX = math.max(pad, parentSz.X - tipW - pad)
+		local localY = math.clamp(80, pad, math.max(pad, parentSz.Y - tipH - pad))
 		tip.Position = UDim2.fromOffset(localX, localY)
+		tip.AnchorPoint = Vector2.new(0, 0)
 	end
 
 	local function clearTipBody()
 		for _, c in tip:GetChildren() do
-			if c:IsA("TextLabel") or (c:IsA("Frame") and c.Name ~= "Pad") then
-				if not c:IsA("UIListLayout") and not c:IsA("UIPadding") and not c:IsA("UIStroke") and not c:IsA("UICorner") and not c:IsA("UISizeConstraint") then
-					c:Destroy()
-				end
+			if c.Name == "ShellBg" or c.Name == "Pad" then
+				continue
+			end
+			if c:IsA("UIListLayout")
+				or c:IsA("UIPadding")
+				or c:IsA("UIStroke")
+				or c:IsA("UICorner")
+				or c:IsA("UISizeConstraint")
+			then
+				continue
+			end
+			if c:IsA("TextLabel") or c:IsA("Frame") then
+				c:Destroy()
 			end
 		end
 	end
 
-	local function tipRow(order: number, text: string, color: Color3?, bold: boolean?): TextLabel
+	local function tipRow(order: number, text: string, gradientName: string?, height: number?): TextLabel
 		local l = Instance.new("TextLabel")
 		l.Name = "Row" .. order
 		l.BackgroundTransparency = 1
 		l.BorderSizePixel = 0
-		l.Size = UDim2.new(1, 0, 0, 0)
-		l.AutomaticSize = Enum.AutomaticSize.Y
-		l.Font = bold and Enum.Font.GothamBold or Enum.Font.Gotham
-		l.TextSize = bold and 20 or 16
-		l.TextColor3 = color or TW
-		l.TextXAlignment = Enum.TextXAlignment.Left
-		l.TextYAlignment = Enum.TextYAlignment.Top
+		l.Size = UDim2.new(1, 0, 0, height or 28)
+		l.Text = string.upper(text)
+		l.TextXAlignment = Enum.TextXAlignment.Center
+		l.TextYAlignment = Enum.TextYAlignment.Center
 		l.TextWrapped = true
-		l.Text = text
-		l.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-		l.TextStrokeTransparency = 0.55
 		l.LayoutOrder = order
-		l.ZIndex = (tip.ZIndex or 90) + 1
+		l.ZIndex = (tip.ZIndex or 90) + 2
 		l.Parent = tip
+		UIKit.StyleText(l, gradientName or "purple", 3)
 		return l
 	end
 
 	--[[
-		Structured like ref:
-		  Title
-		  Rarity: Common
-		  (gap)
-		  Power: …
-		  Sell: …
-		  Level: …
-		  ● Equipped  (inside bounds, wrapped)
+		  EQUIPPED MAIN / OFFHAND (optional)
+		  TITLE
+		  RARITY
+		  POWER: …
+		  SELL PRICE: …
+		  LEVEL: …
 	]]
 	local function setTooltip(title: string, rarity: string?, desc: string?, extra: string?, borderCol: Color3?)
 		clearTipBody()
 		local order = 1
-		tipRow(order, title, borderCol or TW, true)
-		order += 1
-		if rarity and rarity ~= "" then
-			local r = tipRow(order, "Rarity: " .. rarity, borderCol or rarityBorder(rarity), false)
-			r.TextSize = 18
+		if extra and extra ~= "" then
+			tipRow(order, extra, "gold", 26)
 			order += 1
 		end
-		-- small spacer
+		tipRow(order, title, "purple", 32)
+		order += 1
+		if rarity and rarity ~= "" then
+			tipRow(order, rarity, "gray", 24)
+			order += 1
+		end
 		local sp = Instance.new("Frame")
 		sp.Name = "Gap"
 		sp.BackgroundTransparency = 1
-		sp.Size = UDim2.new(1, 0, 0, 10)
+		sp.Size = UDim2.new(1, 0, 0, 8)
 		sp.LayoutOrder = order
 		sp.ZIndex = tip.ZIndex
 		sp.Parent = tip
 		order += 1
 
 		if desc and desc ~= "" then
-			-- desc may be multi-line "Power: …\nSell: …"
 			for line in string.gmatch(desc .. "\n", "([^\n]*)\n") do
 				if line ~= "" then
-					tipRow(order, line, Color3.fromRGB(100, 160, 220), false)
+					local up = string.upper(line)
+					local g = "gray"
+					if string.find(up, "SELL", 1, true) then
+						g = "gold"
+					elseif string.find(up, "POWER", 1, true) then
+						g = "purple"
+					end
+					tipRow(order, line, g, 24)
 					order += 1
 				end
 			end
-		end
-		if extra and extra ~= "" then
-			local e = tipRow(order, extra, CYAN, false)
-			e.TextTruncate = Enum.TextTruncate.AtEnd
 		end
 
 		local st = tip:FindFirstChildOfClass("UIStroke")
@@ -393,7 +360,6 @@ function Inventory.Bind(
 			st.Color = borderCol or rarityBorder(rarity) or BD2
 		end
 		tip.Visible = true
-		-- layout needs a frame before AbsoluteSize is correct
 		task.defer(placeTooltip)
 		placeTooltip()
 	end
@@ -1038,39 +1004,44 @@ function Inventory.Bind(
 			end)
 		end
 
-		-- Tooltip: readable but not too wide (less empty space)
-		tip = solid(canvas, "Tooltip", UDim2.fromOffset(240, 0), UDim2.fromOffset(0, 0), Color3.fromRGB(22, 22, 28), 120)
+		-- Fixed tooltip dock (TOOLTIPshell art when available)
+		tip = solid(canvas, "Tooltip", UDim2.fromOffset(280, 0), UDim2.fromOffset(0, 0), Color3.fromRGB(22, 22, 28), 120)
 		tip.Visible = false
-		tip.BackgroundTransparency = 0.04
+		tip.BackgroundTransparency = 1
 		tip.ClipsDescendants = true
-		tip.AutomaticSize = Enum.AutomaticSize.XY
-		UIKit.Stroke(tip, BD2, 2, 0.08)
-		UIKit.Pad(tip, 12)
+		tip.AutomaticSize = Enum.AutomaticSize.Y
+		local shellBg = Instance.new("ImageLabel")
+		shellBg.Name = "ShellBg"
+		shellBg.BackgroundTransparency = 1
+		shellBg.Size = UDim2.fromScale(1, 1)
+		shellBg.ScaleType = Enum.ScaleType.Stretch
+		shellBg.Image = InventoryAssetConfig.Get("TOOLTIPshell")
+		shellBg.ZIndex = 120
+		shellBg.Parent = tip
+		UIKit.Stroke(tip, BD2, 2, 0.15)
+		UIKit.Pad(tip, 14)
 		local pad = tip:FindFirstChildOfClass("UIPadding")
 		if pad then
 			pad.Name = "Pad"
-			pad.PaddingTop = UDim.new(0, 12)
-			pad.PaddingBottom = UDim.new(0, 12)
-			pad.PaddingLeft = UDim.new(0, 12)
-			pad.PaddingRight = UDim.new(0, 12)
+			pad.PaddingTop = UDim.new(0, 16)
+			pad.PaddingBottom = UDim.new(0, 16)
+			pad.PaddingLeft = UDim.new(0, 16)
+			pad.PaddingRight = UDim.new(0, 16)
 		end
 		local list = Instance.new("UIListLayout")
 		list.SortOrder = Enum.SortOrder.LayoutOrder
 		list.Padding = UDim.new(0, 4)
+		list.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		list.Parent = tip
 		local tipMax = Instance.new("UISizeConstraint")
-		tipMax.MinSize = Vector2.new(200, 72)
-		tipMax.MaxSize = Vector2.new(280, 280)
+		tipMax.MinSize = Vector2.new(240, 100)
+		tipMax.MaxSize = Vector2.new(300, 320)
 		tipMax.Parent = tip
-
+		-- Fixed position — no cursor follow
 		if mouseMove then
 			mouseMove:Disconnect()
+			mouseMove = nil
 		end
-		mouseMove = UserInputService.InputChanged:Connect(function(input)
-			if input.UserInputType == Enum.UserInputType.MouseMovement and tip.Visible then
-				placeTooltip()
-			end
-		end)
 	end
 
 	api = {} :: Api
@@ -1256,7 +1227,6 @@ function Inventory.Bind(
 					local dot = Instance.new("Frame")
 					dot.Size = UDim2.fromOffset(8, 8)
 					dot.Position = UDim2.fromOffset(5, 5)
-					-- Equipped marker uses rarity edge, not cyan selection
 					dot.BackgroundColor3 = edge
 					dot.BackgroundTransparency = 0
 					dot.BorderSizePixel = 0
@@ -1264,6 +1234,43 @@ function Inventory.Bind(
 					dot.Active = false
 					dot.Parent = btn
 					UIKit.Corner(dot, 99)
+				end
+
+				-- Locked: grey overlay so sell-all skip is obvious
+				if w.locked == true then
+					local grey = Instance.new("Frame")
+					grey.Name = "LockGrey"
+					grey.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+					grey.BackgroundTransparency = 0.45
+					grey.BorderSizePixel = 0
+					grey.Size = UDim2.fromScale(1, 1)
+					grey.ZIndex = 39
+					grey.Active = false
+					grey.Parent = btn
+					UIKit.Corner(grey, 8)
+					local lockLab = Instance.new("TextLabel")
+					lockLab.BackgroundTransparency = 1
+					lockLab.Size = UDim2.fromScale(1, 0.25)
+					lockLab.Position = UDim2.fromScale(0, 0.72)
+					lockLab.Text = "LOCKED"
+					lockLab.ZIndex = 40
+					lockLab.Active = false
+					lockLab.Parent = btn
+					UIKit.StyleText(lockLab, "gray", 2)
+				end
+
+				-- Sell mode red select filter
+				if sellMode and sellSelected[w.uid] then
+					local red = Instance.new("Frame")
+					red.Name = "SellRed"
+					red.BackgroundColor3 = Color3.fromRGB(200, 30, 40)
+					red.BackgroundTransparency = 0.45
+					red.BorderSizePixel = 0
+					red.Size = UDim2.fromScale(1, 1)
+					red.ZIndex = 41
+					red.Active = false
+					red.Parent = btn
+					UIKit.Corner(red, 8)
 				end
 
 				if (w.level or 1) > 1 then
@@ -1277,7 +1284,7 @@ function Inventory.Bind(
 					badge.TextSize = 10
 					badge.TextColor3 = Color3.fromRGB(20, 20, 20)
 					badge.Text = "L" .. tostring(w.level)
-					badge.ZIndex = 40
+					badge.ZIndex = 42
 					badge.Active = false
 					badge.Parent = btn
 					UIKit.Corner(badge, 4)
@@ -1289,31 +1296,61 @@ function Inventory.Bind(
 				local sellP = (def and def.sellPrice) or 5
 				local wLevel = w.level or 1
 				btn.MouseEnter:Connect(function()
-					local eq = profile.equippedMain == w.uid and "● Equipped main"
-						or (profile.equippedOffhand == w.uid and "● Equipped off" or nil)
+					local eq: string? = nil
+					if profile.equippedMain == w.uid then
+						eq = "EQUIPPED MAIN"
+					elseif profile.equippedOffhand == w.uid then
+						eq = "EQUIPPED OFFHAND"
+					end
 					setTooltip(
 						name,
 						rar,
-						string.format("Power: ×%.2f\nSell: %d\nLevel: %d", mult, sellP, wLevel),
+						string.format("POWER: ×%.2f\nSELL PRICE: %d\nLEVEL: %d", mult, sellP, wLevel),
 						eq,
 						edge
 					)
 				end)
 				btn.MouseLeave:Connect(hideTooltip)
-				do
-					local lastClick = 0
-					btn.MouseButton1Click:Connect(function()
-						local now = os.clock()
-						local double = (now - lastClick) < 0.35 and selectedWeaponUid == w.uid
-						lastClick = now
-						-- Single click: select for action bar. Double: equip main.
-						selectedWeaponUid = w.uid
-						if double then
-							Net.EquipWeapon(w.uid, "main")
+
+				-- LMB: sell-mode toggle select | else equip/unequip main
+				btn.MouseButton1Click:Connect(function()
+					selectedWeaponUid = w.uid
+					if sellMode then
+						if w.locked == true then
+							return
+						end
+						if sellSelected[w.uid] then
+							sellSelected[w.uid] = nil
+						else
+							sellSelected[w.uid] = true
 						end
 						api:Refresh()
-					end)
-				end
+						return
+					end
+					Net.EquipWeapon(w.uid, "main")
+				end)
+
+				-- RMB: enter sell mode + mark this sword red
+				btn.MouseButton2Click:Connect(function()
+					if w.locked == true then
+						return
+					end
+					sellMode = true
+					sellSelected[w.uid] = true
+					selectedWeaponUid = w.uid
+					api:Refresh()
+				end)
+
+				-- MMB: merge | Ctrl+MMB: lock/unlock
+				btn.MouseButton3Click:Connect(function()
+					local ctrl = UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
+						or UserInputService:IsKeyDown(Enum.KeyCode.RightControl)
+					if ctrl then
+						Net.ToggleWeaponLock(w.uid)
+					else
+						Net.MergeWeapon(w.uid)
+					end
+				end)
 			end
 
 			for i, w in ipairs(weapons) do
@@ -1321,6 +1358,94 @@ function Inventory.Bind(
 			end
 			for i = #weapons + 1, MAX_SLOTS do
 				makeWeaponSlot(i, nil)
+			end
+
+			-- Sell mode confirm check (bottom-left of grid)
+			if sellMode then
+				local check = Instance.new("ImageButton")
+				check.Name = "SellConfirmCheck"
+				check.Size = UDim2.fromOffset(64, 64)
+				check.Position = UDim2.new(0, 12, 1, -76)
+				check.AnchorPoint = Vector2.new(0, 0)
+				check.BackgroundTransparency = 1
+				check.Image = InventoryAssetConfig.Get("BTN_Confirm_Check_1")
+				check.ScaleType = Enum.ScaleType.Fit
+				check.ZIndex = 50
+				check.Parent = main
+				local sc = ensureScale(check)
+				check.MouseEnter:Connect(function()
+					TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { Scale = 1.08 }):Play()
+				end)
+				check.MouseLeave:Connect(function()
+					TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+				end)
+				check.MouseButton1Click:Connect(function()
+					-- Modal above all: ARE YOU SURE? + check / X
+					local overlay = Instance.new("Frame")
+					overlay.Name = "SellConfirmModal"
+					overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+					overlay.BackgroundTransparency = 0.45
+					overlay.Size = UDim2.fromScale(1, 1)
+					overlay.ZIndex = 200
+					overlay.Parent = canvas
+
+					local plate = Instance.new("ImageLabel")
+					plate.Name = "Plate"
+					plate.BackgroundTransparency = 1
+					plate.Image = InventoryAssetConfig.Get("STATS1card")
+					plate.ScaleType = Enum.ScaleType.Stretch
+					plate.Size = UDim2.fromOffset(420, 260)
+					plate.Position = UDim2.fromScale(0.5, 0.5)
+					plate.AnchorPoint = Vector2.new(0.5, 0.5)
+					plate.ZIndex = 201
+					plate.Parent = overlay
+
+					local ask = Instance.new("TextLabel")
+					ask.BackgroundTransparency = 1
+					ask.Size = UDim2.new(1, -40, 0, 48)
+					ask.Position = UDim2.new(0.5, 0, 0.28, 0)
+					ask.AnchorPoint = Vector2.new(0.5, 0)
+					ask.Text = "ARE YOU SURE?"
+					ask.ZIndex = 202
+					ask.Parent = plate
+					UIKit.StyleText(ask, "purple", 4)
+
+					local yes = Instance.new("ImageButton")
+					yes.Name = "Yes"
+					yes.BackgroundTransparency = 1
+					yes.Image = InventoryAssetConfig.Get("BTN_Confirm_Check_1")
+					yes.Size = UDim2.fromOffset(72, 72)
+					yes.Position = UDim2.new(0.32, 0, 0.72, 0)
+					yes.AnchorPoint = Vector2.new(0.5, 0.5)
+					yes.ZIndex = 203
+					yes.Parent = plate
+
+					local no = Instance.new("ImageButton")
+					no.Name = "No"
+					no.BackgroundTransparency = 1
+					no.Image = InventoryAssetConfig.Get("BTN_Close_3")
+					no.Size = UDim2.fromOffset(72, 72)
+					no.Position = UDim2.new(0.68, 0, 0.72, 0)
+					no.AnchorPoint = Vector2.new(0.5, 0.5)
+					no.ZIndex = 203
+					no.Parent = plate
+
+					local function closeModal()
+						overlay:Destroy()
+					end
+					no.MouseButton1Click:Connect(closeModal)
+					yes.MouseButton1Click:Connect(function()
+						for uid, on in sellSelected do
+							if on then
+								Net.SellWeapon(uid)
+							end
+						end
+						table.clear(sellSelected)
+						sellMode = false
+						closeModal()
+						api:Refresh()
+					end)
+				end)
 			end
 
 			local selected = nil
@@ -1336,8 +1461,8 @@ function Inventory.Bind(
 			end
 
 			local row = actionsRow()
-			-- Equip best: highest powerMult → main; 2nd → offhand if pass/unlock
-			actBtn(row, "Equip best", Color3.fromRGB(0, 110, 95), 1, function()
+			-- Equip best power (ranked) — PNG buttons later; text for now
+			actBtn(row, "EQUIP BEST POWER", Color3.fromRGB(0, 110, 95), 1, function()
 				local ranked: { { uid: string, power: number, level: number } } = {}
 				for _, w in ipairs(weapons) do
 					local d = WeaponConfig.Get(w.id)
@@ -1362,53 +1487,29 @@ function Inventory.Bind(
 			end)
 			if selected then
 				local selUid = selected.uid
-				local def = WeaponConfig.Get(selected.id)
-				lbl(row, (def and def.name) or WeaponConfig.GetDisplayName(selected.id), UDim2.fromOffset(110, 32), nil, 12, rarityBorder(def and def.rarity), 35)
-				actBtn(row, "Equip main", Color3.fromRGB(0, 90, 80), 2, function()
-					Net.EquipWeapon(selUid, "main")
-				end)
-				actBtn(row, offUnlocked and "Equip off" or "Off 🔒", Color3.fromRGB(50, 50, 50), 3, function()
-					if offUnlocked then
+				if offUnlocked then
+					actBtn(row, "EQUIP OFFHAND", Color3.fromRGB(0, 90, 80), 2, function()
 						Net.EquipWeapon(selUid, "offhand")
-					else
-						local gp = GamePassConfig.Get("offhand")
-						if gp then
-							Net.PromptGamePass(gp.gamePassId)
-						end
-					end
-				end)
-
-				-- Merge button for 5x L1 -> L2 and 3x L2 -> L3
-				local selLevel = selected.level or 1
-				local needCount = if selLevel == 1 then 5 else (if selLevel == 2 then 3 else nil)
-				if needCount then
-					local matchesCount = 0
-					for _, w in ipairs(weapons) do
-						if w.id == selected.id and (w.level or 1) == selLevel then
-							matchesCount += 1
-						end
-					end
-					local canMerge = matchesCount >= needCount
-					local mergeText = string.format("Merge (%d/%d)", matchesCount, needCount)
-					local mergeCol = if canMerge then Color3.fromRGB(210, 130, 20) else Color3.fromRGB(60, 60, 60)
-					actBtn(row, mergeText, mergeCol, 3.5, function()
-						Net.MergeWeapon(selUid)
 					end)
 				end
-
-				actBtn(row, "Enchant", Color3.fromRGB(70, 40, 100), 4, function()
+				actBtn(row, "ENCHANT", Color3.fromRGB(70, 40, 100), 4, function()
 					Net.EnchantWeapon(selUid)
 					openModal("enchant", selected)
 				end)
-				actBtn(row, "Sell", Color3.fromRGB(120, 30, 30), 5, function()
-					openModal("sell", selected)
-				end)
-			else
-				keybind(row, 1, "LMB", "Select · double = Equip")
 			end
-			actBtn(row, "Sell all unequipped", Color3.fromRGB(140, 40, 40), 10, function()
+			actBtn(row, if sellMode then "EXIT SELL MODE" else "SELL MODE", Color3.fromRGB(120, 30, 30), 5, function()
+				if sellMode then
+					sellMode = false
+					table.clear(sellSelected)
+				else
+					sellMode = true
+				end
+				api:Refresh()
+			end)
+			actBtn(row, "SELL ALL UNLOCKED", Color3.fromRGB(140, 40, 40), 10, function()
 				Net.SellAllWeapons()
 			end)
+			keybind(row, 20, "BINDS", "LMB EQUIP · RMB SELL · MMB MERGE · CTRL+MMB LOCK")
 
 		---------------------------------------------------------------- PETS
 		elseif tab == "pets" then

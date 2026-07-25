@@ -413,6 +413,9 @@ Recorded 2026-07-25 — Figma `*LAYOUT` chrome + Studio upload. **Do not invent 
 
 **Agent rule:** `InventoryAssetConfig.Get(key)` / `GetSlotFrame(rarity)` — wire inventory UI from this table only.
 
+**Interaction bind (weapons):** see `docs/INVENTORY_UI_BIND.md`  
+LMB equip/unequip · RMB sell mode · MMB merge · Ctrl+MMB lock · sell-all skips locked.
+
 ---
 
 ## 9. Ежедневный workflow

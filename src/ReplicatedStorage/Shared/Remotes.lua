@@ -55,6 +55,7 @@ function Remotes.InitAll()
 	Remotes.Event("SellAllWeapons")
 	Remotes.Event("EnchantWeapon")
 	Remotes.Event("MergeWeapon") -- MMB inventory: 5×L1→L2, 3×L2→L3
+	Remotes.Event("ToggleWeaponLock") -- Ctrl+MMB: lock so Sell All Unlocked skips
 	Remotes.Event("OpenPetCase") -- optional poolId string
 	Remotes.Event("OpenAuraCase")
 	Remotes.Event("OpenCasePreview")

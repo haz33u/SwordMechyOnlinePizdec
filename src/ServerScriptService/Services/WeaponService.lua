@@ -29,6 +29,9 @@ function WeaponService.Init()
 	Remotes.Event("MergeWeapon").OnServerEvent:Connect(function(player, weaponUid)
 		WeaponService.Merge(player, weaponUid)
 	end)
+	Remotes.Event("ToggleWeaponLock").OnServerEvent:Connect(function(player, weaponUid)
+		WeaponService.ToggleLock(player, weaponUid)
+	end)
 	Remotes.Event("TransferEnchant").OnServerEvent:Connect(function(player, sourceUid, targetUid)
 		WeaponService.TransferEnchant(player, sourceUid, targetUid)
 	end)
@@ -65,17 +68,46 @@ function WeaponService.Equip(player: Player, weaponUid: string, slot: string?)
 			})
 			return
 		end
+		-- LMB toggle: unequip if already offhand
+		if profile.equippedOffhand == weaponUid then
+			profile.equippedOffhand = nil
+			ProfileService.Push(player)
+			return
+		end
 		if profile.equippedMain == weaponUid then
 			return
 		end
 		profile.equippedOffhand = weaponUid
 	else
+		-- LMB toggle: unequip if already main
+		if profile.equippedMain == weaponUid then
+			profile.equippedMain = nil
+			ProfileService.Push(player)
+			return
+		end
 		if profile.equippedOffhand == weaponUid then
 			profile.equippedOffhand = nil
 		end
 		profile.equippedMain = weaponUid
 	end
 	ProfileService.Push(player)
+end
+
+function WeaponService.ToggleLock(player: Player, weaponUid: string)
+	local profile = ProfileService.Get(player)
+	if not profile then
+		return
+	end
+	local w = findWeapon(profile, weaponUid)
+	if not w then
+		return
+	end
+	w.locked = not (w.locked == true)
+	ProfileService.Push(player)
+	Remotes.Event("Notify"):FireClient(player, {
+		text = if w.locked then "Weapon locked" else "Weapon unlocked",
+		color = if w.locked then "yellow" else "green",
+	})
 end
 
 function WeaponService.Sell(player: Player, weaponUid: string)
@@ -85,6 +117,10 @@ function WeaponService.Sell(player: Player, weaponUid: string)
 	end
 	local w, idx = findWeapon(profile, weaponUid)
 	if not w or not idx then
+		return
+	end
+	if w.locked == true then
+		Remotes.Event("Notify"):FireClient(player, { text = "Weapon is locked", color = "red" })
 		return
 	end
 	if profile.equippedMain == weaponUid or profile.equippedOffhand == weaponUid then
@@ -101,7 +137,7 @@ function WeaponService.Sell(player: Player, weaponUid: string)
 	ProfileService.Push(player)
 end
 
---- Sell every unequipped weapon; keep main/offhand and at least one sword.
+--- Sell every unequipped + unlocked weapon; keep main/offhand, locked, and ≥1 sword.
 function WeaponService.SellAll(player: Player)
 	local profile = ProfileService.Get(player)
 	if not profile then
@@ -112,7 +148,8 @@ function WeaponService.SellAll(player: Player)
 	local sold = 0
 	for _, w in ipairs(profile.weapons or {}) do
 		local equipped = profile.equippedMain == w.uid or profile.equippedOffhand == w.uid
-		if equipped then
+		local locked = w.locked == true
+		if equipped or locked then
 			table.insert(kept, w)
 		else
 			local def = WeaponConfig.Get(w.id)

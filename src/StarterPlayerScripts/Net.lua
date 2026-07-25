@@ -65,6 +65,10 @@ function Net.MergeWeapon(uid: string)
 	Net.Event("MergeWeapon"):FireServer(uid)
 end
 
+function Net.ToggleWeaponLock(uid: string)
+	Net.Event("ToggleWeaponLock"):FireServer(uid)
+end
+
 function Net.OpenPetCase(poolId: string?, count: number?)
 	Net.Event("OpenPetCase"):FireServer(poolId, count or 1)
 end
