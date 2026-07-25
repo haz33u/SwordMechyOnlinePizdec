@@ -170,6 +170,16 @@ function DungeonService.Init()
 		DungeonService.ExitTower(player)
 	end)
 
+	Players.PlayerRemoving:Connect(function(player)
+		local session = DungeonService._sessions[player.UserId]
+		if session then
+			if session.mob then
+				session.mob:Destroy()
+			end
+			DungeonService._sessions[player.UserId] = nil
+		end
+	end)
+
 	task.defer(function()
 		task.wait(2)
 		DungeonService.EnsurePhysicalPortal()
@@ -270,11 +280,12 @@ function DungeonService.SpawnTowerMob(player: Player, floor: number)
 	session.currentHp = curHp
 	session.maxHp = maxHp
 	session.isBoss = isBoss
+	session.isClearing = false
 end
 
 function DungeonService.DamageTowerMob(player: Player, dmg: number)
 	local session = DungeonService._sessions[player.UserId]
-	if not session or not session.mob then return end
+	if not session or not session.mob or session.isClearing then return end
 
 	session.currentHp = math.max(0, session.currentHp - dmg)
 	local root = session.mob.PrimaryPart
@@ -283,6 +294,7 @@ function DungeonService.DamageTowerMob(player: Player, dmg: number)
 	end
 
 	if session.currentHp <= 0 then
+		session.isClearing = true
 		DungeonService.OnFloorCleared(player, session.floor)
 	end
 end

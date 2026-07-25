@@ -69,9 +69,11 @@ function PotionService.UsePotion(player: Player, potionId: string)
 	local now = os.time()
 	local existing = profile.boosts[def.stat]
 	local remaining = if existing and existing.expiresAt and existing.expiresAt > now then existing.expiresAt - now else 0
+	local existingPct = if existing and existing.expiresAt and existing.expiresAt > now then (existing.pct or 0) else 0
+	local finalPct = math.max(existingPct, def.pct)
 
 	profile.boosts[def.stat] = {
-		pct = def.pct,
+		pct = finalPct,
 		scope = "local",
 		duration = def.duration,
 		expiresAt = now + remaining + def.duration,
