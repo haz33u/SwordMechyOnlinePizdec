@@ -157,6 +157,7 @@ function App.Start()
 
 	local toastApi, windowsApi, modalsApi, hudApi, caseApi, casePreviewApi, talentTreeApi
 	local nameplateApi: any = nil
+	local upgradeTreeApi: any = nil
 	local clickPop: any = nil
 	local onCombatFx: any = nil
 
@@ -288,7 +289,7 @@ function App.Start()
 	end)
 	step("UpgradeTreeUI", function()
 		local UpgradeTreeUI = require(script.Parent.UpgradeTreeUI)
-		UpgradeTreeUI.Mount(gui, store)
+		upgradeTreeApi = UpgradeTreeUI.Mount(gui, store)
 	end)
 	step("MobIndexUI", function()
 		local MobIndexUI = require(script.Parent.MobIndexUI)
@@ -527,7 +528,9 @@ function App.Start()
 		elseif input.KeyCode == Enum.KeyCode.B then
 			openInvTab("shop")
 		elseif input.KeyCode == Enum.KeyCode.U or input.KeyCode == Enum.KeyCode.K then
-			if talentTreeApi then
+			if upgradeTreeApi then
+				upgradeTreeApi.Toggle()
+			elseif talentTreeApi then
 				talentTreeApi.Toggle()
 			else
 				store:OpenPanel("character")

@@ -8,6 +8,7 @@ local GamePassConfig = require(Shared.Config.GamePassConfig)
 local Rarity = require(script.Parent.Rarity)
 local UIKit = require(script.Parent.UIKit)
 local T = require(script.Parent.Theme)
+local Format = require(script.Parent.Format)
 
 local Modals = {}
 
