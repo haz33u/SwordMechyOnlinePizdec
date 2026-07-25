@@ -8,15 +8,6 @@ local T = require(script.Parent.Theme)
 
 local UIKit = {}
 
---- Brand text gradients (top → bottom). Used by StyleText.
-local TEXT_GRADIENTS: { [string]: ColorSequence } = {
-	purple = ColorSequence.new(Color3.fromHex("cfb2ff"), Color3.fromHex("8f5cff")),
-	gold = ColorSequence.new(Color3.fromHex("fff3b0"), Color3.fromHex("ffcf3f")),
-	green = ColorSequence.new(Color3.fromHex("baf7a4"), Color3.fromHex("5fd44f")),
-	red = ColorSequence.new(Color3.fromHex("ffb8bd"), Color3.fromHex("ff5a66")),
-	gray = ColorSequence.new(Color3.fromHex("d6dcf5"), Color3.fromHex("98a0cc")),
-}
-
 local function tween(inst: Instance, props: { [string]: any }, dur: number?)
 	TweenService:Create(inst, TweenInfo.new(dur or 0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), props):Play()
 end
@@ -102,47 +93,6 @@ function UIKit.Aspect(parent: Instance, ratio: number?)
 	a.AspectRatio = ratio or 1
 	a.Parent = parent
 	return a
-end
-
---[[
-	Firm UI text: LuckiestGuy, pure white + UIStroke + vertical gradient.
-	gradientName: "purple" | "gold" | "green" | "red" | "gray"
-	Pass upper-case English strings into label.Text (no Cyrillic).
-]]
-function UIKit.StyleText(label: TextLabel | TextButton, gradientName: string?, strokeThick: number?)
-	local thick = strokeThick or 3
-	-- LuckiestGuy may be unavailable offline; fall back without error
-	local okFont = pcall(function()
-		label.FontFace = Font.fromEnum(Enum.Font.LuckiestGuy)
-	end)
-	if not okFont then
-		label.Font = Enum.Font.GothamBold
-	end
-	label.TextColor3 = Color3.new(1, 1, 1)
-	if label:IsA("TextLabel") then
-		label.BackgroundTransparency = 1
-	end
-	label.TextScaled = true
-
-	local stroke = label:FindFirstChildOfClass("UIStroke")
-	if not stroke then
-		stroke = Instance.new("UIStroke")
-		stroke.Parent = label
-	end
-	stroke.Color = Color3.fromHex("0a0824")
-	stroke.Thickness = thick
-	stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
-	stroke.LineJoinMode = Enum.LineJoinMode.Round
-
-	local grad = label:FindFirstChildOfClass("UIGradient")
-	if not grad then
-		grad = Instance.new("UIGradient")
-		grad.Parent = label
-	end
-	local seq = TEXT_GRADIENTS[gradientName or "purple"] or TEXT_GRADIENTS.purple
-	grad.Color = seq
-	grad.Rotation = 90
-	return label
 end
 
 function UIKit.TextConstraint(parent: Instance, minPx: number?, maxPx: number?)

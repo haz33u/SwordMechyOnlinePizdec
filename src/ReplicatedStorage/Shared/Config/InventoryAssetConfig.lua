@@ -46,7 +46,7 @@ local InventoryAssetConfig = {
 	PRESETcard4 = "rbxassetid://107099484545631",
 	WORDMARK_presets__click_to_equip_1 = "rbxassetid://96826442437821",
 
-	-- ── Slot frames by rarity ──────────────────────────────────
+	-- ── Slot frames by rarity (Empty → Mythic) ─────────────────
 	Slot_Empty_3 = "rbxassetid://76615280390410",
 	Slot_Common_5 = "rbxassetid://103700415507102",
 	Slot_Uncommon_5 = "rbxassetid://93953189037997",
@@ -54,11 +54,7 @@ local InventoryAssetConfig = {
 	Slot_Epic_5 = "rbxassetid://112807372557856",
 	Slot_Legendary_5 = "rbxassetid://116513949821988",
 	Slot_Mythic_5 = "rbxassetid://115957829700251",
-	Slot_Secret = "rbxassetid://73278259891657",
-	-- Limited = two layers (Body + Rim); rim gets UIGradient anim
-	Slot_Limited_Body = "rbxassetid://72397855713663",
-	Slot_Limited_Rim = "rbxassetid://133165389836845",
-	BTN_Confirm_Check_1 = "rbxassetid://138577700896730",
+	-- Secret / Limited: no frame art yet — use Slot_Mythic_5 or solid color fallback
 
 	-- ── Equip inspect cards ────────────────────────────────────
 	MAINswordCARD = "rbxassetid://132958022184465",
@@ -107,7 +103,7 @@ local InventoryAssetConfig = {
 	RELICcard3 = "rbxassetid://134174650334405",
 }
 
---- Single-layer frame by rarity (Limited uses GetLimitedLayers instead).
+--- Map rarity name → slot frame asset (Secret/Limited fall back to Mythic frame).
 local SLOT_BY_RARITY: { [string]: string } = {
 	Empty = InventoryAssetConfig.Slot_Empty_3,
 	Common = InventoryAssetConfig.Slot_Common_5,
@@ -116,8 +112,8 @@ local SLOT_BY_RARITY: { [string]: string } = {
 	Epic = InventoryAssetConfig.Slot_Epic_5,
 	Legendary = InventoryAssetConfig.Slot_Legendary_5,
 	Mythic = InventoryAssetConfig.Slot_Mythic_5,
-	Secret = InventoryAssetConfig.Slot_Secret,
-	Limited = InventoryAssetConfig.Slot_Limited_Body, -- body only; prefer GetLimitedLayers
+	Secret = InventoryAssetConfig.Slot_Mythic_5,
+	Limited = InventoryAssetConfig.Slot_Mythic_5,
 }
 
 function InventoryAssetConfig.Get(key: string): string
@@ -133,14 +129,6 @@ function InventoryAssetConfig.GetSlotFrame(rarity: string?): string
 		return SLOT_BY_RARITY[rarity]
 	end
 	return InventoryAssetConfig.Slot_Empty_3
-end
-
-function InventoryAssetConfig.GetLimitedLayers(): (string, string)
-	return InventoryAssetConfig.Slot_Limited_Body, InventoryAssetConfig.Slot_Limited_Rim
-end
-
-function InventoryAssetConfig.IsLimited(rarity: string?): boolean
-	return rarity == "Limited"
 end
 
 return InventoryAssetConfig
