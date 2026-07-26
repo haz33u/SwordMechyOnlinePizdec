@@ -89,67 +89,16 @@ for k, b in FIGMA do
 		R[k] = rel(b)
 	end
 end
--- Binds: pure Figma relative to MAINBACKGROUD (slightly left of shell, adjacent — no extra fly-out)
-
--- Grow left Equipment column (felt too small vs Figma-on-screen)
-local function scaleAround(keys: { string }, factor: number, originKey: string)
-	local o = R[originKey]
-	if not o then
-		return
-	end
-	local ox = o[1] + o[3] * 0.5
-	local oy = o[2] + o[4] * 0.5
-	for _, k in ipairs(keys) do
-		local b = R[k]
-		if b then
-			local cx = b[1] + b[3] * 0.5
-			local cy = b[2] + b[4] * 0.5
-			local nw, nh = b[3] * factor, b[4] * factor
-			local ncx = ox + (cx - ox) * factor
-			local ncy = oy + (cy - oy) * factor
-			R[k] = { ncx - nw * 0.5, ncy - nh * 0.5, nw, nh }
-		end
-	end
-end
-scaleAround({
-	"EQUIPMENTbackground",
-	"EquipTitlePlate",
-	"MAINswordCARD",
-	"SECONDswordCARD",
-	"PETcard1",
-	"PETcard2",
-	"PETcard3",
-	"PETcard4",
-	"PETcard5",
-	"PETcard6",
-	"PETcard7",
-	"PETcard8",
-	"RELICcard1",
-	"RELICcard2",
-	"RELICcard3",
-	"AURAcard",
-	"EQUIPbestFORdamage",
-	"EQUIPbestFORpower",
-	"PRESETSbutton",
-	"PRESETcard1",
-	"PRESETcard2",
-	"PRESETcard3",
-	"PRESETcard4",
-	"SELLbutton",
-	"SELLallUNLOCKED",
-}, 1.14, "EQUIPMENTbackground")
-
--- Weapon grid larger; expand mostly right/down so it clears Equipment column
+-- RULE: everything remapped to MAINBACKGROUD stays inside shell (x,y ≥ 0; x+w,y+h ≤ 1),
+-- except MOUSEBINDScard which is intentionally left of the plate (negative x).
+--
+-- WeaponGrid: only a light horizontal stretch — height/Y pure Figma. Never leave shell.
 do
 	local g = R.BG_WeaponGrid
-	local f = 1.14
-	local nw, nh = g[3] * f, g[4] * f
-	R.BG_WeaponGrid = {
-		g[1] + (nw - g[3]) * 0.05, -- nudge right
-		g[2] - (nh - g[4]) * 0.12,
-		nw,
-		nh,
-	}
+	local stretchX = 1.04 -- "чуть" wider only
+	local maxW = math.max(0.05, 0.985 - g[1]) -- hard clamp to shell right edge
+	local nw = math.min(g[3] * stretchX, maxW)
+	R.BG_WeaponGrid = { g[1], g[2], nw, g[4] }
 end
 
 local FIGMA_TABS = {
@@ -200,8 +149,8 @@ local function tipText(parent: Instance, order: number, text: string, grad: stri
 	local l = Instance.new("TextLabel")
 	l.Name = "T" .. order
 	l.BackgroundTransparency = 1
-	-- Smaller lines so full tip fits inside TOOLTIPshell art
-	l.Size = UDim2.new(1, -16, 0, h or 16)
+	-- Slightly smaller than original (was ~26–28) — still readable
+	l.Size = UDim2.new(1, -18, 0, h or 22)
 	l.LayoutOrder = order
 	l.Text = string.upper(text)
 	l.TextXAlignment = Enum.TextXAlignment.Center
@@ -351,18 +300,18 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	----------------------------------------------------------------
-	-- SHELL = MAINBACKGROUD plate
-	-- Slightly left of true center (binds hang left of plate; keeps cluster tight)
+	-- SHELL = MAINBACKGROUD plate (make THIS bigger — not the grid outside it)
+	-- Slightly left of center so left binds stay next to the plate
 	----------------------------------------------------------------
 	local shell = Instance.new("Frame")
 	shell.Name = "MAINBACKGROUD_Shell"
 	shell.BackgroundTransparency = 1
 	shell.BorderSizePixel = 0
 	shell.AnchorPoint = Vector2.new(0.5, 0.5)
-	-- 0.47 ≈ a bit left of screen center so left binds stay next to the plate (not floating)
-	shell.Position = UDim2.fromScale(0.47, 0.48)
-	shell.Size = UDim2.fromScale(0.92, 0.78)
-	shell.ClipsDescendants = false
+	shell.Position = UDim2.fromScale(0.48, 0.47)
+	-- Larger plate = equipment + grid scale up together (still inside host)
+	shell.Size = UDim2.fromScale(0.96, 0.86)
+	shell.ClipsDescendants = false -- binds hang left; chrome itself must stay in-bounds via R
 	shell.ZIndex = 40
 	shell.Parent = host
 
@@ -425,7 +374,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	tip.Name = "Tooltip"
 	tip.BackgroundTransparency = 1
 	tip.Visible = false
-	tip.Size = UDim2.fromOffset(250, 148)
+	tip.Size = UDim2.fromOffset(270, 160)
 	tip.ZIndex = 300
 	tip.Parent = host
 
@@ -442,10 +391,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	tipBody.Size = UDim2.fromScale(1, 1)
 	tipBody.ZIndex = 10
 	tipBody.Parent = tip
-	UIKit.Pad(tipBody, 10)
+	UIKit.Pad(tipBody, 12)
 	local tipList = Instance.new("UIListLayout")
 	tipList.SortOrder = Enum.SortOrder.LayoutOrder
-	tipList.Padding = UDim.new(0, 1)
+	tipList.Padding = UDim.new(0, 2)
 	tipList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	tipList.VerticalAlignment = Enum.VerticalAlignment.Center
 	tipList.Parent = tipBody
@@ -466,7 +415,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local mouse = UserInputService:GetMouseLocation()
 		local mx, my = mouse.X - inset.X, mouse.Y - inset.Y
 		local parentAbs, parentSz = host.AbsolutePosition, host.AbsoluteSize
-		local tipW, tipH = math.max(tip.AbsoluteSize.X, 250), math.max(tip.AbsoluteSize.Y, 148)
+		local tipW, tipH = math.max(tip.AbsoluteSize.X, 270), math.max(tip.AbsoluteSize.Y, 160)
 		local EDGE = 12
 		local screenX = mx + EDGE
 		if screenX + tipW > parentAbs.X + parentSz.X - 4 then
@@ -486,25 +435,25 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		tip.Visible = false
 	end
 
-	-- Compact tip lines so text fits inside shell art
+	-- Tip text only slightly smaller than original (readable, fits art)
 	local function showTip(title: string, rarity: string?, power: number, sell: number, level: number, equippedLine: string?)
 		clearTip()
 		local order = 1
 		if equippedLine then
-			tipText(tipBody, order, equippedLine, "gold", 14)
+			tipText(tipBody, order, equippedLine, "gold", 18)
 			order += 1
 		end
-		tipText(tipBody, order, title, "purple", 18)
+		tipText(tipBody, order, title, "purple", 24)
 		order += 1
 		if rarity then
-			tipText(tipBody, order, rarity, "gray", 13)
+			tipText(tipBody, order, rarity, "gray", 17)
 			order += 1
 		end
-		tipText(tipBody, order, string.format("POWER: ×%.2f", power), "purple", 13)
+		tipText(tipBody, order, string.format("POWER: ×%.2f", power), "purple", 17)
 		order += 1
-		tipText(tipBody, order, string.format("SELL PRICE: %d", sell), "gold", 13)
+		tipText(tipBody, order, string.format("SELL PRICE: %d", sell), "gold", 17)
 		order += 1
-		tipText(tipBody, order, string.format("LEVEL: %d", level), "gray", 13)
+		tipText(tipBody, order, string.format("LEVEL: %d", level), "gray", 17)
 		tip.Visible = true
 		task.defer(placeTip)
 		placeTip()
@@ -515,7 +464,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		for i, row in ipairs(lines) do
 			local text = tostring(row[1])
 			local grad = if type(row[2]) == "string" then (row[2] :: string) else "purple"
-			local h = if type(row[3]) == "number" then (row[3] :: number) else 14
+			local h = if type(row[3]) == "number" then (row[3] :: number) else 18
 			tipText(tipBody, i, text, grad, h)
 		end
 		tip.Visible = true
@@ -580,8 +529,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		bindHoverTip(plate, function()
 			if not matched then
 				return {
-					{ equipLabel, "gold", 14 },
-					{ "EMPTY SLOT", "gray", 16 },
+					{ equipLabel, "gold", 18 },
+					{ "EMPTY SLOT", "gray", 22 },
 				}
 			end
 			local def = WeaponConfig.Get(matched.id)
@@ -591,12 +540,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local sellP = (def and def.sellPrice) or 5
 			local lv = matched.level or 1
 			return {
-				{ equipLabel, "gold", 14 },
-				{ name, "purple", 18 },
-				{ rar, "gray", 13 },
-				{ string.format("POWER: ×%.2f", mult), "purple", 13 },
-				{ string.format("SELL PRICE: %d", sellP), "gold", 13 },
-				{ string.format("LEVEL: %d", lv), "gray", 13 },
+				{ equipLabel, "gold", 18 },
+				{ name, "purple", 24 },
+				{ rar, "gray", 17 },
+				{ string.format("POWER: ×%.2f", mult), "purple", 17 },
+				{ string.format("SELL PRICE: %d", sellP), "gold", 17 },
+				{ string.format("LEVEL: %d", lv), "gray", 17 },
 			}
 		end)
 	end
@@ -629,8 +578,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		bindHoverTip(plate, function()
 			if not pet then
 				return {
-					{ "PET SLOT " .. i, "gold", 14 },
-					{ "EMPTY", "gray", 16 },
+					{ "PET SLOT " .. i, "gold", 18 },
+					{ "EMPTY", "gray", 22 },
 				}
 			end
 			local def = PetConfig.Get(pet.id)
@@ -639,11 +588,11 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local mult = (def and def.powerMult) or 1
 			local lv = pet.level or 1
 			return {
-				{ "PET SLOT " .. i, "gold", 14 },
-				{ name, "purple", 18 },
-				{ rar, "gray", 13 },
-				{ string.format("POWER: ×%.2f", mult), "purple", 13 },
-				{ string.format("LEVEL: %d", lv), "gray", 13 },
+				{ "PET SLOT " .. i, "gold", 18 },
+				{ name, "purple", 24 },
+				{ rar, "gray", 17 },
+				{ string.format("POWER: ×%.2f", mult), "purple", 17 },
+				{ string.format("LEVEL: %d", lv), "gray", 17 },
 			}
 		end)
 	end
@@ -651,8 +600,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local plate = pImg("RELICcard" .. i, "RELICcard" .. i, R["RELICcard" .. i], 48)
 		bindHoverTip(plate, function()
 			return {
-				{ "RELIC SLOT " .. i, "gold", 14 },
-				{ "EMPTY", "gray", 16 },
+				{ "RELIC SLOT " .. i, "gold", 18 },
+				{ "EMPTY", "gray", 22 },
 			}
 		end)
 	end
@@ -675,8 +624,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		bindHoverTip(aura, function()
 			if not auraId then
 				return {
-					{ "AURA", "gold", 14 },
-					{ "EMPTY", "gray", 16 },
+					{ "AURA", "gold", 18 },
+					{ "EMPTY", "gray", 22 },
 				}
 			end
 			local resolved = AuraConfig.ResolveId(tostring(auraId))
@@ -685,10 +634,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local rar = (def and def.rarity) or "Common"
 			local powerPct = (def and def.powerPct) or 0
 			return {
-				{ "EQUIPPED AURA", "gold", 14 },
-				{ name, "purple", 18 },
-				{ rar, "gray", 13 },
-				{ string.format("POWER: +%d%%", powerPct), "purple", 13 },
+				{ "EQUIPPED AURA", "gold", 18 },
+				{ name, "purple", 24 },
+				{ rar, "gray", 17 },
+				{ string.format("POWER: +%d%%", powerPct), "purple", 17 },
 			}
 		end)
 	end
@@ -742,12 +691,19 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	-- binds left of shell
 	pImg("MOUSEBINDScard", "MOUSEBINDScard", R.MOUSEBINDScard, 52)
 
-	---------------------------------------------------------------- weapon grid inside shell
+	---------------------------------------------------------------- weapon grid INSIDE MAINBACKGROUD only
+	local gBox = R.BG_WeaponGrid
+	-- Safety clamp: never leave shell bounds (0..1)
+	local gx = math.clamp(gBox[1], 0, 0.98)
+	local gy = math.clamp(gBox[2], 0, 0.98)
+	local gw = math.clamp(gBox[3], 0.05, 1 - gx)
+	local gh = math.clamp(gBox[4], 0.05, 1 - gy)
+
 	local gridHost = Instance.new("Frame")
 	gridHost.Name = "BG_WeaponGrid"
 	gridHost.BackgroundTransparency = 1
-	gridHost.Size = UDim2.fromScale(R.BG_WeaponGrid[3], R.BG_WeaponGrid[4])
-	gridHost.Position = UDim2.fromScale(R.BG_WeaponGrid[1], R.BG_WeaponGrid[2])
+	gridHost.Size = UDim2.fromScale(gw, gh)
+	gridHost.Position = UDim2.fromScale(gx, gy)
 	gridHost.ClipsDescendants = true
 	gridHost.ZIndex = 46
 	gridHost.Parent = shell
@@ -760,12 +716,13 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	gridBg.ZIndex = 46
 	gridBg.Parent = gridHost
 
+	-- Inset matches painted frame of BG_WeaponGrid so slot cards sit on the art cells
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
-	scroll.Size = UDim2.fromScale(0.96, 0.96)
-	scroll.Position = UDim2.fromScale(0.02, 0.02)
-	scroll.ScrollBarThickness = 6
+	scroll.Size = UDim2.fromScale(0.94, 0.94)
+	scroll.Position = UDim2.fromScale(0.03, 0.03)
+	scroll.ScrollBarThickness = 5
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(180, 140, 255)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -777,7 +734,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
 	grid.FillDirectionMaxCells = GRID_COLS
 	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	grid.CellPadding = UDim2.fromOffset(4, 4)
+	grid.VerticalAlignment = Enum.VerticalAlignment.Top
+	grid.CellPadding = UDim2.fromOffset(6, 6)
 	grid.Parent = scroll
 
 	local function relayout()
@@ -785,13 +743,15 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		if w < 40 then
 			return
 		end
-		local pad = 4
+		local pad = 6
 		local cell = math.floor((w - pad * (GRID_COLS - 1)) / GRID_COLS)
-		cell = math.clamp(cell, 48, 130)
+		-- Fill row width so cards match grid frame (no tiny capped cells)
+		cell = math.max(40, cell)
 		grid.CellSize = UDim2.fromOffset(cell, cell)
 	end
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
 	task.defer(relayout)
+	task.delay(0.05, relayout)
 
 	---------------------------------------------------------------- weapon grid slots
 	local weapons = profile.weapons or {}
@@ -810,7 +770,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			rar = (def and def.rarity) or "Common"
 		end
 		btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
-		btn.ScaleType = Enum.ScaleType.Fit
+		-- Stretch to fill UIGrid cell so cards align with WeaponGrid frame
+		btn.ScaleType = Enum.ScaleType.Stretch
 
 		if w then
 			local iconHost = Instance.new("Frame")
