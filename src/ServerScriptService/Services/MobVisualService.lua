@@ -158,24 +158,51 @@ local function makeHpHud(parent: BasePart, title: string, tierColor: Color3)
 end
 
 local function tryStudioModel(def: any): Model?
-	local name = def.visual and def.visual.preferredModelName
-	if not name then
-		return nil
+	local prefName = def.visual and def.visual.preferredModelName
+	local searchNames = {
+		prefName,
+		def.id,
+		def.name,
+		string.gsub(def.id, "^L%d+_", ""),
+	}
+
+	-- 1. Direct search in Workspace for models placed by user in Place
+	for _, n in searchNames do
+		if typeof(n) == "string" and n ~= "" then
+			local found = Workspace:FindFirstChild(n)
+			if found and found:IsA("Model") and not found:GetAttribute("IsLiveCombatMob") then
+				local clone = found:Clone()
+				clone.Name = def.id
+				return clone
+			end
+		end
 	end
+
+	-- 2. Search containers (MobTemplates, MobsFolder, Mobs)
 	local inc = game:GetService("ReplicatedStorage"):FindFirstChild("INCREMENTAL ASSETS")
 	local incMobs = inc and inc:FindFirstChild("MobsFolder")
-	local templates = Workspace:FindFirstChild("MobTemplates")
-		or game:GetService("ReplicatedStorage"):FindFirstChild("MobTemplates")
-		or incMobs
-	if not templates then
-		return nil
+	local containers = {
+		Workspace:FindFirstChild("MobTemplates"),
+		game:GetService("ReplicatedStorage"):FindFirstChild("MobTemplates"),
+		incMobs,
+		Workspace:FindFirstChild("Mobs"),
+	}
+
+	for _, container in containers do
+		if container then
+			for _, n in searchNames do
+				if typeof(n) == "string" and n ~= "" then
+					local src = container:FindFirstChild(n)
+					if src and src:IsA("Model") then
+						local clone = src:Clone()
+						clone.Name = def.id
+						return clone
+					end
+				end
+			end
+		end
 	end
-	local src = templates:FindFirstChild(name)
-	if src and src:IsA("Model") then
-		local clone = src:Clone()
-		clone.Name = def.id
-		return clone
-	end
+
 	return nil
 end
 
@@ -286,6 +313,7 @@ local function buildBody(def: any, position: Vector3): Model
 			part("EyeL", Vector3.new(0.22, 0.22, 0.12) * scale, Color3.new(1, 1, 1), head.CFrame * CFrame.new(-0.28 * scale, 0.1 * scale, -0.62 * scale), model)
 			part("EyeR", Vector3.new(0.22, 0.22, 0.12) * scale, Color3.new(1, 1, 1), head.CFrame * CFrame.new(0.28 * scale, 0.1 * scale, -0.62 * scale), model)
 		end
+	end
 
 	model.PrimaryPart = root
 	weldVisual(model, root)

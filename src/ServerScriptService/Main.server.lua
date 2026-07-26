@@ -12,6 +12,17 @@ local Remotes = require(Shared.Remotes)
 local GameConfig = require(Shared.Config.GameConfig)
 local Formulas = require(Shared.Formulas)
 
+-- Purge old toolbox scripts in Workspace that throw errors
+pcall(function()
+	for _, desc in game:GetService("Workspace"):GetDescendants() do
+		if desc:IsA("LuaSourceContainer") then
+			if desc.Name == "ChestServer" or desc.Name == "ChestClient" or desc.Name == "PoseTexture" or desc.Name == "TextureConfiguration" then
+				desc:Destroy()
+			end
+		end
+	end
+end)
+
 local Services = script.Parent:WaitForChild("Services")
 local ProfileService = require(Services.ProfileService)
 local CombatService = require(Services.CombatService)
