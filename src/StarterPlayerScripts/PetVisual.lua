@@ -21,12 +21,20 @@ local lastProfile: any = nil
 local renderConn: RBXScriptConnection? = nil
 local charConn: RBXScriptConnection? = nil
 
-local function getFolder(): Folder?
+local function getFolders(): { Folder }
+	local folders = {}
 	local f = ReplicatedStorage:FindFirstChild(PetModelConfig.FolderName or "PetModels")
 	if f and f:IsA("Folder") then
-		return f
+		table.insert(folders, f)
 	end
-	return nil
+	local inc = ReplicatedStorage:FindFirstChild("INCREMENTAL ASSETS")
+	if inc then
+		local f2 = inc:FindFirstChild("MinionModels")
+		if f2 and f2:IsA("Folder") then
+			table.insert(folders, f2)
+		end
+	end
+	return folders
 end
 
 local function sanitizeParts(root: Instance)
@@ -105,9 +113,16 @@ end
 local function clonePetModel(petId: string): Model?
 	local def = PetConfig.Get(petId)
 	local modelName = PetModelConfig.GetModelName(petId)
-	local folder = getFolder()
-	if folder and modelName then
-		local template = folder:FindFirstChild(modelName)
+	local folders = getFolders()
+	if #folders > 0 and modelName then
+		local template: Instance? = nil
+		for _, folder in ipairs(folders) do
+			local found = folder:FindFirstChild(modelName)
+			if found and found:IsA("Model") then
+				template = found
+				break
+			end
+		end
 		if template and template:IsA("Model") then
 			local clone = template:Clone()
 			clone.Name = "Pet_" .. petId

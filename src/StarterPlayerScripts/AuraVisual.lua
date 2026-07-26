@@ -402,8 +402,8 @@ local function cloneAuraModel(auraId: string): Model?
 	local modelName = AuraModelConfig.GetModelName(auraId)
 	
 	-- Search in ReplicatedStorage recursively across all folders (AuraVfx, Auras, etc.)
-	local template: Instance? = nil
-	local candidates = { ReplicatedStorage:FindFirstChild("AuraVfx"), ReplicatedStorage:FindFirstChild("Auras"), ReplicatedStorage }
+	local inc = ReplicatedStorage:FindFirstChild("INCREMENTAL ASSETS")
+	local candidates = { ReplicatedStorage:FindFirstChild("AuraVfx"), ReplicatedStorage:FindFirstChild("Auras"), inc and inc:FindFirstChild("Auras"), inc, ReplicatedStorage }
 	for _, folder in candidates do
 		if folder then
 			if modelName and modelName ~= "" then

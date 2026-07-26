@@ -22,16 +22,24 @@ local WeaponModels = {}
 local HILT_NAME = WeaponModelConfig.HiltAttachmentName or "SM_Hilt"
 local folderCache: Folder? = nil
 
-local function getFolder(): Folder?
-	if folderCache and folderCache.Parent then
-		return folderCache
-	end
+local function getFolders(): { Folder }
+	local folders = {}
 	local f = ReplicatedStorage:FindFirstChild(WeaponModelConfig.FolderName)
 	if f and f:IsA("Folder") then
-		folderCache = f
-		return f
+		table.insert(folders, f)
 	end
-	return nil
+	local inc = ReplicatedStorage:FindFirstChild("INCREMENTAL ASSETS")
+	if inc then
+		local sf = inc:FindFirstChild("SwordsFolder")
+		if sf and sf:IsA("Folder") then
+			table.insert(folders, sf)
+		end
+		local af = inc:FindFirstChild("AxesFolder")
+		if af and af:IsA("Folder") then
+			table.insert(folders, af)
+		end
+	end
+	return folders
 end
 
 function WeaponModels.GetTemplate(weaponId: string): Model?
@@ -39,22 +47,23 @@ function WeaponModels.GetTemplate(weaponId: string): Model?
 	if not modelName then
 		return nil
 	end
-	local folder = getFolder()
-	if not folder then
-		return nil
-	end
-	local m = folder:FindFirstChild(modelName)
-	if m and m:IsA("Model") then
-		return m
+	local folders = getFolders()
+	for _, folder in ipairs(folders) do
+		local m = folder:FindFirstChild(modelName)
+		if m and m:IsA("Model") then
+			return m
+		end
 	end
 	-- Until DF_* meshes are imported into Place, use legacy Toolbox models.
 	local legacy = WeaponModelConfig.LegacyModelNames
 	if type(legacy) == "table" then
 		local alt = legacy[modelName]
 		if type(alt) == "string" and alt ~= "" then
-			local m2 = folder:FindFirstChild(alt)
-			if m2 and m2:IsA("Model") then
-				return m2
+			for _, folder in ipairs(folders) do
+				local m2 = folder:FindFirstChild(alt)
+				if m2 and m2:IsA("Model") then
+					return m2
+				end
 			end
 		end
 	end

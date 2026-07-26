@@ -162,8 +162,11 @@ local function tryStudioModel(def: any): Model?
 	if not name then
 		return nil
 	end
+	local inc = game:GetService("ReplicatedStorage"):FindFirstChild("INCREMENTAL ASSETS")
+	local incMobs = inc and inc:FindFirstChild("MobsFolder")
 	local templates = Workspace:FindFirstChild("MobTemplates")
 		or game:GetService("ReplicatedStorage"):FindFirstChild("MobTemplates")
+		or incMobs
 	if not templates then
 		return nil
 	end
