@@ -385,15 +385,18 @@ function CasePreviewUI.Mount(gui: ScreenGui, store: any, toastApi: any?, caseOpe
 		local keyCost = singleKeyCost * currentCount
 		local coinCost = singleCoinCost * currentCount
 
-		if currentPayMode == "key" and keyCost > 0 then
-			openCtaBtn:FindFirstChild("Label", true).Text = string.format("Open x%d for %d 🔑", currentCount, keyCost)
-		elseif currentPayMode == "coin" and coinCost > 0 then
-			openCtaBtn:FindFirstChild("Label", true).Text = string.format("Open x%d for %s 🪙", currentCount, Format.Num(coinCost))
-		else
-			if keyCost > 0 then
-				openCtaBtn:FindFirstChild("Label", true).Text = string.format("Open x%d for %d 🔑", currentCount, keyCost)
+		local lab = openCtaBtn:FindFirstChild("Label", true) :: TextLabel?
+		if lab then
+			if currentPayMode == "key" and keyCost > 0 then
+				lab.Text = string.format("Open x%d for %d 🔑", currentCount, keyCost)
+			elseif currentPayMode == "coin" and coinCost > 0 then
+				lab.Text = string.format("Open x%d for %s 🪙", currentCount, Format.Num(coinCost))
 			else
-				openCtaBtn:FindFirstChild("Label", true).Text = string.format("Open x%d for %s 🪙", currentCount, Format.Num(coinCost))
+				if keyCost > 0 then
+					lab.Text = string.format("Open x%d for %d 🔑", currentCount, keyCost)
+				else
+					lab.Text = string.format("Open x%d for %s 🪙", currentCount, Format.Num(coinCost))
+				end
 			end
 		end
 

@@ -31,11 +31,11 @@ local function handleTouch(chestType: string, store: any)
 	if chestType == "group" then
 		Remotes.Event("ClaimGroupChest"):FireServer()
 	elseif chestType == "500" then
-		store:OpenModal("case", { kind = "pet", poolId = "loc1_500" })
+		store:OpenModal("casePreview", { kind = "pet", poolId = "loc1_500" })
 	elseif chestType == "50k" then
-		store:OpenModal("case", { kind = "pet", poolId = "loc1_50k" })
+		store:OpenModal("casePreview", { kind = "pet", poolId = "loc1_50k" })
 	elseif chestType == "robux" then
-		store:OpenModal("case", { kind = "pet", poolId = "loc1_key49" })
+		store:OpenModal("casePreview", { kind = "pet", poolId = "loc1_key49" })
 	end
 end
 

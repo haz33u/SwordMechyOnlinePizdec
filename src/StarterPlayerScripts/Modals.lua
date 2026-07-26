@@ -286,19 +286,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 			primary.Text = "Open 1x"
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				store:CloseModal()
-				store:OpenModal("caseOpen", { kind = kind, poolId = poolId, count = 1 })
-			end)
-
-			secondary.Text = if hasChest3 then "Open 3x" else "Open 3x 🔒"
-			secondary.Visible = true
-			secondaryConn = secondary.MouseButton1Click:Connect(function()
-				if hasChest3 then
-					store:CloseModal()
-					store:OpenModal("caseOpen", { kind = kind, poolId = poolId, count = 3 })
-				else
-					local pass = GamePassConfig.Get("openChest3")
-					if pass then Net.PromptGamePass(pass.gamePassId) end
-				end
+				store:OpenModal("casePreview", { kind = kind, poolId = poolId, count = 1 })
 			end)
 		elseif m.kind == "stub" then
 			local p = m.payload or {}
