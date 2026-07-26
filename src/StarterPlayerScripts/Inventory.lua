@@ -1116,6 +1116,7 @@ function Inventory.Bind(
 				figmaHost:Destroy()
 			end
 			if canvas then
+				canvas.Visible = true
 				for _, ch in canvas:GetChildren() do
 					if ch:IsA("GuiObject") then
 						ch.Visible = true
@@ -1198,25 +1199,31 @@ function Inventory.Bind(
 
 		---------------------------------------------------------------- WEAPONS
 		if tab == "weapons" then
-			-- Full Figma weapons page (hides legacy chrome for this tab only)
+			-- Full Figma weapons page — hide ENTIRE legacy InvCanvas (gray plate)
 			if canvas then
-				for _, ch in canvas:GetChildren() do
-					if ch:IsA("GuiObject") and ch.Name ~= ROOT_FIGMA_HOST then
-						ch.Visible = false
-					end
-				end
+				canvas.Visible = false
+			end
+			-- Ensure inventory body has no gray fill
+			if body and body:IsA("GuiObject") then
+				body.BackgroundTransparency = 1
+				body.BackgroundColor3 = Color3.new(0, 0, 0)
 			end
 			local host = body:FindFirstChild(ROOT_FIGMA_HOST) :: Frame?
 			if not host then
 				host = Instance.new("Frame")
 				host.Name = ROOT_FIGMA_HOST
 				host.BackgroundTransparency = 1
+				host.BackgroundColor3 = Color3.new(0, 0, 0)
+				host.BorderSizePixel = 0
 				host.Size = UDim2.fromScale(1, 1)
 				host.ZIndex = 100
 				host.Parent = body
 			end
+			host.BackgroundTransparency = 1
 			host.Visible = true
-			countLab.Text = string.format("%d OF %d", #(profile.weapons or {}), INV_CAP)
+			if countLab then
+				countLab.Text = string.format("%d OF %d", #(profile.weapons or {}), INV_CAP)
+			end
 			InventoryWeaponsLayout.Render(host, {
 				profile = profile,
 				stats = stats,

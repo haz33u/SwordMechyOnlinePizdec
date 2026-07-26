@@ -96,12 +96,12 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		bodies[id] = body
 	end
 
-	-- Inventory Figma shell: ZERO gray chrome — only MAINBACKGROUD art.
-	do
-		local invRoot = frames.weapons
+	-- Weapons inventory: fully transparent window (NO gray plate). Art = MAINBACKGROUD only.
+	local function stripWeaponsChrome(invRoot: Frame)
 		local invHeader = invRoot:FindFirstChild("Header")
 		if invHeader and invHeader:IsA("GuiObject") then
 			invHeader.Visible = false
+			invHeader.Size = UDim2.fromOffset(0, 0)
 			invHeader.BackgroundTransparency = 1
 			for _, ch in invHeader:GetDescendants() do
 				if ch:IsA("GuiObject") then
@@ -109,7 +109,12 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				end
 			end
 		end
-		-- Kill Window gradient / stroke (gray plate)
+		for _, ch in invRoot:GetDescendants() do
+			if ch:IsA("UIGradient") or ch:IsA("UIStroke") then
+				ch:Destroy()
+			end
+		end
+		-- also direct children
 		for _, ch in invRoot:GetChildren() do
 			if ch:IsA("UIGradient") or ch:IsA("UIStroke") or ch:IsA("UICorner") then
 				ch:Destroy()
@@ -119,32 +124,33 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		invBody.Size = UDim2.fromScale(1, 1)
 		invBody.Position = UDim2.fromOffset(0, 0)
 		invBody.BackgroundTransparency = 1
+		invBody.BackgroundColor3 = Color3.new(0, 0, 0)
+		invBody.BorderSizePixel = 0
 		invBody.ClipsDescendants = false
 		invRoot.BackgroundColor3 = Color3.new(0, 0, 0)
 		invRoot.BackgroundTransparency = 1
+		invRoot.BorderSizePixel = 0
 		invRoot.ClipsDescendants = false
 		local sc = invRoot:FindFirstChildOfClass("UISizeConstraint")
 		if sc then
-			sc.MinSize = Vector2.new(900, 560)
-			sc.MaxSize = Vector2.new(1920, 1200)
+			-- no hard gray box size — let layout fill screen
+			sc.MinSize = Vector2.new(640, 400)
+			sc.MaxSize = Vector2.new(4096, 4096)
 		end
 	end
+	stripWeaponsChrome(frames.weapons)
 
 	Layout.Bind(function(m)
 		local ww = math.clamp((m.windowW or 0.5) + 0.10, 0.56, 0.68)
 		local wh = math.clamp((m.windowH or 0.62) + 0.10, 0.66, 0.80)
 		for id, root in frames do
 			if id == "weapons" then
-				root.Size = UDim2.fromScale(0.96, 0.94)
+				root.Size = UDim2.fromScale(0.98, 0.96)
 				root.Position = UDim2.fromScale(0.5, 0.5)
 				root.AnchorPoint = Vector2.new(0.5, 0.5)
 				root.BackgroundTransparency = 1
-				-- Keep killing gray if Window rebuilds styles
-				for _, ch in root:GetChildren() do
-					if ch:IsA("UIGradient") or ch:IsA("UIStroke") then
-						ch:Destroy()
-					end
-				end
+				root.BackgroundColor3 = Color3.new(0, 0, 0)
+				stripWeaponsChrome(root)
 				local body = root:FindFirstChild("Body")
 				if body and body:IsA("GuiObject") then
 					body.BackgroundTransparency = 1

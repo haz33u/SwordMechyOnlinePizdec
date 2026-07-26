@@ -27,58 +27,54 @@ local IconConfig = require(Shared.Config.IconConfig)
 local InventoryWeaponsLayout = {}
 
 local ROOT_NAME = "FigmaWeaponsRoot"
-local ASPECT = 1.4393 -- 11014/7652
+-- Live Figma group 5193:9879 (re-measured 2026-07-26): 11609 x 7943
+local ASPECT = 1.4614
 local HOVER_SCALE = 1.06
 local GRID_COLS = 6
 
--- Figma fractions (x,y,w,h) relative to layout group
+-- Absolute fractions from Figma absoluteBoundingBox / root
 local L = {
-	MAINBACKGROUD = { 0.07839, 0.05548, 0.92161, 0.81034 },
-	INVENTORYWEAPONcard = { 0.00835, 0.00000, 0.32424, 0.15967 },
-	BTN_Close = { 0.94692, 0.07580, 0.04181, 0.06154 },
-	TitleNickPlate = { 0.77240, 0.07580, 0.16026, 0.04286 },
-	-- Divider full-width of grid, flush above BG_WeaponGrid
-	Divider = { 0.31000, 0.10800, 0.67000, 0.03200 },
-	BG_WeaponGrid = { 0.31000, 0.13735, 0.67000, 0.69941 },
-	-- Equipment: wider + taller (keep left of grid)
-	EQUIPMENTbackground = { 0.07800, 0.13500, 0.22000, 0.47000 },
-	EquipTitlePlate = { 0.12500, 0.15500, 0.12000, 0.03200 },
-	MAINswordCARD = { 0.10000, 0.19500, 0.08500, 0.11500 },
-	SECONDswordCARD = { 0.19000, 0.19500, 0.08500, 0.11500 },
-	PETcard1 = { 0.09500, 0.32000, 0.04500, 0.06200 },
-	PETcard2 = { 0.14500, 0.32000, 0.04500, 0.06200 },
-	PETcard3 = { 0.19500, 0.32000, 0.04500, 0.06200 },
-	PETcard4 = { 0.24500, 0.32000, 0.04500, 0.06200 },
-	PETcard5 = { 0.09500, 0.38500, 0.04500, 0.06200 },
-	PETcard6 = { 0.14500, 0.38500, 0.04500, 0.06200 },
-	PETcard7 = { 0.19500, 0.38500, 0.04500, 0.06200 },
-	PETcard8 = { 0.24500, 0.38500, 0.04500, 0.06200 },
-	RELICcard1 = { 0.09500, 0.45500, 0.05800, 0.08000 },
-	RELICcard2 = { 0.15800, 0.45500, 0.05800, 0.08000 },
-	RELICcard3 = { 0.22100, 0.45500, 0.05800, 0.08000 },
-	AURAcard = { 0.15800, 0.54000, 0.05800, 0.08000 },
-	-- Figma y for buttons (below equip panel)
-	EQUIPbestFORdamage = { 0.11000, 0.56194, 0.14500, 0.06500 },
-	EQUIPbestFORpower = { 0.11000, 0.62493, 0.14500, 0.06500 },
-	STARSdecoration = { 0.11800, 0.56913, 0.12800, 0.04800 },
-	STARTSdecoration = { 0.11800, 0.63290, 0.12800, 0.04800 },
-	PRESETSbutton = { 0.10500, 0.68805, 0.15500, 0.04500 },
-	PRESETcard1 = { 0.10000, 0.72607, 0.04500, 0.06000 },
-	PRESETcard2 = { 0.15000, 0.72607, 0.04500, 0.06000 },
-	PRESETcard3 = { 0.20000, 0.72607, 0.04500, 0.06000 },
-	PRESETcard4 = { 0.25000, 0.72607, 0.04500, 0.06000 },
-	SELLbutton = { 0.09000, 0.79024, 0.10500, 0.05000 },
-	SELLallUNLOCKED = { 0.20000, 0.79024, 0.10500, 0.05000 },
-	-- Binds larger
-	MOUSEBINDScard = { 0.00200, 0.67500, 0.12500, 0.22000 },
-	WEAPONSBUTTON = { 0.12902, 0.87520, 0.08626, 0.12415 },
-	PETCBUTTON = { 0.22136, 0.87520, 0.08626, 0.12415 },
-	AURABUTTON = { 0.31370, 0.87585, 0.08626, 0.12415 },
-	RELICBUTTON = { 0.40604, 0.87585, 0.08626, 0.12415 },
-	CONSUMABLESBUTTON = { 0.49838, 0.87585, 0.08626, 0.12415 },
-	SHOPBUTTON = { 0.59072, 0.87520, 0.08626, 0.12415 },
-	PROFILEBUTTON = { 0.68215, 0.87520, 0.08626, 0.12415 },
-	SETTINGSBUTTON = { 0.81590, 0.87520, 0.08626, 0.12415 },
+	MAINBACKGROUD = { 0.12563, 0.08995, 0.87437, 0.78063 },
+	INVENTORYWEAPONcard = { 0.05513, 0.00000, 0.30762, 0.15381 },
+	BTN_Close = { 0.94964, 0.10952, 0.03966, 0.05929 },
+	TitleNickPlate = { 0.78407, 0.10952, 0.15204, 0.04129 },
+	-- Divider sits on top of grid; use Figma x/w (art has tall transparent pad → use modest h)
+	Divider = { 0.34500, 0.11531, 0.62023, 0.03500 },
+	BG_WeaponGrid = { 0.32794, 0.16881, 0.65460, 0.67376 },
+	EQUIPMENTbackground = { 0.14369, 0.13722, 0.17323, 0.38434 },
+	EquipTitlePlate = { 0.18400, 0.14880, 0.09252, 0.02757 },
+	MAINswordCARD = { 0.15936, 0.17285, 0.06995, 0.10222 },
+	SECONDswordCARD = { 0.23147, 0.17285, 0.06995, 0.10222 }, -- second sword (also named MAINswordCARD in Figma)
+	PETcard1 = { 0.16031, 0.27169, 0.03497, 0.05111 },
+	PETcard2 = { 0.19529, 0.27169, 0.03497, 0.05111 },
+	PETcard3 = { 0.23026, 0.27169, 0.03497, 0.05111 },
+	PETcard4 = { 0.26523, 0.27169, 0.03497, 0.05111 },
+	PETcard5 = { 0.16031, 0.32281, 0.03497, 0.05111 },
+	PETcard6 = { 0.19529, 0.32281, 0.03497, 0.05111 },
+	PETcard7 = { 0.23026, 0.32281, 0.03497, 0.05111 },
+	PETcard8 = { 0.26523, 0.32281, 0.03497, 0.05111 },
+	RELICcard1 = { 0.16031, 0.37392, 0.04764, 0.06962 },
+	RELICcard2 = { 0.20795, 0.37392, 0.04764, 0.06962 },
+	RELICcard3 = { 0.25559, 0.37392, 0.04764, 0.06962 },
+	AURAcard = { 0.20795, 0.44353, 0.04764, 0.06962 },
+	EQUIPbestFORdamage = { 0.14205, 0.51670, 0.17935, 0.08737 },
+	EQUIPbestFORpower = { 0.14170, 0.60003, 0.18150, 0.08837 },
+	PRESETSbutton = { 0.14946, 0.68047, 0.16453, 0.06043 },
+	PRESETcard1 = { 0.14584, 0.73573, 0.04299, 0.06282 },
+	PRESETcard2 = { 0.18667, 0.73573, 0.04324, 0.06320 },
+	PRESETcard3 = { 0.22776, 0.73572, 0.04367, 0.06383 },
+	PRESETcard4 = { 0.26902, 0.73534, 0.04454, 0.06508 },
+	SELLbutton = { 0.13499, 0.80264, 0.09570, 0.04667 },
+	SELLallUNLOCKED = { 0.22991, 0.80180, 0.09933, 0.04844 },
+	MOUSEBINDScard = { 0.00000, 0.60792, 0.13144, 0.26360 },
+	WEAPONSBUTTON = { 0.17366, 0.87978, 0.08184, 0.11960 },
+	PETCBUTTON = { 0.26127, 0.87978, 0.08184, 0.11960 },
+	AURABUTTON = { 0.34888, 0.88040, 0.08184, 0.11960 },
+	RELICBUTTON = { 0.43648, 0.88040, 0.08184, 0.11960 },
+	CONSUMABLESBUTTON = { 0.52409, 0.88040, 0.08184, 0.11960 },
+	SHOPBUTTON = { 0.61170, 0.87978, 0.08184, 0.11960 },
+	PROFILEBUTTON = { 0.69844, 0.87978, 0.08184, 0.11960 },
+	SETTINGSBUTTON = { 0.82533, 0.87978, 0.08184, 0.11960 },
 }
 
 local FIGMA_TABS = {
@@ -320,10 +316,6 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			end)
 		end
 	end
-
-	-- Equip best buttons (+ optional star decorations under/over)
-	placeImage(root, "STARSdecoration", "STARSdecoration", L.STARSdecoration, 37)
-	placeImage(root, "STARTSdecoration", "STARTSdecoration", L.STARTSdecoration, 37)
 
 	local function rankWeapons(): { { uid: string, power: number, level: number } }
 		local ranked = {}
