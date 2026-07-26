@@ -1,7 +1,10 @@
 --!strict
 --[[
 	Catalog of Titles with Rebirth requirements, shimmers, and power bonuses.
+	Includes all Rebirth Ranks (0..60) + Special achievement titles.
 ]]
+
+local RebirthConfig = require(script.Parent.RebirthConfig)
 
 local TitleConfig = {}
 
@@ -15,84 +18,75 @@ export type TitleDef = {
 	description: string,
 }
 
-TitleConfig.Titles = {
-	{
-		id = "Rookie",
-		name = "Rookie",
-		rarity = "Common",
-		shimmer = "silver",
-		minRebirth = 0,
-		powerPct = 0,
-		description = "Default starter title",
-	},
-	{
-		id = "NoviceSwordsman",
-		name = "Novice Swordsman",
-		rarity = "Uncommon",
-		shimmer = "silver",
-		minRebirth = 1,
-		powerPct = 0.05,
-		description = "Achieve Rebirth 1",
-	},
-	{
-		id = "BladeInitiate",
-		name = "Blade Initiate",
-		rarity = "Rare",
-		shimmer = "cyan",
-		minRebirth = 2,
-		powerPct = 0.10,
-		description = "Achieve Rebirth 2",
-	},
-	{
-		id = "Stormbane",
-		name = "Stormbane",
-		rarity = "Epic",
-		shimmer = "gold",
-		minRebirth = 4,
-		powerPct = 0.15,
-		description = "Achieve Rebirth 4",
-	},
-	{
-		id = "EmeraldSlayer",
-		name = "Emerald Slayer",
-		rarity = "Legendary",
-		shimmer = "emerald",
-		minRebirth = 6,
-		powerPct = 0.25,
-		description = "Achieve Rebirth 6",
-	},
-	{
-		id = "FireLord",
-		name = "Fire Lord",
-		rarity = "Mythic",
-		shimmer = "fire",
-		minRebirth = 10,
-		powerPct = 0.40,
-		description = "Achieve Rebirth 10",
-	},
-	{
-		id = "VoidMonarch",
-		name = "Void Monarch",
-		rarity = "Secret",
-		shimmer = "purple",
-		minRebirth = 15,
-		powerPct = 0.60,
-		description = "Achieve Rebirth 15",
-	},
-	{
-		id = "DragonGod",
-		name = "Dragon God",
-		rarity = "Limited",
-		shimmer = "rainbow",
-		minRebirth = 25,
-		powerPct = 1.00,
-		description = "Achieve Rebirth 25",
-	},
-} :: { TitleDef }
+local list: { TitleDef } = {}
+
+-- Add all 60 Rebirth Ranks
+for r = 0, RebirthConfig.MAX_LEVEL do
+	local name = RebirthConfig.GetRankName(r)
+	local band = RebirthConfig.GetRankBand(r)
+	local shimmer = "silver"
+	local rarity = "Common"
+
+	if band == "Ash" then
+		shimmer = if r >= 5 then "cyan" else "silver"
+		rarity = if r >= 5 then "Rare" else "Common"
+	elseif band == "Blood" then
+		shimmer = "fire"
+		rarity = "Epic"
+	elseif band == "Star" then
+		shimmer = "cyan"
+		rarity = "Legendary"
+	elseif band == "God" then
+		shimmer = "gold"
+		rarity = "Mythic"
+	elseif band == "Abyss" then
+		shimmer = "purple"
+		rarity = "Secret"
+	else
+		shimmer = "rainbow"
+		rarity = "Limited"
+	end
+
+	local bonus = if r > 0 then (r * 0.05) else 0
+
+	table.insert(list, {
+		id = name:gsub("%s+", ""),
+		name = name,
+		rarity = rarity,
+		shimmer = shimmer,
+		minRebirth = r,
+		powerPct = bonus,
+		description = if r == 0 then "Starter rank" else string.format("Achieve Rebirth Rank %d", r),
+	})
+end
+
+-- Add Special custom titles
+table.insert(list, {
+	id = "EmeraldSlayer",
+	name = "Emerald Slayer",
+	rarity = "Legendary",
+	shimmer = "emerald",
+	minRebirth = 6,
+	powerPct = 0.35,
+	description = "Master of the Emerald Realm",
+})
+
+table.insert(list, {
+	id = "DragonGod",
+	name = "Dragon God",
+	rarity = "Limited",
+	shimmer = "rainbow",
+	minRebirth = 25,
+	powerPct = 1.00,
+	description = "Legendary Dragon Sovereign",
+})
+
+TitleConfig.Titles = list
 
 function TitleConfig.Get(id: string): TitleDef?
+	local cleanId = id:gsub("%s+", "")
 	for _, t in TitleConfig.Titles do
-		if t.id == id or t.name == id then
+		if t.id == cleanId or t.id == id or t.name == id then
 			return t
 		end
 	end
@@ -113,7 +107,7 @@ function TitleConfig.IsUnlocked(profile: any, titleId: string): boolean
 	end
 	if profile and profile.unlockedTitles then
 		for _, ut in profile.unlockedTitles do
-			if ut == titleId or ut == def.id then
+			if ut == titleId or ut == def.id or ut == def.name then
 				return true
 			end
 		end
