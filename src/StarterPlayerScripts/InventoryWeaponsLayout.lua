@@ -358,37 +358,38 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local closeBtn = pShell("BTN_Close_3", "BTN_Close_3", B.BTN_Close_3, 80, true, Enum.ScaleType.Fit) :: ImageButton
 	closeBtn.MouseButton1Click:Connect(args.onClose)
 
-	-- Title | Nick on btn_neutral_2_1 plate (scale text to plate)
+	-- Title | Nick on blank card (btn_neutral_2_2 = rbxassetid://71855129271456)
 	do
-		local plate = pShell("btn_neutral_2_1", "btn_neutral_2_1", B.btn_neutral_2_1, 32, false, Enum.ScaleType.Stretch)
+		local plate = pShell("TitleNickCard", "btn_neutral_2_2", B.btn_neutral_2_1, 32, false, Enum.ScaleType.Fit)
 		local row = Instance.new("Frame")
 		row.Name = "TitleNickRow"
 		row.BackgroundTransparency = 1
-		row.Size = UDim2.fromScale(0.92, 0.72)
+		row.Size = UDim2.fromScale(0.88, 0.62)
 		row.Position = UDim2.fromScale(0.5, 0.5)
 		row.AnchorPoint = Vector2.new(0.5, 0.5)
+		row.ClipsDescendants = true
 		row.ZIndex = 99
 		row.Parent = plate
 		local list = Instance.new("UIListLayout")
 		list.FillDirection = Enum.FillDirection.Horizontal
 		list.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		list.VerticalAlignment = Enum.VerticalAlignment.Center
-		list.Padding = UDim.new(0, 4)
+		list.Padding = UDim.new(0, 6)
 		list.SortOrder = Enum.SortOrder.LayoutOrder
 		list.Parent = row
+		-- Fixed text size + AutomaticSize.X so TITLE | NICK sit in one line (no overlap)
 		local function mkLab(order: number): TextLabel
 			local l = Instance.new("TextLabel")
 			l.BackgroundTransparency = 1
 			l.AutomaticSize = Enum.AutomaticSize.X
-			l.Size = UDim2.fromScale(0, 1)
+			l.Size = UDim2.fromOffset(0, 22)
 			l.LayoutOrder = order
-			l.TextScaled = true
+			l.TextScaled = false
+			l.TextSize = 15
+			l.TextXAlignment = Enum.TextXAlignment.Center
+			l.TextYAlignment = Enum.TextYAlignment.Center
 			l.ZIndex = 100
 			l.Parent = row
-			local c = Instance.new("UITextSizeConstraint")
-			c.MinTextSize = 10
-			c.MaxTextSize = 20
-			c.Parent = l
 			return l
 		end
 		local tLab = mkLab(1)
@@ -397,10 +398,14 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local nick = (Players.LocalPlayer and ((Players.LocalPlayer.DisplayName ~= "" and Players.LocalPlayer.DisplayName) or Players.LocalPlayer.Name))
 			or "Player"
 		Titles.PaintLine(tLab, sLab, nLab, profile, nick)
-		-- Keep PaintLine colors/font; TextScaled fits plate height
-		tLab.TextScaled = true
-		sLab.TextScaled = true
-		nLab.TextScaled = true
+		-- Keep fixed size from PaintLine (do NOT re-enable TextScaled — it stacks labels)
+		tLab.TextScaled = false
+		sLab.TextScaled = false
+		nLab.TextScaled = false
+		tLab.TextSize = 15
+		sLab.TextSize = 15
+		nLab.TextSize = 15
+		sLab.Text = " | "
 	end
 
 	---------------------------------------------------------------- equipment slots (brief boxes, Fit, no forceSquare)
@@ -921,16 +926,19 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local grid = Instance.new("UIGridLayout")
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
 	grid.FillDirectionMaxCells = GRID_COLS
-	-- Center each row so incomplete rows (e.g. 2 swords) sit in middle of WeaponGrid
+	-- Center each row so incomplete rows sit in the middle of WeaponGrid (not left-packed)
 	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	grid.VerticalAlignment = Enum.VerticalAlignment.Top
 	grid.CellPadding = UDim2.fromOffset(2, 2)
 	grid.Parent = scroll
 
+	-- Hide until first cell size is known — kills left-edge flash / torn layout
+	scroll.Visible = false
+
 	local function relayout()
 		local w = scroll.AbsoluteSize.X
 		if w < 40 then
-			return
+			return false
 		end
 		-- room for centered hover scale + barely-there under-glow
 		local pad = math.max(8, math.floor(w * 0.012))
@@ -938,10 +946,11 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local cell = math.floor((w - pad * (GRID_COLS - 1)) / GRID_COLS)
 		cell = math.max(42, cell)
 		grid.CellSize = UDim2.fromOffset(cell, cell)
+		return true
 	end
-	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
-	task.defer(relayout)
-	task.delay(0.05, relayout)
+	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		relayout()
+	end)
 
 	local function makeIconHost(btn: GuiObject): Frame
 		local iconHost = Instance.new("Frame")
@@ -1013,23 +1022,69 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		return wrap
 	end
 
-	-- Hover scales the whole wrap (card + glow) from center
-	local function bindWrapHover(wrap: Frame, btn: GuiObject, onEnter: (() -> ())?, onLeave: (() -> ())?)
+	-- Hover + enter share one UIScale on wrap (center pivot)
+	local function bindWrapHover(wrap: Frame, btn: GuiObject, onEnter: (() -> ())?, onLeave: (() -> ())?): UIScale
 		local sc = Instance.new("UIScale")
-		sc.Scale = 1
+		sc.Name = "SlotScale"
+		sc.Scale = 0.01 -- enter from center after layout (playGridEnter)
 		sc.Parent = wrap
 		btn.MouseEnter:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = HOVER_SCALE }):Play()
+			if sc.Scale < 0.5 then
+				return
+			end
+			TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = HOVER_SCALE }):Play()
 			if onEnter then
 				onEnter()
 			end
 		end)
 		btn.MouseLeave:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+			if sc.Scale < 0.5 then
+				return
+			end
+			TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 			if onLeave then
 				onLeave()
 			end
 		end)
+		return sc
+	end
+
+	-- Smooth pop-in from center after grid knows real cell size (no left-edge snap)
+	local function playGridEnter()
+		relayout()
+		scroll.Visible = true
+		local wraps: { Frame } = {}
+		for _, ch in scroll:GetChildren() do
+			if ch:IsA("Frame") and (string.sub(ch.Name, 1, 9) == "SlotWrap_" or string.sub(ch.Name, 1, 8) == "PotWrap_") then
+				table.insert(wraps, ch)
+			end
+		end
+		table.sort(wraps, function(a, b)
+			return a.LayoutOrder < b.LayoutOrder
+		end)
+		local n = #wraps
+		if n == 0 then
+			return
+		end
+		-- short cascade from center of set (not left→right hard cut)
+		local info = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+		for i, wrap in ipairs(wraps) do
+			local sc = wrap:FindFirstChild("SlotScale")
+			if sc and sc:IsA("UIScale") then
+				sc.Scale = 0.72
+				-- delay peaks in the middle of the list slightly less than edges? keep simple radial-ish by order
+				local t = (i - 1) * (0.018)
+				if n > 24 then
+					t = (i - 1) * (0.012)
+				end
+				task.delay(t, function()
+					if not sc.Parent then
+						return
+					end
+					TweenService:Create(sc, info, { Scale = 1 }):Play()
+				end)
+			end
+		end
 	end
 
 	---------------------------------------------------------------- WEAPONS grid (no empty filler slots)
@@ -1358,6 +1413,22 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end
 	end
 	-- No empty filler slots on any page
+
+	-- Wait one frame for AbsoluteSize, then show + pop-in from center
+	task.defer(function()
+		if not scroll.Parent then
+			return
+		end
+		if not relayout() then
+			task.delay(0.05, function()
+				if scroll.Parent then
+					playGridEnter()
+				end
+			end)
+			return
+		end
+		playGridEnter()
+	end)
 end
 
 return InventoryWeaponsLayout

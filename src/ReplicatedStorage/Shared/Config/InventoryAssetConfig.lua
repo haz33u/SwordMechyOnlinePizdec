@@ -17,6 +17,7 @@ local InventoryAssetConfig = {
 	Divider_3_Minimal_1 = "rbxassetid://120415832747105",
 	BTN_Close_3 = "rbxassetid://72455930867410",
 	btn_neutral_2_1 = "rbxassetid://74404628605222",
+	-- Title|Nick plate (blank card) — used by InventoryWeaponsLayout TitleNickCard
 	btn_neutral_2_2 = "rbxassetid://71855129271456",
 	TOOLTIPshell = "rbxassetid://92658191065501",
 
