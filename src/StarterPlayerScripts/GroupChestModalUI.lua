@@ -1,10 +1,8 @@
 --!strict
 --[[
-	GroupChestModalUI — Top-Tier Roblox Group Join & Daily Rewards Popup.
-	Displays:
-	  - Header & Group ID (928205129)
-	  - Daily Reward preview (+10,000 Coins, +3 Pet Keys, +1 Aura Key)
-	  - Re-check Membership / Claim button
+	GroupChestModalUI — Roblox Group Join & Daily Rewards Popup.
+	Triggers native Roblox Group Join prompt (SocialService/GroupService)
+	and displays custom Group Reward Card with Like & Favorite boost reminders!
 ]]
 
 local TweenService = game:GetService("TweenService")
@@ -21,6 +19,24 @@ local GroupChestModalUI = {}
 local S = 1.42
 local function px(n: number): number
 	return math.floor(n * S + 0.5)
+end
+
+--- Trigger native Roblox System Group Join Prompt if supported by Roblox client
+local function promptNativeGroupJoin(groupId: number)
+	pcall(function()
+		local gs = game:GetService("GroupService") :: any
+		if gs and type(gs.PromptGroupJoin) == "function" then
+			gs:PromptGroupJoin(groupId)
+		elseif gs and type(gs.PromptJoinGroup) == "function" then
+			gs:PromptJoinGroup(groupId)
+		end
+	end)
+	pcall(function()
+		local ss = game:GetService("SocialService") :: any
+		if ss and type(ss.PromptGroupJoin) == "function" then
+			ss:PromptGroupJoin(Players.LocalPlayer, groupId)
+		end
+	end)
 end
 
 function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
@@ -44,7 +60,7 @@ function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
 	local card = UIKit.Glass({
 		Name = "GroupModalCard",
 		Parent = layer,
-		Size = UDim2.fromScale(0.44, 0.58),
+		Size = UDim2.fromScale(0.44, 0.62),
 		Position = UDim2.fromScale(0.5, 0.5),
 		Anchor = Vector2.new(0.5, 0.5),
 		Radius = T.R.md,
@@ -55,8 +71,8 @@ function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
 	card.Visible = false
 
 	local rsc = Instance.new("UISizeConstraint")
-	rsc.MinSize = Vector2.new(440, 380)
-	rsc.MaxSize = Vector2.new(620, 500)
+	rsc.MinSize = Vector2.new(440, 420)
+	rsc.MaxSize = Vector2.new(620, 520)
 	rsc.Parent = card
 	UIKit.Stroke(card, Color3.fromRGB(80, 200, 255), 1.8, 0.25)
 	UIKit.Pad(card, px(16))
@@ -96,11 +112,11 @@ function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
 	})
 
 	-- Body Subtitle
-	local bodyLab = UIKit.Label({
+	UIKit.Label({
 		Parent = card,
 		Text = "Join our official Roblox Group to unlock Daily Rewards every 24 hours!",
-		Size = UDim2.new(1, 0, 0, px(32)),
-		Position = UDim2.fromOffset(0, px(46)),
+		Size = UDim2.new(1, 0, 0, px(28)),
+		Position = UDim2.fromOffset(0, px(44)),
 		SizePx = px(13),
 		Font = T.Font.Body,
 		Color = Color3.fromRGB(220, 230, 245),
@@ -109,13 +125,36 @@ function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
 		Z = 142,
 	})
 
+	-- Like & Favorite Bonus Badge
+	local boostBadge = Instance.new("Frame")
+	boostBadge.Name = "BoostBadge"
+	boostBadge.BackgroundColor3 = Color3.fromRGB(30, 25, 45)
+	boostBadge.BorderSizePixel = 0
+	boostBadge.Size = UDim2.new(1, 0, 0, px(30))
+	boostBadge.Position = UDim2.fromOffset(0, px(74))
+	boostBadge.ZIndex = 142
+	boostBadge.Parent = card
+	UIKit.Corner(boostBadge, T.R.sm)
+	UIKit.Stroke(boostBadge, Color3.fromRGB(255, 180, 60), 1.2, 0.3)
+
+	UIKit.Label({
+		Parent = boostBadge,
+		Text = "👍 Like & ⭐ Favorite the game for +10% Luck Boost!",
+		Size = UDim2.fromScale(1, 1),
+		SizePx = px(12),
+		Font = T.Font.Title,
+		Color = Color3.fromRGB(255, 215, 80),
+		X = Enum.TextXAlignment.Center,
+		Z = 143,
+	})
+
 	-- Group ID Badge
 	local idBadge = Instance.new("Frame")
 	idBadge.Name = "GroupBadge"
 	idBadge.BackgroundColor3 = Color3.fromRGB(20, 28, 42)
 	idBadge.BorderSizePixel = 0
-	idBadge.Size = UDim2.new(1, 0, 0, px(36))
-	idBadge.Position = UDim2.fromOffset(0, px(84))
+	idBadge.Size = UDim2.new(1, 0, 0, px(34))
+	idBadge.Position = UDim2.fromOffset(0, px(108))
 	idBadge.ZIndex = 142
 	idBadge.Parent = card
 	UIKit.Corner(idBadge, T.R.sm)
@@ -125,9 +164,9 @@ function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
 		Parent = idBadge,
 		Text = "👥 Group ID: 928205129",
 		Size = UDim2.fromScale(1, 1),
-		SizePx = px(14),
+		SizePx = px(13),
 		Font = T.Font.Title,
-		Color = Color3.fromRGB(255, 215, 80),
+		Color = Color3.fromRGB(100, 220, 255),
 		X = Enum.TextXAlignment.Center,
 		Z = 143,
 	})
@@ -137,7 +176,7 @@ function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
 	rewardsFrame.Name = "RewardsContainer"
 	rewardsFrame.BackgroundTransparency = 1
 	rewardsFrame.Size = UDim2.new(1, 0, 0, px(95))
-	rewardsFrame.Position = UDim2.fromOffset(0, px(132))
+	rewardsFrame.Position = UDim2.fromOffset(0, px(148))
 	rewardsFrame.ZIndex = 142
 	rewardsFrame.Parent = card
 
@@ -196,7 +235,7 @@ function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
 		})
 	end
 
-	-- CTA Action Buttons
+	-- CTA Action Buttons (Join Community & Claim)
 	local ctaRow = Instance.new("Frame")
 	ctaRow.Name = "CtaRow"
 	ctaRow.BackgroundTransparency = 1
@@ -205,18 +244,34 @@ function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
 	ctaRow.ZIndex = 142
 	ctaRow.Parent = card
 
-	local claimBtn = UIKit.Button({
-		Name = "ClaimBtn",
+	local joinBtn = UIKit.Button({
+		Name = "JoinBtn",
 		Parent = ctaRow,
-		Text = "🎁 Claim Group Reward",
-		Size = UDim2.new(1, 0, 1, 0),
-		Color = T.Success,
-		Color2 = T.Colors and T.Colors.SuccessDeep or Color3.fromRGB(28, 140, 80),
+		Text = "👥 Join Community",
+		Size = UDim2.new(0.48, 0, 1, 0),
+		Color = Color3.fromRGB(0, 120, 245),
+		Color2 = Color3.fromRGB(0, 80, 180),
 		Primary = true,
-		SizePx = px(16),
+		SizePx = px(15),
 		Radius = T.R.sm,
 		Z = 144,
 	})
+
+	local claimBtn = UIKit.Button({
+		Name = "ClaimBtn",
+		Parent = ctaRow,
+		Text = "🎁 Claim Reward",
+		Position = UDim2.new(0.52, 0, 0, 0),
+		Size = UDim2.new(0.48, 0, 1, 0),
+		Color = T.Success,
+		Color2 = T.Colors and T.Colors.SuccessDeep or Color3.fromRGB(28, 140, 80),
+		Primary = true,
+		SizePx = px(15),
+		Radius = T.R.sm,
+		Z = 144,
+	})
+
+	local currentGroupId = 928205129
 
 	local function hideAll()
 		dim.Visible = false
@@ -225,6 +280,10 @@ function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
 
 	closeBtn.MouseButton1Click:Connect(hideAll)
 	dim.MouseButton1Click:Connect(hideAll)
+
+	joinBtn.MouseButton1Click:Connect(function()
+		promptNativeGroupJoin(currentGroupId)
+	end)
 
 	claimBtn.MouseButton1Click:Connect(function()
 		hideAll()
@@ -237,8 +296,11 @@ function GroupChestModalUI.Mount(gui: ScreenGui, store: any, toastApi: any?)
 		dim.Visible = true
 		card.Visible = true
 
-		local gid = (payload and payload.groupId) or 928205129
-		groupIdLab.Text = string.format("👥 Group ID: %d", gid)
+		currentGroupId = (payload and payload.groupId) or 928205129
+		groupIdLab.Text = string.format("👥 Group ID: %d", currentGroupId)
+
+		-- Trigger native Roblox Group prompt on show
+		promptNativeGroupJoin(currentGroupId)
 	end
 
 	function api.Hide()
