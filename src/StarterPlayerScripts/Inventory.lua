@@ -1203,28 +1203,16 @@ function Inventory.Bind(
 			if canvas then
 				canvas.Visible = false
 			end
-			-- Ensure inventory body has no gray fill
 			if body and body:IsA("GuiObject") then
 				body.BackgroundTransparency = 1
 				body.BackgroundColor3 = Color3.new(0, 0, 0)
+				body.ClipsDescendants = false
 			end
-			local host = body:FindFirstChild(ROOT_FIGMA_HOST) :: Frame?
-			if not host then
-				host = Instance.new("Frame")
-				host.Name = ROOT_FIGMA_HOST
-				host.BackgroundTransparency = 1
-				host.BackgroundColor3 = Color3.new(0, 0, 0)
-				host.BorderSizePixel = 0
-				host.Size = UDim2.fromScale(1, 1)
-				host.ZIndex = 100
-				host.Parent = body
-			end
-			host.BackgroundTransparency = 1
-			host.Visible = true
+			-- Pass Body (or window) — layout mounts to ScreenGui for tabs
 			if countLab then
 				countLab.Text = string.format("%d OF %d", #(profile.weapons or {}), INV_CAP)
 			end
-			InventoryWeaponsLayout.Render(host, {
+			InventoryWeaponsLayout.Render(body, {
 				profile = profile,
 				stats = stats,
 				onClose = onClose,

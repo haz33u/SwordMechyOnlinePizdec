@@ -130,28 +130,29 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		invRoot.BackgroundColor3 = Color3.new(0, 0, 0)
 		invRoot.BackgroundTransparency = 1
 		invRoot.BorderSizePixel = 0
-		invRoot.ClipsDescendants = false
+		invRoot.ClipsDescendants = false -- CRITICAL: bottom tabs / shell overflow
 		local sc = invRoot:FindFirstChildOfClass("UISizeConstraint")
 		if sc then
-			-- no hard gray box size — let layout fill screen
 			sc.MinSize = Vector2.new(640, 400)
 			sc.MaxSize = Vector2.new(4096, 4096)
 		end
 	end
 	stripWeaponsChrome(frames.weapons)
+	-- UIKit.Window defaults ClipsDescendants=true — force false every layout pass
 
 	Layout.Bind(function(m)
 		local ww = math.clamp((m.windowW or 0.5) + 0.10, 0.56, 0.68)
 		local wh = math.clamp((m.windowH or 0.62) + 0.10, 0.66, 0.80)
 		for id, root in frames do
 			if id == "weapons" then
-				-- Near full-screen inventory (HUD rail/bottom hide while open)
+				-- Full-screen inventory host
 				root.Size = UDim2.fromScale(1, 1)
 				root.Position = UDim2.fromScale(0.5, 0.5)
 				root.AnchorPoint = Vector2.new(0.5, 0.5)
 				root.BackgroundTransparency = 1
 				root.BackgroundColor3 = Color3.new(0, 0, 0)
 				root.ZIndex = 80
+				root.ClipsDescendants = false
 				stripWeaponsChrome(root)
 				local body = root:FindFirstChild("Body")
 				if body and body:IsA("GuiObject") then
@@ -159,6 +160,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 					body.Size = UDim2.fromScale(1, 1)
 					body.Position = UDim2.fromOffset(0, 0)
 					body.ZIndex = 81
+					body.ClipsDescendants = false
 				end
 			elseif id == "character" then
 				-- Larger panel; raised on screen so levels/stats clear of bottom HUD
@@ -1870,6 +1872,15 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		else
 			showOnly("")
 			lastInvSig = ""
+			-- remove ScreenGui-level bottom tabs when inventory closes
+			local invTabs = gui:FindFirstChild("InvBottomTabBar")
+			if invTabs then
+				invTabs:Destroy()
+			end
+			local invRoot = gui:FindFirstChild("FigmaWeaponsRoot", true)
+			if invRoot then
+				invRoot:Destroy()
+			end
 		end
 	end
 

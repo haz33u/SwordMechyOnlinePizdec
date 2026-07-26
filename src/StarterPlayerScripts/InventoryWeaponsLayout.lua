@@ -87,13 +87,7 @@ for k, b in FIGMA do
 		R[k] = rel(b)
 	end
 end
--- Nudge binds further left (user request)
-R.MOUSEBINDScard = {
-	R.MOUSEBINDScard[1] - 0.08,
-	R.MOUSEBINDScard[2],
-	R.MOUSEBINDScard[3] * 1.15,
-	R.MOUSEBINDScard[4] * 1.1,
-}
+-- Binds: pure Figma relative to MAINBACKGROUD (slightly left of shell, adjacent — no extra fly-out)
 
 local FIGMA_TABS = {
 	{ id = "weapons", key = "WEAPONSBUTTON", label = "WEAPONS" },
@@ -164,16 +158,30 @@ export type RenderArgs = {
 }
 
 function InventoryWeaponsLayout.Destroy(parent: Instance)
-	local old = parent:FindFirstChild(ROOT_NAME)
-	if old then
-		old:Destroy()
+	local function wipe(inst: Instance?)
+		if not inst then
+			return
+		end
+		local old = inst:FindFirstChild(ROOT_NAME)
+		if old then
+			old:Destroy()
+		end
+		local tabs = inst:FindFirstChild("InvBottomTabBar")
+		if tabs then
+			tabs:Destroy()
+		end
 	end
-	-- also destroy if parented to window root
-	local win = parent.Parent
-	if win then
-		local o2 = win:FindFirstChild(ROOT_NAME)
-		if o2 then
-			o2:Destroy()
+	wipe(parent)
+	wipe(parent.Parent)
+	local p = parent
+	while p and not p:IsA("ScreenGui") do
+		p = p.Parent
+	end
+	if p then
+		wipe(p)
+		local tabs = p:FindFirstChild("InvBottomTabBar")
+		if tabs then
+			tabs:Destroy()
 		end
 	end
 end
@@ -183,10 +191,24 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 
 	local profile = args.profile
 
-	-- Prefer weapons WINDOW root so nothing clips (Body can still clip)
-	local mountTo = parent
-	if parent.Parent and parent.Parent:IsA("GuiObject") and parent.Name == "Body" then
-		mountTo = parent.Parent :: Frame
+	-- Climb to ScreenGui so bottom tabs cannot be clipped by Window/Body
+	local mountTo: Instance = parent
+	local screenGui: ScreenGui? = nil
+	do
+		local p: Instance? = parent
+		while p do
+			if p:IsA("ScreenGui") then
+				screenGui = p
+				break
+			end
+			if p:IsA("GuiObject") and p.Name == "weapons" then
+				mountTo = p
+			end
+			p = p.Parent
+		end
+	end
+	if mountTo:IsA("GuiObject") then
+		(mountTo :: GuiObject).ClipsDescendants = false
 	end
 
 	local host = Instance.new("Frame")
@@ -195,25 +217,27 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	host.BorderSizePixel = 0
 	host.Size = UDim2.fromScale(1, 1)
 	host.Position = UDim2.fromScale(0, 0)
+	host.AnchorPoint = Vector2.new(0, 0)
 	host.ClipsDescendants = false
 	host.ZIndex = 200
 	host.Parent = mountTo
 
 	----------------------------------------------------------------
-	-- SHELL = MAINBACKGROUD — center of inventory, large on screen
+	-- SHELL = MAINBACKGROUD only — true visual center of inventory
+	-- (0.5, 0.5) of host, large; aspect keeps plate proportional
 	----------------------------------------------------------------
 	local shell = Instance.new("Frame")
 	shell.Name = "MAINBACKGROUD_Shell"
 	shell.BackgroundTransparency = 1
 	shell.BorderSizePixel = 0
 	shell.AnchorPoint = Vector2.new(0.5, 0.5)
-	shell.Position = UDim2.fromScale(0.5, 0.46) -- center, leave room under for tabs
-	shell.Size = UDim2.fromScale(0.92, 0.78) -- large portion of screen
-	shell.ClipsDescendants = false -- allow header above / binds left / overflow
+	shell.Position = UDim2.fromScale(0.5, 0.5) -- exact screen center of host
+	shell.Size = UDim2.fromScale(0.90, 0.82)
+	shell.ClipsDescendants = false
 	shell.ZIndex = 40
 	shell.Parent = host
 
-	-- MAINBACKGROUD aspect ≈ 10150/6201 ≈ 1.637
+	-- MAINBACKGROUD aspect ≈ 1.637 — FitWithinMaxSize keeps plate centered inside shell box
 	local shellAspect = Instance.new("UIAspectRatioConstraint")
 	shellAspect.AspectRatio = 1.637
 	shellAspect.AspectType = Enum.AspectType.FitWithinMaxSize
@@ -630,59 +654,61 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	----------------------------------------------------------------
-	-- BOTTOM TABS — always on host bottom, huge Z, impossible to miss
+	-- BOTTOM TABS on ScreenGui (never clipped by Window ClipsDescendants)
 	----------------------------------------------------------------
+	local tabParent: Instance = screenGui or host
 	local tabBar = Instance.new("Frame")
-	tabBar.Name = "BottomTabBar"
+	tabBar.Name = "InvBottomTabBar"
 	tabBar.BackgroundColor3 = Color3.fromRGB(12, 8, 28)
-	tabBar.BackgroundTransparency = 0.25
+	tabBar.BackgroundTransparency = 0.2
 	tabBar.BorderSizePixel = 0
 	tabBar.AnchorPoint = Vector2.new(0.5, 1)
-	tabBar.Position = UDim2.new(0.5, 0, 1, -8)
-	tabBar.Size = UDim2.new(0.94, 0, 0, 110)
-	tabBar.ZIndex = 400
-	tabBar.Parent = host
+	tabBar.Position = UDim2.new(0.5, 0, 1, -12)
+	tabBar.Size = UDim2.new(0.92, 0, 0, 120)
+	tabBar.ZIndex = 1000
+	tabBar.Visible = true
+	tabBar.Parent = tabParent
 	UIKit.Corner(tabBar, 14)
+	UIKit.Stroke(tabBar, Color3.fromRGB(140, 100, 255), 2, 0.3)
 
 	local tabList = Instance.new("UIListLayout")
 	tabList.FillDirection = Enum.FillDirection.Horizontal
 	tabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	tabList.VerticalAlignment = Enum.VerticalAlignment.Center
-	tabList.Padding = UDim.new(0, 10)
+	tabList.Padding = UDim.new(0, 8)
 	tabList.SortOrder = Enum.SortOrder.LayoutOrder
 	tabList.Parent = tabBar
 
 	for i, def in ipairs(FIGMA_TABS) do
 		local b = Instance.new("ImageButton")
 		b.Name = def.id .. "Tab"
-		b.BackgroundColor3 = Color3.fromRGB(40, 28, 70)
-		b.BackgroundTransparency = 0.15
+		b.BackgroundColor3 = if def.id == "weapons"
+			then Color3.fromRGB(90, 50, 150)
+			else Color3.fromRGB(40, 28, 70)
+		b.BackgroundTransparency = 0.05
 		b.BorderSizePixel = 0
 		b.Image = art(def.key)
 		b.ScaleType = Enum.ScaleType.Fit
 		b.AutoButtonColor = true
-		b.Size = UDim2.fromOffset(96, 96)
+		b.Size = UDim2.fromOffset(100, 100)
 		b.LayoutOrder = i
-		b.ZIndex = 401
+		b.ZIndex = 1001
+		b.Visible = true
+		b.Active = true
 		b.Parent = tabBar
 		UIKit.Corner(b, 12)
 
-		-- label under icon so tabs readable even if image fails
 		local lab = Instance.new("TextLabel")
 		lab.BackgroundTransparency = 1
-		lab.Size = UDim2.new(1, 0, 0, 16)
-		lab.Position = UDim2.new(0, 0, 1, -18)
+		lab.Size = UDim2.new(1, 0, 0, 18)
+		lab.Position = UDim2.new(0, 0, 1, -20)
 		lab.Text = def.label
-		lab.TextSize = 10
+		lab.TextSize = 11
 		lab.Font = Enum.Font.GothamBold
-		lab.TextColor3 = Color3.fromRGB(220, 210, 255)
+		lab.TextColor3 = Color3.fromRGB(240, 230, 255)
 		lab.TextXAlignment = Enum.TextXAlignment.Center
-		lab.ZIndex = 402
+		lab.ZIndex = 1002
 		lab.Parent = b
-
-		if def.id == "weapons" then
-			b.BackgroundColor3 = Color3.fromRGB(70, 40, 120)
-		end
 
 		b.MouseButton1Click:Connect(function()
 			if def.id == "weapons" or def.id == "settings" then
