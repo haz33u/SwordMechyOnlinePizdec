@@ -178,9 +178,12 @@ function Modals.Mount(gui: ScreenGui, store: any)
 
 			-- Ideal ETA with current swords/pets/gear if always clicking
 			etaLabel.Visible = true
-			if pct >= 1 or etaSec <= 0 then
-				etaLabel.Text = "Time to rebirth  ·  ~0s  (ready)"
-				etaLabel.TextColor3 = Color3.fromRGB(100, 230, 140)
+			if pct >= 1 then
+				etaLabel.Text = "Time to rebirth  ·  ~0s  (READY TO REBIRTH!)"
+				etaLabel.TextColor3 = Color3.fromRGB(100, 240, 140)
+			elseif etaSec <= 0.95 then
+				etaLabel.Text = "Time to rebirth  ·  ~< 1s  (1 click away!)"
+				etaLabel.TextColor3 = Color3.fromRGB(100, 240, 140)
 			else
 				etaLabel.Text = string.format(
 					"Time to rebirth  ·  ~%s  (ideal click, current gear)",
