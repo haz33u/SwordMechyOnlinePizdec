@@ -33,18 +33,21 @@ function TitleIndexUI.Open(store: any)
 		sg = Instance.new("ScreenGui")
 		sg.Name = "TitleIndexGui"
 		sg.ResetOnSpawn = false
-		sg.DisplayOrder = 90
+		sg.DisplayOrder = 99999
 		sg.Parent = pGui
+	else
+		(sg :: ScreenGui).DisplayOrder = 99999
 	end
 	activeGui = sg :: ScreenGui
 
 	local modal = Instance.new("Frame")
 	modal.Name = "TitleIndexModal"
-	modal.AnchorPoint = Vector3.new(0.5, 0.5)
+	modal.AnchorPoint = Vector2.new(0.5, 0.5)
 	modal.Position = UDim2.fromScale(0.5, 0.5)
 	modal.Size = UDim2.fromOffset(560, 480)
 	modal.BackgroundColor3 = Color3.fromRGB(18, 20, 28)
 	modal.BackgroundTransparency = 0.05
+	modal.ZIndex = 100
 	modal.Parent = sg
 
 	UIKit.Corner(modal, 16)
