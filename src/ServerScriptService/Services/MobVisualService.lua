@@ -166,14 +166,17 @@ local function tryStudioModel(def: any): Model?
 		string.gsub(def.id, "^L%d+_", ""),
 	}
 
-	-- 1. Direct search in Workspace for models placed by user in Place
-	for _, n in searchNames do
-		if typeof(n) == "string" and n ~= "" then
-			local found = Workspace:FindFirstChild(n)
-			if found and found:IsA("Model") and not found:GetAttribute("IsLiveCombatMob") then
-				local clone = found:Clone()
-				clone.Name = def.id
-				return clone
+	-- 1. Deep search in Workspace for models placed by user in Place (any folder/subfolder)
+	for _, desc in Workspace:GetDescendants() do
+		if desc:IsA("Model") and not desc:GetAttribute("IsLiveCombatMob") then
+			for _, n in searchNames do
+				if typeof(n) == "string" and n ~= "" then
+					if string.lower(desc.Name) == string.lower(n) or string.find(string.lower(desc.Name), string.lower(n)) then
+						local clone = desc:Clone()
+						clone.Name = def.id
+						return clone
+					end
+				end
 			end
 		end
 	end
