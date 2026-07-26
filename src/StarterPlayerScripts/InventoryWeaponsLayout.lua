@@ -24,6 +24,8 @@ local AuraVisual = require(script.Parent.AuraVisual)
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponConfig = require(Shared.Config.WeaponConfig)
+local PetConfig = require(Shared.Config.PetConfig)
+local AuraConfig = require(Shared.Config.AuraConfig)
 local InventoryAssetConfig = require(Shared.Config.InventoryAssetConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 
@@ -89,6 +91,67 @@ for k, b in FIGMA do
 end
 -- Binds: pure Figma relative to MAINBACKGROUD (slightly left of shell, adjacent — no extra fly-out)
 
+-- Grow left Equipment column (felt too small vs Figma-on-screen)
+local function scaleAround(keys: { string }, factor: number, originKey: string)
+	local o = R[originKey]
+	if not o then
+		return
+	end
+	local ox = o[1] + o[3] * 0.5
+	local oy = o[2] + o[4] * 0.5
+	for _, k in ipairs(keys) do
+		local b = R[k]
+		if b then
+			local cx = b[1] + b[3] * 0.5
+			local cy = b[2] + b[4] * 0.5
+			local nw, nh = b[3] * factor, b[4] * factor
+			local ncx = ox + (cx - ox) * factor
+			local ncy = oy + (cy - oy) * factor
+			R[k] = { ncx - nw * 0.5, ncy - nh * 0.5, nw, nh }
+		end
+	end
+end
+scaleAround({
+	"EQUIPMENTbackground",
+	"EquipTitlePlate",
+	"MAINswordCARD",
+	"SECONDswordCARD",
+	"PETcard1",
+	"PETcard2",
+	"PETcard3",
+	"PETcard4",
+	"PETcard5",
+	"PETcard6",
+	"PETcard7",
+	"PETcard8",
+	"RELICcard1",
+	"RELICcard2",
+	"RELICcard3",
+	"AURAcard",
+	"EQUIPbestFORdamage",
+	"EQUIPbestFORpower",
+	"PRESETSbutton",
+	"PRESETcard1",
+	"PRESETcard2",
+	"PRESETcard3",
+	"PRESETcard4",
+	"SELLbutton",
+	"SELLallUNLOCKED",
+}, 1.14, "EQUIPMENTbackground")
+
+-- Weapon grid larger; expand mostly right/down so it clears Equipment column
+do
+	local g = R.BG_WeaponGrid
+	local f = 1.14
+	local nw, nh = g[3] * f, g[4] * f
+	R.BG_WeaponGrid = {
+		g[1] + (nw - g[3]) * 0.05, -- nudge right
+		g[2] - (nh - g[4]) * 0.12,
+		nw,
+		nh,
+	}
+end
+
 local FIGMA_TABS = {
 	{ id = "weapons", key = "WEAPONSBUTTON", label = "WEAPONS" },
 	{ id = "pets", key = "PETCBUTTON", label = "PETS" },
@@ -137,7 +200,8 @@ local function tipText(parent: Instance, order: number, text: string, grad: stri
 	local l = Instance.new("TextLabel")
 	l.Name = "T" .. order
 	l.BackgroundTransparency = 1
-	l.Size = UDim2.new(1, -20, 0, h or 26)
+	-- Smaller lines so full tip fits inside TOOLTIPshell art
+	l.Size = UDim2.new(1, -16, 0, h or 16)
 	l.LayoutOrder = order
 	l.Text = string.upper(text)
 	l.TextXAlignment = Enum.TextXAlignment.Center
@@ -145,7 +209,7 @@ local function tipText(parent: Instance, order: number, text: string, grad: stri
 	l.TextWrapped = true
 	l.ZIndex = (parent :: GuiObject).ZIndex + 2
 	l.Parent = parent
-	UIKit.StyleText(l, grad or "purple", 3)
+	UIKit.StyleText(l, grad or "purple", 2)
 	return l
 end
 
@@ -229,18 +293,16 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local tabParent: Instance = screenGui or host
 	local tabBar = Instance.new("Frame")
 	tabBar.Name = "InvBottomTabBar"
-	tabBar.BackgroundColor3 = Color3.fromRGB(12, 8, 28)
-	tabBar.BackgroundTransparency = 0.15
+	-- No plate / bar chrome — only the Figma button images
+	tabBar.BackgroundTransparency = 1
 	tabBar.BorderSizePixel = 0
 	tabBar.AnchorPoint = Vector2.new(0.5, 1)
 	tabBar.Position = UDim2.new(0.5, 0, 1, -10)
 	tabBar.Size = UDim2.new(0.92, 0, 0, 110)
 	tabBar.ZIndex = 400
 	tabBar.Visible = true
-	tabBar.Active = true
+	tabBar.Active = false
 	tabBar.Parent = tabParent
-	UIKit.Corner(tabBar, 14)
-	UIKit.Stroke(tabBar, Color3.fromRGB(140, 100, 255), 2, 0.3)
 
 	local tabList = Instance.new("UIListLayout")
 	tabList.FillDirection = Enum.FillDirection.Horizontal
@@ -253,11 +315,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	for i, def in ipairs(FIGMA_TABS) do
 		local b = Instance.new("ImageButton")
 		b.Name = def.id .. "Tab"
-		-- Dark square always visible even if image fails to load
-		b.BackgroundColor3 = if def.id == "weapons"
-			then Color3.fromRGB(90, 50, 150)
-			else Color3.fromRGB(40, 28, 70)
-		b.BackgroundTransparency = 0
+		b.BackgroundTransparency = 1
 		b.BorderSizePixel = 0
 		b.Image = art(def.key)
 		b.ScaleType = Enum.ScaleType.Fit
@@ -268,7 +326,6 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		b.Visible = true
 		b.Active = true
 		b.Parent = tabBar
-		UIKit.Corner(b, 12)
 
 		local lab = Instance.new("TextLabel")
 		lab.Name = "Label"
@@ -279,7 +336,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		lab.TextSize = 10
 		lab.Font = Enum.Font.GothamBold
 		lab.TextColor3 = Color3.fromRGB(240, 230, 255)
-		lab.TextStrokeTransparency = 0.4
+		lab.TextStrokeTransparency = 0.35
+		lab.TextStrokeColor3 = Color3.fromRGB(10, 8, 30)
 		lab.TextXAlignment = Enum.TextXAlignment.Center
 		lab.ZIndex = 402
 		lab.Parent = b
@@ -362,6 +420,129 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	nickStrip.Parent = nickPlate
 	UIKit.StyleText(nickStrip, "gold", 2)
 
+	---------------------------------------------------------------- tooltip first (equip + grid both use it)
+	local tip = Instance.new("Frame")
+	tip.Name = "Tooltip"
+	tip.BackgroundTransparency = 1
+	tip.Visible = false
+	tip.Size = UDim2.fromOffset(250, 148)
+	tip.ZIndex = 300
+	tip.Parent = host
+
+	local tipBg = Instance.new("ImageLabel")
+	tipBg.BackgroundTransparency = 1
+	tipBg.Image = art("TOOLTIPshell")
+	tipBg.ScaleType = Enum.ScaleType.Stretch
+	tipBg.Size = UDim2.fromScale(1, 1)
+	tipBg.ZIndex = 1
+	tipBg.Parent = tip
+
+	local tipBody = Instance.new("Frame")
+	tipBody.BackgroundTransparency = 1
+	tipBody.Size = UDim2.fromScale(1, 1)
+	tipBody.ZIndex = 10
+	tipBody.Parent = tip
+	UIKit.Pad(tipBody, 10)
+	local tipList = Instance.new("UIListLayout")
+	tipList.SortOrder = Enum.SortOrder.LayoutOrder
+	tipList.Padding = UDim.new(0, 1)
+	tipList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tipList.VerticalAlignment = Enum.VerticalAlignment.Center
+	tipList.Parent = tipBody
+
+	local function clearTip()
+		for _, c in tipBody:GetChildren() do
+			if c:IsA("TextLabel") or c:IsA("Frame") then
+				c:Destroy()
+			end
+		end
+	end
+
+	local function placeTip()
+		if not tip.Visible then
+			return
+		end
+		local inset = GuiService:GetGuiInset()
+		local mouse = UserInputService:GetMouseLocation()
+		local mx, my = mouse.X - inset.X, mouse.Y - inset.Y
+		local parentAbs, parentSz = host.AbsolutePosition, host.AbsoluteSize
+		local tipW, tipH = math.max(tip.AbsoluteSize.X, 250), math.max(tip.AbsoluteSize.Y, 148)
+		local EDGE = 12
+		local screenX = mx + EDGE
+		if screenX + tipW > parentAbs.X + parentSz.X - 4 then
+			screenX = mx - EDGE - tipW
+		end
+		local screenY = my + 8
+		if screenY + tipH > parentAbs.Y + parentSz.Y - 4 then
+			screenY = parentAbs.Y + parentSz.Y - tipH - 4
+		end
+		if screenY < parentAbs.Y + 2 then
+			screenY = parentAbs.Y + 2
+		end
+		tip.Position = UDim2.fromOffset(math.floor(screenX - parentAbs.X + 0.5), math.floor(screenY - parentAbs.Y + 0.5))
+	end
+
+	local function hideTip()
+		tip.Visible = false
+	end
+
+	-- Compact tip lines so text fits inside shell art
+	local function showTip(title: string, rarity: string?, power: number, sell: number, level: number, equippedLine: string?)
+		clearTip()
+		local order = 1
+		if equippedLine then
+			tipText(tipBody, order, equippedLine, "gold", 14)
+			order += 1
+		end
+		tipText(tipBody, order, title, "purple", 18)
+		order += 1
+		if rarity then
+			tipText(tipBody, order, rarity, "gray", 13)
+			order += 1
+		end
+		tipText(tipBody, order, string.format("POWER: ×%.2f", power), "purple", 13)
+		order += 1
+		tipText(tipBody, order, string.format("SELL PRICE: %d", sell), "gold", 13)
+		order += 1
+		tipText(tipBody, order, string.format("LEVEL: %d", level), "gray", 13)
+		tip.Visible = true
+		task.defer(placeTip)
+		placeTip()
+	end
+
+	local function showTipLines(lines: { any })
+		clearTip()
+		for i, row in ipairs(lines) do
+			local text = tostring(row[1])
+			local grad = if type(row[2]) == "string" then (row[2] :: string) else "purple"
+			local h = if type(row[3]) == "number" then (row[3] :: number) else 14
+			tipText(tipBody, i, text, grad, h)
+		end
+		tip.Visible = true
+		task.defer(placeTip)
+		placeTip()
+	end
+
+	local function bindHoverTip(gui: GuiObject, buildLines: () -> any)
+		gui.Active = true
+		gui.MouseEnter:Connect(function()
+			local lines = buildLines()
+			if type(lines) == "table" and #lines > 0 then
+				showTipLines(lines)
+			end
+		end)
+		gui.MouseLeave:Connect(function()
+			hideTip()
+		end)
+	end
+
+	UserInputService.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement and tip.Visible then
+			placeTip()
+		end
+	end)
+
+	---------------------------------------------------------------- Equipment panel (+ tooltips on slots)
 	pImg("EQUIPMENTbackground", "EQUIPMENTbackground", R.EQUIPMENTbackground, 45, Enum.ScaleType.Stretch)
 	local equipTitleBg = pImg("EquipTitlePlate", "btn_neutral_2_2", R.EquipTitlePlate, 46)
 	local equipTitle = Instance.new("TextLabel")
@@ -374,7 +555,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	equipTitle.Parent = equipTitleBg
 	UIKit.StyleText(equipTitle, "purple", 2)
 
-	local function fillWeapon(key: string, b: { number }, uid: string?)
+	local function fillWeapon(key: string, b: { number }, uid: string?, equipLabel: string)
 		local plate = pImg(key, key, b, 48)
 		local vp = Instance.new("Frame")
 		vp.BackgroundTransparency = 1
@@ -382,10 +563,13 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		vp.Position = UDim2.fromScale(0.5, 0.5)
 		vp.AnchorPoint = Vector2.new(0.5, 0.5)
 		vp.ZIndex = 49
+		vp.Active = false
 		vp.Parent = plate
+		local matched: any = nil
 		if uid then
 			for _, w in ipairs(profile.weapons or {}) do
 				if w.uid == uid then
+					matched = w
 					pcall(function()
 						WeaponModels.TryFillInventoryIcon(vp, w.id, 48)
 					end)
@@ -393,9 +577,31 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				end
 			end
 		end
+		bindHoverTip(plate, function()
+			if not matched then
+				return {
+					{ equipLabel, "gold", 14 },
+					{ "EMPTY SLOT", "gray", 16 },
+				}
+			end
+			local def = WeaponConfig.Get(matched.id)
+			local name = (def and def.name) or WeaponConfig.GetDisplayName(matched.id)
+			local rar = (def and def.rarity) or "Common"
+			local mult = (def and def.powerMult) or 1
+			local sellP = (def and def.sellPrice) or 5
+			local lv = matched.level or 1
+			return {
+				{ equipLabel, "gold", 14 },
+				{ name, "purple", 18 },
+				{ rar, "gray", 13 },
+				{ string.format("POWER: ×%.2f", mult), "purple", 13 },
+				{ string.format("SELL PRICE: %d", sellP), "gold", 13 },
+				{ string.format("LEVEL: %d", lv), "gray", 13 },
+			}
+		end)
 	end
-	fillWeapon("MAINswordCARD", R.MAINswordCARD, profile.equippedMain)
-	fillWeapon("SECONDswordCARD", R.SECONDswordCARD, profile.equippedOffhand)
+	fillWeapon("MAINswordCARD", R.MAINswordCARD, profile.equippedMain, "EQUIPPED MAIN")
+	fillWeapon("SECONDswordCARD", R.SECONDswordCARD, profile.equippedOffhand, "EQUIPPED OFFHAND")
 
 	local team = profile.petTeam or {}
 	local petByUid: { [string]: any } = {}
@@ -406,36 +612,85 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	for i, key in ipairs(petKeys) do
 		local plate = pImg(key, key, R[key], 48)
 		local uid = team[i]
-		if uid and petByUid[tostring(uid)] then
+		local pet = if uid then petByUid[tostring(uid)] else nil
+		if pet then
 			local vp = Instance.new("Frame")
 			vp.BackgroundTransparency = 1
 			vp.Size = UDim2.fromScale(0.78, 0.78)
 			vp.Position = UDim2.fromScale(0.5, 0.5)
 			vp.AnchorPoint = Vector2.new(0.5, 0.5)
 			vp.ZIndex = 49
+			vp.Active = false
 			vp.Parent = plate
 			pcall(function()
-				PetVisual.TryFillInventoryIcon(vp, petByUid[tostring(uid)].id, 32)
+				PetVisual.TryFillInventoryIcon(vp, pet.id, 32)
 			end)
 		end
+		bindHoverTip(plate, function()
+			if not pet then
+				return {
+					{ "PET SLOT " .. i, "gold", 14 },
+					{ "EMPTY", "gray", 16 },
+				}
+			end
+			local def = PetConfig.Get(pet.id)
+			local name = (def and def.name) or tostring(pet.id)
+			local rar = (def and def.rarity) or "Common"
+			local mult = (def and def.powerMult) or 1
+			local lv = pet.level or 1
+			return {
+				{ "PET SLOT " .. i, "gold", 14 },
+				{ name, "purple", 18 },
+				{ rar, "gray", 13 },
+				{ string.format("POWER: ×%.2f", mult), "purple", 13 },
+				{ string.format("LEVEL: %d", lv), "gray", 13 },
+			}
+		end)
 	end
 	for i = 1, 3 do
-		pImg("RELICcard" .. i, "RELICcard" .. i, R["RELICcard" .. i], 48)
+		local plate = pImg("RELICcard" .. i, "RELICcard" .. i, R["RELICcard" .. i], 48)
+		bindHoverTip(plate, function()
+			return {
+				{ "RELIC SLOT " .. i, "gold", 14 },
+				{ "EMPTY", "gray", 16 },
+			}
+		end)
 	end
 	do
 		local aura = pImg("AURAcard", "RELICcard1", R.AURAcard, 48)
-		if profile.equippedAura then
+		local auraId = profile.equippedAura
+		if auraId then
 			local vp = Instance.new("Frame")
 			vp.BackgroundTransparency = 1
 			vp.Size = UDim2.fromScale(0.8, 0.8)
 			vp.Position = UDim2.fromScale(0.5, 0.5)
 			vp.AnchorPoint = Vector2.new(0.5, 0.5)
 			vp.ZIndex = 49
+			vp.Active = false
 			vp.Parent = aura
 			pcall(function()
-				AuraVisual.TryFillInventoryIcon(vp, profile.equippedAura, 36)
+				AuraVisual.TryFillInventoryIcon(vp, auraId, 36)
 			end)
 		end
+		bindHoverTip(aura, function()
+			if not auraId then
+				return {
+					{ "AURA", "gold", 14 },
+					{ "EMPTY", "gray", 16 },
+				}
+			end
+			local resolved = AuraConfig.ResolveId(tostring(auraId))
+			local def = AuraConfig.Get(resolved)
+			local name = (def and def.name) or tostring(auraId)
+			local rar = (def and def.rarity) or "Common"
+			local powerPct = (def and def.powerPct) or 0
+			return {
+				{ "EQUIPPED AURA", "gold", 14 },
+				{ name, "purple", 18 },
+				{ rar, "gray", 13 },
+				{ string.format("POWER: +%d%%", powerPct), "purple", 13 },
+			}
+		end)
 	end
 
 	local function rankWeapons()
@@ -538,103 +793,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
 	task.defer(relayout)
 
-	---------------------------------------------------------------- tooltip (host-level, mouse follow)
-	local tip = Instance.new("Frame")
-	tip.Name = "Tooltip"
-	tip.BackgroundTransparency = 1
-	tip.Visible = false
-	tip.Size = UDim2.fromOffset(280, 168)
-	tip.ZIndex = 300
-	tip.Parent = host
-	-- NOTE: ZIndexBehavior is ScreenGui-only — never set on Frame (crashed Render before)
-
-	local tipBg = Instance.new("ImageLabel")
-	tipBg.BackgroundTransparency = 1
-	tipBg.Image = art("TOOLTIPshell")
-	tipBg.ScaleType = Enum.ScaleType.Stretch
-	tipBg.Size = UDim2.fromScale(1, 1)
-	tipBg.ZIndex = 1
-	tipBg.Parent = tip
-
-	local tipBody = Instance.new("Frame")
-	tipBody.BackgroundTransparency = 1
-	tipBody.Size = UDim2.fromScale(1, 1)
-	tipBody.ZIndex = 10
-	tipBody.Parent = tip
-	UIKit.Pad(tipBody, 14)
-	local tipList = Instance.new("UIListLayout")
-	tipList.SortOrder = Enum.SortOrder.LayoutOrder
-	tipList.Padding = UDim.new(0, 3)
-	tipList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	tipList.VerticalAlignment = Enum.VerticalAlignment.Center
-	tipList.Parent = tipBody
-
-	local function clearTip()
-		for _, c in tipBody:GetChildren() do
-			if c:IsA("TextLabel") or c:IsA("Frame") then
-				c:Destroy()
-			end
-		end
-	end
-
-	local function placeTip()
-		if not tip.Visible then
-			return
-		end
-		local inset = GuiService:GetGuiInset()
-		local mouse = UserInputService:GetMouseLocation()
-		local mx, my = mouse.X - inset.X, mouse.Y - inset.Y
-		local parentAbs, parentSz = host.AbsolutePosition, host.AbsoluteSize
-		local tipW, tipH = math.max(tip.AbsoluteSize.X, 280), math.max(tip.AbsoluteSize.Y, 168)
-		local EDGE = 12
-		local screenX = mx + EDGE
-		if screenX + tipW > parentAbs.X + parentSz.X - 4 then
-			screenX = mx - EDGE - tipW
-		end
-		local screenY = my + 8
-		if screenY + tipH > parentAbs.Y + parentSz.Y - 4 then
-			screenY = parentAbs.Y + parentSz.Y - tipH - 4
-		end
-		if screenY < parentAbs.Y + 2 then
-			screenY = parentAbs.Y + 2
-		end
-		tip.Position = UDim2.fromOffset(math.floor(screenX - parentAbs.X + 0.5), math.floor(screenY - parentAbs.Y + 0.5))
-	end
-
-	local function showTip(title: string, rarity: string?, power: number, sell: number, level: number, equippedLine: string?)
-		clearTip()
-		local order = 1
-		if equippedLine then
-			tipText(tipBody, order, equippedLine, "gold", 22)
-			order += 1
-		end
-		tipText(tipBody, order, title, "purple", 28)
-		order += 1
-		if rarity then
-			tipText(tipBody, order, rarity, "gray", 20)
-			order += 1
-		end
-		tipText(tipBody, order, string.format("POWER: ×%.2f", power), "purple", 20)
-		order += 1
-		tipText(tipBody, order, string.format("SELL PRICE: %d", sell), "gold", 20)
-		order += 1
-		tipText(tipBody, order, string.format("LEVEL: %d", level), "gray", 20)
-		tip.Visible = true
-		task.defer(placeTip)
-		placeTip()
-	end
-
-	local function hideTip()
-		tip.Visible = false
-	end
-
-	UserInputService.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement and tip.Visible then
-			placeTip()
-		end
-	end)
-
-	---------------------------------------------------------------- slots
+	---------------------------------------------------------------- weapon grid slots
 	local weapons = profile.weapons or {}
 	local function makeSlot(order: number, w: any?)
 		local btn = Instance.new("ImageButton")
