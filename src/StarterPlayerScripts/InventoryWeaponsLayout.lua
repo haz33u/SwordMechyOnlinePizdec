@@ -868,16 +868,16 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		wrap.Parent = scroll
 
 		local col = Rarity.Of(rar)
-		-- under-glow scale is card-relative (1 = exact card); keep tight so slots don't look bloated
-		local t1, t2, s1, s2 = 0.72, 0.90, 1.04, 1.10
+		-- under-glow scale is card-relative (1 = exact card); Legendary outer ~1.05
+		local t1, t2, s1, s2 = 0.72, 0.90, 1.02, 1.05
 		if rar == "Legendary" then
-			t1, t2, s1, s2 = 0.58, 0.80, 1.05, 1.14
+			t1, t2, s1, s2 = 0.58, 0.80, 1.02, 1.05
 		elseif rar == "Mythic" then
-			t1, t2, s1, s2 = 0.45, 0.72, 1.07, 1.18
+			t1, t2, s1, s2 = 0.45, 0.72, 1.03, 1.08
 		elseif rar == "Secret" then
-			t1, t2, s1, s2 = 0.32, 0.60, 1.09, 1.22
+			t1, t2, s1, s2 = 0.32, 0.60, 1.04, 1.10
 		elseif rar == "Limited" then
-			t1, t2, s1, s2 = 0.22, 0.52, 1.11, 1.26
+			t1, t2, s1, s2 = 0.22, 0.52, 1.05, 1.12
 		elseif rar ~= "Legendary" and rar ~= "Mythic" and rar ~= "Secret" and rar ~= "Limited" then
 			-- no under-glow for common tiers
 			btn.Size = UDim2.fromScale(1, 1)
