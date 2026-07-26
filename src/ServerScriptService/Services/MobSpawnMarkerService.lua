@@ -91,6 +91,9 @@ function MobSpawnMarkerService.Collect(locationId: number): { SpawnPoint }
 
 	for _, child in folder:GetDescendants() do
 		if child:IsA("BasePart") then
+			-- Hide green spawn markers in Play mode
+			child.Transparency = 1
+
 			local rawMobId = child:GetAttribute("MobId")
 			if typeof(rawMobId) ~= "string" or rawMobId == "" then
 				rawMobId = child.Name
