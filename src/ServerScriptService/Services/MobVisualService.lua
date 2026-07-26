@@ -231,30 +231,61 @@ local function buildBody(def: any, position: Vector3): Model
 		end
 	else
 		-- humanoid / goblin / skeleton / dummy
+		local isGoblin = shape == "goblin" or string.find(string.lower(def.id), "goblin") ~= nil
 		local torsoH = 2.1 * scale
-		root = part("Root", Vector3.new(2.0, torsoH, 1.15) * scale, color, CFrame.new(position + Vector3.new(0, 3.2 * scale, 0)), model, {
+		local bodyColor = color
+		local skinColor = light
+
+		if isGoblin then
+			if def.id == "L1_DarkGoblin" then
+				bodyColor = Color3.fromRGB(35, 42, 58)
+				skinColor = Color3.fromRGB(45, 90, 80)
+			elseif def.id == "L1_GoblinWarrior" then
+				bodyColor = Color3.fromRGB(50, 60, 45)
+				skinColor = Color3.fromRGB(30, 130, 60)
+			elseif def.id == "L1_GoblinScout" then
+				bodyColor = Color3.fromRGB(80, 55, 35)
+				skinColor = Color3.fromRGB(45, 200, 100)
+			else
+				skinColor = Color3.fromRGB(82, 190, 128)
+			end
+		end
+
+		root = part("Root", Vector3.new(2.0, torsoH, 1.15) * scale, bodyColor, CFrame.new(position + Vector3.new(0, 3.2 * scale, 0)), model, {
 			collide = true,
 			material = Enum.Material.SmoothPlastic,
 		})
-		local headColor = isDebug and Color3.fromRGB(255, 210, 140) or light
-		if def.tier == "normal" and string.find(string.lower(def.name), "skeleton") then
-			headColor = Color3.fromRGB(230, 230, 220)
-			root.Color = Color3.fromRGB(210, 210, 200)
-		end
-		local head = part("Head", Vector3.new(1.35, 1.25, 1.25) * scale, headColor, root.CFrame * CFrame.new(0, torsoH * 0.72, 0), model)
-		part("ArmL", Vector3.new(0.7, 1.7, 0.7) * scale, dark, root.CFrame * CFrame.new(-1.35 * scale, 0.1 * scale, 0), model)
-		part("ArmR", Vector3.new(0.7, 1.7, 0.7) * scale, dark, root.CFrame * CFrame.new(1.35 * scale, 0.1 * scale, 0), model)
+
+		local head = part("Head", Vector3.new(1.35, 1.25, 1.25) * scale, skinColor, root.CFrame * CFrame.new(0, torsoH * 0.72, 0), model)
+		part("ArmL", Vector3.new(0.7, 1.7, 0.7) * scale, skinColor, root.CFrame * CFrame.new(-1.35 * scale, 0.1 * scale, 0), model)
+		part("ArmR", Vector3.new(0.7, 1.7, 0.7) * scale, skinColor, root.CFrame * CFrame.new(1.35 * scale, 0.1 * scale, 0), model)
 		part("LegL", Vector3.new(0.75, 1.6, 0.75) * scale, dark, root.CFrame * CFrame.new(-0.45 * scale, -torsoH * 0.85, 0), model)
 		part("LegR", Vector3.new(0.75, 1.6, 0.75) * scale, dark, root.CFrame * CFrame.new(0.45 * scale, -torsoH * 0.85, 0), model)
-		-- eyes
-		part("EyeL", Vector3.new(0.22, 0.22, 0.12) * scale, Color3.new(1, 1, 1), head.CFrame * CFrame.new(-0.28 * scale, 0.1 * scale, -0.62 * scale), model)
-		part("EyeR", Vector3.new(0.22, 0.22, 0.12) * scale, Color3.new(1, 1, 1), head.CFrame * CFrame.new(0.28 * scale, 0.1 * scale, -0.62 * scale), model)
-		if isBoss then
-			part("Crown", Vector3.new(1.5, 0.35, 1.5) * scale, Color3.fromRGB(255, 210, 70), head.CFrame * CFrame.new(0, 0.85 * scale, 0), model, {
-				material = Enum.Material.Neon,
-			})
+
+		-- Long Goblin Ears & Accessories
+		if isGoblin then
+			part("EarL", Vector3.new(0.95, 0.28, 0.28) * scale, skinColor, head.CFrame * CFrame.new(-0.95 * scale, 0.1 * scale, 0.1 * scale) * CFrame.Angles(0, 0, math.rad(22)), model)
+			part("EarR", Vector3.new(0.95, 0.28, 0.28) * scale, skinColor, head.CFrame * CFrame.new(0.95 * scale, 0.1 * scale, 0.1 * scale) * CFrame.Angles(0, 0, math.rad(-22)), model)
+
+			if def.id == "L1_DarkGoblin" then
+				part("DarkHelm", Vector3.new(1.42, 0.7, 1.32) * scale, Color3.fromRGB(20, 25, 35), head.CFrame * CFrame.new(0, 0.35 * scale, 0), model)
+				part("EyeL", Vector3.new(0.25, 0.25, 0.12) * scale, Color3.fromRGB(180, 100, 255), head.CFrame * CFrame.new(-0.28 * scale, 0.1 * scale, -0.62 * scale), model, { material = Enum.Material.Neon })
+				part("EyeR", Vector3.new(0.25, 0.25, 0.12) * scale, Color3.fromRGB(180, 100, 255), head.CFrame * CFrame.new(0.28 * scale, 0.1 * scale, -0.62 * scale), model, { material = Enum.Material.Neon })
+			elseif def.id == "L1_GoblinWarrior" then
+				part("PauldronsL", Vector3.new(0.95, 0.6, 0.95) * scale, Color3.fromRGB(40, 50, 40), root.CFrame * CFrame.new(-1.35 * scale, 0.8 * scale, 0), model)
+				part("PauldronsR", Vector3.new(0.95, 0.6, 0.95) * scale, Color3.fromRGB(40, 50, 40), root.CFrame * CFrame.new(1.35 * scale, 0.8 * scale, 0), model)
+				part("HornL", Vector3.new(0.25, 0.75, 0.25) * scale, Color3.fromRGB(200, 190, 170), head.CFrame * CFrame.new(-0.6 * scale, 0.7 * scale, -0.2 * scale) * CFrame.Angles(0, 0, math.rad(-25)), model)
+				part("HornR", Vector3.new(0.25, 0.75, 0.25) * scale, Color3.fromRGB(200, 190, 170), head.CFrame * CFrame.new(0.6 * scale, 0.7 * scale, -0.2 * scale) * CFrame.Angles(0, 0, math.rad(25)), model)
+				part("EyeL", Vector3.new(0.22, 0.22, 0.12) * scale, Color3.fromRGB(255, 80, 80), head.CFrame * CFrame.new(-0.28 * scale, 0.1 * scale, -0.62 * scale), model, { material = Enum.Material.Neon })
+				part("EyeR", Vector3.new(0.22, 0.22, 0.12) * scale, Color3.fromRGB(255, 80, 80), head.CFrame * CFrame.new(0.28 * scale, 0.1 * scale, -0.62 * scale), model, { material = Enum.Material.Neon })
+			else
+				part("EyeL", Vector3.new(0.22, 0.22, 0.12) * scale, Color3.new(1, 1, 1), head.CFrame * CFrame.new(-0.28 * scale, 0.1 * scale, -0.62 * scale), model)
+				part("EyeR", Vector3.new(0.22, 0.22, 0.12) * scale, Color3.new(1, 1, 1), head.CFrame * CFrame.new(0.28 * scale, 0.1 * scale, -0.62 * scale), model)
+			end
+		else
+			part("EyeL", Vector3.new(0.22, 0.22, 0.12) * scale, Color3.new(1, 1, 1), head.CFrame * CFrame.new(-0.28 * scale, 0.1 * scale, -0.62 * scale), model)
+			part("EyeR", Vector3.new(0.22, 0.22, 0.12) * scale, Color3.new(1, 1, 1), head.CFrame * CFrame.new(0.28 * scale, 0.1 * scale, -0.62 * scale), model)
 		end
-	end
 
 	model.PrimaryPart = root
 	weldVisual(model, root)

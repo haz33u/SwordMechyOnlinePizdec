@@ -86,7 +86,7 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 3,
-			visual = { preferredModelName = "Goblin", color = "#58D68D", scale = 1.0, shape = "humanoid" },
+			visual = { preferredModelName = "Goblin", color = "#52BE80", scale = 1.0, shape = "goblin" },
 			description = "T1 green goblin. Dump HP 1K / coins 200.",
 		},
 		L1_DarkGoblin = {
@@ -102,8 +102,8 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 4,
-			visual = { preferredModelName = "Warrior", color = "#5DADE2", scale = 1.1, shape = "humanoid" },
-			description = "T2 blue dark goblin. HP 8K / coins 800.",
+			visual = { preferredModelName = "DarkGoblin", color = "#2C3E50", scale = 1.15, shape = "goblin" },
+			description = "T2 dark purple goblin warrior. HP 8K / coins 800.",
 		},
 		L1_GoblinWarrior = {
 			id = "L1_GoblinWarrior",
@@ -118,8 +118,8 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 6,
-			visual = { preferredModelName = "Ninja", color = "#8E44AD", scale = 1.25, shape = "humanoid" },
-			description = "T3 warrior. Dump HP 5.68M / coins 100K.",
+			visual = { preferredModelName = "GoblinWarrior", color = "#1E8449", scale = 1.35, shape = "goblin" },
+			description = "T3 heavy armored goblin warrior. Dump HP 5.68M / coins 100K.",
 		},
 		L1_GoblinScout = {
 			id = "L1_GoblinScout",
@@ -134,8 +134,8 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 8,
-			visual = { preferredModelName = "Samurai", color = "#922B21", scale = 1.35, shape = "humanoid" },
-			description = "T4 elite scout. Dump HP 300K / coins 12.5K.",
+			visual = { preferredModelName = "GoblinScout", color = "#2ECC71", scale = 1.1, shape = "goblin" },
+			description = "T4 elite goblin scout. Dump HP 300K / coins 12.5K.",
 		},
 		-- L1_Boss disabled per user order
 		--[[
