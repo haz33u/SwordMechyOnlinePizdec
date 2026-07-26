@@ -635,18 +635,19 @@ end
 function Formulas.EstimateRebirthEta(profile: any, player: Player?): (number, number, number, number)
 	local nextLv = (profile.rebirthLevel or 0) + 1
 	local powerCost, coinCost = RebirthConfig.GetCosts(nextLv)
-	local currentPower = Formulas.GetTotalPower(profile, player)
-	local coins = profile.coins or 0
-	local remPower = math.max(0, powerCost - currentPower)
+	local accPower = (profile and (profile.lifetimeDamage or profile.totalPower or profile.power)) or 0
+	local coins = (profile and profile.coins) or 0
+
+	local remPower = math.max(0, powerCost - accPower)
 	local remCoins = math.max(0, coinCost - coins)
 
 	if remPower <= 0 and remCoins <= 0 then
 		return 0, 0, 0, 0
 	end
 
-	local gainPerClick = Formulas.GetClickPowerGain(profile, player)
+	local hitPower = Formulas.GetTotalPower(profile, player)
 	local cps = Formulas.GetCPS(profile)
-	local powerPerSec = gainPerClick * cps
+	local powerPerSec = hitPower * cps
 
 	if powerPerSec < 0.01 then
 		return math.huge, remPower, remCoins, powerPerSec
