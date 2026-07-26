@@ -14,6 +14,10 @@ function UIKit.ApplyRainbow(target: Instance, speed: number?, hueSpread: number?
 	return RainbowGradient.Apply(target, speed, hueSpread, rotSpeed)
 end
 
+function UIKit.ApplyShimmer(target: Instance, presetNameOrConfig: (string | RainbowGradient.ShimmerPreset)?, speed: number?, rotSpeed: number?)
+	return RainbowGradient.ApplyShimmer(target, presetNameOrConfig, speed, rotSpeed)
+end
+
 local TEXT_GRADIENTS: { [string]: ColorSequence } = {
 	purple = ColorSequence.new(Color3.fromRGB(207, 178, 255), Color3.fromRGB(143, 92, 255)),
 	gold = ColorSequence.new(Color3.fromRGB(255, 243, 176), Color3.fromRGB(255, 207, 63)),
