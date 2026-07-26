@@ -72,6 +72,14 @@ local InventoryAssetConfig = {
 	EQUIPbestFORpowerBUTTON = "rbxassetid://92110616611889", -- already an Image id
 	EQUIPbestFORdamageBUTTON = "rbxassetid://119992767516552", -- already an Image id
 	MOUSEBINDScard = "rbxassetid://76392032081380",
+	-- Header mousebind wordmarks (MechyForge brief Group_56/57/58)
+	mousebind1 = "rbxassetid://104476858818003",
+	mousebind2 = "rbxassetid://108340774797186",
+	mousebind3 = "rbxassetid://108591311269762",
+	Group_56 = "rbxassetid://104476858818003", -- alias → mousebind1
+	Group_57 = "rbxassetid://108340774797186", -- alias → mousebind2
+	Group_58 = "rbxassetid://108591311269762", -- alias → mousebind3
+	unequip = "rbxassetid://128671349968872",
 
 	-- ── Shop ───────────────────────────────────────────────
 	SECONDswordShopcard = "rbxassetid://87981370801253",
