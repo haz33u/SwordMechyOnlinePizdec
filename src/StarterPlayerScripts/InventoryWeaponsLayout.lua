@@ -364,32 +364,43 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local row = Instance.new("Frame")
 		row.Name = "TitleNickRow"
 		row.BackgroundTransparency = 1
-		row.Size = UDim2.fromScale(0.88, 0.62)
+		-- Fill the card face so type sits big and centered in the asset
+		row.Size = UDim2.fromScale(0.9, 0.72)
 		row.Position = UDim2.fromScale(0.5, 0.5)
 		row.AnchorPoint = Vector2.new(0.5, 0.5)
-		row.ClipsDescendants = true
+		row.ClipsDescendants = false
 		row.ZIndex = 99
 		row.Parent = plate
 		local list = Instance.new("UIListLayout")
 		list.FillDirection = Enum.FillDirection.Horizontal
 		list.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		list.VerticalAlignment = Enum.VerticalAlignment.Center
-		list.Padding = UDim.new(0, 6)
+		list.Padding = UDim.new(0, 8)
 		list.SortOrder = Enum.SortOrder.LayoutOrder
 		list.Parent = row
-		-- Fixed text size + AutomaticSize.X so TITLE | NICK sit in one line (no overlap)
+		-- Scale with plate height (readable, no stack): TextScaled + full row height
+		local TITLE_NICK_MAX = 28
+		local TITLE_NICK_MIN = 16
 		local function mkLab(order: number): TextLabel
 			local l = Instance.new("TextLabel")
 			l.BackgroundTransparency = 1
 			l.AutomaticSize = Enum.AutomaticSize.X
-			l.Size = UDim2.fromOffset(0, 22)
+			l.Size = UDim2.new(0, 0, 1, 0)
 			l.LayoutOrder = order
-			l.TextScaled = false
-			l.TextSize = 15
+			l.TextScaled = true
 			l.TextXAlignment = Enum.TextXAlignment.Center
 			l.TextYAlignment = Enum.TextYAlignment.Center
 			l.ZIndex = 100
 			l.Parent = row
+			local c = Instance.new("UITextSizeConstraint")
+			c.MinTextSize = TITLE_NICK_MIN
+			c.MaxTextSize = TITLE_NICK_MAX
+			c.Parent = l
+			local st = Instance.new("UIStroke")
+			st.Thickness = 1.4
+			st.Transparency = 0.25
+			st.Color = Color3.fromRGB(20, 12, 40)
+			st.Parent = l
 			return l
 		end
 		local tLab = mkLab(1)
@@ -398,13 +409,11 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local nick = (Players.LocalPlayer and ((Players.LocalPlayer.DisplayName ~= "" and Players.LocalPlayer.DisplayName) or Players.LocalPlayer.Name))
 			or "Player"
 		Titles.PaintLine(tLab, sLab, nLab, profile, nick)
-		-- Keep fixed size from PaintLine (do NOT re-enable TextScaled — it stacks labels)
-		tLab.TextScaled = false
-		sLab.TextScaled = false
-		nLab.TextScaled = false
-		tLab.TextSize = 15
-		sLab.TextSize = 15
-		nLab.TextSize = 15
+		-- PaintLine sets TextScaled false — re-enable scale-to-card for this plate only
+		for _, lab in { tLab, sLab, nLab } do
+			lab.TextScaled = true
+			lab.TextSize = TITLE_NICK_MAX
+		end
 		sLab.Text = " | "
 	end
 
