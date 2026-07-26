@@ -17,6 +17,7 @@ local Format = require(script.Parent.Format)
 local Net = require(script.Parent.Net)
 local Rarity = require(script.Parent.Rarity)
 local Titles = require(script.Parent.Titles)
+local TitleIndexUI = require(script.Parent.TitleIndexUI)
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponConfig = require(Shared.Config.WeaponConfig)
@@ -1926,6 +1927,24 @@ function Inventory.Bind(
 					inspectLocation = nil
 					inspectStatus = nil
 					api:Refresh()
+				end)
+			else
+				local titlesBtn = Instance.new("TextButton")
+				titlesBtn.Size = UDim2.fromOffset(180, 40)
+				titlesBtn.Position = UDim2.fromOffset(184, 116)
+				titlesBtn.BackgroundColor3 = Color3.fromRGB(240, 170, 40)
+				titlesBtn.BackgroundTransparency = 0
+				titlesBtn.Text = "★ TITLES INDEX"
+				titlesBtn.TextColor3 = Color3.fromRGB(20, 20, 20)
+				titlesBtn.Font = Enum.Font.Arcade
+				titlesBtn.TextSize = 15
+				titlesBtn.BorderSizePixel = 0
+				titlesBtn.ZIndex = 37
+				titlesBtn.Parent = headRow
+				UIKit.Corner(titlesBtn, 6)
+				UIKit.Stroke(titlesBtn, Color3.new(1, 1, 1), 1.2, 0.3)
+				titlesBtn.MouseButton1Click:Connect(function()
+					TitleIndexUI.Open(store)
 				end)
 			end
 

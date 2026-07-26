@@ -80,6 +80,7 @@ function Remotes.InitAll()
 	Remotes.Event("DebugCommand") -- DevTools panel (Studio / GameConfig.DEBUG)
 	-- paid unlocks (stub until gamepass): "offhand" | "paidPetSlot"
 	Remotes.Event("UnlockPaidFeature")
+	Remotes.Event("SelectTitle")
 
 	-- server -> client
 	Remotes.Event("ProfileUpdate")
