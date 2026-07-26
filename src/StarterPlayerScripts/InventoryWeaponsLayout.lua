@@ -39,53 +39,49 @@ local GRID_COLS = 6
 local lockedUids: { [string]: boolean } = {}
 
 -- Brief canvas UDim2: { posX, posY, sizeX, sizeY } scale on 1920×1080
+-- Equipment slots = exact Mechy brief (no uniform re-layout)
 local B = {
 	MAINBACKGROUD = { 0.0609, 0.0324, 0.8052, 0.938 },
 	BG_WeaponGrid = { 0.3214, 0.1667, 0.5323, 0.7769 },
 	BTN_Close_3 = { 0.7984, 0.0593, 0.0547, 0.1 },
 	EQUIPMENTbackground = { 0.0729, 0.1574, 0.2589, 0.4102 },
-	-- Divider: lower + wider, same horizontal center as brief (0.3344+0.45/2)
+	-- Divider: slightly lower + wider, same center as brief 0.5594
 	Divider_3_Minimal_1 = { 0.2994, 0.125, 0.52, 0.072 },
 	EQUIPbestFORdamageBUTTON = { 0.112, 0.6574, 0.1724, 0.1019 },
 	EQUIPbestFORpowerBUTTON = { 0.113, 0.5611, 0.1698, 0.1009 },
-	-- Uniform equipment slots (even sizes + spacing)
-	MAINswordCARD = { 0.100, 0.178, 0.074, 0.110 },
-	SECONDswordCARD = { 0.192, 0.178, 0.074, 0.110 },
-	PETcard1 = { 0.100, 0.318, 0.054, 0.080 },
-	PETcard2 = { 0.164, 0.318, 0.054, 0.080 },
-	PETcard3 = { 0.228, 0.318, 0.054, 0.080 },
-	PETcard4 = { 0.292, 0.318, 0.054, 0.080 },
-	RELICcard1 = { 0.100, 0.428, 0.068, 0.100 },
-	RELICcard2 = { 0.178, 0.428, 0.068, 0.100 },
-	RELICcard3 = { 0.256, 0.428, 0.068, 0.100 },
-	AURAcard = { 0.178, 0.548, 0.068, 0.100 },
+	MAINswordCARD = { 0.0901, 0.1704, 0.0776, 0.138 },
+	SECONDswordCARD = { 0.2359, 0.1741, 0.0771, 0.137 },
+	PETcard1 = { 0.0922, 0.3111, 0.0557, 0.0991 },
+	PETcard2 = { 0.1453, 0.3102, 0.0563, 0.1 },
+	PETcard3 = { 0.2021, 0.3093, 0.0563, 0.1 },
+	PETcard4 = { 0.2562, 0.3093, 0.0563, 0.1 },
+	AURAcard = { 0.163, 0.1741, 0.076, 0.1352 },
 	WEAPONSBUTTON = { 0.8477, 0.0111, 0.0885, 0.1574 },
 	PETCBUTTON = { 0.8477, 0.1759, 0.0885, 0.1574 },
 	AURABUTTON = { 0.8477, 0.3389, 0.0885, 0.1574 },
 	RELICBUTTON = { 0.8467, 0.5037, 0.0885, 0.1574 },
 	CONSUMABLESBUTTON = { 0.8467, 0.6685, 0.0885, 0.1574 },
 	SHOPBUTTON = { 0.8477, 0.8287, 0.0885, 0.1574 },
-	PRESETcard1 = { 0.100, 0.830, 0.058, 0.086 },
-	PRESETcard2 = { 0.168, 0.830, 0.058, 0.086 },
-	PRESETcard3 = { 0.236, 0.830, 0.058, 0.086 },
-	PRESETcard4 = { 0.304, 0.830, 0.058, 0.086 },
+	PRESETcard1 = { 0.0786, 0.8278, 0.0625, 0.1111 },
+	PRESETcard2 = { 0.1385, 0.8287, 0.0625, 0.1111 },
+	PRESETcard3 = { 0.1974, 0.8269, 0.0625, 0.1111 },
+	PRESETcard4 = { 0.2562, 0.8278, 0.0625, 0.1111 },
 	PRESETSbutton = { 0.1135, 0.7593, 0.1734, 0.0769 },
-	btn_neutral_2_1 = { 0.5534, 0.0602, 0.2208, 0.0815 },
-	mousebind1 = { 0.3154, 0.118, 0.1182, 0.0556 },
-	mousebind2 = { 0.4826, 0.072, 0.0682, 0.0463 },
-	mousebind3 = { 0.430, 0.104, 0.1255, 0.0574 },
-	unequip = { 0.3628, 0.072, 0.1083, 0.0546 },
-	TitleNickHost = { 0.5805, 0.0593, 0.182, 0.0806 },
-	TitleCard = { 0.0245, 0.0019, 0.3005, 0.1815 },
-	-- Sell mode: same slots as equip-best buttons
+	RELICcard1 = { 0.0891, 0.413, 0.0776, 0.138 },
+	RELICcard2 = { 0.162, 0.413, 0.0776, 0.138 },
+	RELICcard3 = { 0.238, 0.413, 0.0776, 0.138 },
+	-- Title|Nick sits ON this plate (brief btn_neutral position)
+	btn_neutral_2_1 = { 0.5734, 0.0602, 0.2208, 0.0815 },
+	-- Title card slightly higher than brief
+	TitleCard = { 0.0245, -0.012, 0.3005, 0.1815 },
 	SELLbutton = { 0.112, 0.6574, 0.1724, 0.1019 },
 	SELLallUNLOCKED = { 0.113, 0.5611, 0.1698, 0.1009 },
 }
 
--- Shift inv cluster slightly left (grid + shell chrome + tabs already shifted above)
+-- Mild left shift for inv + tabs
 local SHIFT_LEFT = 0.018
 
--- WeaponGrid: larger + stretch UP toward divider (kill visual gap under divider)
+-- WeaponGrid: larger + stretch UP toward divider
 do
 	local g = B.BG_WeaponGrid
 	local left, right, top, bottom = 0.020, 0.028, 0.045, 0.016
@@ -97,14 +93,12 @@ do
 	}
 end
 
--- Whole inv shell nudge left (tabs already have lower X in B)
 B.MAINBACKGROUD = {
 	B.MAINBACKGROUD[1] - SHIFT_LEFT,
 	B.MAINBACKGROUD[2],
 	B.MAINBACKGROUD[3],
 	B.MAINBACKGROUD[4],
 }
--- Keep divider/equip/etc in shell-relative space: also shift their canvas X with shell
 for _, key in ipairs({
 	"Divider_3_Minimal_1",
 	"EQUIPMENTbackground",
@@ -126,11 +120,6 @@ for _, key in ipairs({
 	"PRESETcard4",
 	"PRESETSbutton",
 	"btn_neutral_2_1",
-	"mousebind1",
-	"mousebind2",
-	"mousebind3",
-	"unequip",
-	"TitleNickHost",
 	"TitleCard",
 	"BTN_Close_3",
 	"SELLbutton",
@@ -321,6 +310,27 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local mainBg = place(host, "MAINBACKGROUD", "MAINBACKGROUD", B.MAINBACKGROUD, 1, false, Enum.ScaleType.Stretch)
 	-- slight down only (X from brief)
 	mainBg.Position = UDim2.fromScale(MB[1], MB[2] + 0.012)
+	-- kill any accidental rim/stroke around shell (thin purple strip)
+	mainBg.BackgroundTransparency = 1
+	mainBg.BackgroundColor3 = Color3.new(0, 0, 0)
+	mainBg.BorderSizePixel = 0
+	host.BackgroundTransparency = 1
+	host.BorderSizePixel = 0
+	task.defer(function()
+		if not mainBg.Parent then
+			return
+		end
+		for _, ch in mainBg:GetDescendants() do
+			if ch:IsA("UIStroke") and ch.Name ~= "RarityGlow" then
+				ch:Destroy()
+			end
+		end
+		for _, ch in host:GetChildren() do
+			if ch:IsA("UIStroke") then
+				ch:Destroy()
+			end
+		end
+	end)
 
 	local function pShell(
 		name: string,
@@ -334,21 +344,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	---------------------------------------------------------------- chrome (relative to MAINBACKGROUD)
+	-- no mousebind / unequip
 	pShell("EQUIPMENTbackground", "EQUIPMENTbackground", B.EQUIPMENTbackground, 4, false, Enum.ScaleType.Stretch)
 	pShell("Divider", "Divider_3_Minimal_1", B.Divider_3_Minimal_1, 5, false, Enum.ScaleType.Stretch)
-	pShell("btn_neutral_2_1", "btn_neutral_2_1", B.btn_neutral_2_1, 32, false, Enum.ScaleType.Stretch)
-	pShell("mousebind1", "mousebind1", B.mousebind1, 32, false, Enum.ScaleType.Fit)
-	pShell("mousebind2", "mousebind2", B.mousebind2, 33, false, Enum.ScaleType.Fit)
-	pShell("mousebind3", "mousebind3", B.mousebind3, 34, false, Enum.ScaleType.Fit)
-	pShell("unequip", "unequip", B.unequip, 35, false, Enum.ScaleType.Fit)
 	pShell("PRESETSbutton", "WORDMARK_presets__click_to_equip_1", B.PRESETSbutton, 28, false, Enum.ScaleType.Fit)
 	for i = 1, 4 do
-		local pc = pShell("PRESETcard" .. i, "PRESETcard" .. i, B["PRESETcard" .. i], 24 + i, true, Enum.ScaleType.Fit)
-		local ar = Instance.new("UIAspectRatioConstraint")
-		ar.AspectRatio = 1
-		ar.AspectType = Enum.AspectType.FitWithinMaxSize
-		ar.DominantAxis = Enum.DominantAxis.Width
-		ar.Parent = pc
+		pShell("PRESETcard" .. i, "PRESETcard" .. i, B["PRESETcard" .. i], 24 + i, true, Enum.ScaleType.Fit)
 	end
 
 	local titleArt = TITLE_CARD[invTab] or "INVENTORYWEAPONcard"
@@ -357,38 +358,37 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local closeBtn = pShell("BTN_Close_3", "BTN_Close_3", B.BTN_Close_3, 80, true, Enum.ScaleType.Fit) :: ImageButton
 	closeBtn.MouseButton1Click:Connect(args.onClose)
 
-	-- Real title | nick (Titles.PaintLine colors) — no wordmark image
+	-- Title | Nick on btn_neutral_2_1 plate (scale text to plate)
 	do
-		local nickHost = Instance.new("Frame")
-		nickHost.Name = "TitleNickHost"
-		nickHost.BackgroundTransparency = 1
-		nickHost.BorderSizePixel = 0
-		local nb = rel(B.TitleNickHost)
-		nickHost.Position = UDim2.fromScale(nb[1], nb[2])
-		nickHost.Size = UDim2.fromScale(nb[3], nb[4])
-		nickHost.ZIndex = 98
-		nickHost.ClipsDescendants = false
-		nickHost.Parent = mainBg
+		local plate = pShell("btn_neutral_2_1", "btn_neutral_2_1", B.btn_neutral_2_1, 32, false, Enum.ScaleType.Stretch)
 		local row = Instance.new("Frame")
+		row.Name = "TitleNickRow"
 		row.BackgroundTransparency = 1
-		row.Size = UDim2.fromScale(1, 1)
-		row.Parent = nickHost
+		row.Size = UDim2.fromScale(0.92, 0.72)
+		row.Position = UDim2.fromScale(0.5, 0.5)
+		row.AnchorPoint = Vector2.new(0.5, 0.5)
+		row.ZIndex = 99
+		row.Parent = plate
 		local list = Instance.new("UIListLayout")
 		list.FillDirection = Enum.FillDirection.Horizontal
 		list.HorizontalAlignment = Enum.HorizontalAlignment.Center
 		list.VerticalAlignment = Enum.VerticalAlignment.Center
-		list.Padding = UDim.new(0, 6)
+		list.Padding = UDim.new(0, 4)
 		list.SortOrder = Enum.SortOrder.LayoutOrder
 		list.Parent = row
 		local function mkLab(order: number): TextLabel
 			local l = Instance.new("TextLabel")
 			l.BackgroundTransparency = 1
 			l.AutomaticSize = Enum.AutomaticSize.X
-			l.Size = UDim2.fromScale(0, 0.85)
+			l.Size = UDim2.fromScale(0, 1)
 			l.LayoutOrder = order
-			l.TextSize = Titles.PlateTextSize
-			l.ZIndex = 99
+			l.TextScaled = true
+			l.ZIndex = 100
 			l.Parent = row
+			local c = Instance.new("UITextSizeConstraint")
+			c.MinTextSize = 10
+			c.MaxTextSize = 20
+			c.Parent = l
 			return l
 		end
 		local tLab = mkLab(1)
@@ -397,24 +397,15 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local nick = (Players.LocalPlayer and ((Players.LocalPlayer.DisplayName ~= "" and Players.LocalPlayer.DisplayName) or Players.LocalPlayer.Name))
 			or "Player"
 		Titles.PaintLine(tLab, sLab, nLab, profile, nick)
+		-- Keep PaintLine colors/font; TextScaled fits plate height
+		tLab.TextScaled = true
+		sLab.TextScaled = true
+		nLab.TextScaled = true
 	end
 
-	---------------------------------------------------------------- equipment slots
-	local function forceSquare(g: GuiObject)
-		local ar = g:FindFirstChildOfClass("UIAspectRatioConstraint")
-		if not ar then
-			ar = Instance.new("UIAspectRatioConstraint")
-			ar.Parent = g
-		end
-		ar.AspectRatio = 1
-		ar.AspectType = Enum.AspectType.FitWithinMaxSize
-		ar.DominantAxis = Enum.DominantAxis.Width
-	end
-
+	---------------------------------------------------------------- equipment slots (brief boxes, Fit, no forceSquare)
 	local function fillPlate(name: string, assetKey: string, box: { number }, z: number): GuiObject
-		local p = pShell(name, assetKey, box, z, false, Enum.ScaleType.Fit)
-		forceSquare(p)
-		return p
+		return pShell(name, assetKey, box, z, false, Enum.ScaleType.Fit)
 	end
 
 	local function iconHost(parent: GuiObject, scale: number?): Frame
@@ -650,7 +641,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end)
 	end
 
-	-- Pets 1–4 only (uniform size via forceSquare)
+	-- Pets 1–4 (brief positions)
 	local team = profile.petTeam or {}
 	local petByUid: { [string]: any } = {}
 	for _, p in ipairs(profile.pets or {}) do
@@ -866,41 +857,56 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		return iconHost
 	end
 
-	-- Strong rarity glow: Legendary < Mythic < Secret < Limited
-	local function applyRarityGlow(btn: GuiObject, rar: string)
-		local thick = 0
-		local trans = 1
-		if rar == "Legendary" then
-			thick, trans = 5, 0.42
-		elseif rar == "Mythic" then
-			thick, trans = 7, 0.32
-		elseif rar == "Secret" then
-			thick, trans = 10, 0.18
-		elseif rar == "Limited" then
-			thick, trans = 13, 0.10
-		else
-			return
-		end
+	-- Soft glow FROM UNDER the card (not square outline stroke)
+	local function applyRarityGlow(btn: GuiObject, rar: string, layoutOrder: number): Frame
+		local wrap = Instance.new("Frame")
+		wrap.Name = "SlotWrap_" .. btn.Name
+		wrap.BackgroundTransparency = 1
+		wrap.BorderSizePixel = 0
+		wrap.LayoutOrder = layoutOrder
+		wrap.ZIndex = 4
+		wrap.Parent = scroll
+
 		local col = Rarity.Of(rar)
-		local glow = Instance.new("UIStroke")
-		glow.Name = "RarityGlow"
-		glow.Color = col
-		glow.Thickness = thick
-		glow.Transparency = trans
-		glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-		glow.LineJoinMode = Enum.LineJoinMode.Round
-		glow.Parent = btn
-		-- second softer outer ring for Secret/Limited
-		if rar == "Secret" or rar == "Limited" then
-			local outer = Instance.new("UIStroke")
-			outer.Name = "RarityGlowOuter"
-			outer.Color = col
-			outer.Thickness = thick + 6
-			outer.Transparency = math.clamp(trans + 0.25, 0, 0.85)
-			outer.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-			outer.LineJoinMode = Enum.LineJoinMode.Round
-			outer.Parent = btn
+		local t1, t2, s1, s2 = 0.7, 0.88, 1.08, 1.22
+		if rar == "Legendary" then
+			t1, t2, s1, s2 = 0.55, 0.78, 1.10, 1.28
+		elseif rar == "Mythic" then
+			t1, t2, s1, s2 = 0.42, 0.70, 1.14, 1.34
+		elseif rar == "Secret" then
+			t1, t2, s1, s2 = 0.28, 0.58, 1.18, 1.42
+		elseif rar == "Limited" then
+			t1, t2, s1, s2 = 0.18, 0.48, 1.22, 1.50
+		elseif rar ~= "Legendary" and rar ~= "Mythic" and rar ~= "Secret" and rar ~= "Limited" then
+			-- no under-glow for common tiers
+			btn.Size = UDim2.fromScale(1, 1)
+			btn.Position = UDim2.fromScale(0, 0)
+			btn.Parent = wrap
+			return wrap
 		end
+
+		local function under(name: string, scale: number, trans: number, z: number)
+			local f = Instance.new("Frame")
+			f.Name = name
+			f.AnchorPoint = Vector2.new(0.5, 0.5)
+			f.Position = UDim2.fromScale(0.5, 0.5)
+			f.Size = UDim2.fromScale(scale, scale)
+			f.BackgroundColor3 = col
+			f.BackgroundTransparency = trans
+			f.BorderSizePixel = 0
+			f.ZIndex = z
+			f.Active = false
+			f.Parent = wrap
+			UIKit.Corner(f, 14)
+			return f
+		end
+		under("GlowOuter", s2, t2, 3)
+		under("GlowInner", s1, t1, 4)
+		btn.Size = UDim2.fromScale(1, 1)
+		btn.Position = UDim2.fromScale(0, 0)
+		btn.ZIndex = 5
+		btn.Parent = wrap
+		return wrap
 	end
 
 	---------------------------------------------------------------- WEAPONS grid (no empty filler slots)
@@ -911,14 +917,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			btn.Name = "W_" .. w.uid
 			btn.BackgroundTransparency = 1
 			btn.AutoButtonColor = false
-			btn.LayoutOrder = i
-			btn.ZIndex = 4
-			btn.Parent = scroll
+			btn.ZIndex = 5
 			local def = WeaponConfig.Get(w.id)
 			local rar = (def and def.rarity) or "Common"
 			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
 			btn.ScaleType = Enum.ScaleType.Stretch
-			applyRarityGlow(btn, rar)
+			applyRarityGlow(btn, rar, i)
 			local ih = makeIconHost(btn)
 			local used = false
 			pcall(function()
@@ -1041,14 +1045,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			btn.Name = "P_" .. tostring(p.uid)
 			btn.BackgroundTransparency = 1
 			btn.AutoButtonColor = false
-			btn.LayoutOrder = i
-			btn.ZIndex = 4
-			btn.Parent = scroll
+			btn.ZIndex = 5
 			local def = PetConfig.Get(p.id)
 			local rar = (def and def.rarity) or "Common"
 			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
 			btn.ScaleType = Enum.ScaleType.Stretch
-			applyRarityGlow(btn, rar)
+			applyRarityGlow(btn, rar, i)
 			local ih = makeIconHost(btn)
 			pcall(function()
 				PetVisual.TryFillInventoryIcon(ih, p.id, 44)
@@ -1099,16 +1101,14 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			btn.Name = "A_" .. tostring(a.uid or a.id or i)
 			btn.BackgroundTransparency = 1
 			btn.AutoButtonColor = false
-			btn.LayoutOrder = i
-			btn.ZIndex = 4
-			btn.Parent = scroll
+			btn.ZIndex = 5
 			local aid = a.id or a.uid
 			local resolved = AuraConfig.ResolveId(tostring(aid))
 			local def = AuraConfig.Get(resolved)
 			local rar = (def and def.rarity) or "Common"
 			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
 			btn.ScaleType = Enum.ScaleType.Stretch
-			applyRarityGlow(btn, rar)
+			applyRarityGlow(btn, rar, i)
 			local ih = makeIconHost(btn)
 			pcall(function()
 				AuraVisual.TryFillInventoryIcon(ih, resolved, 44)
@@ -1150,14 +1150,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			btn.Name = "R_" .. tostring(r.uid or i)
 			btn.BackgroundTransparency = 1
 			btn.AutoButtonColor = false
-			btn.LayoutOrder = i
-			btn.ZIndex = 4
-			btn.Parent = scroll
+			btn.ZIndex = 5
 			local def = RelicConfig.Get(r.id)
 			local rar = (def and def.rarity) or r.rarity or "Common"
 			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
 			btn.ScaleType = Enum.ScaleType.Stretch
-			applyRarityGlow(btn, rar)
+			applyRarityGlow(btn, rar, i)
 			local ih = makeIconHost(btn)
 			local gl = Instance.new("TextLabel")
 			gl.BackgroundTransparency = 1
@@ -1201,13 +1199,29 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			{ id = "BigLuck", size = "Big", stat = "Luck", name = "Big Luck Potion", effect = "+100% Luck", duration = "30 min" },
 		}
 		for i, pot in ipairs(POTIONS) do
+			local wrap = Instance.new("Frame")
+			wrap.Name = "PotWrap_" .. pot.id
+			wrap.BackgroundTransparency = 1
+			wrap.LayoutOrder = i
+			wrap.ZIndex = 4
+			wrap.Parent = scroll
+			local frame = Instance.new("ImageLabel")
+			frame.Name = "CommonFrame"
+			frame.BackgroundTransparency = 1
+			frame.Image = InventoryAssetConfig.GetSlotFrame("Common")
+			frame.ScaleType = Enum.ScaleType.Stretch
+			frame.Size = UDim2.fromScale(1, 1)
+			frame.ZIndex = 4
+			frame.Parent = wrap
 			local btn = Instance.new("ImageButton")
 			btn.Name = "Pot_" .. pot.id
 			btn.BackgroundTransparency = 1
 			btn.AutoButtonColor = false
-			btn.LayoutOrder = i
-			btn.ZIndex = 4
-			btn.Parent = scroll
+			btn.Size = UDim2.fromScale(0.78, 0.78)
+			btn.Position = UDim2.fromScale(0.5, 0.5)
+			btn.AnchorPoint = Vector2.new(0.5, 0.5)
+			btn.ZIndex = 5
+			btn.Parent = wrap
 			local idle = PotionIconConfig.GetIdle(pot.size :: any, pot.stat :: any)
 			local hover = PotionIconConfig.GetHover(pot.size :: any, pot.stat :: any)
 			if idle == "" then
@@ -1217,7 +1231,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			end
 			btn.ScaleType = Enum.ScaleType.Fit
 			local sc = Instance.new("UIScale")
-			sc.Parent = btn
+			sc.Parent = wrap
 			btn.MouseEnter:Connect(function()
 				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = HOVER_SCALE }):Play()
 				if hover ~= "" then
@@ -1225,7 +1239,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				end
 				showConsumableTip(
 					pot.name,
-					"Consumable",
+					"Common",
 					string.format(
 						"Keys P%d · A%d · Dust %d",
 						profile.petKeys or 0,
