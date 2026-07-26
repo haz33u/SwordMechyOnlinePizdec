@@ -137,6 +137,8 @@ local MobConfig = {
 			visual = { preferredModelName = "Samurai", color = "#922B21", scale = 1.35, shape = "humanoid" },
 			description = "T4 elite scout. Dump HP 300K / coins 12.5K.",
 		},
+		-- L1_Boss disabled per user order
+		--[[
 		L1_Boss = {
 			id = "L1_Boss",
 			name = "Forest Guardian",
@@ -155,6 +157,7 @@ local MobConfig = {
 			visual = { preferredModelName = "Supreme Shadow Lord", color = "#145A32", scale = 2.0, shape = "humanoid" },
 			description = "Loc1 boss at end of path. Dump HP 1.2M / coins 25K.",
 		},
+		]]
 
 		----------------------------------------------------------------------
 		-- LOC 2 — dump «Мобы» exact HP/coins + drop %

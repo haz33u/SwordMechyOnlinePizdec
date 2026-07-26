@@ -58,7 +58,7 @@ local MOB_OVERRIDES: {
 			{ mobId = "L1_GoblinWarrior", count = 5, zone = "C" }, -- Camp C hard
 			{ mobId = "L1_GoblinScout", count = 4, zone = "D" }, -- Camp D elite gate
 		},
-		bossId = "L1_Boss",
+		bossId = nil,
 		debugMobs = {},
 		questIds = {
 			"Q1_Slimes", -- legacy id → Goblin (display/target in QuestConfig)
