@@ -132,7 +132,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 	local api = {}
 	function api.Refresh()
 		local m = store:PeekModal()
-		if not m then
+		if not m or m.kind == "casePreview" then
 			dim.Visible = false
 			card.Visible = false
 			return

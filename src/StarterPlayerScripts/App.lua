@@ -344,6 +344,25 @@ function App.Start()
 		end)
 	end)
 
+	-- Dispatch store:OpenModal("casePreview") directly to CasePreviewUI
+	Fusion.Observer(scope, (store :: any)._modal):onChange(function()
+		local modalObj = store:PeekModal()
+		if modalObj then
+			if modalObj.kind == "casePreview" then
+				if casePreviewApi then
+					casePreviewApi.Show(modalObj.payload)
+				end
+			elseif modalObj.kind == "caseOpen" then
+				if caseApi then
+					caseApi.Begin(modalObj.payload)
+				end
+			end
+		end
+		if modalsApi then
+			modalsApi.Refresh()
+		end
+	end)
+
 	local m = mockSnapshot()
 	store:SetData(m.profile, m.stats)
 	refreshAll()

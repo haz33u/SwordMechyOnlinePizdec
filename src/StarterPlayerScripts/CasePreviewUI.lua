@@ -362,6 +362,9 @@ function CasePreviewUI.Mount(gui: ScreenGui, store: any, toastApi: any?, caseOpe
 	local function hideAll()
 		dim.Visible = false
 		card.Visible = false
+		pcall(function()
+			store:CloseModal()
+		end)
 	end
 
 	closeBtn.MouseButton1Click:Connect(hideAll)
