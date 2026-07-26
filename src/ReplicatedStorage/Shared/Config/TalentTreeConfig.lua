@@ -356,7 +356,8 @@ function TalentTreeConfig.GetUpgradeCost(def: TalentNodeDef, currentLevel: numbe
 	return math.floor(def.baseCost * (def.costGrowth ^ currentLevel))
 end
 
---- Aggregates all stat bonuses from an array or map of node levels
+--- Aggregates all stat bonuses from an array or map of node levels.
+--- Reads both our hex TalentTreeConfig nodes AND original UIUpgradeTree nodes.
 function TalentTreeConfig.ComputeStats(unlockedTalents: { [string]: any }?)
 	local totals = {
 		damagePct = 0,
@@ -373,6 +374,8 @@ function TalentTreeConfig.ComputeStats(unlockedTalents: { [string]: any }?)
 	if not unlockedTalents then
 		return totals
 	end
+
+	-- 1. Our hex talent nodes
 	for nodeId, levelVal in unlockedTalents do
 		local lvl = if type(levelVal) == "number" then levelVal else (if levelVal == true then 1 else 0)
 		if lvl > 0 then
@@ -386,6 +389,83 @@ function TalentTreeConfig.ComputeStats(unlockedTalents: { [string]: any }?)
 			end
 		end
 	end
+
+	-- 2. UIUpgradeTree nodes (Noob Incremental Skill Tree)
+	-- Map UIUpgradeTree node name patterns to our stat keys.
+	-- Each node's boost(lvl) returns a multiplier; we convert (mult - 1) * 100 to pct.
+	local UIUpgradeTree = nil
+	pcall(function()
+		local Shared = game:GetService("ReplicatedStorage"):FindFirstChild("Shared")
+		if Shared and Shared:FindFirstChild("Modules") and Shared.Modules:FindFirstChild("UIUpgradeTree") then
+			UIUpgradeTree = require(Shared.Modules.UIUpgradeTree)
+		end
+	end)
+
+	if UIUpgradeTree and UIUpgradeTree.Nodes then
+		-- Map node ID patterns → our stat key
+		local STAT_MAP = {
+			-- Damage / Oof multipliers → damagePct
+			OofMulti = "damagePct",
+			FireMul = "damagePct",
+			BlazeMul = "damagePct",
+			FireAndBlazeMul = "damagePct",
+			SwordDamageMul = "damagePct",
+			ShovelDamageMul = "damagePct",
+			OofMul = "damagePct",
+			RebirthMul = "damagePct",
+			-- Coin / Cash multipliers → coinPct
+			CashMul = "coinPct",
+			CoinMul = "coinPct",
+			CoinMulR3 = "coinPct",
+			-- Prism multipliers → coinPct (Prisms mapped to Coins)
+			PrismMulti = "coinPct",
+			PrismMul = "coinPct",
+			MorePrism = "coinPct",
+			PrismGeneration = "coinPct",
+			FasterPrism = "coinPct",
+			-- Rune speed → clickSpeed
+			RuneSpeed = "clickSpeed",
+			-- Walk speed
+			MoreWalkspeed = "walkSpeed",
+			-- Luck (rune luck, tier luck, minion luck, swords luck)
+			RuneLuck = "luckPct",
+			TierLuck = "luckPct",
+			MinionLuck = "luckPct",
+			SwordsLuck = "luckPct",
+		}
+
+		for nodeId, levelVal in unlockedTalents do
+			local lvl = if type(levelVal) == "number" then levelVal else (if levelVal == true then 1 else 0)
+			if lvl > 0 then
+				local uiNode = UIUpgradeTree.Nodes[nodeId]
+				if uiNode and uiNode.boost then
+					-- Find which stat this node maps to
+					local statKey = nil
+					for pattern, key in pairs(STAT_MAP) do
+						if string.find(nodeId, pattern, 1, true) then
+							statKey = key
+							break
+						end
+					end
+
+					if statKey and totals[statKey] ~= nil then
+						-- boost(lvl) returns a multiplier; convert to pct bonus
+						local ok, boostVal = pcall(uiNode.boost, lvl)
+						if ok and type(boostVal) == "number" and boostVal ~= 0 then
+							-- Multiplier → pct: (1.25 - 1) * 100 = 25%
+							-- Some nodes return raw values, not multipliers
+							if boostVal > 0 and boostVal < 100 then
+								totals[statKey] += (boostVal - 1) * 100
+							else
+								totals[statKey] += boostVal
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+
 	return totals
 end
 

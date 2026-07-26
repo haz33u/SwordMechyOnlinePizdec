@@ -104,6 +104,8 @@ local function defaultProfile()
 		bannedWeaponIds = {},
 		bannedPetIds = {},
 		bannedAuraIds = {},
+		talentPoints = 0,
+		unlockedTalents = { C_Core = 1, TheStart = 1 },
 	}
 end
 
