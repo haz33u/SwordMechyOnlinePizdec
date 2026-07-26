@@ -96,8 +96,7 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		bodies[id] = body
 	end
 
-	-- Inventory uses fixed design scale (Make ~920 panel); hide outer Window chrome
-	-- so INVETAR shell provides its own header/close (no double title bar).
+	-- Inventory Figma shell: hide outer Window chrome (own close/header art).
 	do
 		local invRoot = frames.weapons
 		local invHeader = invRoot:FindFirstChild("Header")
@@ -107,18 +106,17 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local invBody = bodies.weapons
 		invBody.Size = UDim2.new(1, 0, 1, 0)
 		invBody.Position = UDim2.fromOffset(0, 0)
-		invRoot.BackgroundColor3 = Color3.fromRGB(13, 13, 13)
-		-- drop outer gradient/stroke feel for Make flat panel
+		invBody.BackgroundTransparency = 1
+		-- Transparent outer so MAINBACKGROUD is the only shell
+		invRoot.BackgroundTransparency = 1
 		local stroke = invRoot:FindFirstChildOfClass("UIStroke")
 		if stroke then
-			stroke.Color = Color3.fromRGB(62, 62, 62)
-			stroke.Thickness = 2
-			stroke.Transparency = 0.1
+			stroke.Transparency = 1
 		end
 		local sc = invRoot:FindFirstChildOfClass("UISizeConstraint")
 		if sc then
-			sc.MinSize = Vector2.new(780, 520)
-			sc.MaxSize = Vector2.new(1600, 1000)
+			sc.MinSize = Vector2.new(900, 560)
+			sc.MaxSize = Vector2.new(1920, 1200)
 		end
 	end
 
@@ -127,10 +125,11 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local wh = math.clamp((m.windowH or 0.62) + 0.10, 0.66, 0.80)
 		for id, root in frames do
 			if id == "weapons" then
-				-- Large but not broken: ~88% width / 88% height, same on all res
-				root.Size = UDim2.fromScale(0.88, 0.88)
+				-- Near-fullscreen so Figma 1.44 aspect layout can match ref
+				root.Size = UDim2.fromScale(0.94, 0.92)
 				root.Position = UDim2.fromScale(0.5, 0.5)
 				root.AnchorPoint = Vector2.new(0.5, 0.5)
+				root.BackgroundTransparency = 1
 			elseif id == "character" then
 				-- Larger panel; raised on screen so levels/stats clear of bottom HUD
 				local cam = workspace.CurrentCamera
