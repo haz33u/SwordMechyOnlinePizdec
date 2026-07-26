@@ -6,7 +6,13 @@
 local TweenService = game:GetService("TweenService")
 local T = require(script.Parent.Theme)
 
+local RainbowGradient = require(script.Parent.RainbowGradient)
+
 local UIKit = {}
+
+function UIKit.ApplyRainbow(target: Instance, speed: number?, hueSpread: number?, rotSpeed: number?)
+	return RainbowGradient.Apply(target, speed, hueSpread, rotSpeed)
+end
 
 local TEXT_GRADIENTS: { [string]: ColorSequence } = {
 	purple = ColorSequence.new(Color3.fromRGB(207, 178, 255), Color3.fromRGB(143, 92, 255)),
