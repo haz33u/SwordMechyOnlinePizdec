@@ -147,15 +147,17 @@ local function place(
 	i.Name = name
 	i.BackgroundTransparency = 1
 	i.BorderSizePixel = 0
-	;(i :: any).Image = art(assetKey)
+	-- Studio Luau: avoid `;(x :: any).Prop` / ambiguous `(x :: any).Prop =` forms
+	local gi = i :: any
+	gi.Image = art(assetKey)
 	if useSlice and SLICE[assetKey] then
-		;(i :: any).ScaleType = Enum.ScaleType.Slice
-		;(i :: any).SliceCenter = SLICE[assetKey]
+		gi.ScaleType = Enum.ScaleType.Slice
+		gi.SliceCenter = SLICE[assetKey]
 	elseif useSlice and SLICE[name] then
-		;(i :: any).ScaleType = Enum.ScaleType.Slice
-		;(i :: any).SliceCenter = SLICE[name]
+		gi.ScaleType = Enum.ScaleType.Slice
+		gi.SliceCenter = SLICE[name]
 	else
-		;(i :: any).ScaleType = Enum.ScaleType.Stretch
+		gi.ScaleType = Enum.ScaleType.Stretch
 	end
 	i.Position = UDim2.fromScale(box[1], box[2])
 	i.Size = UDim2.fromScale(box[3], box[4])
