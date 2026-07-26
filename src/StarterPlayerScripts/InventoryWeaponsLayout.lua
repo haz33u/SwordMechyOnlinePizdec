@@ -1,9 +1,12 @@
 --!strict
 --[[
-	WEAPON INVENTORY LAYOUT — 1:1 Figma node 5193:9879
-	Ref size: 11014 x 7652 (aspect 1.4393)
-	All positions = absoluteBoundingBox fractions of layout root.
-	Assets: InventoryAssetConfig (IMAGE rbxassetids)
+	WEAPON INVENTORY — layout anchored on MAINBACKGROUD (not outer Frame).
+
+	host (full screen transparent)
+	  shell (MAINBACKGROUD ImageLabel, centered, large)  ← center of everything
+	    chrome remapped relative to shell
+	  BottomTabBar (sibling of shell, pinned to bottom of host) ← always visible
+	  Tooltip (mouse-follow)
 ]]
 
 local GuiService = game:GetService("GuiService")
@@ -27,24 +30,21 @@ local IconConfig = require(Shared.Config.IconConfig)
 local InventoryWeaponsLayout = {}
 
 local ROOT_NAME = "FigmaWeaponsRoot"
--- Live Figma group 5193:9879 (re-measured 2026-07-26): 11609 x 7943
-local ASPECT = 1.4614
 local HOVER_SCALE = 1.06
 local GRID_COLS = 6
 
--- Absolute fractions from Figma absoluteBoundingBox / root
-local L = {
+-- Figma fractions vs FULL layout group 5193:9879 (11609x7943)
+local FIGMA = {
 	MAINBACKGROUD = { 0.12563, 0.08995, 0.87437, 0.78063 },
 	INVENTORYWEAPONcard = { 0.05513, 0.00000, 0.30762, 0.15381 },
 	BTN_Close = { 0.94964, 0.10952, 0.03966, 0.05929 },
 	TitleNickPlate = { 0.78407, 0.10952, 0.15204, 0.04129 },
-	-- Divider sits on top of grid; use Figma x/w (art has tall transparent pad → use modest h)
 	Divider = { 0.34500, 0.11531, 0.62023, 0.03500 },
 	BG_WeaponGrid = { 0.32794, 0.16881, 0.65460, 0.67376 },
 	EQUIPMENTbackground = { 0.14369, 0.13722, 0.17323, 0.38434 },
 	EquipTitlePlate = { 0.18400, 0.14880, 0.09252, 0.02757 },
 	MAINswordCARD = { 0.15936, 0.17285, 0.06995, 0.10222 },
-	SECONDswordCARD = { 0.23147, 0.17285, 0.06995, 0.10222 }, -- second sword (also named MAINswordCARD in Figma)
+	SECONDswordCARD = { 0.23147, 0.17285, 0.06995, 0.10222 },
 	PETcard1 = { 0.16031, 0.27169, 0.03497, 0.05111 },
 	PETcard2 = { 0.19529, 0.27169, 0.03497, 0.05111 },
 	PETcard3 = { 0.23026, 0.27169, 0.03497, 0.05111 },
@@ -66,86 +66,76 @@ local L = {
 	PRESETcard4 = { 0.26902, 0.73534, 0.04454, 0.06508 },
 	SELLbutton = { 0.13499, 0.80264, 0.09570, 0.04667 },
 	SELLallUNLOCKED = { 0.22991, 0.80180, 0.09933, 0.04844 },
+	-- Binds slightly left of shell (negative x after remap)
 	MOUSEBINDScard = { 0.00000, 0.60792, 0.13144, 0.26360 },
-	-- Bottom tab buttons — slightly lifted so they are never clipped off-screen
-	WEAPONSBUTTON = { 0.17366, 0.85500, 0.09000, 0.13000 },
-	PETCBUTTON = { 0.26127, 0.85500, 0.09000, 0.13000 },
-	AURABUTTON = { 0.34888, 0.85500, 0.09000, 0.13000 },
-	RELICBUTTON = { 0.43648, 0.85500, 0.09000, 0.13000 },
-	CONSUMABLESBUTTON = { 0.52409, 0.85500, 0.09000, 0.13000 },
-	SHOPBUTTON = { 0.61170, 0.85500, 0.09000, 0.13000 },
-	PROFILEBUTTON = { 0.69844, 0.85500, 0.09000, 0.13000 },
-	SETTINGSBUTTON = { 0.82533, 0.85500, 0.09000, 0.13000 },
+}
+
+-- Remap full-layout fractions → relative to MAINBACKGROUD box
+local MB = FIGMA.MAINBACKGROUD
+local function rel(b: { number }): { number }
+	return {
+		(b[1] - MB[1]) / MB[3],
+		(b[2] - MB[2]) / MB[4],
+		b[3] / MB[3],
+		b[4] / MB[4],
+	}
+end
+
+local R: { [string]: { number } } = {}
+for k, b in FIGMA do
+	if k ~= "MAINBACKGROUD" then
+		R[k] = rel(b)
+	end
+end
+-- Nudge binds further left (user request)
+R.MOUSEBINDScard = {
+	R.MOUSEBINDScard[1] - 0.08,
+	R.MOUSEBINDScard[2],
+	R.MOUSEBINDScard[3] * 1.15,
+	R.MOUSEBINDScard[4] * 1.1,
 }
 
 local FIGMA_TABS = {
-	{ id = "weapons", key = "WEAPONSBUTTON", box = L.WEAPONSBUTTON },
-	{ id = "pets", key = "PETCBUTTON", box = L.PETCBUTTON },
-	{ id = "auras", key = "AURABUTTON", box = L.AURABUTTON },
-	{ id = "relics", key = "RELICBUTTON", box = L.RELICBUTTON },
-	{ id = "items", key = "CONSUMABLESBUTTON", box = L.CONSUMABLESBUTTON },
-	{ id = "shop", key = "SHOPBUTTON", box = L.SHOPBUTTON },
-	{ id = "profile", key = "PROFILEBUTTON", box = L.PROFILEBUTTON },
-	{ id = "settings", key = "SETTINGSBUTTON", box = L.SETTINGSBUTTON },
+	{ id = "weapons", key = "WEAPONSBUTTON", label = "WEAPONS" },
+	{ id = "pets", key = "PETCBUTTON", label = "PETS" },
+	{ id = "auras", key = "AURABUTTON", label = "AURAS" },
+	{ id = "relics", key = "RELICBUTTON", label = "RELICS" },
+	{ id = "items", key = "CONSUMABLESBUTTON", label = "ITEMS" },
+	{ id = "shop", key = "SHOPBUTTON", label = "SHOP" },
+	{ id = "profile", key = "PROFILEBUTTON", label = "PROFILE" },
+	{ id = "settings", key = "SETTINGSBUTTON", label = "SETTINGS" },
 }
 
 local function art(key: string): string
 	return InventoryAssetConfig.Get(key)
 end
 
-local function box(b: { number }): (UDim2, UDim2)
-	return UDim2.fromScale(b[3], b[4]), UDim2.fromScale(b[1], b[2])
-end
-
-local function placeImage(
+local function place(
 	parent: Instance,
 	name: string,
 	assetKey: string,
 	b: { number },
 	z: number?,
+	isBtn: boolean?,
 	scaleType: Enum.ScaleType?
-): ImageLabel
-	local i = Instance.new("ImageLabel")
+): GuiObject
+	local i: GuiObject
+	if isBtn then
+		local btn = Instance.new("ImageButton")
+		btn.AutoButtonColor = false
+		i = btn
+	else
+		i = Instance.new("ImageLabel")
+	end
 	i.Name = name
 	i.BackgroundTransparency = 1
 	i.BorderSizePixel = 0
-	i.Image = art(assetKey)
-	i.ScaleType = scaleType or Enum.ScaleType.Fit
-	i.Size, i.Position = box(b)
+	;(i :: any).Image = art(assetKey)
+	;(i :: any).ScaleType = scaleType or Enum.ScaleType.Fit
+	i.Size = UDim2.fromScale(b[3], b[4])
+	i.Position = UDim2.fromScale(b[1], b[2])
 	i.ZIndex = z or 40
 	i.Parent = parent
-	return i
-end
-
-local function placeButton(
-	parent: Instance,
-	name: string,
-	assetKey: string,
-	b: { number },
-	z: number?,
-	onClick: (() -> ())?
-): ImageButton
-	local i = Instance.new("ImageButton")
-	i.Name = name
-	i.BackgroundTransparency = 1
-	i.BorderSizePixel = 0
-	i.Image = art(assetKey)
-	i.ScaleType = Enum.ScaleType.Fit
-	i.AutoButtonColor = false
-	i.Size, i.Position = box(b)
-	i.ZIndex = z or 50
-	i.Parent = parent
-	local sc = Instance.new("UIScale")
-	sc.Parent = i
-	i.MouseEnter:Connect(function()
-		TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { Scale = 1.05 }):Play()
-	end)
-	i.MouseLeave:Connect(function()
-		TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
-	end)
-	if onClick then
-		i.MouseButton1Click:Connect(onClick)
-	end
 	return i
 end
 
@@ -178,6 +168,14 @@ function InventoryWeaponsLayout.Destroy(parent: Instance)
 	if old then
 		old:Destroy()
 	end
+	-- also destroy if parented to window root
+	local win = parent.Parent
+	if win then
+		local o2 = win:FindFirstChild(ROOT_NAME)
+		if o2 then
+			o2:Destroy()
+		end
+	end
 end
 
 function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
@@ -185,7 +183,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 
 	local profile = args.profile
 
-	-- Full-screen transparent host (no gray)
+	-- Prefer weapons WINDOW root so nothing clips (Body can still clip)
+	local mountTo = parent
+	if parent.Parent and parent.Parent:IsA("GuiObject") and parent.Name == "Body" then
+		mountTo = parent.Parent :: Frame
+	end
+
 	local host = Instance.new("Frame")
 	host.Name = ROOT_NAME
 	host.BackgroundTransparency = 1
@@ -193,43 +196,66 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	host.Size = UDim2.fromScale(1, 1)
 	host.Position = UDim2.fromScale(0, 0)
 	host.ClipsDescendants = false
-	host.ZIndex = 30
-	host.Parent = parent
+	host.ZIndex = 200
+	host.Parent = mountTo
 
-	--[[
-		Stage = centered Figma canvas (MAINBACKGROUD + chrome + tabs in same space).
-		Sized large so inventory owns most of the screen.
-	]]
-	local root = Instance.new("Frame")
-	root.Name = "Stage"
-	root.BackgroundTransparency = 1
-	root.BorderSizePixel = 0
-	root.AnchorPoint = Vector2.new(0.5, 0.5)
-	root.Position = UDim2.fromScale(0.5, 0.5)
-	root.Size = UDim2.fromScale(0.97, 0.94)
-	root.ClipsDescendants = false
-	root.ZIndex = 31
-	root.Parent = host
+	----------------------------------------------------------------
+	-- SHELL = MAINBACKGROUD — center of inventory, large on screen
+	----------------------------------------------------------------
+	local shell = Instance.new("Frame")
+	shell.Name = "MAINBACKGROUD_Shell"
+	shell.BackgroundTransparency = 1
+	shell.BorderSizePixel = 0
+	shell.AnchorPoint = Vector2.new(0.5, 0.5)
+	shell.Position = UDim2.fromScale(0.5, 0.46) -- center, leave room under for tabs
+	shell.Size = UDim2.fromScale(0.92, 0.78) -- large portion of screen
+	shell.ClipsDescendants = false -- allow header above / binds left / overflow
+	shell.ZIndex = 40
+	shell.Parent = host
 
-	local aspect = Instance.new("UIAspectRatioConstraint")
-	aspect.AspectRatio = ASPECT
-	aspect.AspectType = Enum.AspectType.FitWithinMaxSize
-	aspect.DominantAxis = Enum.DominantAxis.Width
-	aspect.Parent = root
+	-- MAINBACKGROUD aspect ≈ 10150/6201 ≈ 1.637
+	local shellAspect = Instance.new("UIAspectRatioConstraint")
+	shellAspect.AspectRatio = 1.637
+	shellAspect.AspectType = Enum.AspectType.FitWithinMaxSize
+	shellAspect.DominantAxis = Enum.DominantAxis.Width
+	shellAspect.Parent = shell
 
-	---------------------------------------------------------------- shell — MAINBACKGROUD centered plate
-	placeImage(root, "MAINBACKGROUD", "MAINBACKGROUD", L.MAINBACKGROUD, 30, Enum.ScaleType.Stretch)
-	placeImage(root, "INVENTORYWEAPONcard", "INVENTORYWEAPONcard", L.INVENTORYWEAPONcard, 45)
-	-- Stretch divider exactly over the weapon grid top edge
-	local divider = placeImage(root, "Divider", "Divider_3_Minimal_1", L.Divider, 42, Enum.ScaleType.Stretch)
-	divider.ImageTransparency = 0
+	local bg = Instance.new("ImageLabel")
+	bg.Name = "MAINBACKGROUD"
+	bg.BackgroundTransparency = 1
+	bg.BorderSizePixel = 0
+	bg.Image = art("MAINBACKGROUD")
+	bg.ScaleType = Enum.ScaleType.Stretch
+	bg.Size = UDim2.fromScale(1, 1)
+	bg.ZIndex = 40
+	bg.Parent = shell
 
-	placeButton(root, "Close", "BTN_Close_3", L.BTN_Close, 80, args.onClose)
+	-- All chrome positions are relative to SHELL (MAINBACKGROUD)
+	local function pImg(name: string, key: string, b: { number }, z: number?, st: Enum.ScaleType?)
+		return place(shell, name, key, b, z, false, st)
+	end
+	local function pBtn(name: string, key: string, b: { number }, z: number?, onClick: (() -> ())?)
+		local btn = place(shell, name, key, b, z, true) :: ImageButton
+		local sc = Instance.new("UIScale")
+		sc.Parent = btn
+		btn.MouseEnter:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1.05 }):Play()
+		end)
+		btn.MouseLeave:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+		end)
+		if onClick then
+			btn.MouseButton1Click:Connect(onClick)
+		end
+		return btn
+	end
 
-	-- Title | Nick plate
-	local nickPlate = placeImage(root, "TitleNickPlate", "btn_neutral_2_1", L.TitleNickPlate, 40)
+	pImg("INVENTORYWEAPONcard", "INVENTORYWEAPONcard", R.INVENTORYWEAPONcard, 50)
+	pImg("Divider", "Divider_3_Minimal_1", R.Divider, 48, Enum.ScaleType.Stretch)
+	pBtn("Close", "BTN_Close_3", R.BTN_Close, 80, args.onClose)
+
+	local nickPlate = pImg("TitleNickPlate", "btn_neutral_2_1", R.TitleNickPlate, 50)
 	local nickStrip = Instance.new("TextLabel")
-	nickStrip.Name = "NickStrip"
 	nickStrip.BackgroundTransparency = 1
 	nickStrip.Size = UDim2.fromScale(0.9, 0.7)
 	nickStrip.Position = UDim2.fromScale(0.5, 0.5)
@@ -237,103 +263,87 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local titleTxt = (profile and (profile.equippedTitle or profile.title)) or "TITLE"
 	local nickTxt = (Players.LocalPlayer and Players.LocalPlayer.Name) or "PLAYER"
 	nickStrip.Text = string.upper(tostring(titleTxt) .. " | " .. tostring(nickTxt))
-	nickStrip.ZIndex = 41
+	nickStrip.ZIndex = 51
 	nickStrip.Parent = nickPlate
 	UIKit.StyleText(nickStrip, "gold", 2)
 
-	---------------------------------------------------------------- equip panel (absolute Figma coords on root)
-	placeImage(root, "EQUIPMENTbackground", "EQUIPMENTbackground", L.EQUIPMENTbackground, 35, Enum.ScaleType.Stretch)
-
-	local equipTitleBg = placeImage(root, "EquipTitlePlate", "btn_neutral_2_2", L.EquipTitlePlate, 36)
+	pImg("EQUIPMENTbackground", "EQUIPMENTbackground", R.EQUIPMENTbackground, 45, Enum.ScaleType.Stretch)
+	local equipTitleBg = pImg("EquipTitlePlate", "btn_neutral_2_2", R.EquipTitlePlate, 46)
 	local equipTitle = Instance.new("TextLabel")
 	equipTitle.BackgroundTransparency = 1
 	equipTitle.Size = UDim2.fromScale(0.92, 0.75)
 	equipTitle.Position = UDim2.fromScale(0.5, 0.5)
 	equipTitle.AnchorPoint = Vector2.new(0.5, 0.5)
 	equipTitle.Text = "EQUIPMENT"
-	equipTitle.ZIndex = 37
+	equipTitle.ZIndex = 47
 	equipTitle.Parent = equipTitleBg
 	UIKit.StyleText(equipTitle, "purple", 2)
 
-	local function fillWeaponCard(assetKey: string, b: { number }, weaponUid: string?)
-		local plate = placeImage(root, assetKey, assetKey, b, 38)
-		local host = Instance.new("Frame")
-		host.Name = "VpHost"
-		host.BackgroundTransparency = 1
-		host.Size = UDim2.fromScale(0.72, 0.72)
-		host.Position = UDim2.fromScale(0.5, 0.5)
-		host.AnchorPoint = Vector2.new(0.5, 0.5)
-		host.ZIndex = 39
-		host.Parent = plate
-		if weaponUid then
+	local function fillWeapon(key: string, b: { number }, uid: string?)
+		local plate = pImg(key, key, b, 48)
+		local vp = Instance.new("Frame")
+		vp.BackgroundTransparency = 1
+		vp.Size = UDim2.fromScale(0.72, 0.72)
+		vp.Position = UDim2.fromScale(0.5, 0.5)
+		vp.AnchorPoint = Vector2.new(0.5, 0.5)
+		vp.ZIndex = 49
+		vp.Parent = plate
+		if uid then
 			for _, w in ipairs(profile.weapons or {}) do
-				if w.uid == weaponUid then
+				if w.uid == uid then
 					pcall(function()
-						WeaponModels.TryFillInventoryIcon(host, w.id, 48)
+						WeaponModels.TryFillInventoryIcon(vp, w.id, 48)
 					end)
 					break
 				end
 			end
 		end
-		return plate
 	end
-
-	fillWeaponCard("MAINswordCARD", L.MAINswordCARD, profile.equippedMain)
-	fillWeaponCard("SECONDswordCARD", L.SECONDswordCARD, profile.equippedOffhand)
+	fillWeapon("MAINswordCARD", R.MAINswordCARD, profile.equippedMain)
+	fillWeapon("SECONDswordCARD", R.SECONDswordCARD, profile.equippedOffhand)
 
 	local team = profile.petTeam or {}
 	local petByUid: { [string]: any } = {}
 	for _, p in ipairs(profile.pets or {}) do
 		petByUid[tostring(p.uid)] = p
 	end
-	local petBoxes = {
-		L.PETcard1,
-		L.PETcard2,
-		L.PETcard3,
-		L.PETcard4,
-		L.PETcard5,
-		L.PETcard6,
-		L.PETcard7,
-		L.PETcard8,
-	}
-	for i = 1, 8 do
-		local key = "PETcard" .. i
-		local plate = placeImage(root, key, key, petBoxes[i], 38)
+	local petKeys = { "PETcard1", "PETcard2", "PETcard3", "PETcard4", "PETcard5", "PETcard6", "PETcard7", "PETcard8" }
+	for i, key in ipairs(petKeys) do
+		local plate = pImg(key, key, R[key], 48)
 		local uid = team[i]
 		if uid and petByUid[tostring(uid)] then
-			local host = Instance.new("Frame")
-			host.BackgroundTransparency = 1
-			host.Size = UDim2.fromScale(0.78, 0.78)
-			host.Position = UDim2.fromScale(0.5, 0.5)
-			host.AnchorPoint = Vector2.new(0.5, 0.5)
-			host.ZIndex = 39
-			host.Parent = plate
+			local vp = Instance.new("Frame")
+			vp.BackgroundTransparency = 1
+			vp.Size = UDim2.fromScale(0.78, 0.78)
+			vp.Position = UDim2.fromScale(0.5, 0.5)
+			vp.AnchorPoint = Vector2.new(0.5, 0.5)
+			vp.ZIndex = 49
+			vp.Parent = plate
 			pcall(function()
-				PetVisual.TryFillInventoryIcon(host, petByUid[tostring(uid)].id, 32)
+				PetVisual.TryFillInventoryIcon(vp, petByUid[tostring(uid)].id, 32)
 			end)
 		end
 	end
-
 	for i = 1, 3 do
-		placeImage(root, "RELICcard" .. i, "RELICcard" .. i, ({ L.RELICcard1, L.RELICcard2, L.RELICcard3 })[i], 38)
+		pImg("RELICcard" .. i, "RELICcard" .. i, R["RELICcard" .. i], 48)
 	end
 	do
-		local auraPlate = placeImage(root, "AURAcard", "RELICcard1", L.AURAcard, 38)
+		local aura = pImg("AURAcard", "RELICcard1", R.AURAcard, 48)
 		if profile.equippedAura then
-			local host = Instance.new("Frame")
-			host.BackgroundTransparency = 1
-			host.Size = UDim2.fromScale(0.8, 0.8)
-			host.Position = UDim2.fromScale(0.5, 0.5)
-			host.AnchorPoint = Vector2.new(0.5, 0.5)
-			host.ZIndex = 39
-			host.Parent = auraPlate
+			local vp = Instance.new("Frame")
+			vp.BackgroundTransparency = 1
+			vp.Size = UDim2.fromScale(0.8, 0.8)
+			vp.Position = UDim2.fromScale(0.5, 0.5)
+			vp.AnchorPoint = Vector2.new(0.5, 0.5)
+			vp.ZIndex = 49
+			vp.Parent = aura
 			pcall(function()
-				AuraVisual.TryFillInventoryIcon(host, profile.equippedAura, 36)
+				AuraVisual.TryFillInventoryIcon(vp, profile.equippedAura, 36)
 			end)
 		end
 	end
 
-	local function rankWeapons(): { { uid: string, power: number, level: number } }
+	local function rankWeapons()
 		local ranked = {}
 		for _, w in ipairs(profile.weapons or {}) do
 			local d = WeaponConfig.Get(w.id)
@@ -352,14 +362,14 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		return ranked
 	end
 
-	placeButton(root, "EQUIPbestFORdamageBUTTON", "EQUIPbestFORdamageBUTTON", L.EQUIPbestFORdamage, 50, function()
+	pBtn("EQUIPbestFORdamageBUTTON", "EQUIPbestFORdamageBUTTON", R.EQUIPbestFORdamage, 55, function()
 		local ranked = rankWeapons()
 		if ranked[1] then
 			Net.EquipWeapon(ranked[1].uid, "main")
 		end
 		args.onRefresh()
 	end)
-	placeButton(root, "EQUIPbestFORpowerBUTTON", "EQUIPbestFORpowerBUTTON", L.EQUIPbestFORpower, 50, function()
+	pBtn("EQUIPbestFORpowerBUTTON", "EQUIPbestFORpowerBUTTON", R.EQUIPbestFORpower, 55, function()
 		local ranked = rankWeapons()
 		if ranked[1] then
 			Net.EquipWeapon(ranked[1].uid, "main")
@@ -370,40 +380,37 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		args.onRefresh()
 	end)
 
-	-- Presets
-	placeImage(root, "PRESETSbutton", "WORDMARK_presets__click_to_equip_1", L.PRESETSbutton, 40)
+	pImg("PRESETSbutton", "WORDMARK_presets__click_to_equip_1", R.PRESETSbutton, 50)
 	for i = 1, 4 do
-		placeImage(root, "PRESETcard" .. i, "PRESETcard" .. i, ({ L.PRESETcard1, L.PRESETcard2, L.PRESETcard3, L.PRESETcard4 })[i], 41)
+		pImg("PRESETcard" .. i, "PRESETcard" .. i, R["PRESETcard" .. i], 51)
 	end
-
-	placeButton(root, "SELLbutton", "SELLbutton", L.SELLbutton, 50, function() end)
-	placeButton(root, "SELLallUNLOCKEDbutton", "SELLallUNLOCKEDbutton", L.SELLallUNLOCKED, 50, function()
+	pBtn("SELLbutton", "SELLbutton", R.SELLbutton, 55, function() end)
+	pBtn("SELLallUNLOCKEDbutton", "SELLallUNLOCKEDbutton", R.SELLallUNLOCKED, 55, function()
 		Net.SellAllWeapons()
 		args.onRefresh()
 	end)
+	-- binds left of shell
+	pImg("MOUSEBINDScard", "MOUSEBINDScard", R.MOUSEBINDScard, 52)
 
-	placeImage(root, "MOUSEBINDScard", "MOUSEBINDScard", L.MOUSEBINDScard, 55)
-
-	---------------------------------------------------------------- weapon grid (slots clipped strictly inside)
+	---------------------------------------------------------------- weapon grid inside shell
 	local gridHost = Instance.new("Frame")
 	gridHost.Name = "BG_WeaponGrid"
 	gridHost.BackgroundTransparency = 1
-	gridHost.Size, gridHost.Position = box(L.BG_WeaponGrid)
-	gridHost.ZIndex = 35
+	gridHost.Size = UDim2.fromScale(R.BG_WeaponGrid[3], R.BG_WeaponGrid[4])
+	gridHost.Position = UDim2.fromScale(R.BG_WeaponGrid[1], R.BG_WeaponGrid[2])
 	gridHost.ClipsDescendants = true
-	gridHost.Parent = root
+	gridHost.ZIndex = 46
+	gridHost.Parent = shell
 
 	local gridBg = Instance.new("ImageLabel")
-	gridBg.Name = "GridBg"
 	gridBg.BackgroundTransparency = 1
 	gridBg.Image = art("BG_WeaponGrid")
 	gridBg.ScaleType = Enum.ScaleType.Stretch
 	gridBg.Size = UDim2.fromScale(1, 1)
-	gridBg.ZIndex = 35
+	gridBg.ZIndex = 46
 	gridBg.Parent = gridHost
 
 	local scroll = Instance.new("ScrollingFrame")
-	scroll.Name = "Slots"
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
 	scroll.Size = UDim2.fromScale(0.96, 0.96)
@@ -413,15 +420,13 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	scroll.ClipsDescendants = true
-	scroll.ZIndex = 36
+	scroll.ZIndex = 47
 	scroll.Parent = gridHost
 
 	local grid = Instance.new("UIGridLayout")
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
 	grid.FillDirectionMaxCells = GRID_COLS
 	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	grid.VerticalAlignment = Enum.VerticalAlignment.Top
-	-- Tighter gap between weapon cards
 	grid.CellPadding = UDim2.fromOffset(4, 4)
 	grid.Parent = scroll
 
@@ -438,32 +443,28 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
 	task.defer(relayout)
 
-	---------------------------------------------------------------- tooltip: shell BEHIND text (Z), follow mouse (on full host)
+	---------------------------------------------------------------- tooltip (host-level, mouse follow)
 	local tip = Instance.new("Frame")
 	tip.Name = "Tooltip"
 	tip.BackgroundTransparency = 1
 	tip.Visible = false
 	tip.Size = UDim2.fromOffset(280, 168)
-	tip.ZIndex = 250
-	tip.ClipsDescendants = false
+	tip.ZIndex = 300
 	tip.Parent = host
-	-- Sibling order so shell cannot paint over labels
 	tip.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 	local tipBg = Instance.new("ImageLabel")
-	tipBg.Name = "Shell"
 	tipBg.BackgroundTransparency = 1
 	tipBg.Image = art("TOOLTIPshell")
 	tipBg.ScaleType = Enum.ScaleType.Stretch
 	tipBg.Size = UDim2.fromScale(1, 1)
-	tipBg.ZIndex = 1 -- behind content
+	tipBg.ZIndex = 1
 	tipBg.Parent = tip
 
 	local tipBody = Instance.new("Frame")
-	tipBody.Name = "Body"
 	tipBody.BackgroundTransparency = 1
 	tipBody.Size = UDim2.fromScale(1, 1)
-	tipBody.ZIndex = 10 -- above shell
+	tipBody.ZIndex = 10
 	tipBody.Parent = tip
 	UIKit.Pad(tipBody, 14)
 	local tipList = Instance.new("UIListLayout")
@@ -482,23 +483,14 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	local function placeTip()
-		if not tip.Visible or not tip.Parent then
+		if not tip.Visible then
 			return
 		end
 		local inset = GuiService:GetGuiInset()
 		local mouse = UserInputService:GetMouseLocation()
-		local mx = mouse.X - inset.X
-		local my = mouse.Y - inset.Y
-		local parentAbs = host.AbsolutePosition
-		local parentSz = host.AbsoluteSize
-		local tipW = tip.AbsoluteSize.X
-		local tipH = tip.AbsoluteSize.Y
-		if tipW < 8 then
-			tipW = 280
-		end
-		if tipH < 8 then
-			tipH = 168
-		end
+		local mx, my = mouse.X - inset.X, mouse.Y - inset.Y
+		local parentAbs, parentSz = host.AbsolutePosition, host.AbsoluteSize
+		local tipW, tipH = math.max(tip.AbsoluteSize.X, 280), math.max(tip.AbsoluteSize.Y, 168)
 		local EDGE = 12
 		local screenX = mx + EDGE
 		if screenX + tipW > parentAbs.X + parentSz.X - 4 then
@@ -511,10 +503,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		if screenY < parentAbs.Y + 2 then
 			screenY = parentAbs.Y + 2
 		end
-		tip.Position = UDim2.fromOffset(
-			math.floor(screenX - parentAbs.X + 0.5),
-			math.floor(screenY - parentAbs.Y + 0.5)
-		)
+		tip.Position = UDim2.fromOffset(math.floor(screenX - parentAbs.X + 0.5), math.floor(screenY - parentAbs.Y + 0.5))
 	end
 
 	local function showTip(title: string, rarity: string?, power: number, sell: number, level: number, equippedLine: string?)
@@ -545,7 +534,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	UserInputService.InputChanged:Connect(function(input)
-		if input.UserInputType == Enum.UserInputType.MouseMovement and tip.Visible and tip.Parent then
+		if input.UserInputType == Enum.UserInputType.MouseMovement and tip.Visible then
 			placeTip()
 		end
 	end)
@@ -558,8 +547,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		btn.BackgroundTransparency = 1
 		btn.AutoButtonColor = false
 		btn.LayoutOrder = order
-		btn.ZIndex = 40
-		btn.ClipsDescendants = false
+		btn.ZIndex = 50
 		btn.Parent = scroll
 
 		local rar = "Empty"
@@ -570,51 +558,19 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
 		btn.ScaleType = Enum.ScaleType.Fit
 
-		if rar == "Limited" then
-			local body, rim = InventoryAssetConfig.GetLimitedLayers()
-			btn.Image = body
-			local rimImg = Instance.new("ImageLabel")
-			rimImg.Name = "Rim"
-			rimImg.BackgroundTransparency = 1
-			rimImg.Image = rim
-			rimImg.ScaleType = Enum.ScaleType.Fit
-			rimImg.Size = UDim2.fromScale(1, 1)
-			rimImg.ZIndex = 41
-			rimImg.Parent = btn
-			local g = Instance.new("UIGradient")
-			g.Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 120, 220)),
-				ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 220, 255)),
-				ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 220, 100)),
-			})
-			g.Parent = rimImg
-			task.spawn(function()
-				while rimImg.Parent do
-					for rot = 0, 359, 6 do
-						if not rimImg.Parent then
-							return
-						end
-						g.Rotation = rot
-						task.wait(0.03)
-					end
-				end
-			end)
-		end
-
 		if w then
-			local host = Instance.new("Frame")
-			host.Name = "IconHost"
-			host.BackgroundTransparency = 1
-			host.Size = UDim2.fromScale(0.72, 0.72)
-			host.Position = UDim2.fromScale(0.5, 0.5)
-			host.AnchorPoint = Vector2.new(0.5, 0.5)
-			host.ZIndex = 42
-			host.Active = false
-			host.Parent = btn
+			local iconHost = Instance.new("Frame")
+			iconHost.BackgroundTransparency = 1
+			iconHost.Size = UDim2.fromScale(0.72, 0.72)
+			iconHost.Position = UDim2.fromScale(0.5, 0.5)
+			iconHost.AnchorPoint = Vector2.new(0.5, 0.5)
+			iconHost.ZIndex = 51
+			iconHost.Active = false
+			iconHost.Parent = btn
 
 			local used = false
 			pcall(function()
-				used = WeaponModels.TryFillInventoryIcon(host, w.id, 44) == true
+				used = WeaponModels.TryFillInventoryIcon(iconHost, w.id, 44) == true
 			end)
 			if not used and IconConfig.HasWeaponImage(w.id) then
 				local ic = Instance.new("ImageLabel")
@@ -622,8 +578,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				ic.Size = UDim2.fromScale(1, 1)
 				ic.Image = IconConfig.GetWeaponImage(w.id)
 				ic.ScaleType = Enum.ScaleType.Fit
-				ic.ZIndex = 42
-				ic.Parent = host
+				ic.ZIndex = 51
+				ic.Parent = iconHost
 			end
 
 			if profile.equippedMain == w.uid or profile.equippedOffhand == w.uid then
@@ -632,7 +588,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				mark.Position = UDim2.fromOffset(6, 6)
 				mark.BackgroundColor3 = Rarity.Of(rar)
 				mark.BorderSizePixel = 0
-				mark.ZIndex = 45
+				mark.ZIndex = 52
 				mark.Parent = btn
 				UIKit.Corner(mark, 99)
 			end
@@ -642,11 +598,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local mult = (def and def.powerMult) or 1
 			local sellP = (def and def.sellPrice) or 5
 			local lv = w.level or 1
-
 			local sc = Instance.new("UIScale")
 			sc.Parent = btn
 			btn.MouseEnter:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.12, Enum.EasingStyle.Quad), { Scale = HOVER_SCALE }):Play()
+				TweenService:Create(sc, TweenInfo.new(0.12), { Scale = HOVER_SCALE }):Play()
 				local eq: string? = nil
 				if profile.equippedMain == w.uid then
 					eq = "EQUIPPED MAIN"
@@ -669,62 +624,66 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	for i, w in ipairs(weapons) do
 		makeSlot(i, w)
 	end
-	-- fill empty slots to at least 2 full rows (12) or inventory count
-	local fillTo = math.max(12, math.ceil(math.max(#weapons, 1) / GRID_COLS) * GRID_COLS)
-	fillTo = math.min(fillTo, 48)
+	local fillTo = math.min(48, math.max(12, math.ceil(math.max(#weapons, 1) / GRID_COLS) * GRID_COLS))
 	for i = #weapons + 1, fillTo do
 		makeSlot(i, nil)
 	end
 
 	----------------------------------------------------------------
-	-- Bottom BUTTONS: fixed bar on full-screen host (always visible)
+	-- BOTTOM TABS — always on host bottom, huge Z, impossible to miss
 	----------------------------------------------------------------
 	local tabBar = Instance.new("Frame")
 	tabBar.Name = "BottomTabBar"
-	tabBar.BackgroundTransparency = 1
+	tabBar.BackgroundColor3 = Color3.fromRGB(12, 8, 28)
+	tabBar.BackgroundTransparency = 0.25
 	tabBar.BorderSizePixel = 0
 	tabBar.AnchorPoint = Vector2.new(0.5, 1)
-	tabBar.Position = UDim2.fromScale(0.5, 0.99)
-	tabBar.Size = UDim2.fromScale(0.92, 0.13)
-	tabBar.ZIndex = 100
+	tabBar.Position = UDim2.new(0.5, 0, 1, -8)
+	tabBar.Size = UDim2.new(0.94, 0, 0, 110)
+	tabBar.ZIndex = 400
 	tabBar.Parent = host
+	UIKit.Corner(tabBar, 14)
 
 	local tabList = Instance.new("UIListLayout")
 	tabList.FillDirection = Enum.FillDirection.Horizontal
 	tabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	tabList.VerticalAlignment = Enum.VerticalAlignment.Center
-	tabList.Padding = UDim.new(0.012, 0)
+	tabList.Padding = UDim.new(0, 10)
 	tabList.SortOrder = Enum.SortOrder.LayoutOrder
 	tabList.Parent = tabBar
 
 	for i, def in ipairs(FIGMA_TABS) do
 		local b = Instance.new("ImageButton")
 		b.Name = def.id .. "Tab"
-		b.BackgroundTransparency = 0.35
-		b.BackgroundColor3 = Color3.fromRGB(30, 20, 55)
+		b.BackgroundColor3 = Color3.fromRGB(40, 28, 70)
+		b.BackgroundTransparency = 0.15
 		b.BorderSizePixel = 0
 		b.Image = art(def.key)
 		b.ScaleType = Enum.ScaleType.Fit
-		b.AutoButtonColor = false
-		b.Size = UDim2.fromScale(0.105, 0.95)
+		b.AutoButtonColor = true
+		b.Size = UDim2.fromOffset(96, 96)
 		b.LayoutOrder = i
-		b.ZIndex = 101
-		b.Active = true
-		b.Visible = true
+		b.ZIndex = 401
 		b.Parent = tabBar
-		UIKit.Corner(b, 10)
-		local sc = Instance.new("UIScale")
-		sc.Scale = if def.id == "weapons" then 1.08 else 1
-		sc.Parent = b
-		if def.id ~= "weapons" then
-			b.ImageTransparency = 0.1
+		UIKit.Corner(b, 12)
+
+		-- label under icon so tabs readable even if image fails
+		local lab = Instance.new("TextLabel")
+		lab.BackgroundTransparency = 1
+		lab.Size = UDim2.new(1, 0, 0, 16)
+		lab.Position = UDim2.new(0, 0, 1, -18)
+		lab.Text = def.label
+		lab.TextSize = 10
+		lab.Font = Enum.Font.GothamBold
+		lab.TextColor3 = Color3.fromRGB(220, 210, 255)
+		lab.TextXAlignment = Enum.TextXAlignment.Center
+		lab.ZIndex = 402
+		lab.Parent = b
+
+		if def.id == "weapons" then
+			b.BackgroundColor3 = Color3.fromRGB(70, 40, 120)
 		end
-		b.MouseEnter:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1.1 }):Play()
-		end)
-		b.MouseLeave:Connect(function()
-			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = if def.id == "weapons" then 1.08 else 1 }):Play()
-		end)
+
 		b.MouseButton1Click:Connect(function()
 			if def.id == "weapons" or def.id == "settings" then
 				return
