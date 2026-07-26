@@ -38,12 +38,17 @@ function GroupChestService.Claim(player: Player)
 			isMember = player:IsInGroup(groupId)
 		end)
 		if not ok or not isMember then
+			print(string.format("[GroupChest] Player %s is NOT in Roblox Group %d", player.Name, groupId))
 			Remotes.Event("Notify"):FireClient(player, {
-				text = "Join our Roblox Group to unlock Daily Chest Rewards!",
+				text = string.format("👥 Join our Roblox Group (ID: %d) to unlock Daily Rewards!", groupId),
 				color = "yellow",
 			})
 			return
+		else
+			print(string.format("[GroupChest] Player %s verified member of Roblox Group %d", player.Name, groupId))
 		end
+	else
+		print("[GroupChest] ROBLOX_GROUP_ID is 0 (Test mode) — skipping group membership check")
 	end
 
 	local now = os.time()

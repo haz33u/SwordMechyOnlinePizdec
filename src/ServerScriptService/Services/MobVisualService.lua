@@ -259,6 +259,9 @@ local function buildBody(def: any, position: Vector3): Model
 	model.PrimaryPart = root
 	weldVisual(model, root)
 
+	local _, bboxSize = model:GetBoundingBox()
+	model:PivotTo(CFrame.new(position.X, position.Y + (bboxSize.Y / 2), position.Z))
+
 	-- tier outline feel
 	local hl = Instance.new("Highlight")
 	hl.Name = "TierGlow"
@@ -319,7 +322,12 @@ local function buildPlaceholder(def: any, position: Vector3): Model
 		local root = studio.PrimaryPart or studio:FindFirstChildWhichIsA("BasePart", true)
 		if root and root:IsA("BasePart") then
 			studio.PrimaryPart = root
-			studio:PivotTo(CFrame.new(position + Vector3.new(0, root.Size.Y / 2, 0)))
+
+			-- Position model so its bottom feet sit 100% flush on top of the ground
+			local _, bboxSize = studio:GetBoundingBox()
+			local targetCF = CFrame.new(position.X, position.Y + (bboxSize.Y / 2), position.Z)
+			studio:PivotTo(targetCF)
+
 			if not root:FindFirstChildOfClass("ClickDetector") then
 				local click = Instance.new("ClickDetector")
 				click.MaxActivationDistance = 72
