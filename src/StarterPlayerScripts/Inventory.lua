@@ -1108,8 +1108,13 @@ function Inventory.Bind(
 		hideTooltip()
 		preloadPrices()
 
-		-- Leave Figma weapons page when switching tabs
-		if tab ~= "weapons" then
+		-- Figma inventory pages: weapons / pets / auras / relics / items
+		local figmaInv = tab == "weapons"
+			or tab == "pets"
+			or tab == "auras"
+			or tab == "relics"
+			or tab == "items"
+		if not figmaInv then
 			InventoryWeaponsLayout.Destroy(body)
 			local figmaHost = body:FindFirstChild(ROOT_FIGMA_HOST)
 			if figmaHost then
@@ -1197,9 +1202,9 @@ function Inventory.Bind(
 		setMini(2, "O", profile.unlocks and profile.unlocks.offhand and GOLD or TL)
 		setMini(3, "A", profile.equippedAura and GREEN or TL)
 
-		---------------------------------------------------------------- WEAPONS
-		if tab == "weapons" then
-			-- Full Figma weapons page — hide ENTIRE legacy InvCanvas (gray plate)
+		---------------------------------------------------------------- FIGMA INV (weapons / pets / auras / relics / consumables)
+		if tab == "weapons" or tab == "pets" or tab == "auras" or tab == "relics" or tab == "items" then
+			-- Full Figma inventory page — hide ENTIRE legacy InvCanvas (gray plate)
 			if canvas then
 				canvas.Visible = false
 			end
@@ -1208,13 +1213,28 @@ function Inventory.Bind(
 				body.BackgroundColor3 = Color3.new(0, 0, 0)
 				body.ClipsDescendants = false
 			end
-			-- Pass Body (or window) — layout mounts to ScreenGui for tabs
 			if countLab then
-				countLab.Text = string.format("%d OF %d", #(profile.weapons or {}), INV_CAP)
+				if tab == "weapons" then
+					countLab.Text = string.format("%d OF %d", #(profile.weapons or {}), INV_CAP)
+				elseif tab == "pets" then
+					countLab.Text = string.format("%d / %d team", #(profile.petTeam or {}), profile.petSlots or 3)
+				elseif tab == "auras" then
+					countLab.Text = string.format("%d auras", #(profile.auras or {}))
+				elseif tab == "relics" then
+					countLab.Text = string.format("%d relics", #(profile.relics or {}))
+				else
+					countLab.Text = string.format(
+						"Keys: Pet %d · Aura %d | Dust: %d",
+						profile.petKeys or 0,
+						profile.auraKeys or 0,
+						profile.enchantDust or 0
+					)
+				end
 			end
 			InventoryWeaponsLayout.Render(body, {
 				profile = profile,
 				stats = stats,
+				invTab = tab,
 				onClose = onClose,
 				onTab = function(tabId: string)
 					tab = tabId
@@ -1225,7 +1245,7 @@ function Inventory.Bind(
 				end,
 			})
 
-		---------------------------------------------------------------- PETS
+		---------------------------------------------------------------- PETS (legacy fallback — unreachable if figma above)
 		elseif tab == "pets" then
 			setPreviewAvatar(nil, "🐾")
 			local pets = profile.pets or {}

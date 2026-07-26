@@ -309,7 +309,7 @@ function App.Start()
 		Net.Event("OpenPanel").OnClientEvent:Connect(function(panelId)
 			if type(panelId) == "string" then
 				local invStore = store :: any
-				local invTabs = { weapons = true, pets = true, auras = true, relics = true, cases = true, shop = true }
+				local invTabs = { weapons = true, pets = true, auras = true, relics = true, items = true, cases = true, shop = true }
 				if invTabs[panelId] then
 					invStore._invTab = panelId
 					store:OpenPanel("weapons")

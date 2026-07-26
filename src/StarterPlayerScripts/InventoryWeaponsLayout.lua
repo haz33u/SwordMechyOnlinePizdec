@@ -1,12 +1,13 @@
 --!strict
 --[[
-	WEAPON INVENTORY — layout anchored on MAINBACKGROUD (not outer Frame).
+	FIGMA INVENTORY — layout anchored on MAINBACKGROUD (not outer Frame).
 
 	host (full-screen transparent, weapons window)
-	  shell (MAINBACKGROUD plate, slightly left of true center so left binds stay tight)
+	  shell (MAINBACKGROUD plate; slightly left + lowered)
 	    chrome remapped relative to shell (Figma → MAINBACKGROUD box)
+	    grid content: weapons | pets | auras | relics | items
 	  Tooltip (mouse-follow)
-	InvBottomTabBar on ScreenGui (never clipped) — created early so layout errors can't drop it
+	InvBottomTabBar — vertical rail RIGHT of inventory (scale with viewport, no text labels)
 ]]
 
 local GuiService = game:GetService("GuiService")
@@ -26,6 +27,7 @@ local Shared = ReplicatedStorage:WaitForChild("Shared")
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local PetConfig = require(Shared.Config.PetConfig)
 local AuraConfig = require(Shared.Config.AuraConfig)
+local RelicConfig = require(Shared.Config.RelicConfig)
 local InventoryAssetConfig = require(Shared.Config.InventoryAssetConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 
@@ -90,10 +92,10 @@ for k, b in FIGMA do
 	end
 end
 -- RULE: chrome stays inside MAINBACKGROUD shell (0..1), except binds (negative x).
--- WeaponGrid: slight grow on all sides, a bit more up + right — still clamped to shell.
+-- WeaponGrid: grow a bit more on all sides (more up/right), still clamped to shell.
 do
 	local g = R.BG_WeaponGrid
-	local left, right, top, bottom = 0.008, 0.022, 0.018, 0.010
+	local left, right, top, bottom = 0.014, 0.036, 0.030, 0.016
 	local nx = g[1] - left
 	local ny = g[2] - top
 	local nw = g[3] + left + right
@@ -104,6 +106,27 @@ do
 	nh = math.min(nh, 0.99 - ny)
 	R.BG_WeaponGrid = { nx, ny, nw, nh }
 end
+
+-- EQUIPMENTbackground: pull top edge up so EQUIPMENT title sits inside the plate
+do
+	local e = R.EQUIPMENTbackground
+	local up = 0.028
+	local ny = math.max(0.01, e[2] - up)
+	local nh = e[4] + (e[2] - ny)
+	R.EQUIPMENTbackground = { e[1], ny, e[3], nh }
+	local t = R.EquipTitlePlate
+	if t then
+		R.EquipTitlePlate = { t[1], math.max(0.02, t[2] - up * 0.85), t[3], t[4] }
+	end
+end
+
+local TITLE_CARD: { [string]: string } = {
+	weapons = "INVENTORYWEAPONcard",
+	pets = "PETScard",
+	auras = "AURAScard",
+	relics = "RELICcard",
+	items = "CONSUMABLEScard",
+}
 
 local FIGMA_TABS = {
 	{ id = "weapons", key = "WEAPONSBUTTON", label = "WEAPONS" },
@@ -169,6 +192,8 @@ end
 export type RenderArgs = {
 	profile: any,
 	stats: any?,
+	-- weapons | pets | auras | relics | items
+	invTab: string?,
 	onClose: () -> (),
 	onTab: (tabId: string) -> (),
 	onRefresh: () -> (),
@@ -207,8 +232,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	InventoryWeaponsLayout.Destroy(parent)
 
 	local profile = args.profile
+	local invTab = args.invTab or "weapons"
+	if TITLE_CARD[invTab] == nil then
+		invTab = "weapons"
+	end
 
-	-- Climb to ScreenGui so bottom tabs cannot be clipped by Window/Body
+	-- Climb to ScreenGui so side tabs cannot be clipped by Window/Body
 	local mountTo: Instance = parent
 	local screenGui: ScreenGui? = nil
 	do
@@ -240,28 +269,27 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	host.Parent = mountTo
 
 	----------------------------------------------------------------
-	-- BOTTOM TABS first (ScreenGui) — must not depend on later chrome code.
-	-- Previous bug: Tooltip set ZIndexBehavior on a Frame → error → no tabs.
+	-- SIDE TABS (right of inventory) — scale with viewport, no text labels
 	----------------------------------------------------------------
 	local tabParent: Instance = screenGui or host
 	local tabBar = Instance.new("Frame")
 	tabBar.Name = "InvBottomTabBar"
-	-- Scale with viewport (same idea as MAINBACKGROUD shell) — no fixed px sizes
 	tabBar.BackgroundTransparency = 1
 	tabBar.BorderSizePixel = 0
-	tabBar.AnchorPoint = Vector2.new(0.5, 1)
-	tabBar.Position = UDim2.fromScale(0.5, 0.99)
-	tabBar.Size = UDim2.fromScale(0.90, 0.105)
+	tabBar.AnchorPoint = Vector2.new(1, 0.5)
+	-- Right rail next to MAINBACKGROUD; bigger buttons than old bottom strip
+	tabBar.Position = UDim2.fromScale(0.99, 0.52)
+	tabBar.Size = UDim2.fromScale(0.095, 0.78)
 	tabBar.ZIndex = 400
 	tabBar.Visible = true
 	tabBar.Active = false
 	tabBar.Parent = tabParent
 
 	local tabList = Instance.new("UIListLayout")
-	tabList.FillDirection = Enum.FillDirection.Horizontal
+	tabList.FillDirection = Enum.FillDirection.Vertical
 	tabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	tabList.VerticalAlignment = Enum.VerticalAlignment.Center
-	tabList.Padding = UDim.new(0.01, 0) -- scale with bar width
+	tabList.Padding = UDim.new(0.012, 0)
 	tabList.SortOrder = Enum.SortOrder.LayoutOrder
 	tabList.Parent = tabBar
 
@@ -274,58 +302,40 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		b.Image = art(def.key)
 		b.ScaleType = Enum.ScaleType.Fit
 		b.AutoButtonColor = true
-		b.Size = UDim2.fromOffset(72, 72) -- relayout sets real size from viewport
+		b.Size = UDim2.fromOffset(80, 80)
 		b.LayoutOrder = i
 		b.ZIndex = 401
 		b.Visible = true
 		b.Active = true
+		-- Dim inactive tabs slightly
+		b.ImageTransparency = if def.id == invTab then 0 else 0.22
 		b.Parent = tabBar
 		table.insert(tabButtons, b)
-
-		local lab = Instance.new("TextLabel")
-		lab.Name = "Label"
-		lab.BackgroundTransparency = 1
-		lab.Size = UDim2.fromScale(1, 0.18)
-		lab.Position = UDim2.fromScale(0, 0.80)
-		lab.Text = def.label
-		lab.TextScaled = true
-		lab.Font = Enum.Font.GothamBold
-		lab.TextColor3 = Color3.fromRGB(240, 230, 255)
-		lab.TextStrokeTransparency = 0.35
-		lab.TextStrokeColor3 = Color3.fromRGB(10, 8, 30)
-		lab.TextXAlignment = Enum.TextXAlignment.Center
-		lab.ZIndex = 402
-		lab.Parent = b
-		local labConst = Instance.new("UITextSizeConstraint")
-		labConst.MinTextSize = 8
-		labConst.MaxTextSize = 14
-		labConst.Parent = lab
+		-- No white text labels on tab buttons
 
 		b.MouseButton1Click:Connect(function()
-			if def.id == "weapons" or def.id == "settings" then
+			if def.id == invTab or def.id == "settings" then
 				return
 			end
+			-- shop/profile still route through onTab; inventory kinds switch page
 			args.onTab(def.id)
 		end)
 	end
 
-	-- Match inventory scaling: button size = fraction of tabBar (and thus viewport) height
 	local function layoutTabs()
 		local barH = tabBar.AbsoluteSize.Y
 		local barW = tabBar.AbsoluteSize.X
-		if barH < 20 or barW < 40 then
+		if barH < 20 or barW < 20 then
 			return
 		end
-		local side = math.floor(barH * 0.88)
-		side = math.clamp(side, 48, 160)
-		-- If 8 buttons + gaps would overflow width, shrink to fit
-		local gap = math.max(4, math.floor(barW * 0.01))
+		local gap = math.max(4, math.floor(barH * 0.012))
 		tabList.Padding = UDim.new(0, gap)
+		local side = math.floor(barW * 0.92)
 		local need = side * #tabButtons + gap * (#tabButtons - 1)
-		if need > barW * 0.98 then
-			side = math.floor((barW * 0.98 - gap * (#tabButtons - 1)) / #tabButtons)
-			side = math.max(40, side)
+		if need > barH * 0.98 then
+			side = math.floor((barH * 0.98 - gap * (#tabButtons - 1)) / #tabButtons)
 		end
+		side = math.clamp(side, 52, 140)
 		for _, b in ipairs(tabButtons) do
 			b.Size = UDim2.fromOffset(side, side)
 		end
@@ -335,16 +345,16 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	task.delay(0.05, layoutTabs)
 
 	----------------------------------------------------------------
-	-- SHELL = MAINBACKGROUD plate (make THIS bigger — not the grid outside it)
-	-- Slightly left of center so left binds stay next to the plate
+	-- SHELL = MAINBACKGROUD plate
+	-- Slightly left + lowered (move frame down, do not re-stretch)
 	----------------------------------------------------------------
 	local shell = Instance.new("Frame")
 	shell.Name = "MAINBACKGROUD_Shell"
 	shell.BackgroundTransparency = 1
 	shell.BorderSizePixel = 0
 	shell.AnchorPoint = Vector2.new(0.5, 0.5)
-	shell.Position = UDim2.fromScale(0.48, 0.47)
-	-- Larger plate = equipment + grid scale up together (still inside host)
+	-- Lowered only (same size as before) — room for side tabs; still left for binds
+	shell.Position = UDim2.fromScale(0.46, 0.54)
 	shell.Size = UDim2.fromScale(0.96, 0.86)
 	shell.ClipsDescendants = false -- binds hang left; chrome itself must stay in-bounds via R
 	shell.ZIndex = 40
@@ -387,7 +397,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		return btn
 	end
 
-	pImg("INVENTORYWEAPONcard", "INVENTORYWEAPONcard", R.INVENTORYWEAPONcard, 50)
+	local titleArt = TITLE_CARD[invTab] or "INVENTORYWEAPONcard"
+	pImg("TitleCard", titleArt, R.INVENTORYWEAPONcard, 50)
 	pImg("Divider", "Divider_3_Minimal_1", R.Divider, 48, Enum.ScaleType.Stretch)
 	pBtn("Close", "BTN_Close_3", R.BTN_Close, 80, args.onClose)
 
@@ -720,7 +731,22 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 	pBtn("SELLbutton", "SELLbutton", R.SELLbutton, 55, function() end)
 	pBtn("SELLallUNLOCKEDbutton", "SELLallUNLOCKEDbutton", R.SELLallUNLOCKED, 55, function()
-		Net.SellAllWeapons()
+		if invTab == "weapons" then
+			Net.SellAllWeapons()
+		elseif invTab == "pets" then
+			for _, p in ipairs(profile.pets or {}) do
+				local onTeam = false
+				for _, uid in ipairs(profile.petTeam or {}) do
+					if uid == p.uid then
+						onTeam = true
+						break
+					end
+				end
+				if not onTeam then
+					Net.SellPet(p.uid)
+				end
+			end
+		end
 		args.onRefresh()
 	end)
 	-- binds left of shell
@@ -751,12 +777,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	gridBg.ZIndex = 46
 	gridBg.Parent = gridHost
 
-	-- Cards sit INSIDE the painted grid: extra top inset so they don't poke above the frame
+	-- Cards sit INSIDE the painted grid; fill most of the frame (tight gaps for hover)
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
-	scroll.Size = UDim2.fromScale(0.90, 0.86)
-	scroll.Position = UDim2.fromScale(0.05, 0.08) -- lower than grid top edge
+	scroll.Size = UDim2.fromScale(0.935, 0.88)
+	scroll.Position = UDim2.fromScale(0.032, 0.07)
 	scroll.ScrollBarThickness = 5
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(180, 140, 255)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -765,71 +791,106 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	scroll.ZIndex = 47
 	scroll.Parent = gridHost
 
-	local scrollPad = Instance.new("UIPadding")
-	scrollPad.PaddingTop = UDim.new(0.01, 0)
-	scrollPad.PaddingBottom = UDim.new(0.01, 0)
-	scrollPad.PaddingLeft = UDim.new(0.005, 0)
-	scrollPad.PaddingRight = UDim.new(0.005, 0)
-	scrollPad.Parent = scroll
-
 	local grid = Instance.new("UIGridLayout")
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
 	grid.FillDirectionMaxCells = GRID_COLS
 	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	grid.VerticalAlignment = Enum.VerticalAlignment.Top
-	grid.CellPadding = UDim2.fromScale(0.008, 0.008)
+	grid.CellPadding = UDim2.fromOffset(4, 4)
 	grid.Parent = scroll
 
 	local function relayout()
 		local w = scroll.AbsoluteSize.X
-		local h = scroll.AbsoluteSize.Y
-		if w < 40 or h < 40 then
+		if w < 40 then
 			return
 		end
-		local pad = math.max(4, math.floor(w * 0.008))
+		-- Tight gaps but enough for HOVER_SCALE 1.06 (~6% of cell)
+		local pad = math.max(3, math.floor(w * 0.0045))
 		grid.CellPadding = UDim2.fromOffset(pad, pad)
 		local cell = math.floor((w - pad * (GRID_COLS - 1)) / GRID_COLS)
-		-- Slightly smaller than full row so cards don't clip the grid border
-		cell = math.max(36, cell - 2)
+		cell = math.max(40, cell)
 		grid.CellSize = UDim2.fromOffset(cell, cell)
 	end
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
 	task.defer(relayout)
 	task.delay(0.05, relayout)
 
-	---------------------------------------------------------------- weapon grid slots
-	local weapons = profile.weapons or {}
-	local function makeSlot(order: number, w: any?)
+	---------------------------------------------------------------- grid slots (weapons / pets / auras / relics / items)
+	local function emptySlot(order: number)
 		local btn = Instance.new("ImageButton")
-		btn.Name = if w then ("W_" .. w.uid) else ("Empty_" .. order)
+		btn.Name = "Empty_" .. order
 		btn.BackgroundTransparency = 1
 		btn.AutoButtonColor = false
 		btn.LayoutOrder = order
 		btn.ZIndex = 50
-		btn.Parent = scroll
-
-		local rar = "Empty"
-		if w then
-			local def = WeaponConfig.Get(w.id)
-			rar = (def and def.rarity) or "Common"
-		end
-		btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
-		-- Stretch to fill UIGrid cell so cards align with WeaponGrid frame
+		btn.Image = InventoryAssetConfig.GetSlotFrame("Empty")
 		btn.ScaleType = Enum.ScaleType.Stretch
+		btn.Parent = scroll
+	end
 
-		if w then
-			local iconHost = Instance.new("Frame")
-			iconHost.BackgroundTransparency = 1
-			iconHost.Size = UDim2.fromScale(0.72, 0.72)
-			iconHost.Position = UDim2.fromScale(0.5, 0.5)
-			iconHost.AnchorPoint = Vector2.new(0.5, 0.5)
-			iconHost.ZIndex = 51
-			iconHost.Active = false
-			iconHost.Parent = btn
+	local function iconHostOn(btn: GuiObject): Frame
+		local iconHost = Instance.new("Frame")
+		iconHost.BackgroundTransparency = 1
+		iconHost.Size = UDim2.fromScale(0.78, 0.78)
+		iconHost.Position = UDim2.fromScale(0.5, 0.5)
+		iconHost.AnchorPoint = Vector2.new(0.5, 0.5)
+		iconHost.ZIndex = 51
+		iconHost.Active = false
+		iconHost.Parent = btn
+		return iconHost
+	end
 
+	local function markDot(btn: GuiObject, col: Color3)
+		local mark = Instance.new("Frame")
+		mark.Size = UDim2.fromOffset(10, 10)
+		mark.Position = UDim2.fromOffset(6, 6)
+		mark.BackgroundColor3 = col
+		mark.BorderSizePixel = 0
+		mark.ZIndex = 52
+		mark.Parent = btn
+		UIKit.Corner(mark, 99)
+	end
+
+	local function wireHover(btn: GuiObject, linesBuilder: () -> any, onClick: (() -> ())?)
+		local sc = Instance.new("UIScale")
+		sc.Parent = btn
+		btn.MouseEnter:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.12), { Scale = HOVER_SCALE }):Play()
+			local lines = linesBuilder()
+			if type(lines) == "table" and #lines > 0 then
+				showTipLines(lines)
+			end
+		end)
+		btn.MouseLeave:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+			hideTip()
+		end)
+		if onClick then
+			(btn :: ImageButton).MouseButton1Click:Connect(onClick)
+		end
+	end
+
+	local itemCount = 0
+
+	if invTab == "weapons" then
+		local weapons = profile.weapons or {}
+		itemCount = #weapons
+		for i, w in ipairs(weapons) do
+			local btn = Instance.new("ImageButton")
+			btn.Name = "W_" .. w.uid
+			btn.BackgroundTransparency = 1
+			btn.AutoButtonColor = false
+			btn.LayoutOrder = i
+			btn.ZIndex = 50
+			btn.Parent = scroll
+			local def = WeaponConfig.Get(w.id)
+			local rar = (def and def.rarity) or "Common"
+			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
+			btn.ScaleType = Enum.ScaleType.Stretch
+			local iconHost = iconHostOn(btn)
 			local used = false
 			pcall(function()
-				used = WeaponModels.TryFillInventoryIcon(iconHost, w.id, 44) == true
+				used = WeaponModels.TryFillInventoryIcon(iconHost, w.id, 48) == true
 			end)
 			if not used and IconConfig.HasWeaponImage(w.id) then
 				local ic = Instance.new("ImageLabel")
@@ -840,54 +901,223 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				ic.ZIndex = 51
 				ic.Parent = iconHost
 			end
-
 			if profile.equippedMain == w.uid or profile.equippedOffhand == w.uid then
-				local mark = Instance.new("Frame")
-				mark.Size = UDim2.fromOffset(10, 10)
-				mark.Position = UDim2.fromOffset(6, 6)
-				mark.BackgroundColor3 = Rarity.Of(rar)
-				mark.BorderSizePixel = 0
-				mark.ZIndex = 52
-				mark.Parent = btn
-				UIKit.Corner(mark, 99)
+				markDot(btn, Rarity.Of(rar))
 			end
-
-			local def = WeaponConfig.Get(w.id)
 			local name = (def and def.name) or WeaponConfig.GetDisplayName(w.id)
 			local mult = (def and def.powerMult) or 1
 			local sellP = (def and def.sellPrice) or 5
 			local lv = w.level or 1
-			local sc = Instance.new("UIScale")
-			sc.Parent = btn
-			btn.MouseEnter:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.12), { Scale = HOVER_SCALE }):Play()
+			wireHover(btn, function()
 				local eq: string? = nil
 				if profile.equippedMain == w.uid then
 					eq = "EQUIPPED MAIN"
 				elseif profile.equippedOffhand == w.uid then
 					eq = "EQUIPPED OFFHAND"
 				end
-				showTip(name, rar, mult, sellP, lv, eq)
-			end)
-			btn.MouseLeave:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
-				hideTip()
-			end)
-			btn.MouseButton1Click:Connect(function()
+				local lines: { any } = {}
+				if eq then
+					table.insert(lines, { eq, "gold", 18 })
+				end
+				table.insert(lines, { name, "purple", 24 })
+				table.insert(lines, { rar, "gray", 17 })
+				table.insert(lines, { string.format("POWER: ×%.2f", mult), "purple", 17 })
+				table.insert(lines, { string.format("SELL PRICE: %d", sellP), "gold", 17 })
+				table.insert(lines, { string.format("LEVEL: %d", lv), "gray", 17 })
+				return lines
+			end, function()
 				Net.EquipWeapon(w.uid, "main")
+				args.onRefresh()
+			end)
+		end
+	elseif invTab == "pets" then
+		local pets = profile.pets or {}
+		itemCount = #pets
+		local teamSet: { [string]: boolean } = {}
+		for _, uid in ipairs(profile.petTeam or {}) do
+			teamSet[tostring(uid)] = true
+		end
+		for i, p in ipairs(pets) do
+			local btn = Instance.new("ImageButton")
+			btn.Name = "P_" .. tostring(p.uid)
+			btn.BackgroundTransparency = 1
+			btn.AutoButtonColor = false
+			btn.LayoutOrder = i
+			btn.ZIndex = 50
+			btn.Parent = scroll
+			local def = PetConfig.Get(p.id)
+			local rar = (def and def.rarity) or p.rarity or "Common"
+			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
+			btn.ScaleType = Enum.ScaleType.Stretch
+			local iconHost = iconHostOn(btn)
+			pcall(function()
+				PetVisual.TryFillInventoryIcon(iconHost, p.id, 44)
+			end)
+			if teamSet[tostring(p.uid)] then
+				markDot(btn, Rarity.Of(rar))
+			end
+			local name = (def and def.name) or tostring(p.id)
+			local mult = (def and def.powerMult) or 1
+			local lv = p.level or 1
+			wireHover(btn, function()
+				return {
+					{ if teamSet[tostring(p.uid)] then "ON TEAM" else "PET", "gold", 18 },
+					{ name, "purple", 24 },
+					{ rar, "gray", 17 },
+					{ string.format("POWER: ×%.2f", mult), "purple", 17 },
+					{ string.format("LEVEL: %d", lv), "gray", 17 },
+				}
+			end, function()
+				if teamSet[tostring(p.uid)] then
+					Net.UnequipPet(p.uid)
+				else
+					Net.EquipPet(p.uid)
+				end
+				args.onRefresh()
+			end)
+		end
+	elseif invTab == "auras" then
+		local auras = profile.auras or {}
+		itemCount = #auras
+		for i, a in ipairs(auras) do
+			local btn = Instance.new("ImageButton")
+			btn.Name = "A_" .. tostring(a.uid or a.id or i)
+			btn.BackgroundTransparency = 1
+			btn.AutoButtonColor = false
+			btn.LayoutOrder = i
+			btn.ZIndex = 50
+			btn.Parent = scroll
+			local aid = a.id or a.uid
+			local resolved = AuraConfig.ResolveId(tostring(aid))
+			local def = AuraConfig.Get(resolved)
+			local rar = (def and def.rarity) or "Common"
+			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
+			btn.ScaleType = Enum.ScaleType.Stretch
+			local iconHost = iconHostOn(btn)
+			pcall(function()
+				AuraVisual.TryFillInventoryIcon(iconHost, resolved, 44)
+			end)
+			local equipped = profile.equippedAura == a.uid or profile.equippedAura == resolved or profile.equippedAura == aid
+			if equipped then
+				markDot(btn, Rarity.Of(rar))
+			end
+			local name = (def and def.name) or tostring(aid)
+			local powerPct = (def and def.powerPct) or 0
+			wireHover(btn, function()
+				return {
+					{ if equipped then "EQUIPPED" else "AURA", "gold", 18 },
+					{ name, "purple", 24 },
+					{ rar, "gray", 17 },
+					{ string.format("POWER: +%d%%", powerPct), "purple", 17 },
+				}
+			end, function()
+				if equipped then
+					Net.UnequipAura()
+				else
+					Net.EquipAura(a.uid or a.id)
+				end
+				args.onRefresh()
+			end)
+		end
+	elseif invTab == "relics" then
+		local relics = profile.relics or {}
+		itemCount = #relics
+		for i, r in ipairs(relics) do
+			local btn = Instance.new("ImageButton")
+			btn.Name = "R_" .. tostring(r.uid or i)
+			btn.BackgroundTransparency = 1
+			btn.AutoButtonColor = false
+			btn.LayoutOrder = i
+			btn.ZIndex = 50
+			btn.Parent = scroll
+			local def = RelicConfig.Get(r.id)
+			local rar = (def and def.rarity) or r.rarity or "Common"
+			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
+			btn.ScaleType = Enum.ScaleType.Stretch
+			local iconHost = iconHostOn(btn)
+			-- placeholder glyph if no relic visual helper
+			local gl = Instance.new("TextLabel")
+			gl.BackgroundTransparency = 1
+			gl.Size = UDim2.fromScale(1, 1)
+			gl.Text = "◆"
+			gl.TextScaled = true
+			gl.TextColor3 = Color3.fromRGB(220, 200, 255)
+			gl.Font = Enum.Font.GothamBold
+			gl.ZIndex = 51
+			gl.Parent = iconHost
+			local name = (def and def.name) or tostring(r.id)
+			wireHover(btn, function()
+				return {
+					{ "RELIC", "gold", 18 },
+					{ name, "purple", 24 },
+					{ rar, "gray", 17 },
+				}
+			end, function()
+				Net.EquipRelic(r.uid)
+				args.onRefresh()
+			end)
+		end
+	elseif invTab == "items" then
+		local POTIONS = {
+			{ id = "SmallCoin", name = "Small Coin Potion", desc = "+25% Coins (10m)" },
+			{ id = "MidCoin", name = "Mid Coin Potion", desc = "+50% Coins (20m)" },
+			{ id = "BigCoin", name = "Big Coin Potion", desc = "+100% Coins (30m)" },
+			{ id = "SmallPower", name = "Small Power Potion", desc = "+25% Power (10m)" },
+			{ id = "MidPower", name = "Mid Power Potion", desc = "+50% Power (20m)" },
+			{ id = "BigPower", name = "Big Power Potion", desc = "+100% Power (30m)" },
+			{ id = "SmallDamage", name = "Small Damage Potion", desc = "+25% Damage (10m)" },
+			{ id = "MidDamage", name = "Mid Damage Potion", desc = "+50% Damage (20m)" },
+			{ id = "BigDamage", name = "Big Damage Potion", desc = "+100% Damage (30m)" },
+			{ id = "SmallLuck", name = "Small Luck Potion", desc = "+25% Luck (10m)" },
+			{ id = "MidLuck", name = "Mid Luck Potion", desc = "+50% Luck (20m)" },
+			{ id = "BigLuck", name = "Big Luck Potion", desc = "+100% Luck (30m)" },
+		}
+		itemCount = #POTIONS
+		for i, pot in ipairs(POTIONS) do
+			local btn = Instance.new("ImageButton")
+			btn.Name = "Pot_" .. pot.id
+			btn.BackgroundTransparency = 1
+			btn.AutoButtonColor = false
+			btn.LayoutOrder = i
+			btn.ZIndex = 50
+			btn.Parent = scroll
+			btn.Image = InventoryAssetConfig.GetSlotFrame("Common")
+			btn.ScaleType = Enum.ScaleType.Stretch
+			local iconHost = iconHostOn(btn)
+			local gl = Instance.new("TextLabel")
+			gl.BackgroundTransparency = 1
+			gl.Size = UDim2.fromScale(1, 1)
+			gl.Text = "🧪"
+			gl.TextScaled = true
+			gl.ZIndex = 51
+			gl.Parent = iconHost
+			wireHover(btn, function()
+				return {
+					{ "CONSUMABLE", "gold", 18 },
+					{ pot.name, "purple", 22 },
+					{ pot.desc, "gray", 16 },
+					{
+						string.format(
+							"KEYS P%d A%d · DUST %d",
+							profile.petKeys or 0,
+							profile.auraKeys or 0,
+							profile.enchantDust or 0
+						),
+						"gray",
+						15,
+					},
+				}
+			end, function()
+				Net.UsePotion(pot.id)
 				args.onRefresh()
 			end)
 		end
 	end
 
-	for i, w in ipairs(weapons) do
-		makeSlot(i, w)
+	local fillTo = math.min(48, math.max(12, math.ceil(math.max(itemCount, 1) / GRID_COLS) * GRID_COLS))
+	for i = itemCount + 1, fillTo do
+		emptySlot(i)
 	end
-	local fillTo = math.min(48, math.max(12, math.ceil(math.max(#weapons, 1) / GRID_COLS) * GRID_COLS))
-	for i = #weapons + 1, fillTo do
-		makeSlot(i, nil)
-	end
-	-- Bottom tabs already mounted at start of Render (see above).
 end
 
 return InventoryWeaponsLayout
