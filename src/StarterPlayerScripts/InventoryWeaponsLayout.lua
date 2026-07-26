@@ -78,6 +78,18 @@ local B = {
 	SELLallUNLOCKED = { 0.113, 0.5611, 0.1698, 0.1009 },
 }
 
+-- WeaponGrid slightly larger than brief (still on MAINBACKGROUD after rel())
+do
+	local g = B.BG_WeaponGrid
+	local left, right, top, bottom = 0.014, 0.022, 0.016, 0.014
+	B.BG_WeaponGrid = {
+		g[1] - left,
+		g[2] - top,
+		g[3] + left + right,
+		g[4] + top + bottom,
+	}
+end
+
 -- NOTE: Do NOT use brief SliceCenter on our MechyForge IMAGE uploads —
 -- source PNG sizes differ → Roblox Slice turns frames into circles / mush.
 -- Fit = square cards/buttons keep aspect; Stretch = full-bleed plates only.
@@ -703,12 +715,13 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	gridBg.ZIndex = 2
 	gridBg.Parent = gridHost
 
+	-- Cards sit INSIDE the painted frame (not flush on rim) — bigger inset than before
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
-	scroll.Size = UDim2.fromScale(0.93, 0.88)
-	scroll.Position = UDim2.fromScale(0.035, 0.07)
-	scroll.ScrollBarThickness = 5
+	scroll.Size = UDim2.fromScale(0.86, 0.82)
+	scroll.Position = UDim2.fromScale(0.07, 0.10)
+	scroll.ScrollBarThickness = 4
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(180, 140, 255)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
@@ -721,7 +734,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	grid.FillDirectionMaxCells = GRID_COLS
 	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	grid.VerticalAlignment = Enum.VerticalAlignment.Top
-	grid.CellPadding = UDim2.fromOffset(4, 4)
+	grid.CellPadding = UDim2.fromOffset(2, 2)
 	grid.Parent = scroll
 
 	local function relayout()
@@ -729,10 +742,11 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		if w < 40 then
 			return
 		end
-		local pad = math.max(3, math.floor(w * 0.0045))
+		-- Tight gaps (hover 1.06 still needs ~2px)
+		local pad = math.max(2, math.floor(w * 0.0022))
 		grid.CellPadding = UDim2.fromOffset(pad, pad)
 		local cell = math.floor((w - pad * (GRID_COLS - 1)) / GRID_COLS)
-		cell = math.max(40, cell)
+		cell = math.max(42, cell)
 		grid.CellSize = UDim2.fromOffset(cell, cell)
 	end
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
