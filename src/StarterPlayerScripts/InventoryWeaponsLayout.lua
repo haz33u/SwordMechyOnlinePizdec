@@ -7,7 +7,7 @@
 	    chrome remapped relative to shell (Figma → MAINBACKGROUD box)
 	    grid content: weapons | pets | auras | relics | items
 	  Tooltip (mouse-follow)
-	InvBottomTabBar — vertical rail RIGHT of inventory (scale with viewport, no text labels)
+	Side tabs — snug right of MAINBACKGROUD shell (no strip/plate, no text labels)
 ]]
 
 local GuiService = game:GetService("GuiService")
@@ -268,95 +268,45 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	host.ZIndex = 200
 	host.Parent = mountTo
 
-	----------------------------------------------------------------
-	-- SIDE TABS (right of inventory) — scale with viewport, no text labels
-	----------------------------------------------------------------
-	local tabParent: Instance = screenGui or host
-	local tabBar = Instance.new("Frame")
-	tabBar.Name = "InvBottomTabBar"
-	tabBar.BackgroundTransparency = 1
-	tabBar.BorderSizePixel = 0
-	tabBar.AnchorPoint = Vector2.new(1, 0.5)
-	-- Right rail next to MAINBACKGROUD; bigger buttons than old bottom strip
-	tabBar.Position = UDim2.fromScale(0.99, 0.52)
-	tabBar.Size = UDim2.fromScale(0.095, 0.78)
-	tabBar.ZIndex = 400
-	tabBar.Visible = true
-	tabBar.Active = false
-	tabBar.Parent = tabParent
-
-	local tabList = Instance.new("UIListLayout")
-	tabList.FillDirection = Enum.FillDirection.Vertical
-	tabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	tabList.VerticalAlignment = Enum.VerticalAlignment.Center
-	tabList.Padding = UDim.new(0.012, 0)
-	tabList.SortOrder = Enum.SortOrder.LayoutOrder
-	tabList.Parent = tabBar
-
-	local tabButtons: { ImageButton } = {}
-	for i, def in ipairs(FIGMA_TABS) do
-		local b = Instance.new("ImageButton")
-		b.Name = def.id .. "Tab"
-		b.BackgroundTransparency = 1
-		b.BorderSizePixel = 0
-		b.Image = art(def.key)
-		b.ScaleType = Enum.ScaleType.Fit
-		b.AutoButtonColor = true
-		b.Size = UDim2.fromOffset(80, 80)
-		b.LayoutOrder = i
-		b.ZIndex = 401
-		b.Visible = true
-		b.Active = true
-		-- Dim inactive tabs slightly
-		b.ImageTransparency = if def.id == invTab then 0 else 0.22
-		b.Parent = tabBar
-		table.insert(tabButtons, b)
-		-- No white text labels on tab buttons
-
-		b.MouseButton1Click:Connect(function()
-			if def.id == invTab or def.id == "settings" then
-				return
+	-- Kill leftover window chrome (strokes / gray plates) that look like a strip around inv
+	do
+		local killRoot: Instance? = mountTo
+		while killRoot and not killRoot:IsA("ScreenGui") do
+			if killRoot:IsA("GuiObject") then
+				local g = killRoot :: GuiObject
+				g.BackgroundTransparency = 1
+				g.BorderSizePixel = 0
 			end
-			-- shop/profile still route through onTab; inventory kinds switch page
-			args.onTab(def.id)
-		end)
-	end
-
-	local function layoutTabs()
-		local barH = tabBar.AbsoluteSize.Y
-		local barW = tabBar.AbsoluteSize.X
-		if barH < 20 or barW < 20 then
-			return
-		end
-		local gap = math.max(4, math.floor(barH * 0.012))
-		tabList.Padding = UDim.new(0, gap)
-		local side = math.floor(barW * 0.92)
-		local need = side * #tabButtons + gap * (#tabButtons - 1)
-		if need > barH * 0.98 then
-			side = math.floor((barH * 0.98 - gap * (#tabButtons - 1)) / #tabButtons)
-		end
-		side = math.clamp(side, 52, 140)
-		for _, b in ipairs(tabButtons) do
-			b.Size = UDim2.fromOffset(side, side)
+			for _, ch in killRoot:GetChildren() do
+				if ch:IsA("UIStroke") or ch:IsA("UIGradient") then
+					ch:Destroy()
+				end
+				if ch.Name == "InvCanvas" and ch:IsA("GuiObject") then
+					ch.Visible = false
+					ch.BackgroundTransparency = 1
+					for _, d in ch:GetDescendants() do
+						if d:IsA("UIStroke") then
+							d:Destroy()
+						end
+					end
+				end
+			end
+			killRoot = killRoot.Parent
 		end
 	end
-	tabBar:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTabs)
-	task.defer(layoutTabs)
-	task.delay(0.05, layoutTabs)
 
 	----------------------------------------------------------------
 	-- SHELL = MAINBACKGROUD plate
-	-- Slightly left + lowered (move frame down, do not re-stretch)
+	-- Dead center on X, only slightly lowered on Y (no left/right shift)
 	----------------------------------------------------------------
 	local shell = Instance.new("Frame")
 	shell.Name = "MAINBACKGROUD_Shell"
 	shell.BackgroundTransparency = 1
 	shell.BorderSizePixel = 0
 	shell.AnchorPoint = Vector2.new(0.5, 0.5)
-	-- Lowered only (same size as before) — room for side tabs; still left for binds
-	shell.Position = UDim2.fromScale(0.46, 0.54)
+	shell.Position = UDim2.fromScale(0.5, 0.52) -- center X, slightly down from mid
 	shell.Size = UDim2.fromScale(0.96, 0.86)
-	shell.ClipsDescendants = false -- binds hang left; chrome itself must stay in-bounds via R
+	shell.ClipsDescendants = false -- binds hang left of plate
 	shell.ZIndex = 40
 	shell.Parent = host
 
@@ -376,6 +326,95 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	bg.Size = UDim2.fromScale(1, 1)
 	bg.ZIndex = 40
 	bg.Parent = shell
+
+	----------------------------------------------------------------
+	-- SIDE TABS — snug against RIGHT edge of shell, a bit larger, no plate/strip
+	----------------------------------------------------------------
+	local tabBar = Instance.new("Frame")
+	tabBar.Name = "InvBottomTabBar"
+	tabBar.BackgroundTransparency = 1
+	tabBar.BorderSizePixel = 0
+	tabBar.AnchorPoint = Vector2.new(0, 0.5)
+	tabBar.Position = UDim2.fromScale(0.9, 0.5) -- placeholder; placeSideTabs pins to shell
+	tabBar.Size = UDim2.fromOffset(100, 600)
+	tabBar.ZIndex = 400
+	tabBar.Visible = true
+	tabBar.Active = false
+	tabBar.Parent = host -- same host as shell so they track together
+
+	local tabList = Instance.new("UIListLayout")
+	tabList.FillDirection = Enum.FillDirection.Vertical
+	tabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tabList.VerticalAlignment = Enum.VerticalAlignment.Center
+	tabList.Padding = UDim.new(0, 8)
+	tabList.SortOrder = Enum.SortOrder.LayoutOrder
+	tabList.Parent = tabBar
+
+	local tabButtons: { ImageButton } = {}
+	for i, def in ipairs(FIGMA_TABS) do
+		local b = Instance.new("ImageButton")
+		b.Name = def.id .. "Tab"
+		b.BackgroundTransparency = 1
+		b.BorderSizePixel = 0
+		b.Image = art(def.key)
+		b.ScaleType = Enum.ScaleType.Fit
+		b.AutoButtonColor = true
+		b.Size = UDim2.fromOffset(96, 96)
+		b.LayoutOrder = i
+		b.ZIndex = 401
+		b.Visible = true
+		b.Active = true
+		b.ImageTransparency = if def.id == invTab then 0 else 0.22
+		b.Parent = tabBar
+		table.insert(tabButtons, b)
+
+		b.MouseButton1Click:Connect(function()
+			if def.id == invTab or def.id == "settings" then
+				return
+			end
+			args.onTab(def.id)
+		end)
+	end
+
+	local function placeSideTabs()
+		local sPos = shell.AbsolutePosition
+		local sSize = shell.AbsoluteSize
+		local hPos = host.AbsolutePosition
+		local hSize = host.AbsoluteSize
+		if sSize.X < 40 or sSize.Y < 40 or hSize.X < 40 then
+			return
+		end
+		-- Bigger than before (~11% of shell height), clamped
+		local side = math.clamp(math.floor(sSize.Y * 0.112), 84, 132)
+		local gap = math.max(6, math.floor(side * 0.07))
+		local n = #tabButtons
+		local totalH = side * n + gap * math.max(0, n - 1)
+		-- If taller than shell, shrink to fit
+		if totalH > sSize.Y * 0.98 then
+			side = math.floor((sSize.Y * 0.98 - gap * (n - 1)) / n)
+			side = math.clamp(side, 72, 132)
+			totalH = side * n + gap * (n - 1)
+		end
+		tabList.Padding = UDim.new(0, gap)
+		for _, b in ipairs(tabButtons) do
+			b.Size = UDim2.fromOffset(side, side)
+		end
+		local gapX = math.max(8, math.floor(side * 0.1))
+		local localX = (sPos.X - hPos.X) + sSize.X + gapX
+		local localY = (sPos.Y - hPos.Y) + sSize.Y * 0.5
+		-- Keep on-screen if shell is very wide
+		if localX + side > hSize.X - 4 then
+			localX = hSize.X - side - 8
+		end
+		tabBar.Size = UDim2.fromOffset(side + 4, totalH)
+		tabBar.Position = UDim2.fromOffset(math.floor(localX + 0.5), math.floor(localY + 0.5))
+	end
+	shell:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeSideTabs)
+	shell:GetPropertyChangedSignal("AbsolutePosition"):Connect(placeSideTabs)
+	host:GetPropertyChangedSignal("AbsoluteSize"):Connect(placeSideTabs)
+	task.defer(placeSideTabs)
+	task.delay(0.05, placeSideTabs)
+	task.delay(0.15, placeSideTabs)
 
 	-- All chrome positions are relative to SHELL (MAINBACKGROUD)
 	local function pImg(name: string, key: string, b: { number }, z: number?, st: Enum.ScaleType?)

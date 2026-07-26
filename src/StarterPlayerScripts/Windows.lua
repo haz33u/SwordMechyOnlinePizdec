@@ -1872,14 +1872,14 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		else
 			showOnly("")
 			lastInvSig = ""
-			-- remove ScreenGui-level bottom tabs when inventory closes
-			local invTabs = gui:FindFirstChild("InvBottomTabBar")
-			if invTabs then
-				invTabs:Destroy()
-			end
+			-- remove figma inventory root (includes side tabs) when panel closes
 			local invRoot = gui:FindFirstChild("FigmaWeaponsRoot", true)
 			if invRoot then
 				invRoot:Destroy()
+			end
+			local invTabs = gui:FindFirstChild("InvBottomTabBar", true)
+			if invTabs then
+				invTabs:Destroy()
 			end
 		end
 	end
