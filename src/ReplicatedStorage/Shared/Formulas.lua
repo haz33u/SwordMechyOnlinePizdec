@@ -644,20 +644,22 @@ function Formulas.EstimateRebirthEta(profile: any, player: Player?): (number, nu
 		return 0, 0, 0, 0
 	end
 
-	local dps = Formulas.GetDPS(profile, player)
-	if dps < 0.01 then
-		return math.huge, remPower, remCoins, dps
+	local gainPerClick = Formulas.GetClickPowerGain(profile, player)
+	local cps = Formulas.GetCPS(profile)
+	local powerPerSec = gainPerClick * cps
+
+	if powerPerSec < 0.01 then
+		return math.huge, remPower, remCoins, powerPerSec
 	end
 
-	local tPower = remPower / dps
+	local tPower = remPower / powerPerSec
 	local tCoin = 0
 	if remCoins > 0 then
-		-- rough farm: damage dealt → coins (Loc1-ish ratio × coin mult)
-		local coinsPerSec = dps * (RebirthConfig.ETA_COINS_PER_DAMAGE or 0.12) * Formulas.GetCoinMult(profile)
+		local coinsPerSec = powerPerSec * (RebirthConfig.ETA_COINS_PER_DAMAGE or 0.12) * Formulas.GetCoinMult(profile)
 		tCoin = if coinsPerSec > 0.01 then remCoins / coinsPerSec else math.huge
 	end
 
-	return math.max(tPower, tCoin), remPower, remCoins, dps
+	return math.max(tPower, tCoin), remPower, remCoins, powerPerSec
 end
 
 function Formulas.Snapshot(profile: any, player: Player?): { [string]: any }

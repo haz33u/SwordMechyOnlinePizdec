@@ -1,7 +1,14 @@
 --!strict
 --[[
 	Catalog of Titles with Rebirth requirements, shimmers, and power bonuses.
-	Includes all Rebirth Ranks (0..60) + Special achievement titles.
+	Color Progression:
+	  - R0..R3: Pure White (no shimmer)
+	  - R4..R9: Ice Cyan Shimmer
+	  - R10..R19: Emerald Green Shimmer
+	  - R20..R29: Gold Yellow Shimmer
+	  - R30..R39: Fire Orange Shimmer
+	  - R40..R49: Void Purple Shimmer
+	  - R50..R60: Full Rainbow 60FPS Shimmer
 ]]
 
 local RebirthConfig = require(script.Parent.RebirthConfig)
@@ -12,7 +19,7 @@ export type TitleDef = {
 	id: string,
 	name: string,
 	rarity: string,
-	shimmer: string, -- "rainbow" | "emerald" | "gold" | "fire" | "purple" | "cyan" | "silver"
+	shimmer: string, -- "none" | "rainbow" | "emerald" | "gold" | "fire" | "purple" | "cyan" | "silver"
 	minRebirth: number,
 	powerPct: number,
 	description: string,
@@ -23,23 +30,25 @@ local list: { TitleDef } = {}
 -- Add all 60 Rebirth Ranks
 for r = 0, RebirthConfig.MAX_LEVEL do
 	local name = RebirthConfig.GetRankName(r)
-	local band = RebirthConfig.GetRankBand(r)
-	local shimmer = "silver"
+	local shimmer = "none"
 	local rarity = "Common"
 
-	if band == "Ash" then
-		shimmer = if r >= 5 then "cyan" else "silver"
-		rarity = if r >= 5 then "Rare" else "Common"
-	elseif band == "Blood" then
-		shimmer = "fire"
-		rarity = "Epic"
-	elseif band == "Star" then
+	if r <= 3 then
+		shimmer = "none"
+		rarity = "Common"
+	elseif r <= 9 then
 		shimmer = "cyan"
-		rarity = "Legendary"
-	elseif band == "God" then
+		rarity = "Rare"
+	elseif r <= 19 then
+		shimmer = "emerald"
+		rarity = "Epic"
+	elseif r <= 29 then
 		shimmer = "gold"
+		rarity = "Legendary"
+	elseif r <= 39 then
+		shimmer = "fire"
 		rarity = "Mythic"
-	elseif band == "Abyss" then
+	elseif r <= 49 then
 		shimmer = "purple"
 		rarity = "Secret"
 	else

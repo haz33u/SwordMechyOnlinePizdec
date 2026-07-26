@@ -141,14 +141,12 @@ function TitleIndexUI.Open(store: any)
 		nameLab.ZIndex = 103
 		nameLab.Parent = card
 
-		if isUnlocked then
-			if def.shimmer == "rainbow" then
-				UIKit.ApplyRainbow(nameLab, 0.4, 0.35, 90)
-			else
-				UIKit.ApplyShimmer(nameLab, def.shimmer, 0.6, 60)
-			end
+		if def.shimmer == "rainbow" then
+			UIKit.ApplyRainbow(nameLab, 0.4, 0.35, 90)
+		elseif def.shimmer == "none" then
+			nameLab.TextColor3 = Color3.fromRGB(245, 245, 245)
 		else
-			nameLab.TextColor3 = Color3.fromRGB(150, 155, 170)
+			UIKit.ApplyShimmer(nameLab, def.shimmer, 0.6, 60)
 		end
 
 		local reqLab = Instance.new("TextLabel")
