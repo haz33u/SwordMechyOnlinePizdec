@@ -404,8 +404,81 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	---------------------------------------------------------------- equipment slots (brief boxes, Fit, no forceSquare)
-	local function fillPlate(name: string, assetKey: string, box: { number }, z: number): GuiObject
-		return pShell(name, assetKey, box, z, false, Enum.ScaleType.Fit)
+	-- wrap + center pivot so hover grows all sides; glow is sibling under plate (moves with scale)
+	local function makeEquipSlot(name: string, assetKey: string, box: { number }, z: number): (Frame, GuiObject)
+		local r = rel(box)
+		local wrap = Instance.new("Frame")
+		wrap.Name = name .. "_Wrap"
+		wrap.BackgroundTransparency = 1
+		wrap.BorderSizePixel = 0
+		wrap.AnchorPoint = Vector2.new(0.5, 0.5)
+		wrap.Position = UDim2.fromScale(r[1] + r[3] * 0.5, r[2] + r[4] * 0.5)
+		wrap.Size = UDim2.fromScale(r[3], r[4])
+		wrap.ZIndex = z
+		wrap.ClipsDescendants = false
+		wrap.Parent = mainBg
+
+		local plate = Instance.new("ImageLabel")
+		plate.Name = name
+		plate.BackgroundTransparency = 1
+		plate.BorderSizePixel = 0
+		plate.Image = art(assetKey)
+		plate.ScaleType = Enum.ScaleType.Fit
+		plate.AnchorPoint = Vector2.new(0.5, 0.5)
+		plate.Position = UDim2.fromScale(0.5, 0.5)
+		plate.Size = UDim2.fromScale(1, 1)
+		plate.ZIndex = z + 2
+		plate.Active = false
+		plate.Parent = wrap
+		return wrap, plate
+	end
+
+	local function applyEquipRarityGlow(wrap: Frame, rar: string?)
+		for _, ch in wrap:GetChildren() do
+			if ch.Name == "GlowOuter" or ch.Name == "GlowInner" then
+				ch:Destroy()
+			end
+		end
+		if type(rar) ~= "string" then
+			return
+		end
+		local showGlow = true
+		local t1, t2, s1, s2 = 0.92, 0.97, 1.0, 1.008
+		if rar == "Legendary" then
+			t1, t2, s1, s2 = 0.90, 0.96, 1.0, 1.01
+		elseif rar == "Mythic" then
+			t1, t2, s1, s2 = 0.86, 0.94, 1.0, 1.012
+		elseif rar == "Secret" then
+			t1, t2, s1, s2 = 0.82, 0.92, 1.0, 1.014
+		elseif rar == "Limited" then
+			t1, t2, s1, s2 = 0.78, 0.90, 1.0, 1.016
+		elseif rar == "Common" or rar == "Uncommon" or rar == "Rare" or rar == "Epic" then
+			showGlow = false
+		else
+			-- unknown / low tiers: skip
+			showGlow = false
+		end
+		if not showGlow then
+			return
+		end
+		local col = Rarity.Of(rar)
+		local function under(name: string, scale: number, trans: number, zOff: number)
+			local f = Instance.new("Frame")
+			f.Name = name
+			f.AnchorPoint = Vector2.new(0.5, 0.5)
+			f.Position = UDim2.fromScale(0.5, 0.5)
+			f.Size = UDim2.fromScale(scale, scale)
+			f.BackgroundColor3 = col
+			f.BackgroundTransparency = trans
+			f.BorderSizePixel = 0
+			f.ZIndex = wrap.ZIndex + zOff
+			f.Active = false
+			f.Parent = wrap
+			UIKit.Corner(f, 12)
+			return f
+		end
+		under("GlowOuter", s2, t2, 0)
+		under("GlowInner", s1, t1, 1)
 	end
 
 	local function iconHost(parent: GuiObject, scale: number?): Frame
@@ -565,19 +638,22 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end)
 
 	-- Equipment hover only when filled (no empty-slot tips — they lag/suck)
-	local function bindEquipHover(gui: GuiObject, filled: boolean, builder: () -> ())
+	-- Scale the wrap so plate + rarity glow grow from center together
+	local function bindEquipHover(wrap: Frame, plate: GuiObject, filled: boolean, rarity: string?, builder: () -> ())
 		if not filled then
-			gui.Active = false
+			plate.Active = false
 			return
 		end
-		gui.Active = true
+		plate.Active = true
+		applyEquipRarityGlow(wrap, rarity)
 		local sc = Instance.new("UIScale")
-		sc.Parent = gui
-		gui.MouseEnter:Connect(function()
+		sc.Scale = 1
+		sc.Parent = wrap
+		plate.MouseEnter:Connect(function()
 			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = HOVER_SCALE }):Play()
 			builder()
 		end)
-		gui.MouseLeave:Connect(function()
+		plate.MouseLeave:Connect(function()
 			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
 			hideTip()
 		end)
@@ -585,7 +661,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 
 	-- Main / offhand swords
 	do
-		local plate = fillPlate("MAINswordCARD", "MAINswordCARD", B.MAINswordCARD, 10)
+		local wrap, plate = makeEquipSlot("MAINswordCARD", "MAINswordCARD", B.MAINswordCARD, 10)
 		local vp = iconHost(plate)
 		local matched: any = nil
 		if profile.equippedMain then
@@ -599,7 +675,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				end
 			end
 		end
-		bindEquipHover(plate, matched ~= nil, function()
+		local rar: string? = nil
+		if matched then
+			local def = WeaponConfig.Get(matched.id)
+			rar = (def and def.rarity) or "Common"
+		end
+		bindEquipHover(wrap, plate, matched ~= nil, rar, function()
 			local def = WeaponConfig.Get(matched.id)
 			showGearTip(
 				(def and def.name) or WeaponConfig.GetDisplayName(matched.id),
@@ -613,7 +694,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end)
 	end
 	do
-		local plate = fillPlate("SECONDswordCARD", "SECONDswordCARD", B.SECONDswordCARD, 11)
+		local wrap, plate = makeEquipSlot("SECONDswordCARD", "SECONDswordCARD", B.SECONDswordCARD, 11)
 		local vp = iconHost(plate)
 		local matched: any = nil
 		if profile.equippedOffhand then
@@ -627,7 +708,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				end
 			end
 		end
-		bindEquipHover(plate, matched ~= nil, function()
+		local rar: string? = nil
+		if matched then
+			local def = WeaponConfig.Get(matched.id)
+			rar = (def and def.rarity) or "Common"
+		end
+		bindEquipHover(wrap, plate, matched ~= nil, rar, function()
 			local def = WeaponConfig.Get(matched.id)
 			showGearTip(
 				(def and def.name) or WeaponConfig.GetDisplayName(matched.id),
@@ -648,7 +734,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		petByUid[tostring(p.uid)] = p
 	end
 	for i = 1, 4 do
-		local plate = fillPlate("PETcard" .. i, "PETcard" .. i, B["PETcard" .. i], 11 + i)
+		local wrap, plate = makeEquipSlot("PETcard" .. i, "PETcard" .. i, B["PETcard" .. i], 11 + i)
 		local uid = team[i]
 		local pet = if uid then petByUid[tostring(uid)] else nil
 		if pet then
@@ -657,7 +743,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				PetVisual.TryFillInventoryIcon(vp, pet.id, 36)
 			end)
 		end
-		bindEquipHover(plate, pet ~= nil, function()
+		local rar: string? = nil
+		if pet then
+			local def = PetConfig.Get(pet.id)
+			rar = (def and def.rarity) or "Common"
+		end
+		bindEquipHover(wrap, plate, pet ~= nil, rar, function()
 			local def = PetConfig.Get(pet.id)
 			showGearTip(
 				(def and def.name) or tostring(pet.id),
@@ -673,11 +764,11 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 
 	-- Relics + Aura (same size, even row)
 	for i = 1, 3 do
-		local plate = fillPlate("RELICcard" .. i, "RELICcard" .. i, B["RELICcard" .. i], 26 + i)
-		bindEquipHover(plate, false, function() end)
+		local wrap, plate = makeEquipSlot("RELICcard" .. i, "RELICcard" .. i, B["RELICcard" .. i], 26 + i)
+		bindEquipHover(wrap, plate, false, nil, function() end)
 	end
 	do
-		local plate = fillPlate("AURAcard", "RELICcard1", B.AURAcard, 7)
+		local wrap, plate = makeEquipSlot("AURAcard", "RELICcard1", B.AURAcard, 7)
 		local auraId = profile.equippedAura
 		if auraId then
 			local vp = iconHost(plate, 0.8)
@@ -685,7 +776,13 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				AuraVisual.TryFillInventoryIcon(vp, auraId, 40)
 			end)
 		end
-		bindEquipHover(plate, auraId ~= nil, function()
+		local rar: string? = nil
+		if auraId then
+			local resolved = AuraConfig.ResolveId(tostring(auraId))
+			local def = AuraConfig.Get(resolved)
+			rar = (def and def.rarity) or "Common"
+		end
+		bindEquipHover(wrap, plate, auraId ~= nil, rar, function()
 			local resolved = AuraConfig.ResolveId(tostring(auraId))
 			local def = AuraConfig.Get(resolved)
 			showGearTip(
