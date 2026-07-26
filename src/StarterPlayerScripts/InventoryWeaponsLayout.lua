@@ -835,7 +835,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		if w < 40 then
 			return
 		end
-		local pad = math.max(2, math.floor(w * 0.0022))
+		-- room for centered hover scale + barely-there under-glow
+		local pad = math.max(8, math.floor(w * 0.012))
 		grid.CellPadding = UDim2.fromOffset(pad, pad)
 		local cell = math.floor((w - pad * (GRID_COLS - 1)) / GRID_COLS)
 		cell = math.max(42, cell)
@@ -857,7 +858,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		return iconHost
 	end
 
-	-- Soft glow FROM UNDER the card (not square outline stroke)
+	-- Wrap owns card + under-glow; UIScale on wrap = glow moves with hover, grows from center.
+	-- Note: if slot PNG has baked bloom, change the asset — code only draws a thin under-halo.
 	local function applyRarityGlow(btn: GuiObject, rar: string, layoutOrder: number): Frame
 		local wrap = Instance.new("Frame")
 		wrap.Name = "SlotWrap_" .. btn.Name
@@ -865,50 +867,72 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		wrap.BorderSizePixel = 0
 		wrap.LayoutOrder = layoutOrder
 		wrap.ZIndex = 4
+		-- center pivot so UIScale grows in all directions (not down-right)
+		wrap.AnchorPoint = Vector2.new(0.5, 0.5)
+		wrap.ClipsDescendants = false
 		wrap.Parent = scroll
 
 		local col = Rarity.Of(rar)
-		-- under-glow: cell pad is ~2px (w*0.0022) — keep overshoot tiny so neighbors don't stack
-		-- scales are half of previous so halo stays inside the gap
-		local t1, t2, s1, s2 = 0.72, 0.90, 1.01, 1.025
+		-- barely-there halo: ~1px overshoot on a ~70px cell; high transparency
+		local showGlow = true
+		local t1, t2, s1, s2 = 0.92, 0.97, 1.0, 1.008
 		if rar == "Legendary" then
-			t1, t2, s1, s2 = 0.58, 0.80, 1.01, 1.025
+			t1, t2, s1, s2 = 0.90, 0.96, 1.0, 1.01
 		elseif rar == "Mythic" then
-			t1, t2, s1, s2 = 0.45, 0.72, 1.015, 1.04
+			t1, t2, s1, s2 = 0.86, 0.94, 1.0, 1.012
 		elseif rar == "Secret" then
-			t1, t2, s1, s2 = 0.32, 0.60, 1.02, 1.05
+			t1, t2, s1, s2 = 0.82, 0.92, 1.0, 1.014
 		elseif rar == "Limited" then
-			t1, t2, s1, s2 = 0.22, 0.52, 1.025, 1.06
-		elseif rar ~= "Legendary" and rar ~= "Mythic" and rar ~= "Secret" and rar ~= "Limited" then
-			-- no under-glow for common tiers
-			btn.Size = UDim2.fromScale(1, 1)
-			btn.Position = UDim2.fromScale(0, 0)
-			btn.Parent = wrap
-			return wrap
+			t1, t2, s1, s2 = 0.78, 0.90, 1.0, 1.016
+		else
+			showGlow = false
 		end
 
-		local function under(name: string, scale: number, trans: number, z: number)
-			local f = Instance.new("Frame")
-			f.Name = name
-			f.AnchorPoint = Vector2.new(0.5, 0.5)
-			f.Position = UDim2.fromScale(0.5, 0.5)
-			f.Size = UDim2.fromScale(scale, scale)
-			f.BackgroundColor3 = col
-			f.BackgroundTransparency = trans
-			f.BorderSizePixel = 0
-			f.ZIndex = z
-			f.Active = false
-			f.Parent = wrap
-			UIKit.Corner(f, 14)
-			return f
+		if showGlow then
+			local function under(name: string, scale: number, trans: number, z: number)
+				local f = Instance.new("Frame")
+				f.Name = name
+				f.AnchorPoint = Vector2.new(0.5, 0.5)
+				f.Position = UDim2.fromScale(0.5, 0.5)
+				f.Size = UDim2.fromScale(scale, scale)
+				f.BackgroundColor3 = col
+				f.BackgroundTransparency = trans
+				f.BorderSizePixel = 0
+				f.ZIndex = z
+				f.Active = false
+				f.Parent = wrap
+				UIKit.Corner(f, 12)
+				return f
+			end
+			under("GlowOuter", s2, t2, 3)
+			under("GlowInner", s1, t1, 4)
 		end
-		under("GlowOuter", s2, t2, 3)
-		under("GlowInner", s1, t1, 4)
+
+		btn.AnchorPoint = Vector2.new(0.5, 0.5)
+		btn.Position = UDim2.fromScale(0.5, 0.5)
 		btn.Size = UDim2.fromScale(1, 1)
-		btn.Position = UDim2.fromScale(0, 0)
 		btn.ZIndex = 5
 		btn.Parent = wrap
 		return wrap
+	end
+
+	-- Hover scales the whole wrap (card + glow) from center
+	local function bindWrapHover(wrap: Frame, btn: GuiObject, onEnter: (() -> ())?, onLeave: (() -> ())?)
+		local sc = Instance.new("UIScale")
+		sc.Scale = 1
+		sc.Parent = wrap
+		btn.MouseEnter:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = HOVER_SCALE }):Play()
+			if onEnter then
+				onEnter()
+			end
+		end)
+		btn.MouseLeave:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+			if onLeave then
+				onLeave()
+			end
+		end)
 	end
 
 	---------------------------------------------------------------- WEAPONS grid (no empty filler slots)
@@ -954,11 +978,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local mult = (def and def.powerMult) or 1
 			local sellP = (def and def.sellPrice) or 5
 			local lv = w.level or 1
-			local sc = Instance.new("UIScale")
-			sc.Parent = btn
-
-			btn.MouseEnter:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = HOVER_SCALE }):Play()
+			local wrap = btn.Parent :: Frame
+			bindWrapHover(wrap, btn, function()
 				local where = ""
 				if profile.equippedMain == w.uid then
 					where = "Equipped Main"
@@ -966,11 +987,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 					where = "Equipped Offhand"
 				end
 				showGearTip(name, rar, where, string.format("POWER: ×%.2f", mult), sellP, lv, lockedUids[tostring(w.uid)] == true)
-			end)
-			btn.MouseLeave:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
-				hideTip()
-			end)
+			end, hideTip)
 
 			-- LMB: equip/unequip chain
 			btn.MouseButton1Click:Connect(function()
@@ -1067,10 +1084,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				mark.Parent = btn
 				UIKit.Corner(mark, 99)
 			end
-			local sc = Instance.new("UIScale")
-			sc.Parent = btn
-			btn.MouseEnter:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = HOVER_SCALE }):Play()
+			bindWrapHover(btn.Parent :: Frame, btn, function()
 				showGearTip(
 					(def and def.name) or tostring(p.id),
 					rar,
@@ -1080,11 +1094,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 					p.level or 1,
 					false
 				)
-			end)
-			btn.MouseLeave:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
-				hideTip()
-			end)
+			end, hideTip)
 			btn.MouseButton1Click:Connect(function()
 				if teamSet[tostring(p.uid)] then
 					Net.UnequipPet(p.uid)
@@ -1116,10 +1126,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				AuraVisual.TryFillInventoryIcon(ih, resolved, 44)
 			end)
 			local equipped = profile.equippedAura == a.uid or profile.equippedAura == resolved or profile.equippedAura == aid
-			local sc = Instance.new("UIScale")
-			sc.Parent = btn
-			btn.MouseEnter:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = HOVER_SCALE }):Play()
+			bindWrapHover(btn.Parent :: Frame, btn, function()
 				showGearTip(
 					(def and def.name) or tostring(aid),
 					rar,
@@ -1129,11 +1136,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 					nil,
 					false
 				)
-			end)
-			btn.MouseLeave:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
-				hideTip()
-			end)
+			end, hideTip)
 			btn.MouseButton1Click:Connect(function()
 				if equipped then
 					Net.UnequipAura()
@@ -1168,16 +1171,9 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			gl.Font = Enum.Font.GothamBold
 			gl.ZIndex = 5
 			gl.Parent = ih
-			local sc = Instance.new("UIScale")
-			sc.Parent = btn
-			btn.MouseEnter:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = HOVER_SCALE }):Play()
+			bindWrapHover(btn.Parent :: Frame, btn, function()
 				showGearTip((def and def.name) or tostring(r.id), rar, "Relic", nil, nil, nil, false)
-			end)
-			btn.MouseLeave:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
-				hideTip()
-			end)
+			end, hideTip)
 			btn.MouseButton1Click:Connect(function()
 				Net.EquipRelic(r.uid)
 				args.onRefresh()
@@ -1206,12 +1202,16 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			wrap.BackgroundTransparency = 1
 			wrap.LayoutOrder = i
 			wrap.ZIndex = 4
+			wrap.AnchorPoint = Vector2.new(0.5, 0.5)
+			wrap.ClipsDescendants = false
 			wrap.Parent = scroll
 			local frame = Instance.new("ImageLabel")
 			frame.Name = "CommonFrame"
 			frame.BackgroundTransparency = 1
 			frame.Image = InventoryAssetConfig.GetSlotFrame("Common")
 			frame.ScaleType = Enum.ScaleType.Stretch
+			frame.AnchorPoint = Vector2.new(0.5, 0.5)
+			frame.Position = UDim2.fromScale(0.5, 0.5)
 			frame.Size = UDim2.fromScale(1, 1)
 			frame.ZIndex = 4
 			frame.Parent = wrap
@@ -1232,10 +1232,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				btn.Image = idle
 			end
 			btn.ScaleType = Enum.ScaleType.Fit
-			local sc = Instance.new("UIScale")
-			sc.Parent = wrap
-			btn.MouseEnter:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = HOVER_SCALE }):Play()
+			bindWrapHover(wrap, btn, function()
 				if hover ~= "" then
 					btn.Image = hover
 				end
@@ -1251,9 +1248,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 					pot.effect,
 					pot.duration
 				)
-			end)
-			btn.MouseLeave:Connect(function()
-				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+			end, function()
 				if idle ~= "" then
 					btn.Image = idle
 				end
