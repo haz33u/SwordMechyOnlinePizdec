@@ -96,23 +96,33 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		bodies[id] = body
 	end
 
-	-- Inventory Figma shell: hide outer Window chrome (own close/header art).
+	-- Inventory Figma shell: ZERO gray chrome — only MAINBACKGROUD art.
 	do
 		local invRoot = frames.weapons
 		local invHeader = invRoot:FindFirstChild("Header")
 		if invHeader and invHeader:IsA("GuiObject") then
 			invHeader.Visible = false
+			invHeader.BackgroundTransparency = 1
+			for _, ch in invHeader:GetDescendants() do
+				if ch:IsA("GuiObject") then
+					ch.Visible = false
+				end
+			end
+		end
+		-- Kill Window gradient / stroke (gray plate)
+		for _, ch in invRoot:GetChildren() do
+			if ch:IsA("UIGradient") or ch:IsA("UIStroke") or ch:IsA("UICorner") then
+				ch:Destroy()
+			end
 		end
 		local invBody = bodies.weapons
-		invBody.Size = UDim2.new(1, 0, 1, 0)
+		invBody.Size = UDim2.fromScale(1, 1)
 		invBody.Position = UDim2.fromOffset(0, 0)
 		invBody.BackgroundTransparency = 1
-		-- Transparent outer so MAINBACKGROUD is the only shell
+		invBody.ClipsDescendants = false
+		invRoot.BackgroundColor3 = Color3.new(0, 0, 0)
 		invRoot.BackgroundTransparency = 1
-		local stroke = invRoot:FindFirstChildOfClass("UIStroke")
-		if stroke then
-			stroke.Transparency = 1
-		end
+		invRoot.ClipsDescendants = false
 		local sc = invRoot:FindFirstChildOfClass("UISizeConstraint")
 		if sc then
 			sc.MinSize = Vector2.new(900, 560)
@@ -125,11 +135,22 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local wh = math.clamp((m.windowH or 0.62) + 0.10, 0.66, 0.80)
 		for id, root in frames do
 			if id == "weapons" then
-				-- Near-fullscreen so Figma 1.44 aspect layout can match ref
-				root.Size = UDim2.fromScale(0.94, 0.92)
+				root.Size = UDim2.fromScale(0.96, 0.94)
 				root.Position = UDim2.fromScale(0.5, 0.5)
 				root.AnchorPoint = Vector2.new(0.5, 0.5)
 				root.BackgroundTransparency = 1
+				-- Keep killing gray if Window rebuilds styles
+				for _, ch in root:GetChildren() do
+					if ch:IsA("UIGradient") or ch:IsA("UIStroke") then
+						ch:Destroy()
+					end
+				end
+				local body = root:FindFirstChild("Body")
+				if body and body:IsA("GuiObject") then
+					body.BackgroundTransparency = 1
+					body.Size = UDim2.fromScale(1, 1)
+					body.Position = UDim2.fromOffset(0, 0)
+				end
 			elseif id == "character" then
 				-- Larger panel; raised on screen so levels/stats clear of bottom HUD
 				local cam = workspace.CurrentCamera

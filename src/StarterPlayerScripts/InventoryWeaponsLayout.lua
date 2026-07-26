@@ -37,36 +37,40 @@ local L = {
 	INVENTORYWEAPONcard = { 0.00835, 0.00000, 0.32424, 0.15967 },
 	BTN_Close = { 0.94692, 0.07580, 0.04181, 0.06154 },
 	TitleNickPlate = { 0.77240, 0.07580, 0.16026, 0.04286 },
-	Divider = { 0.30962, 0.08181, 0.65373, 0.04000 }, -- height trimmed (art is tall with transparency)
-	BG_WeaponGrid = { 0.29164, 0.13735, 0.68996, 0.69941 },
-	EQUIPMENTbackground = { 0.09071, 0.14153, 0.18259, 0.42707 },
-	EquipTitlePlate = { 0.13320, 0.16401, 0.09752, 0.02862 },
-	MAINswordCARD = { 0.11331, 0.19262, 0.06864, 0.09880 },
-	SECONDswordCARD = { 0.18196, 0.19262, 0.06864, 0.09880 },
-	PETcard1 = { 0.10823, 0.29143, 0.03686, 0.05306 },
-	PETcard2 = { 0.14509, 0.29143, 0.03686, 0.05306 },
-	PETcard3 = { 0.18196, 0.29143, 0.03686, 0.05306 },
-	PETcard4 = { 0.21882, 0.29143, 0.03686, 0.05306 },
-	PETcard5 = { 0.10823, 0.34448, 0.03686, 0.05306 },
-	PETcard6 = { 0.14509, 0.34448, 0.03686, 0.05306 },
-	PETcard7 = { 0.18196, 0.34448, 0.03686, 0.05306 },
-	PETcard8 = { 0.21882, 0.34448, 0.03686, 0.05306 },
-	RELICcard1 = { 0.10823, 0.39754, 0.05021, 0.07227 },
-	RELICcard2 = { 0.15844, 0.39754, 0.05021, 0.07227 },
-	RELICcard3 = { 0.20865, 0.39754, 0.05021, 0.07227 },
-	AURAcard = { 0.15844, 0.46981, 0.05021, 0.07227 },
-	EQUIPbestFORdamage = { 0.12058, 0.56194, 0.12339, 0.05920 },
-	EQUIPbestFORpower = { 0.11994, 0.62493, 0.12339, 0.05920 },
-	STARSdecoration = { 0.12866, 0.56913, 0.10687, 0.04312 },
-	STARTSdecoration = { 0.12820, 0.63290, 0.10687, 0.04312 },
-	PRESETSbutton = { 0.11395, 0.68805, 0.13601, 0.04182 },
-	PRESETcard1 = { 0.10750, 0.72607, 0.03659, 0.05266 },
-	PRESETcard2 = { 0.14291, 0.72607, 0.03659, 0.05266 },
-	PRESETcard3 = { 0.17950, 0.72607, 0.03659, 0.05266 },
-	PRESETcard4 = { 0.21610, 0.72607, 0.03659, 0.05266 },
-	SELLbutton = { 0.09534, 0.79024, 0.08898, 0.04273 },
-	SELLallUNLOCKED = { 0.18432, 0.79024, 0.08898, 0.04273 },
-	MOUSEBINDScard = { 0.00000, 0.70009, 0.07999, 0.15799 },
+	-- Divider full-width of grid, flush above BG_WeaponGrid
+	Divider = { 0.31000, 0.10800, 0.67000, 0.03200 },
+	BG_WeaponGrid = { 0.31000, 0.13735, 0.67000, 0.69941 },
+	-- Equipment: wider + taller (keep left of grid)
+	EQUIPMENTbackground = { 0.07800, 0.13500, 0.22000, 0.47000 },
+	EquipTitlePlate = { 0.12500, 0.15500, 0.12000, 0.03200 },
+	MAINswordCARD = { 0.10000, 0.19500, 0.08500, 0.11500 },
+	SECONDswordCARD = { 0.19000, 0.19500, 0.08500, 0.11500 },
+	PETcard1 = { 0.09500, 0.32000, 0.04500, 0.06200 },
+	PETcard2 = { 0.14500, 0.32000, 0.04500, 0.06200 },
+	PETcard3 = { 0.19500, 0.32000, 0.04500, 0.06200 },
+	PETcard4 = { 0.24500, 0.32000, 0.04500, 0.06200 },
+	PETcard5 = { 0.09500, 0.38500, 0.04500, 0.06200 },
+	PETcard6 = { 0.14500, 0.38500, 0.04500, 0.06200 },
+	PETcard7 = { 0.19500, 0.38500, 0.04500, 0.06200 },
+	PETcard8 = { 0.24500, 0.38500, 0.04500, 0.06200 },
+	RELICcard1 = { 0.09500, 0.45500, 0.05800, 0.08000 },
+	RELICcard2 = { 0.15800, 0.45500, 0.05800, 0.08000 },
+	RELICcard3 = { 0.22100, 0.45500, 0.05800, 0.08000 },
+	AURAcard = { 0.15800, 0.54000, 0.05800, 0.08000 },
+	-- Figma y for buttons (below equip panel)
+	EQUIPbestFORdamage = { 0.11000, 0.56194, 0.14500, 0.06500 },
+	EQUIPbestFORpower = { 0.11000, 0.62493, 0.14500, 0.06500 },
+	STARSdecoration = { 0.11800, 0.56913, 0.12800, 0.04800 },
+	STARTSdecoration = { 0.11800, 0.63290, 0.12800, 0.04800 },
+	PRESETSbutton = { 0.10500, 0.68805, 0.15500, 0.04500 },
+	PRESETcard1 = { 0.10000, 0.72607, 0.04500, 0.06000 },
+	PRESETcard2 = { 0.15000, 0.72607, 0.04500, 0.06000 },
+	PRESETcard3 = { 0.20000, 0.72607, 0.04500, 0.06000 },
+	PRESETcard4 = { 0.25000, 0.72607, 0.04500, 0.06000 },
+	SELLbutton = { 0.09000, 0.79024, 0.10500, 0.05000 },
+	SELLallUNLOCKED = { 0.20000, 0.79024, 0.10500, 0.05000 },
+	-- Binds larger
+	MOUSEBINDScard = { 0.00200, 0.67500, 0.12500, 0.22000 },
 	WEAPONSBUTTON = { 0.12902, 0.87520, 0.08626, 0.12415 },
 	PETCBUTTON = { 0.22136, 0.87520, 0.08626, 0.12415 },
 	AURABUTTON = { 0.31370, 0.87585, 0.08626, 0.12415 },
@@ -75,8 +79,6 @@ local L = {
 	SHOPBUTTON = { 0.59072, 0.87520, 0.08626, 0.12415 },
 	PROFILEBUTTON = { 0.68215, 0.87520, 0.08626, 0.12415 },
 	SETTINGSBUTTON = { 0.81590, 0.87520, 0.08626, 0.12415 },
-	-- Tooltip size (position follows mouse)
-	TOOLTIPshell = { 0, 0, 0.23979, 0.20765 },
 }
 
 local FIGMA_TABS = {
@@ -206,7 +208,9 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	---------------------------------------------------------------- shell
 	placeImage(root, "MAINBACKGROUD", "MAINBACKGROUD", L.MAINBACKGROUD, 30, Enum.ScaleType.Stretch)
 	placeImage(root, "INVENTORYWEAPONcard", "INVENTORYWEAPONcard", L.INVENTORYWEAPONcard, 45)
-	placeImage(root, "Divider", "Divider_3_Minimal_1", L.Divider, 40, Enum.ScaleType.Stretch)
+	-- Stretch divider exactly over the weapon grid top edge
+	local divider = placeImage(root, "Divider", "Divider_3_Minimal_1", L.Divider, 42, Enum.ScaleType.Stretch)
+	divider.ImageTransparency = 0
 
 	placeButton(root, "Close", "BTN_Close_3", L.BTN_Close, 80, args.onClose)
 
@@ -370,9 +374,9 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		args.onRefresh()
 	end)
 
-	placeImage(root, "MOUSEBINDScard", "MOUSEBINDScard", L.MOUSEBINDScard, 45)
+	placeImage(root, "MOUSEBINDScard", "MOUSEBINDScard", L.MOUSEBINDScard, 55)
 
-	---------------------------------------------------------------- weapon grid
+	---------------------------------------------------------------- weapon grid (slots clipped strictly inside)
 	local gridHost = Instance.new("Frame")
 	gridHost.Name = "BG_WeaponGrid"
 	gridHost.BackgroundTransparency = 1
@@ -390,27 +394,27 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	gridBg.ZIndex = 35
 	gridBg.Parent = gridHost
 
-	-- Figma slot cell ≈ 0.1579 of grid width; 6 columns, pad ~0.026
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.Name = "Slots"
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
-	scroll.Size = UDim2.fromScale(0.948, 0.96)
-	scroll.Position = UDim2.fromScale(0.026, 0.02)
-	scroll.ScrollBarThickness = 8
+	scroll.Size = UDim2.fromScale(0.96, 0.96)
+	scroll.Position = UDim2.fromScale(0.02, 0.02)
+	scroll.ScrollBarThickness = 6
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(180, 140, 255)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
 	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	scroll.ClipsDescendants = true
 	scroll.ZIndex = 36
 	scroll.Parent = gridHost
 
 	local grid = Instance.new("UIGridLayout")
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
 	grid.FillDirectionMaxCells = GRID_COLS
-	grid.HorizontalAlignment = Enum.HorizontalAlignment.Left
+	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	grid.VerticalAlignment = Enum.VerticalAlignment.Top
-	-- Cell padding: Figma mock is nearly flush; use slight gap for hover
-	grid.CellPadding = UDim2.fromOffset(8, 8)
+	-- Tighter gap between weapon cards
+	grid.CellPadding = UDim2.fromOffset(4, 4)
 	grid.Parent = scroll
 
 	local function relayout()
@@ -418,23 +422,25 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		if w < 40 then
 			return
 		end
-		-- 6 columns, match Figma slot aspect (square)
-		local pad = 8
+		local pad = 4
 		local cell = math.floor((w - pad * (GRID_COLS - 1)) / GRID_COLS)
-		cell = math.clamp(cell, 52, 140)
+		cell = math.clamp(cell, 48, 130)
 		grid.CellSize = UDim2.fromOffset(cell, cell)
 	end
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
 	task.defer(relayout)
 
-	---------------------------------------------------------------- tooltip (mouse-follow + TOOLTIPshell)
+	---------------------------------------------------------------- tooltip: shell BEHIND text (Z), follow mouse
 	local tip = Instance.new("Frame")
 	tip.Name = "Tooltip"
 	tip.BackgroundTransparency = 1
 	tip.Visible = false
-	tip.Size = UDim2.fromScale(L.TOOLTIPshell[3], L.TOOLTIPshell[4])
-	tip.ZIndex = 200
+	tip.Size = UDim2.fromOffset(280, 168)
+	tip.ZIndex = 250
+	tip.ClipsDescendants = false
 	tip.Parent = root
+	-- Sibling order so shell cannot paint over labels
+	tip.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
 	local tipBg = Instance.new("ImageLabel")
 	tipBg.Name = "Shell"
@@ -442,25 +448,25 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	tipBg.Image = art("TOOLTIPshell")
 	tipBg.ScaleType = Enum.ScaleType.Stretch
 	tipBg.Size = UDim2.fromScale(1, 1)
-	tipBg.ZIndex = 200
+	tipBg.ZIndex = 1 -- behind content
 	tipBg.Parent = tip
 
-	UIKit.Pad(tip, 12)
+	local tipBody = Instance.new("Frame")
+	tipBody.Name = "Body"
+	tipBody.BackgroundTransparency = 1
+	tipBody.Size = UDim2.fromScale(1, 1)
+	tipBody.ZIndex = 10 -- above shell
+	tipBody.Parent = tip
+	UIKit.Pad(tipBody, 14)
 	local tipList = Instance.new("UIListLayout")
 	tipList.SortOrder = Enum.SortOrder.LayoutOrder
-	tipList.Padding = UDim.new(0, 2)
+	tipList.Padding = UDim.new(0, 3)
 	tipList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	tipList.VerticalAlignment = Enum.VerticalAlignment.Center
-	tipList.Parent = tip
+	tipList.Parent = tipBody
 
 	local function clearTip()
-		for _, c in tip:GetChildren() do
-			if c.Name == "Shell" then
-				continue
-			end
-			if c:IsA("UIListLayout") or c:IsA("UIPadding") or c:IsA("UISizeConstraint") then
-				continue
-			end
+		for _, c in tipBody:GetChildren() do
 			if c:IsA("TextLabel") or c:IsA("Frame") then
 				c:Destroy()
 			end
@@ -477,14 +483,20 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local my = mouse.Y - inset.Y
 		local parentAbs = root.AbsolutePosition
 		local parentSz = root.AbsoluteSize
-		local tipW = math.max(tip.AbsoluteSize.X, 120)
-		local tipH = math.max(tip.AbsoluteSize.Y, 80)
-		local EDGE = 14
+		local tipW = tip.AbsoluteSize.X
+		local tipH = tip.AbsoluteSize.Y
+		if tipW < 8 then
+			tipW = 280
+		end
+		if tipH < 8 then
+			tipH = 168
+		end
+		local EDGE = 12
 		local screenX = mx + EDGE
 		if screenX + tipW > parentAbs.X + parentSz.X - 4 then
 			screenX = mx - EDGE - tipW
 		end
-		local screenY = my + 6
+		local screenY = my + 8
 		if screenY + tipH > parentAbs.Y + parentSz.Y - 4 then
 			screenY = parentAbs.Y + parentSz.Y - tipH - 4
 		end
@@ -501,20 +513,20 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		clearTip()
 		local order = 1
 		if equippedLine then
-			tipText(tip, order, equippedLine, "gold", 22)
+			tipText(tipBody, order, equippedLine, "gold", 22)
 			order += 1
 		end
-		tipText(tip, order, title, "purple", 28)
+		tipText(tipBody, order, title, "purple", 28)
 		order += 1
 		if rarity then
-			tipText(tip, order, rarity, "gray", 20)
+			tipText(tipBody, order, rarity, "gray", 20)
 			order += 1
 		end
-		tipText(tip, order, string.format("POWER: ×%.2f", power), "purple", 20)
+		tipText(tipBody, order, string.format("POWER: ×%.2f", power), "purple", 20)
 		order += 1
-		tipText(tip, order, string.format("SELL PRICE: %d", sell), "gold", 20)
+		tipText(tipBody, order, string.format("SELL PRICE: %d", sell), "gold", 20)
 		order += 1
-		tipText(tip, order, string.format("LEVEL: %d", level), "gray", 20)
+		tipText(tipBody, order, string.format("LEVEL: %d", level), "gray", 20)
 		tip.Visible = true
 		task.defer(placeTip)
 		placeTip()
