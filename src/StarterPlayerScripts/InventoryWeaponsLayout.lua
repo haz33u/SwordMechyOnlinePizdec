@@ -2,11 +2,11 @@
 --[[
 	WEAPON INVENTORY — layout anchored on MAINBACKGROUD (not outer Frame).
 
-	host (full screen transparent)
-	  shell (MAINBACKGROUD ImageLabel, centered, large)  ← center of everything
-	    chrome remapped relative to shell
-	  BottomTabBar (sibling of shell, pinned to bottom of host) ← always visible
+	host (full-screen transparent, weapons window)
+	  shell (MAINBACKGROUD plate, slightly left of true center so left binds stay tight)
+	    chrome remapped relative to shell (Figma → MAINBACKGROUD box)
 	  Tooltip (mouse-follow)
+	InvBottomTabBar on ScreenGui (never clipped) — created early so layout errors can't drop it
 ]]
 
 local GuiService = game:GetService("GuiService")
@@ -66,7 +66,7 @@ local FIGMA = {
 	PRESETcard4 = { 0.26902, 0.73534, 0.04454, 0.06508 },
 	SELLbutton = { 0.13499, 0.80264, 0.09570, 0.04667 },
 	SELLallUNLOCKED = { 0.22991, 0.80180, 0.09933, 0.04844 },
-	-- Binds slightly left of shell (negative x after remap)
+	-- Binds left of MAINBACKGROUD (negative x after remap) — stay adjacent, no extra fly-out
 	MOUSEBINDScard = { 0.00000, 0.60792, 0.13144, 0.26360 },
 }
 
@@ -223,21 +223,92 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	host.Parent = mountTo
 
 	----------------------------------------------------------------
-	-- SHELL = MAINBACKGROUD only — true visual center of inventory
-	-- (0.5, 0.5) of host, large; aspect keeps plate proportional
+	-- BOTTOM TABS first (ScreenGui) — must not depend on later chrome code.
+	-- Previous bug: Tooltip set ZIndexBehavior on a Frame → error → no tabs.
+	----------------------------------------------------------------
+	local tabParent: Instance = screenGui or host
+	local tabBar = Instance.new("Frame")
+	tabBar.Name = "InvBottomTabBar"
+	tabBar.BackgroundColor3 = Color3.fromRGB(12, 8, 28)
+	tabBar.BackgroundTransparency = 0.15
+	tabBar.BorderSizePixel = 0
+	tabBar.AnchorPoint = Vector2.new(0.5, 1)
+	tabBar.Position = UDim2.new(0.5, 0, 1, -10)
+	tabBar.Size = UDim2.new(0.92, 0, 0, 110)
+	tabBar.ZIndex = 400
+	tabBar.Visible = true
+	tabBar.Active = true
+	tabBar.Parent = tabParent
+	UIKit.Corner(tabBar, 14)
+	UIKit.Stroke(tabBar, Color3.fromRGB(140, 100, 255), 2, 0.3)
+
+	local tabList = Instance.new("UIListLayout")
+	tabList.FillDirection = Enum.FillDirection.Horizontal
+	tabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tabList.VerticalAlignment = Enum.VerticalAlignment.Center
+	tabList.Padding = UDim.new(0, 8)
+	tabList.SortOrder = Enum.SortOrder.LayoutOrder
+	tabList.Parent = tabBar
+
+	for i, def in ipairs(FIGMA_TABS) do
+		local b = Instance.new("ImageButton")
+		b.Name = def.id .. "Tab"
+		-- Dark square always visible even if image fails to load
+		b.BackgroundColor3 = if def.id == "weapons"
+			then Color3.fromRGB(90, 50, 150)
+			else Color3.fromRGB(40, 28, 70)
+		b.BackgroundTransparency = 0
+		b.BorderSizePixel = 0
+		b.Image = art(def.key)
+		b.ScaleType = Enum.ScaleType.Fit
+		b.AutoButtonColor = true
+		b.Size = UDim2.fromOffset(96, 96)
+		b.LayoutOrder = i
+		b.ZIndex = 401
+		b.Visible = true
+		b.Active = true
+		b.Parent = tabBar
+		UIKit.Corner(b, 12)
+
+		local lab = Instance.new("TextLabel")
+		lab.Name = "Label"
+		lab.BackgroundTransparency = 1
+		lab.Size = UDim2.new(1, -4, 0, 16)
+		lab.Position = UDim2.new(0, 2, 1, -18)
+		lab.Text = def.label
+		lab.TextSize = 10
+		lab.Font = Enum.Font.GothamBold
+		lab.TextColor3 = Color3.fromRGB(240, 230, 255)
+		lab.TextStrokeTransparency = 0.4
+		lab.TextXAlignment = Enum.TextXAlignment.Center
+		lab.ZIndex = 402
+		lab.Parent = b
+
+		b.MouseButton1Click:Connect(function()
+			if def.id == "weapons" or def.id == "settings" then
+				return
+			end
+			args.onTab(def.id)
+		end)
+	end
+
+	----------------------------------------------------------------
+	-- SHELL = MAINBACKGROUD plate
+	-- Slightly left of true center (binds hang left of plate; keeps cluster tight)
 	----------------------------------------------------------------
 	local shell = Instance.new("Frame")
 	shell.Name = "MAINBACKGROUD_Shell"
 	shell.BackgroundTransparency = 1
 	shell.BorderSizePixel = 0
 	shell.AnchorPoint = Vector2.new(0.5, 0.5)
-	shell.Position = UDim2.fromScale(0.5, 0.5) -- exact screen center of host
-	shell.Size = UDim2.fromScale(0.90, 0.82)
+	-- 0.47 ≈ a bit left of screen center so left binds stay next to the plate (not floating)
+	shell.Position = UDim2.fromScale(0.47, 0.48)
+	shell.Size = UDim2.fromScale(0.92, 0.78)
 	shell.ClipsDescendants = false
 	shell.ZIndex = 40
 	shell.Parent = host
 
-	-- MAINBACKGROUD aspect ≈ 1.637 — FitWithinMaxSize keeps plate centered inside shell box
+	-- MAINBACKGROUD aspect ≈ 1.637 — FitWithinMaxSize keeps plate proportional
 	local shellAspect = Instance.new("UIAspectRatioConstraint")
 	shellAspect.AspectRatio = 1.637
 	shellAspect.AspectType = Enum.AspectType.FitWithinMaxSize
@@ -475,7 +546,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	tip.Size = UDim2.fromOffset(280, 168)
 	tip.ZIndex = 300
 	tip.Parent = host
-	tip.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+	-- NOTE: ZIndexBehavior is ScreenGui-only — never set on Frame (crashed Render before)
 
 	local tipBg = Instance.new("ImageLabel")
 	tipBg.BackgroundTransparency = 1
@@ -652,71 +723,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	for i = #weapons + 1, fillTo do
 		makeSlot(i, nil)
 	end
-
-	----------------------------------------------------------------
-	-- BOTTOM TABS on ScreenGui (never clipped by Window ClipsDescendants)
-	----------------------------------------------------------------
-	local tabParent: Instance = screenGui or host
-	local tabBar = Instance.new("Frame")
-	tabBar.Name = "InvBottomTabBar"
-	tabBar.BackgroundColor3 = Color3.fromRGB(12, 8, 28)
-	tabBar.BackgroundTransparency = 0.2
-	tabBar.BorderSizePixel = 0
-	tabBar.AnchorPoint = Vector2.new(0.5, 1)
-	tabBar.Position = UDim2.new(0.5, 0, 1, -12)
-	tabBar.Size = UDim2.new(0.92, 0, 0, 120)
-	tabBar.ZIndex = 1000
-	tabBar.Visible = true
-	tabBar.Parent = tabParent
-	UIKit.Corner(tabBar, 14)
-	UIKit.Stroke(tabBar, Color3.fromRGB(140, 100, 255), 2, 0.3)
-
-	local tabList = Instance.new("UIListLayout")
-	tabList.FillDirection = Enum.FillDirection.Horizontal
-	tabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	tabList.VerticalAlignment = Enum.VerticalAlignment.Center
-	tabList.Padding = UDim.new(0, 8)
-	tabList.SortOrder = Enum.SortOrder.LayoutOrder
-	tabList.Parent = tabBar
-
-	for i, def in ipairs(FIGMA_TABS) do
-		local b = Instance.new("ImageButton")
-		b.Name = def.id .. "Tab"
-		b.BackgroundColor3 = if def.id == "weapons"
-			then Color3.fromRGB(90, 50, 150)
-			else Color3.fromRGB(40, 28, 70)
-		b.BackgroundTransparency = 0.05
-		b.BorderSizePixel = 0
-		b.Image = art(def.key)
-		b.ScaleType = Enum.ScaleType.Fit
-		b.AutoButtonColor = true
-		b.Size = UDim2.fromOffset(100, 100)
-		b.LayoutOrder = i
-		b.ZIndex = 1001
-		b.Visible = true
-		b.Active = true
-		b.Parent = tabBar
-		UIKit.Corner(b, 12)
-
-		local lab = Instance.new("TextLabel")
-		lab.BackgroundTransparency = 1
-		lab.Size = UDim2.new(1, 0, 0, 18)
-		lab.Position = UDim2.new(0, 0, 1, -20)
-		lab.Text = def.label
-		lab.TextSize = 11
-		lab.Font = Enum.Font.GothamBold
-		lab.TextColor3 = Color3.fromRGB(240, 230, 255)
-		lab.TextXAlignment = Enum.TextXAlignment.Center
-		lab.ZIndex = 1002
-		lab.Parent = b
-
-		b.MouseButton1Click:Connect(function()
-			if def.id == "weapons" or def.id == "settings" then
-				return
-			end
-			args.onTab(def.id)
-		end)
-	end
+	-- Bottom tabs already mounted at start of Render (see above).
 end
 
 return InventoryWeaponsLayout
