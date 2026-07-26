@@ -185,25 +185,39 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 
 	local profile = args.profile
 
+	-- Full-screen transparent host (no gray)
+	local host = Instance.new("Frame")
+	host.Name = ROOT_NAME
+	host.BackgroundTransparency = 1
+	host.BorderSizePixel = 0
+	host.Size = UDim2.fromScale(1, 1)
+	host.Position = UDim2.fromScale(0, 0)
+	host.ClipsDescendants = false
+	host.ZIndex = 30
+	host.Parent = parent
+
+	--[[
+		Stage = centered Figma canvas (MAINBACKGROUD + chrome + tabs in same space).
+		Sized large so inventory owns most of the screen.
+	]]
 	local root = Instance.new("Frame")
-	root.Name = ROOT_NAME
+	root.Name = "Stage"
 	root.BackgroundTransparency = 1
 	root.BorderSizePixel = 0
 	root.AnchorPoint = Vector2.new(0.5, 0.5)
 	root.Position = UDim2.fromScale(0.5, 0.5)
-	-- Fill host (almost full screen); aspect keeps proportions without clipping tabs
-	root.Size = UDim2.fromScale(0.995, 0.995)
+	root.Size = UDim2.fromScale(0.97, 0.94)
 	root.ClipsDescendants = false
-	root.ZIndex = 30
-	root.Parent = parent
+	root.ZIndex = 31
+	root.Parent = host
 
 	local aspect = Instance.new("UIAspectRatioConstraint")
 	aspect.AspectRatio = ASPECT
 	aspect.AspectType = Enum.AspectType.FitWithinMaxSize
-	aspect.DominantAxis = Enum.DominantAxis.Height -- prefer keeping full height so bottom tabs stay on screen
+	aspect.DominantAxis = Enum.DominantAxis.Width
 	aspect.Parent = root
 
-	---------------------------------------------------------------- shell
+	---------------------------------------------------------------- shell — MAINBACKGROUD centered plate
 	placeImage(root, "MAINBACKGROUD", "MAINBACKGROUD", L.MAINBACKGROUD, 30, Enum.ScaleType.Stretch)
 	placeImage(root, "INVENTORYWEAPONcard", "INVENTORYWEAPONcard", L.INVENTORYWEAPONcard, 45)
 	-- Stretch divider exactly over the weapon grid top edge
@@ -424,7 +438,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
 	task.defer(relayout)
 
-	---------------------------------------------------------------- tooltip: shell BEHIND text (Z), follow mouse
+	---------------------------------------------------------------- tooltip: shell BEHIND text (Z), follow mouse (on full host)
 	local tip = Instance.new("Frame")
 	tip.Name = "Tooltip"
 	tip.BackgroundTransparency = 1
@@ -432,7 +446,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	tip.Size = UDim2.fromOffset(280, 168)
 	tip.ZIndex = 250
 	tip.ClipsDescendants = false
-	tip.Parent = root
+	tip.Parent = host
 	-- Sibling order so shell cannot paint over labels
 	tip.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
@@ -475,8 +489,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		local mouse = UserInputService:GetMouseLocation()
 		local mx = mouse.X - inset.X
 		local my = mouse.Y - inset.Y
-		local parentAbs = root.AbsolutePosition
-		local parentSz = root.AbsoluteSize
+		local parentAbs = host.AbsolutePosition
+		local parentSz = host.AbsoluteSize
 		local tipW = tip.AbsoluteSize.X
 		local tipH = tip.AbsoluteSize.Y
 		if tipW < 8 then
@@ -662,28 +676,61 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		makeSlot(i, nil)
 	end
 
-	---------------------------------------------------------------- bottom tab rail (high Z, never clipped)
-	for _, def in ipairs(FIGMA_TABS) do
-		local b = placeButton(root, def.id .. "Tab", def.key, def.box, 90, function()
-			if def.id == "weapons" then
-				return
-			end
-			if def.id == "settings" then
+	----------------------------------------------------------------
+	-- Bottom BUTTONS: fixed bar on full-screen host (always visible)
+	----------------------------------------------------------------
+	local tabBar = Instance.new("Frame")
+	tabBar.Name = "BottomTabBar"
+	tabBar.BackgroundTransparency = 1
+	tabBar.BorderSizePixel = 0
+	tabBar.AnchorPoint = Vector2.new(0.5, 1)
+	tabBar.Position = UDim2.fromScale(0.5, 0.99)
+	tabBar.Size = UDim2.fromScale(0.92, 0.13)
+	tabBar.ZIndex = 100
+	tabBar.Parent = host
+
+	local tabList = Instance.new("UIListLayout")
+	tabList.FillDirection = Enum.FillDirection.Horizontal
+	tabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	tabList.VerticalAlignment = Enum.VerticalAlignment.Center
+	tabList.Padding = UDim.new(0.012, 0)
+	tabList.SortOrder = Enum.SortOrder.LayoutOrder
+	tabList.Parent = tabBar
+
+	for i, def in ipairs(FIGMA_TABS) do
+		local b = Instance.new("ImageButton")
+		b.Name = def.id .. "Tab"
+		b.BackgroundTransparency = 0.35
+		b.BackgroundColor3 = Color3.fromRGB(30, 20, 55)
+		b.BorderSizePixel = 0
+		b.Image = art(def.key)
+		b.ScaleType = Enum.ScaleType.Fit
+		b.AutoButtonColor = false
+		b.Size = UDim2.fromScale(0.105, 0.95)
+		b.LayoutOrder = i
+		b.ZIndex = 101
+		b.Active = true
+		b.Visible = true
+		b.Parent = tabBar
+		UIKit.Corner(b, 10)
+		local sc = Instance.new("UIScale")
+		sc.Scale = if def.id == "weapons" then 1.08 else 1
+		sc.Parent = b
+		if def.id ~= "weapons" then
+			b.ImageTransparency = 0.1
+		end
+		b.MouseEnter:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1.1 }):Play()
+		end)
+		b.MouseLeave:Connect(function()
+			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = if def.id == "weapons" then 1.08 else 1 }):Play()
+		end)
+		b.MouseButton1Click:Connect(function()
+			if def.id == "weapons" or def.id == "settings" then
 				return
 			end
 			args.onTab(def.id)
 		end)
-		b.Active = true
-		b.Visible = true
-		if def.id == "weapons" then
-			local sc = b:FindFirstChildOfClass("UIScale")
-			if sc then
-				sc.Scale = 1.1
-			end
-			b.ImageTransparency = 0
-		else
-			b.ImageTransparency = 0.08
-		end
 	end
 end
 

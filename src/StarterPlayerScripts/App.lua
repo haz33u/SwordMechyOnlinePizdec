@@ -499,9 +499,14 @@ function App.Start()
 		-- Binds: Q=rebirth, E=inventory (no Space attack)
 		local invStore = store :: any
 		local function openInvTab(tab: string)
+			-- E/I while inventory open → close (toggle)
+			if store:PeekPanel() == "weapons" and tab == "weapons" then
+				store:ClosePanel()
+				return
+			end
 			invStore._invTab = tab
 			if store:PeekPanel() == "weapons" and windowsApi and windowsApi.ForceRefreshPanel then
-				-- already open: switch tab without full HUD bounce / combat rebuild spam
+				-- already open, different tab request: refresh shell
 				windowsApi.ForceRefreshPanel()
 			else
 				store:OpenPanel("weapons")
