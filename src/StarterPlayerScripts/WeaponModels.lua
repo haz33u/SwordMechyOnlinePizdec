@@ -274,33 +274,6 @@ local function getModelPhysicalLength(model: Model): number
 	return 3.5
 end
 
---- Explicitly scale all BaseParts, MeshParts, SpecialMeshes and Attachments in a Model
-local function scaleModelManually(model: Model, scale: number)
-	if scale == 1 or scale <= 0 then
-		return
-	end
-	local primary = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
-	if not primary then
-		return
-	end
-	local pCf = primary.CFrame
-
-	for _, d in ipairs(model:GetDescendants()) do
-		if d:IsA("BasePart") then
-			d.Size = d.Size * scale
-			if d ~= primary then
-				local rel = pCf:ToObjectSpace(d.CFrame)
-				local scaledRelPos = rel.Position * scale
-				d.CFrame = pCf * CFrame.new(scaledRelPos) * (rel - rel.Position)
-			end
-		elseif d:IsA("Attachment") then
-			d.Position = d.Position * scale
-		elseif d:IsA("SpecialMesh") then
-			d.Scale = d.Scale * scale
-		end
-	end
-end
-
 --- Clone free Tool/Model into a clean weld-ready Model. Returns model + original Tool.Grip (scaled).
 function WeaponModels.PrepareClone(weaponId: string): (Model?, CFrame)
 	local template = WeaponModels.GetTemplate(weaponId)
@@ -357,25 +330,33 @@ function WeaponModels.PrepareClone(weaponId: string): (Model?, CFrame)
 	clone.PrimaryPart = handle
 	weldLooseParts(handle, clone)
 
-	-- Automatic size normalization: any 3D mesh is scaled so its TOTAL physical length matches TargetLengthStuds (~2.4 studs) * scaleMult
+	-- Automatic size normalization: any 3D mesh is scaled so its TOTAL physical length matches TargetLengthStuds (~1.6 studs) * scaleMult
 	local ov = WeaponModelConfig.ResolveOverride(modelName)
 	local scaleMult = if ov and type(ov.scaleMult) == "number" and ov.scaleMult > 0 then ov.scaleMult else 1.0
-	local targetLen = (WeaponModelConfig :: any).TargetLengthStuds or 2.4
+	local targetLen = (WeaponModelConfig :: any).TargetLengthStuds or 1.6
 
-	local scale = 1.0
+	local factor = 1.0
 	if type(targetLen) == "number" and targetLen > 0 then
 		local physicalLength = getModelPhysicalLength(clone)
 		if physicalLength > 0.01 then
-			scale = (targetLen * scaleMult) / physicalLength
+			factor = (targetLen * scaleMult) / physicalLength
 		end
 	elseif type(WeaponModelConfig.DefaultScale) == "number" and WeaponModelConfig.DefaultScale > 0 then
-		scale = WeaponModelConfig.DefaultScale * scaleMult
+		factor = WeaponModelConfig.DefaultScale * scaleMult
 	end
 
-	if scale > 0 and math.abs(scale - 1) > 0.001 then
-		scaleModelManually(clone, scale)
-		local p = grip.Position * scale
-		grip = CFrame.new(p) * (grip - grip.Position)
+	if factor > 0 and math.abs(factor - 1) > 0.001 then
+		local curScale = 1.0
+		pcall(function()
+			curScale = (clone :: any):GetScale()
+		end)
+		local okScale = pcall(function()
+			(clone :: any):ScaleTo(curScale * factor)
+		end)
+		if okScale then
+			local p = grip.Position * factor
+			grip = CFrame.new(p) * (grip - grip.Position)
+		end
 	end
 
 	-- Bake hilt on this clone (uses scaled mesh + scaled grip)
