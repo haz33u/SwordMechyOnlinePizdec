@@ -226,7 +226,17 @@ function Modals.Mount(gui: ScreenGui, store: any)
 			local kind = p.kind or "pet"
 			local poolId = p.poolId or "loc1_500"
 
-			title.Text = if kind == "aura" then "✨ Aura Case Preview" else ("🐾 Pet Case (" .. tostring(poolId) .. ")")
+			local titleStr = "🐾 Pet Case Preview"
+			if poolId == "loc1_500" then
+				titleStr = "🐾 500 Coins Pet Case"
+			elseif poolId == "loc1_50k" then
+				titleStr = "🐾 50,000 Coins Pet Case"
+			elseif poolId == "loc1_key49" then
+				titleStr = "🐾 49 Keys Premium Pet Case"
+			elseif kind == "aura" then
+				titleStr = "✨ Aura Case Preview"
+			end
+			title.Text = titleStr
 			body.Text = "Drop Chances & Multi-Open Options:"
 
 			local profile = store:PeekProfile()
@@ -241,7 +251,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 
 			if kind == "pet" then
 				for id, pet in PetConfig.Pets do
-					if pet.casePool == poolId or (not pet.casePool and pet.location == 1) then
+					if pet.casePool == poolId then
 						local w = pet.caseWeight or 10
 						totalWeight += w
 						table.insert(dropItems, {
