@@ -89,16 +89,20 @@ for k, b in FIGMA do
 		R[k] = rel(b)
 	end
 end
--- RULE: everything remapped to MAINBACKGROUD stays inside shell (x,y ≥ 0; x+w,y+h ≤ 1),
--- except MOUSEBINDScard which is intentionally left of the plate (negative x).
---
--- WeaponGrid: only a light horizontal stretch — height/Y pure Figma. Never leave shell.
+-- RULE: chrome stays inside MAINBACKGROUD shell (0..1), except binds (negative x).
+-- WeaponGrid: slight grow on all sides, a bit more up + right — still clamped to shell.
 do
 	local g = R.BG_WeaponGrid
-	local stretchX = 1.04 -- "чуть" wider only
-	local maxW = math.max(0.05, 0.985 - g[1]) -- hard clamp to shell right edge
-	local nw = math.min(g[3] * stretchX, maxW)
-	R.BG_WeaponGrid = { g[1], g[2], nw, g[4] }
+	local left, right, top, bottom = 0.008, 0.022, 0.018, 0.010
+	local nx = g[1] - left
+	local ny = g[2] - top
+	local nw = g[3] + left + right
+	local nh = g[4] + top + bottom
+	nx = math.max(0, nx)
+	ny = math.max(0, ny)
+	nw = math.min(nw, 0.99 - nx)
+	nh = math.min(nh, 0.99 - ny)
+	R.BG_WeaponGrid = { nx, ny, nw, nh }
 end
 
 local FIGMA_TABS = {
@@ -242,12 +246,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local tabParent: Instance = screenGui or host
 	local tabBar = Instance.new("Frame")
 	tabBar.Name = "InvBottomTabBar"
-	-- No plate / bar chrome — only the Figma button images
+	-- Scale with viewport (same idea as MAINBACKGROUD shell) — no fixed px sizes
 	tabBar.BackgroundTransparency = 1
 	tabBar.BorderSizePixel = 0
 	tabBar.AnchorPoint = Vector2.new(0.5, 1)
-	tabBar.Position = UDim2.new(0.5, 0, 1, -10)
-	tabBar.Size = UDim2.new(0.92, 0, 0, 110)
+	tabBar.Position = UDim2.fromScale(0.5, 0.99)
+	tabBar.Size = UDim2.fromScale(0.90, 0.105)
 	tabBar.ZIndex = 400
 	tabBar.Visible = true
 	tabBar.Active = false
@@ -257,10 +261,11 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	tabList.FillDirection = Enum.FillDirection.Horizontal
 	tabList.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	tabList.VerticalAlignment = Enum.VerticalAlignment.Center
-	tabList.Padding = UDim.new(0, 8)
+	tabList.Padding = UDim.new(0.01, 0) -- scale with bar width
 	tabList.SortOrder = Enum.SortOrder.LayoutOrder
 	tabList.Parent = tabBar
 
+	local tabButtons: { ImageButton } = {}
 	for i, def in ipairs(FIGMA_TABS) do
 		local b = Instance.new("ImageButton")
 		b.Name = def.id .. "Tab"
@@ -269,20 +274,21 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		b.Image = art(def.key)
 		b.ScaleType = Enum.ScaleType.Fit
 		b.AutoButtonColor = true
-		b.Size = UDim2.fromOffset(96, 96)
+		b.Size = UDim2.fromOffset(72, 72) -- relayout sets real size from viewport
 		b.LayoutOrder = i
 		b.ZIndex = 401
 		b.Visible = true
 		b.Active = true
 		b.Parent = tabBar
+		table.insert(tabButtons, b)
 
 		local lab = Instance.new("TextLabel")
 		lab.Name = "Label"
 		lab.BackgroundTransparency = 1
-		lab.Size = UDim2.new(1, -4, 0, 16)
-		lab.Position = UDim2.new(0, 2, 1, -18)
+		lab.Size = UDim2.fromScale(1, 0.18)
+		lab.Position = UDim2.fromScale(0, 0.80)
 		lab.Text = def.label
-		lab.TextSize = 10
+		lab.TextScaled = true
 		lab.Font = Enum.Font.GothamBold
 		lab.TextColor3 = Color3.fromRGB(240, 230, 255)
 		lab.TextStrokeTransparency = 0.35
@@ -290,6 +296,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		lab.TextXAlignment = Enum.TextXAlignment.Center
 		lab.ZIndex = 402
 		lab.Parent = b
+		local labConst = Instance.new("UITextSizeConstraint")
+		labConst.MinTextSize = 8
+		labConst.MaxTextSize = 14
+		labConst.Parent = lab
 
 		b.MouseButton1Click:Connect(function()
 			if def.id == "weapons" or def.id == "settings" then
@@ -298,6 +308,31 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			args.onTab(def.id)
 		end)
 	end
+
+	-- Match inventory scaling: button size = fraction of tabBar (and thus viewport) height
+	local function layoutTabs()
+		local barH = tabBar.AbsoluteSize.Y
+		local barW = tabBar.AbsoluteSize.X
+		if barH < 20 or barW < 40 then
+			return
+		end
+		local side = math.floor(barH * 0.88)
+		side = math.clamp(side, 48, 160)
+		-- If 8 buttons + gaps would overflow width, shrink to fit
+		local gap = math.max(4, math.floor(barW * 0.01))
+		tabList.Padding = UDim.new(0, gap)
+		local need = side * #tabButtons + gap * (#tabButtons - 1)
+		if need > barW * 0.98 then
+			side = math.floor((barW * 0.98 - gap * (#tabButtons - 1)) / #tabButtons)
+			side = math.max(40, side)
+		end
+		for _, b in ipairs(tabButtons) do
+			b.Size = UDim2.fromOffset(side, side)
+		end
+	end
+	tabBar:GetPropertyChangedSignal("AbsoluteSize"):Connect(layoutTabs)
+	task.defer(layoutTabs)
+	task.delay(0.05, layoutTabs)
 
 	----------------------------------------------------------------
 	-- SHELL = MAINBACKGROUD plate (make THIS bigger — not the grid outside it)
@@ -716,12 +751,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	gridBg.ZIndex = 46
 	gridBg.Parent = gridHost
 
-	-- Inset matches painted frame of BG_WeaponGrid so slot cards sit on the art cells
+	-- Cards sit INSIDE the painted grid: extra top inset so they don't poke above the frame
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
-	scroll.Size = UDim2.fromScale(0.94, 0.94)
-	scroll.Position = UDim2.fromScale(0.03, 0.03)
+	scroll.Size = UDim2.fromScale(0.90, 0.86)
+	scroll.Position = UDim2.fromScale(0.05, 0.08) -- lower than grid top edge
 	scroll.ScrollBarThickness = 5
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(180, 140, 255)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -730,23 +765,32 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	scroll.ZIndex = 47
 	scroll.Parent = gridHost
 
+	local scrollPad = Instance.new("UIPadding")
+	scrollPad.PaddingTop = UDim.new(0.01, 0)
+	scrollPad.PaddingBottom = UDim.new(0.01, 0)
+	scrollPad.PaddingLeft = UDim.new(0.005, 0)
+	scrollPad.PaddingRight = UDim.new(0.005, 0)
+	scrollPad.Parent = scroll
+
 	local grid = Instance.new("UIGridLayout")
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
 	grid.FillDirectionMaxCells = GRID_COLS
 	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	grid.VerticalAlignment = Enum.VerticalAlignment.Top
-	grid.CellPadding = UDim2.fromOffset(6, 6)
+	grid.CellPadding = UDim2.fromScale(0.008, 0.008)
 	grid.Parent = scroll
 
 	local function relayout()
 		local w = scroll.AbsoluteSize.X
-		if w < 40 then
+		local h = scroll.AbsoluteSize.Y
+		if w < 40 or h < 40 then
 			return
 		end
-		local pad = 6
+		local pad = math.max(4, math.floor(w * 0.008))
+		grid.CellPadding = UDim2.fromOffset(pad, pad)
 		local cell = math.floor((w - pad * (GRID_COLS - 1)) / GRID_COLS)
-		-- Fill row width so cards match grid frame (no tiny capped cells)
-		cell = math.max(40, cell)
+		-- Slightly smaller than full row so cards don't clip the grid border
+		cell = math.max(36, cell - 2)
 		grid.CellSize = UDim2.fromOffset(cell, cell)
 	end
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
