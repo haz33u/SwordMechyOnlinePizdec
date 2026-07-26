@@ -197,7 +197,7 @@ local function buildBody(def: any, position: Vector3): Model
 
 	if shape == "ball" then
 		-- slime: body + eyes + highlight
-		root = part("Root", Vector3.new(2.6, 2.2, 2.6) * scale, color, CFrame.new(position + Vector3.new(0, 1.2 * scale, 0)), model, {
+		root = part("Root", Vector3.new(2.6, 2.2, 2.6) * scale, color, CFrame.new(position + Vector3.new(0, 2.2 * scale, 0)), model, {
 			shape = Enum.PartType.Ball,
 			material = Enum.Material.Neon,
 			collide = true,
@@ -212,7 +212,7 @@ local function buildBody(def: any, position: Vector3): Model
 		part("PupilR", Vector3.new(0.16, 0.2, 0.12) * scale, Color3.new(0, 0, 0), eyeR.CFrame * CFrame.new(0, 0, -0.08), model)
 	elseif shape == "quad" then
 		-- wolf-like: body + head + legs + tail
-		root = part("Root", Vector3.new(3.4, 1.5, 4.2) * scale, color, CFrame.new(position + Vector3.new(0, 1.1 * scale, 0)), model, {
+		root = part("Root", Vector3.new(3.4, 1.5, 4.2) * scale, color, CFrame.new(position + Vector3.new(0, 2.4 * scale, 0)), model, {
 			collide = true,
 			material = Enum.Material.SmoothPlastic,
 		})
@@ -232,7 +232,7 @@ local function buildBody(def: any, position: Vector3): Model
 	else
 		-- humanoid / goblin / skeleton / dummy
 		local torsoH = 2.1 * scale
-		root = part("Root", Vector3.new(2.0, torsoH, 1.15) * scale, color, CFrame.new(position + Vector3.new(0, 1.55 * scale, 0)), model, {
+		root = part("Root", Vector3.new(2.0, torsoH, 1.15) * scale, color, CFrame.new(position + Vector3.new(0, 3.2 * scale, 0)), model, {
 			collide = true,
 			material = Enum.Material.SmoothPlastic,
 		})
