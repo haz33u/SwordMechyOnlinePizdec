@@ -1,7 +1,7 @@
 --!strict
 --[[
 	Client service for 3D Map Chests Touch pads.
-	Clean 3D labels + exact chest pool bindings:
+	Cleans old free-model scripts/labels and binds touch steps:
 	  1) Group / Community Reward Chest -> ClaimGroupChest remote
 	  2) 500 Coins Case Chest -> loc1_500 (500 Coins)
 	  3) 50k Coins Case Chest -> loc1_50k (50,000 Coins)
@@ -39,13 +39,32 @@ local function handleTouch(chestType: string, store: any)
 	end
 end
 
+--- Completely purge old free-model scripts, remotes, and floating BillboardGuis
+local function purgeOldChestScripts()
+	local folder = Workspace:FindFirstChild("Folder")
+	if folder then
+		for _, name in { "ChestClient", "ChestServer", "ChestRemotes" } do
+			local old = folder:FindFirstChild(name)
+			if old then
+				old:Destroy()
+			end
+		end
+	end
+
+	for _, desc in Workspace:GetDescendants() do
+		if desc.Name == "ChestClient" or desc.Name == "ChestServer" or desc.Name == "ChestRemotes" then
+			desc:Destroy()
+		end
+	end
+end
+
 --- Destroy ugly yellow developer debug tags / old BillboardGuis / SelectionBoxes inside chest models
 local function cleanAndTagChest(model: Instance?, title: string, subtitle: string, mainColor: Color3)
 	if not model then
 		return
 	end
 
-	-- Clean old debug tags / prompts
+	-- Clean old debug tags / prompts / GUIs
 	for _, desc in model:GetDescendants() do
 		if desc:IsA("BillboardGui") or desc:IsA("SurfaceGui") or desc:IsA("ProximityPrompt") or desc:IsA("SelectionBox") then
 			desc:Destroy()
@@ -99,63 +118,53 @@ end
 function WorldChestService.Init(store: any)
 	local player = Players.LocalPlayer
 
-	local function bindPad(part: BasePart, chestType: string)
-		part.Touched:Connect(function(hit)
-			if not hit or not hit.Parent then
-				return
+	-- Purge old toolbox scripts immediately
+	purgeOldChestScripts()
+
+	local function bindModelPads(root: Instance?, chestType: string)
+		if not root then
+			return
+		end
+
+		for _, desc in root:GetDescendants() do
+			if desc:IsA("BasePart") then
+				desc.CanTouch = true
+				desc.Touched:Connect(function(hit)
+					if not hit or not hit.Parent then
+						return
+					end
+					local char = player.Character
+					if char and (hit:IsDescendantOf(char) or hit.Parent:FindFirstChildOfClass("Humanoid") ~= nil) then
+						handleTouch(chestType, store)
+					end
+				end)
 			end
-			local char = player.Character
-			if char and hit:IsDescendantOf(char) then
-				handleTouch(chestType, store)
-			end
-		end)
+		end
 	end
 
 	task.defer(function()
-		task.wait(1.5)
+		task.wait(0.5)
+		purgeOldChestScripts()
 
 		-- 1) Group Chest: Workspace.Spawn.GroupChest
 		local groupModel = Workspace:FindFirstChild("GroupChest", true) or Workspace:FindFirstChild("Spawn")
 		cleanAndTagChest(groupModel, "COMMUNITY CHEST", "Roblox Group Reward", Color3.fromRGB(80, 220, 255))
-		
-		local spawnFolder = Workspace:FindFirstChild("Spawn")
-		if spawnFolder then
-			local btn = spawnFolder:FindFirstChild("Button", true)
-			local touch = btn and btn:FindFirstChild("Touch", true)
-			if touch and touch:IsA("BasePart") then
-				bindPad(touch, "group")
-			end
-		end
+		bindModelPads(groupModel, "group")
 
 		-- 2) 500 Coins Chest: Workspace."1 chest 500"
 		local m1 = Workspace:FindFirstChild("1 chest 500", true)
 		cleanAndTagChest(m1, "500 COINS CHEST", "Cost: 500 Coins · Step to open", Color3.fromRGB(255, 215, 80))
-		if m1 then
-			local touch = m1:FindFirstChild("Touch", true)
-			if touch and touch:IsA("BasePart") then
-				bindPad(touch, "500")
-			end
-		end
+		bindModelPads(m1, "500")
 
 		-- 3) 50k Coins Chest: Workspace."3rd chest 50k"
 		local m2 = Workspace:FindFirstChild("3rd chest 50k", true)
 		cleanAndTagChest(m2, "50K COINS CHEST", "Cost: 50,000 Coins · Step to open", Color3.fromRGB(255, 170, 40))
-		if m2 then
-			local touch = m2:FindFirstChild("Touch", true)
-			if touch and touch:IsA("BasePart") then
-				bindPad(touch, "50k")
-			end
-		end
+		bindModelPads(m2, "50k")
 
 		-- 4) 49 Robux Chest: Workspace."49robux chest"
 		local m3 = Workspace:FindFirstChild("49robux chest", true)
 		cleanAndTagChest(m3, "49 KEYS CHEST", "Cost: 49 Keys · Step to open", Color3.fromRGB(210, 110, 255))
-		if m3 then
-			local touch = m3:FindFirstChild("Touch", true)
-			if touch and touch:IsA("BasePart") then
-				bindPad(touch, "robux")
-			end
-		end
+		bindModelPads(m3, "robux")
 	end)
 end
 

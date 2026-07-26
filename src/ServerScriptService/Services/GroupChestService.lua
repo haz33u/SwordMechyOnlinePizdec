@@ -15,6 +15,14 @@ function GroupChestService.Init()
 	Remotes.Event("ClaimGroupChest").OnServerEvent:Connect(function(player)
 		GroupChestService.Claim(player)
 	end)
+
+	-- Purge old toolbox scripts from Workspace
+	local Workspace = game:GetService("Workspace")
+	for _, desc in Workspace:GetDescendants() do
+		if desc.Name == "ChestClient" or desc.Name == "ChestServer" or desc.Name == "ChestRemotes" then
+			desc:Destroy()
+		end
+	end
 end
 
 function GroupChestService.Claim(player: Player)
