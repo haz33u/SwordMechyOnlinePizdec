@@ -112,9 +112,9 @@ local WeaponModelConfig = {
 		DF_UmbralBough = "LastSword",
 	} :: { [string]: string },
 
-	-- Automatic length normalization: target total sword length in world studs (~1.6 studs for compact 1-hand weapons).
+	-- Automatic length normalization: target total sword length in world studs (~3.0 studs for medium anime simulator sword).
 	-- Any imported FBX / Toolbox mesh is automatically scaled so its total physical length matches this target.
-	TargetLengthStuds = 1.6,
+	TargetLengthStuds = 3.0,
 	DefaultScale = 0.50,
 
 	--[[
@@ -174,28 +174,28 @@ local WeaponModelConfig = {
 		DF_UmbralBough = { scaleMult = 1.15, iconInvert = false },
 
 		-- Incremental Hammers (reduce wide hammer heads so they don't block screen)
-		["Stone Ha."] = { scaleMult = 0.55 },
-		["Iron Ha."] = { scaleMult = 0.55 },
-		["Gold Ha."] = { scaleMult = 0.55 },
-		["Emerald Ha."] = { scaleMult = 0.55 },
-		["Ruby Ha."] = { scaleMult = 0.55 },
-		["Titanium Ha."] = { scaleMult = 0.55 },
+		["Stone Ha."] = { scaleMult = 0.80 },
+		["Iron Ha."] = { scaleMult = 0.80 },
+		["Gold Ha."] = { scaleMult = 0.80 },
+		["Emerald Ha."] = { scaleMult = 0.80 },
+		["Ruby Ha."] = { scaleMult = 0.80 },
+		["Titanium Ha."] = { scaleMult = 0.80 },
 
 		-- Incremental Scythes
-		["Stone Sy."] = { scaleMult = 0.70 },
-		["Iron Sy."] = { scaleMult = 0.70 },
-		["Gold Sy."] = { scaleMult = 0.70 },
-		["Emerald Sy."] = { scaleMult = 0.70 },
-		["Ruby Sy."] = { scaleMult = 0.70 },
-		["Titanium Sy."] = { scaleMult = 0.70 },
+		["Stone Sy."] = { scaleMult = 0.90 },
+		["Iron Sy."] = { scaleMult = 0.90 },
+		["Gold Sy."] = { scaleMult = 0.90 },
+		["Emerald Sy."] = { scaleMult = 0.90 },
+		["Ruby Sy."] = { scaleMult = 0.90 },
+		["Titanium Sy."] = { scaleMult = 0.90 },
 
 		-- Incremental Spears
-		["Stone Sp."] = { scaleMult = 0.80 },
-		["Iron Sp."] = { scaleMult = 0.80 },
-		["Gold Sp."] = { scaleMult = 0.80 },
-		["Emerald Sp."] = { scaleMult = 0.80 },
-		["Ruby Sp."] = { scaleMult = 0.80 },
-		["Titanium Sp."] = { scaleMult = 0.80 },
+		["Stone Sp."] = { scaleMult = 1.05 },
+		["Iron Sp."] = { scaleMult = 1.05 },
+		["Gold Sp."] = { scaleMult = 1.05 },
+		["Emerald Sp."] = { scaleMult = 1.05 },
+		["Ruby Sp."] = { scaleMult = 1.05 },
+		["Titanium Sp."] = { scaleMult = 1.05 },
 	} :: { [string]: HiltOverride },
 
 	-- Optional recolor if Place mesh is grey after FBX import (not used for multi-part DF builds).
