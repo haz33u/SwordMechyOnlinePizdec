@@ -30,7 +30,7 @@ local GameConfig = {
 	AUTO_HIT_RANGE = 18,
 
 	-- inventory — pet slots in ProgressConfig (max 8)
-	START_PET_SLOTS = 3,
+	START_PET_SLOTS = 4,
 	MAX_PET_SLOTS = 8, -- equip team
 	MAX_PETS_OWNED = 32, -- bag base; +Backpack upgrade (see UpgradeConfig.BASE_BAG_SLOTS)
 	START_WEAPON_BAG = 32,

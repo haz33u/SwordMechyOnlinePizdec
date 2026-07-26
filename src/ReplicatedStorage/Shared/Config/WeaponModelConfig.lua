@@ -112,9 +112,9 @@ local WeaponModelConfig = {
 		DF_UmbralBough = "LastSword",
 	} :: { [string]: string },
 
-	-- Automatic length normalization: target total sword length in world studs (~3.0 studs for medium anime simulator sword).
+	-- Automatic length normalization: target total sword length in world studs (~6.0 studs for 2x size weapons).
 	-- Any imported FBX / Toolbox mesh is automatically scaled so its total physical length matches this target.
-	TargetLengthStuds = 3.0,
+	TargetLengthStuds = 6.0,
 	DefaultScale = 0.50,
 
 	--[[

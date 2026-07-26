@@ -333,7 +333,7 @@ function WeaponModels.PrepareClone(weaponId: string): (Model?, CFrame)
 	-- Automatic size normalization: any 3D mesh is scaled so its TOTAL physical length matches TargetLengthStuds (~1.6 studs) * scaleMult
 	local ov = WeaponModelConfig.ResolveOverride(modelName)
 	local scaleMult = if ov and type(ov.scaleMult) == "number" and ov.scaleMult > 0 then ov.scaleMult else 1.0
-	local targetLen = (WeaponModelConfig :: any).TargetLengthStuds or 3.0
+	local targetLen = (WeaponModelConfig :: any).TargetLengthStuds or 6.0
 
 	local factor = 1.0
 	if type(targetLen) == "number" and targetLen > 0 then
