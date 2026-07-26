@@ -290,13 +290,6 @@ function NpcService.InspectAndBind(inst: Instance)
 		NpcService.BindQuestMaster(topTarget)
 	elseif string.find(lowerName, "smith") or string.find(lowerName, "blacksmith") or string.find(lowerName, "forge") or string.find(lowerName, "enchant") then
 		NpcService.BindSmith(topTarget)
-	elseif string.find(lowerName, "pet case") or string.find(lowerName, "petcase") or string.find(lowerName, "pet chest") then
-		local poolId = if string.find(lowerName, "49") or string.find(lowerName, "robux") then "loc1_key49" else (if string.find(lowerName, "50k") then "loc1_50k" else "loc1_500")
-		NpcService.BindCase(inst, name, "pet", poolId)
-	elseif string.find(lowerName, "aura case") or string.find(lowerName, "auracase") or string.find(lowerName, "aura chest") then
-		NpcService.BindCase(inst, name, "aura", nil)
-	elseif string.find(lowerName, "case") or string.find(lowerName, "chest") then
-		NpcService.BindCase(inst, name, "pet", "loc1_500")
 	end
 end
 
@@ -337,40 +330,8 @@ end
 function NpcService.EnsureHubInteractives()
 	NpcService.CleanDuplicateHubCases()
 
+	-- Quest Master & Smith NPCs only
 	local npcsFolder = ensureFolder(Workspace, "NPCs")
-
-	-- Clean old positions if re-spawning
-	local oldP1 = npcsFolder:FindFirstChild("PetCase_500_Box")
-	if oldP1 and oldP1.Position.Z > 50 then npcsFolder:ClearAllChildren() end
-
-	-- Position on Central Hub platform (Z = 22, Y = 1.8..2.8)
-	-- 1. Pet Case (500)
-	if not npcsFolder:FindFirstChild("PetCase_500_Box") then
-		local box = makePart(npcsFolder, "PetCase_500_Box", Vector3.new(3.2, 2.6, 2.4), CFrame.new(-12, 1.8, 22), Color3.fromRGB(0, 160, 120), Enum.Material.Metal)
-		local lid = makePart(npcsFolder, "PetCase_500_Lid", Vector3.new(3.4, 0.7, 2.6), CFrame.new(-12, 3.3, 22), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
-		NpcService.BindCase(box, "Pet Case (500)", "pet", "loc1_500")
-	end
-
-	-- 2. Pet Case (50K)
-	if not npcsFolder:FindFirstChild("PetCase_50k_Box") then
-		local box = makePart(npcsFolder, "PetCase_50k_Box", Vector3.new(3.2, 2.6, 2.4), CFrame.new(-5, 1.8, 22), Color3.fromRGB(0, 120, 180), Enum.Material.Metal)
-		local lid = makePart(npcsFolder, "PetCase_50k_Lid", Vector3.new(3.4, 0.7, 2.6), CFrame.new(-5, 3.3, 22), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
-		NpcService.BindCase(box, "Pet Case (50K)", "pet", "loc1_50k")
-	end
-
-	-- 3. Pet Case (49 R$) [Premium 49 Robux Case]
-	if not npcsFolder:FindFirstChild("PetCase_49r_Box") then
-		local box = makePart(npcsFolder, "PetCase_49r_Box", Vector3.new(3.2, 2.6, 2.4), CFrame.new(2, 1.8, 22), Color3.fromRGB(200, 40, 50), Enum.Material.Metal)
-		local lid = makePart(npcsFolder, "PetCase_49r_Lid", Vector3.new(3.4, 0.7, 2.6), CFrame.new(2, 3.3, 22), Color3.fromRGB(255, 215, 0), Enum.Material.SmoothPlastic)
-		NpcService.BindCase(box, "Pet Case (49 R$)", "pet", "loc1_key49")
-	end
-
-	-- 4. Aura Case
-	if not npcsFolder:FindFirstChild("AuraCase_Box") then
-		local box = makePart(npcsFolder, "AuraCase_Box", Vector3.new(3.2, 2.6, 2.4), CFrame.new(9, 1.8, 22), Color3.fromRGB(150, 60, 220), Enum.Material.Metal)
-		local lid = makePart(npcsFolder, "AuraCase_Lid", Vector3.new(3.4, 0.7, 2.6), CFrame.new(9, 3.3, 22), Color3.fromRGB(240, 200, 80), Enum.Material.SmoothPlastic)
-		NpcService.BindCase(box, "Aura Case", "aura", nil)
-	end
 
 	-- 5. Quest Master NPC (Singleton, NO BillboardGui)
 	if not npcsFolder:FindFirstChild("QuestMaster") then

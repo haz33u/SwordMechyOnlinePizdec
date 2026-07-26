@@ -43,7 +43,7 @@ end
 local function purgeOldChestScripts()
 	local folder = Workspace:FindFirstChild("Folder")
 	if folder then
-		for _, name in { "ChestClient", "ChestServer", "ChestRemotes" } do
+		for _, name in { "ChestClient", "ChestServer", "ChestRemotes", "AuraChest" } do
 			local old = folder:FindFirstChild(name)
 			if old then
 				old:Destroy()
@@ -66,7 +66,7 @@ local function cleanAndTagChest(model: Instance?, title: string, subtitle: strin
 
 	-- Clean old debug tags / prompts / GUIs
 	for _, desc in model:GetDescendants() do
-		if desc:IsA("BillboardGui") or desc:IsA("SurfaceGui") or desc:IsA("ProximityPrompt") or desc:IsA("SelectionBox") then
+		if desc.Name ~= "CleanChestTag" and (desc:IsA("BillboardGui") or desc:IsA("SurfaceGui") or desc:IsA("ProximityPrompt") or desc:IsA("SelectionBox") or desc:IsA("ClickDetector")) then
 			desc:Destroy()
 		end
 	end
@@ -80,6 +80,10 @@ local function cleanAndTagChest(model: Instance?, title: string, subtitle: strin
 	end
 
 	if not anchorPart then
+		return
+	end
+
+	if anchorPart:FindFirstChild("CleanChestTag") then
 		return
 	end
 
@@ -121,13 +125,16 @@ function WorldChestService.Init(store: any)
 	-- Purge old toolbox scripts immediately
 	purgeOldChestScripts()
 
+	local boundPads: { [Instance]: boolean } = {}
+
 	local function bindModelPads(root: Instance?, chestType: string)
 		if not root then
 			return
 		end
 
 		for _, desc in root:GetDescendants() do
-			if desc:IsA("BasePart") then
+			if desc:IsA("BasePart") and not boundPads[desc] then
+				boundPads[desc] = true
 				desc.CanTouch = true
 				desc.Touched:Connect(function(hit)
 					if not hit or not hit.Parent then
@@ -142,29 +149,38 @@ function WorldChestService.Init(store: any)
 		end
 	end
 
-	task.defer(function()
-		task.wait(0.5)
+	local function refreshAllChests()
 		purgeOldChestScripts()
 
-		-- 1) Group Chest: Workspace.Spawn.GroupChest
+		-- 1) Group Chest
 		local groupModel = Workspace:FindFirstChild("GroupChest", true) or Workspace:FindFirstChild("Spawn")
 		cleanAndTagChest(groupModel, "COMMUNITY CHEST", "Roblox Group Reward", Color3.fromRGB(80, 220, 255))
 		bindModelPads(groupModel, "group")
 
-		-- 2) 500 Coins Chest: Workspace."1 chest 500"
+		-- 2) 500 Coins Chest
 		local m1 = Workspace:FindFirstChild("1 chest 500", true)
 		cleanAndTagChest(m1, "500 COINS CHEST", "Cost: 500 Coins · Step to open", Color3.fromRGB(255, 215, 80))
 		bindModelPads(m1, "500")
 
-		-- 3) 50k Coins Chest: Workspace."3rd chest 50k"
+		-- 3) 50k Coins Chest
 		local m2 = Workspace:FindFirstChild("3rd chest 50k", true)
 		cleanAndTagChest(m2, "50K COINS CHEST", "Cost: 50,000 Coins · Step to open", Color3.fromRGB(255, 170, 40))
 		bindModelPads(m2, "50k")
 
-		-- 4) 49 Robux Chest: Workspace."49robux chest"
+		-- 4) 49 Robux Chest
 		local m3 = Workspace:FindFirstChild("49robux chest", true)
 		cleanAndTagChest(m3, "49 KEYS CHEST", "Cost: 49 Keys · Step to open", Color3.fromRGB(210, 110, 255))
 		bindModelPads(m3, "robux")
+	end
+
+	task.defer(function()
+		refreshAllChests()
+
+		-- Repeated cleanup pass for streaming/delayed loads
+		for i = 1, 5 do
+			task.wait(1)
+			refreshAllChests()
+		end
 	end)
 end
 
