@@ -175,22 +175,7 @@ function Modals.Mount(gui: ScreenGui, store: any)
 			)
 			barHost.Visible = true
 			fill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
-
-			-- Ideal ETA with current swords/pets/gear if always clicking
-			etaLabel.Visible = true
-			if pct >= 1 then
-				etaLabel.Text = "Time to rebirth  ·  ~0s  (READY TO REBIRTH!)"
-				etaLabel.TextColor3 = Color3.fromRGB(100, 240, 140)
-			elseif etaSec <= 0.95 then
-				etaLabel.Text = "Time to rebirth  ·  ~< 1s  (1 click away!)"
-				etaLabel.TextColor3 = Color3.fromRGB(100, 240, 140)
-			else
-				etaLabel.Text = string.format(
-					"Time to rebirth  ·  ~%s  (ideal click, current gear)",
-					Format.Duration(etaSec)
-				)
-				etaLabel.TextColor3 = Color3.fromRGB(100, 230, 140)
-			end
+			etaLabel.Visible = false
 
 			if pct >= 1 then
 				primary.Text = "Rebirth Now!"
