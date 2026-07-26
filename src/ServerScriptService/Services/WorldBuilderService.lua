@@ -89,16 +89,10 @@ local function makeMarker(parent: Instance, name: string, mobId: string, zone: s
 end
 
 function WorldBuilderService.Init()
-	local world = ensureFolder(Workspace, "World")
-	local locations = ensureFolder(world, "Locations")
-	local loc01 = ensureFolder(locations, "Loc01")
-	
-	local art = loc01:FindFirstChild("Art")
-	if art then
-		-- Already constructed or customized in Studio
-		print("[WorldBuilder] Loc01.Art exists — skipping procedural scaffold")
-		return
-	end
+	-- Procedural generation disabled: player created their own custom map in Studio!
+	print("[WorldBuilder] Procedural map generation disabled — using Studio custom map")
+	return
+end
 	
 	art = ensureFolder(loc01, "Art")
 	local spawnsFolder = ensureFolder(loc01, "MobSpawns")

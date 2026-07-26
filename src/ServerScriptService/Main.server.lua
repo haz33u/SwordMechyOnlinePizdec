@@ -40,7 +40,7 @@ local DebugService = require(Services.DebugService)
 print("[SwordMasters]", GameConfig.VERSION, "backend boot...")
 
 Remotes.InitAll()
-WorldBuilderService.Init()
+-- WorldBuilderService.Init() -- disabled: using Studio custom map
 WorldService.Init()
 ProfileService.Init()
 FriendService.Init()
