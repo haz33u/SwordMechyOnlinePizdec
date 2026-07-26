@@ -112,9 +112,9 @@ local WeaponModelConfig = {
 		DF_UmbralBough = "LastSword",
 	} :: { [string]: string },
 
-	-- Automatic length normalization: target total sword length in world studs (~3.5 studs for standard Roblox sword).
+	-- Automatic length normalization: target total sword length in world studs (~2.2 studs for compact anime simulator sword).
 	-- Any imported FBX / Toolbox mesh is automatically scaled so its total physical length matches this target.
-	TargetLengthStuds = 3.5,
+	TargetLengthStuds = 2.2,
 	DefaultScale = 0.50,
 
 	--[[
@@ -172,6 +172,30 @@ local WeaponModelConfig = {
 		DF_Amberheart = { iconInvert = false },
 		DF_CanopyFang = { scaleMult = 1.10, iconInvert = false }, -- Greatsword ~4.6 studs
 		DF_UmbralBough = { scaleMult = 1.15, iconInvert = false },
+
+		-- Incremental Hammers (reduce wide hammer heads so they don't block screen)
+		["Stone Ha."] = { scaleMult = 0.70 },
+		["Iron Ha."] = { scaleMult = 0.70 },
+		["Gold Ha."] = { scaleMult = 0.70 },
+		["Emerald Ha."] = { scaleMult = 0.70 },
+		["Ruby Ha."] = { scaleMult = 0.70 },
+		["Titanium Ha."] = { scaleMult = 0.70 },
+
+		-- Incremental Scythes
+		["Stone Sy."] = { scaleMult = 0.85 },
+		["Iron Sy."] = { scaleMult = 0.85 },
+		["Gold Sy."] = { scaleMult = 0.85 },
+		["Emerald Sy."] = { scaleMult = 0.85 },
+		["Ruby Sy."] = { scaleMult = 0.85 },
+		["Titanium Sy."] = { scaleMult = 0.85 },
+
+		-- Incremental Spears
+		["Stone Sp."] = { scaleMult = 0.95 },
+		["Iron Sp."] = { scaleMult = 0.95 },
+		["Gold Sp."] = { scaleMult = 0.95 },
+		["Emerald Sp."] = { scaleMult = 0.95 },
+		["Ruby Sp."] = { scaleMult = 0.95 },
+		["Titanium Sp."] = { scaleMult = 0.95 },
 	} :: { [string]: HiltOverride },
 
 	-- Optional recolor if Place mesh is grey after FBX import (not used for multi-part DF builds).
