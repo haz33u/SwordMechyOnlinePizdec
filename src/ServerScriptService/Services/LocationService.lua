@@ -15,15 +15,6 @@ function LocationService.Init()
 	Remotes.Event("SetLocation").OnServerEvent:Connect(function(player, locId)
 		LocationService.Set(player, locId)
 	end)
-
-	Players.PlayerAdded:Connect(function(player)
-		player.CharacterAdded:Connect(function()
-			task.wait(0.4)
-			local profile = ProfileService.Get(player)
-			local locId = (profile and profile.currentLocation) or 1
-			WorldService.TeleportToLocation(player, locId)
-		end)
-	end)
 end
 
 function LocationService.Set(player: Player, locId: number)

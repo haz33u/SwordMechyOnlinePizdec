@@ -55,6 +55,10 @@ function WorldService.FindSpawnPart(locationId: number): BasePart?
 end
 
 function WorldService.GetSpawnCFrame(locationId: number): CFrame?
+	local spawnLocation = Workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+	if spawnLocation then
+		return spawnLocation.CFrame + Vector3.new(0, 3.5, 0)
+	end
 	local part = WorldService.FindSpawnPart(locationId)
 	if part then
 		return part.CFrame + Vector3.new(0, 3, 0)

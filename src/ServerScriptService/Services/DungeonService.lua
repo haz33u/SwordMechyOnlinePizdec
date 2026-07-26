@@ -161,37 +161,8 @@ function DungeonService.EnsurePhysicalPortal()
 end
 
 function DungeonService.Init()
-	ensureDungeonArena()
-
-	Remotes.Event("StartDungeon").OnServerEvent:Connect(function(player, tierId)
-		DungeonService.EnterTower(player)
-	end)
-	Remotes.Event("ExitDungeon").OnServerEvent:Connect(function(player)
-		DungeonService.ExitTower(player)
-	end)
-
-	Players.PlayerRemoving:Connect(function(player)
-		local session = DungeonService._sessions[player.UserId]
-		if session then
-			if session.mob then
-				session.mob:Destroy()
-			end
-			DungeonService._sessions[player.UserId] = nil
-		end
-	end)
-
-	task.defer(function()
-		task.wait(2)
-		DungeonService.EnsurePhysicalPortal()
-
-		-- Workspace listener for user-added portal models
-		Workspace.DescendantAdded:Connect(function(desc)
-			local name = string.lower(desc.Name)
-			if string.find(name, "dungeon") or string.find(name, "tower") then
-				DungeonService.BindPortalModel(desc)
-			end
-		end)
-	end)
+	print("[DungeonService] Dungeons disabled per user request")
+	return
 end
 
 function DungeonService.EnterTower(player: Player)

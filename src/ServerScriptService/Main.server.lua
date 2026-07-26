@@ -55,7 +55,7 @@ AuraService.Init()
 RelicService.Init()
 AnomalyService.Init()
 QuestService.Init()
-DungeonService.Init()
+-- DungeonService.Init() -- disabled per user request
 BattlePassService.Init()
 LocationService.Init()
 PotionService.Init()
