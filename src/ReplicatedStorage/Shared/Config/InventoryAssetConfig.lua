@@ -3,111 +3,113 @@
 	Inventory / Shop / Profile chrome assets (MechyForge uploads).
 
 	Source: Figma LAYOUT screens + Asset Manager Decals/Images.
-	Use: InventoryAssetConfig.Get("WEAPONSBUTTON") → "rbxassetid://…"
+	Use: InventoryAssetConfig.Get("WEAPONSBUTTON") -> "rbxassetid://..."
 
-	Do not invent placeholder ids. Friend sees the same table via git.
+	IDs are IMAGE ids (converted from Open Cloud decal uploads 2026-07-26
+	via Studio GetObjects resolver). Do not paste raw decal ids here —
+	run decal2image first. Friend sees the same table via git.
 ]]
 
 local InventoryAssetConfig = {
-	-- ── Main shell ─────────────────────────────────────────────
-	MAINBACKGROUD = "rbxassetid://109329669318137", -- duplicate upload 107206259216274 is identical
-	BG_WeaponGrid = "rbxassetid://123475576029932",
-	Divider_3_Minimal_1 = "rbxassetid://138707328688658",
-	BTN_Close_3 = "rbxassetid://132260235436115",
-	btn_neutral_2_1 = "rbxassetid://108887761303867",
-	btn_neutral_2_2 = "rbxassetid://114045150215835",
-	TOOLTIPshell = "rbxassetid://109491248361577",
+	-- ── Main shell ─────────────────────────────────────────
+	MAINBACKGROUD = "rbxassetid://92865560197091", -- was decal 109329669318137 (duplicate 107206259216274)
+	BG_WeaponGrid = "rbxassetid://89117847220468",
+	Divider_3_Minimal_1 = "rbxassetid://120415832747105",
+	BTN_Close_3 = "rbxassetid://72455930867410",
+	btn_neutral_2_1 = "rbxassetid://74404628605222",
+	btn_neutral_2_2 = "rbxassetid://71855129271456",
+	TOOLTIPshell = "rbxassetid://92658191065501",
 
-	-- ── Left tab rail (Figma only — no Cases in inventory) ─────
-	WEAPONSBUTTON = "rbxassetid://136377090198907",
-	PETCBUTTON = "rbxassetid://101113775481696",
-	AURABUTTON = "rbxassetid://136063134601854",
-	RELICBUTTON = "rbxassetid://117117357631042",
-	CONSUMABLESBUTTON = "rbxassetid://129101268564836",
-	SHOPBUTTON = "rbxassetid://135128464657998",
-	PROFILEBUTTON = "rbxassetid://100720332511542",
-	SETTINGSBUTTON = "rbxassetid://116575452557598",
-	TELEPORTERBUTTON = "rbxassetid://126074506618888",
+	-- ── Bottom tab rail (Figma only — no Cases in inventory) ───
+	WEAPONSBUTTON = "rbxassetid://124423602280041",
+	PETCBUTTON = "rbxassetid://72145053886893",
+	AURABUTTON = "rbxassetid://124836568025437",
+	RELICBUTTON = "rbxassetid://117114899360020",
+	CONSUMABLESBUTTON = "rbxassetid://101740999000329",
+	SHOPBUTTON = "rbxassetid://104501192850058",
+	PROFILEBUTTON = "rbxassetid://103096630967071",
+	SETTINGSBUTTON = "rbxassetid://72658043228119",
+	TELEPORTERBUTTON = "rbxassetid://125419182346918",
 
-	-- ── Tab headers ────────────────────────────────────────────
-	INVENTORYWEAPONcard = "rbxassetid://126211504937247", -- INVENTORY • WEAPONS
-	PETScard = "rbxassetid://72884475463606",
-	AURAScard = "rbxassetid://118800405065464",
-	RELICcard = "rbxassetid://119070556168608",
-	CONSUMABLEScard = "rbxassetid://88760878142362",
-	SHOPcard = "rbxassetid://83434406942933",
-	PROFIILEcard = "rbxassetid://85842695837369", -- name as uploaded (typo double I)
-	SETTINGcard = "rbxassetid://83535628737807",
+	-- ── Tab headers ────────────────────────────────────────
+	INVENTORYWEAPONcard = "rbxassetid://90473285925317", -- INVENTORY • WEAPONS
+	PETScard = "rbxassetid://103573093369521",
+	AURAScard = "rbxassetid://130409439244534",
+	RELICcard = "rbxassetid://117029557776846",
+	CONSUMABLEScard = "rbxassetid://75177270795264",
+	SHOPcard = "rbxassetid://84796182593075",
+	PROFIILEcard = "rbxassetid://112860676886389", -- name as uploaded (typo double I)
+	SETTINGcard = "rbxassetid://114095500677799",
 
-	-- ── Presets ────────────────────────────────────────────────
-	PRESETcard1 = "rbxassetid://86941158014314",
-	PRESETcard2 = "rbxassetid://83511350467791",
-	PRESETcard3 = "rbxassetid://131457201322451",
-	PRESETcard4 = "rbxassetid://107099484545631",
-	WORDMARK_presets__click_to_equip_1 = "rbxassetid://96826442437821",
+	-- ── Presets ───────────────────────────────────────────
+	PRESETcard1 = "rbxassetid://97212429687032",
+	PRESETcard2 = "rbxassetid://102298755754238",
+	PRESETcard3 = "rbxassetid://71302406947711",
+	PRESETcard4 = "rbxassetid://74373931018247",
+	WORDMARK_presets__click_to_equip_1 = "rbxassetid://72992356938065",
 
 	-- ── Slot frames by rarity (Empty → Mythic) ─────────────────
-	Slot_Empty_3 = "rbxassetid://76615280390410",
-	Slot_Common_5 = "rbxassetid://103700415507102",
-	Slot_Uncommon_5 = "rbxassetid://93953189037997",
-	Slot_Rare_5 = "rbxassetid://84138962317498",
-	Slot_Epic_5 = "rbxassetid://112807372557856",
-	Slot_Legendary_5 = "rbxassetid://116513949821988",
-	Slot_Mythic_5 = "rbxassetid://115957829700251",
-	Slot_Secret = "rbxassetid://73278259891657",
-	Slot_Limited_Body = "rbxassetid://72397855713663",
-	Slot_Limited_Rim = "rbxassetid://133165389836845",
-	BTN_Confirm_Check_1 = "rbxassetid://138577700896730",
+	Slot_Empty_3 = "rbxassetid://93019228783497",
+	Slot_Common_5 = "rbxassetid://77107427791922",
+	Slot_Uncommon_5 = "rbxassetid://83826659711881",
+	Slot_Rare_5 = "rbxassetid://73913709307435",
+	Slot_Epic_5 = "rbxassetid://125802780104168",
+	Slot_Legendary_5 = "rbxassetid://110504679708488",
+	Slot_Mythic_5 = "rbxassetid://138634223640319",
+	Slot_Secret = "rbxassetid://125029706914658",
+	Slot_Limited_Body = "rbxassetid://75311528289040",
+	Slot_Limited_Rim = "rbxassetid://83892126340335",
+	BTN_Confirm_Check_1 = "rbxassetid://130276735253420",
 
 	-- ── Equip loadout (Panel_EquipInfo / EQUIPMENTbackground) ──
-	MAINswordCARD = "rbxassetid://132958022184465",
-	SECONDswordCARD = "rbxassetid://96746622934499",
-	STARSdecoration = "rbxassetid://129088531898017",
-	STARTSdecoration = "rbxassetid://118648420598705", -- alternate/typo upload; prefer STARSdecoration
-	SELLbutton = "rbxassetid://119450831201453",
-	SELLallUNLOCKEDbutton = "rbxassetid://100479667927713",
-	EQUIPbestFORpowerBUTTON = "rbxassetid://92110616611889",
-	EQUIPbestFORdamageBUTTON = "rbxassetid://119992767516552",
-	MOUSEBINDScard = "rbxassetid://81765779098261",
-	EQUIPMENTbackground = "rbxassetid://122812087743674",
+	EQUIPMENTbackground = "rbxassetid://98803634847964",
+	MAINswordCARD = "rbxassetid://107165883488202",
+	SECONDswordCARD = "rbxassetid://89369544061968",
+	STARSdecoration = "rbxassetid://95489469723485",
+	STARTSdecoration = "rbxassetid://140091678452076", -- alternate/typo upload; prefer STARSdecoration
+	SELLbutton = "rbxassetid://132238377502752",
+	SELLallUNLOCKEDbutton = "rbxassetid://130648772284458",
+	EQUIPbestFORpowerBUTTON = "rbxassetid://92110616611889", -- already an Image id
+	EQUIPbestFORdamageBUTTON = "rbxassetid://119992767516552", -- already an Image id
+	MOUSEBINDScard = "rbxassetid://76392032081380",
 
-	-- ── Shop ───────────────────────────────────────────────────
-	SECONDswordShopcard = "rbxassetid://78812232411964",
-	A_1PetslotShopcard = "rbxassetid://106650095356931", -- +1 Pet slot
-	A_1RELICslotShopcard = "rbxassetid://88653189510344", -- +1 Relic slot
-	x3CaseopenShopcard = "rbxassetid://73630542311124",
-	WORDMARK___passes__1 = "rbxassetid://71332006772206",
-	GamePass_card_empty_plate = "rbxassetid://114666751356961",
+	-- ── Shop ───────────────────────────────────────────────
+	SECONDswordShopcard = "rbxassetid://87981370801253",
+	A_1PetslotShopcard = "rbxassetid://97807859243530", -- +1 Pet slot
+	A_1RELICslotShopcard = "rbxassetid://130943106845504", -- +1 Relic slot
+	x3CaseopenShopcard = "rbxassetid://76561942008226",
+	WORDMARK___passes__1 = "rbxassetid://134304693967257",
+	GamePass_card_empty_plate = "rbxassetid://83871405491605",
 
-	-- ── Profile ────────────────────────────────────────────────
-	AVATArcard = "rbxassetid://78902506751385",
-	MAINtitle_NicKcard = "rbxassetid://140713367131416",
-	MAINusernamexard = "rbxassetid://127412598914511", -- name as uploaded
-	STATS1card = "rbxassetid://71756965092927",
-	STATS2card = "rbxassetid://113745136851018",
-	OPENtitlesLISTbutton = "rbxassetid://106386332533455", -- Image (prefer over older Decal)
-	OPENtitlesLISTbutton_Decal = "rbxassetid://98780039814610", -- older MechyForge Decal
-	WORDMARK_TITLE_NICK_1_1 = "rbxassetid://137281081458949",
+	-- ── Profile ───────────────────────────────────────────
+	AVATArcard = "rbxassetid://123858310682978",
+	MAINtitle_NicKcard = "rbxassetid://90764636942941",
+	MAINusernamexard = "rbxassetid://125069362428324", -- name as uploaded
+	STATS1card = "rbxassetid://86941981848785",
+	STATS2card = "rbxassetid://82386813907730",
+	OPENtitlesLISTbutton = "rbxassetid://106386332533455", -- already an Image id
+	OPENtitlesLISTbutton_Decal = "rbxassetid://106386332533455", -- old decal, resolves to same image as OPENtitlesLISTbutton
+	WORDMARK_TITLE_NICK_1_1 = "rbxassetid://128577696714849",
 
-	-- ── Settings toggles ───────────────────────────────────────
-	Toggle_Rainbow_OFF = "rbxassetid://84770005695822",
-	Toggle_Rainbow_ON = "rbxassetid://131748337490424",
+	-- ── Settings toggles ──────────────────────────────────
+	Toggle_Rainbow_OFF = "rbxassetid://111522661732585",
+	Toggle_Rainbow_ON = "rbxassetid://86770309543198",
 
 	-- ── Demo / placeholder item cards (grid samples, not catalog) ─
-	PETcard1 = "rbxassetid://112220293034062",
-	PETcard2 = "rbxassetid://135302931893865",
-	PETcard3 = "rbxassetid://72510814292504",
-	PETcard4 = "rbxassetid://97907242455034",
-	PETcard5 = "rbxassetid://104406946730115",
-	PETcard6 = "rbxassetid://119562543615061",
-	PETcard7 = "rbxassetid://96258350471905",
-	PETcard8 = "rbxassetid://96436882959184",
-	RELICcard1 = "rbxassetid://123453757016256",
-	RELICcard2 = "rbxassetid://109752899922157",
-	RELICcard3 = "rbxassetid://134174650334405",
+	PETcard1 = "rbxassetid://81512403260701",
+	PETcard2 = "rbxassetid://102890033531349",
+	PETcard3 = "rbxassetid://74393234989307",
+	PETcard4 = "rbxassetid://113960553603442",
+	PETcard5 = "rbxassetid://84765769197391",
+	PETcard6 = "rbxassetid://88560000877223",
+	PETcard7 = "rbxassetid://84603345544587",
+	PETcard8 = "rbxassetid://124036977196447",
+	RELICcard1 = "rbxassetid://73081644016490",
+	RELICcard2 = "rbxassetid://86565354659702",
+	RELICcard3 = "rbxassetid://82865823499587",
 }
 
---- Map rarity name → slot frame asset (Secret/Limited fall back to Mythic frame).
+--- Map rarity name -> slot frame asset.
 local SLOT_BY_RARITY: { [string]: string } = {
 	Empty = InventoryAssetConfig.Slot_Empty_3,
 	Common = InventoryAssetConfig.Slot_Common_5,
