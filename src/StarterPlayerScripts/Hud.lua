@@ -327,7 +327,9 @@ function Hud.Mount(
 	bal.Size = UDim2.fromOffset(620, BAL_H)
 	bal.Position = UDim2.new(0.5, 0, 1, -20)
 	bal.AnchorPoint = Vector2.new(0.5, 1)
-	bal.ZIndex = 12
+	-- Above dungeon banners / floating HUD junk so InvE always clickable
+	bal.ZIndex = 40
+	bal.Visible = true
 	bal.Parent = root
 	local balList = Instance.new("UIListLayout")
 	balList.FillDirection = Enum.FillDirection.Horizontal
@@ -472,8 +474,17 @@ function Hud.Mount(
 	local coinChip, coinLab = metricChip("Coins", 2, MAKE_GOLD, MAKE_GOLD_GLOW)
 	local powerChip, powerLab = metricChip("Power", 3, MAKE_POWER, MAKE_POWER_GLOW)
 	local eBtn = iconChip("InvE", 4, ICON_INVENTORY, "🎒", "E", function()
+		-- Always open inventory shell (Figma weapons page v1.0)
+		local s = store :: any
+		s._invTab = "weapons"
 		store:OpenPanel("weapons")
 	end)
+	-- Pin inventory open chip: never hide / never zero-size
+	eBtn.Visible = true
+	eBtn.Active = true
+	eBtn.ZIndex = 45
+	qBtn.Visible = true
+	qBtn.ZIndex = 45
 	local _ = qBtn
 	local _ = eBtn
 	local _ = coinChip
@@ -536,14 +547,25 @@ function Hud.Mount(
 
 		local rowW = math.clamp(m.actionW * 1.1, 520, 780)
 		local pad = m.pad
+		bal.Visible = true
 		bal.Size = UDim2.fromOffset(rowW, BAL_H)
+		-- Bottom-center classic SCREEENS place (same as mount)
 		bal.Position = UDim2.new(0.5, 0, 1, -pad)
+		bal.AnchorPoint = Vector2.new(0.5, 1)
+		bal.ZIndex = 40
 
 		-- scale chips with row width (keep metrics wide + readable)
 		local chipW = math.floor((rowW - GAP * 3 - ICON_SZ * 2) / 2)
 		chipW = math.clamp(chipW, 160, 240)
 		coinChip.Size = UDim2.fromOffset(chipW, CHIP_H)
 		powerChip.Size = UDim2.fromOffset(chipW, CHIP_H)
+		-- Q / E icon chips fixed size (inventory open = InvE)
+		qBtn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
+		eBtn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
+		qBtn.Visible = true
+		eBtn.Visible = true
+		eBtn.Active = true
+		eBtn.ZIndex = 45
 		coinLab.Font = Enum.Font.GothamBold
 		powerLab.Font = Enum.Font.GothamBold
 		coinLab.TextSize = 30
