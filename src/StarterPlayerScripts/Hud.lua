@@ -547,7 +547,8 @@ function Hud.Mount(
 
 		local rowW = math.clamp(m.actionW * 1.1, 520, 780)
 		local pad = m.pad
-		bal.Visible = true
+		local invOpen = store:PeekPanel() == "weapons"
+		bal.Visible = not invOpen
 		bal.Size = UDim2.fromOffset(rowW, BAL_H)
 		-- Bottom-center classic SCREEENS place (same as mount)
 		bal.Position = UDim2.new(0.5, 0, 1, -pad)
@@ -562,24 +563,29 @@ function Hud.Mount(
 		-- Q / E icon chips fixed size (inventory open = InvE)
 		qBtn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
 		eBtn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
-		qBtn.Visible = true
-		eBtn.Visible = true
-		eBtn.Active = true
+		qBtn.Visible = not invOpen
+		eBtn.Visible = not invOpen
+		eBtn.Active = not invOpen
 		eBtn.ZIndex = 45
 		coinLab.Font = Enum.Font.GothamBold
 		powerLab.Font = Enum.Font.GothamBold
 		coinLab.TextSize = 30
 		powerLab.TextSize = 30
 
+		rbHost.Visible = not invOpen
 		rbHost.Size = UDim2.fromOffset(math.min(rowW, 520), RB_H)
 		rbHost.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB))
 
+		autoChip.Visible = not invOpen
 		autoChip.Size = UDim2.fromOffset(math.clamp(math.floor(rowW * 0.28), 120, 168), AUTO_H)
 		autoChip.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB + RB_H + GAP_RB_AUTO))
 		autoChip.TextSize = 18
 		local autoLab = autoChip:FindFirstChild("Label")
 		if autoLab and autoLab:IsA("TextLabel") then
 			autoLab.TextSize = 18
+		end
+		if rail and rail:IsA("GuiObject") then
+			rail.Visible = not invOpen
 		end
 	end
 
@@ -686,17 +692,46 @@ function Hud.Mount(
 		end
 
 		local panel = store:PeekPanel()
-		for id, b in railBtns do
-			local active = id == panel
-			local g = b:FindFirstChildOfClass("UIGradient")
-			if g then
-				if active then
-					g.Color = ColorSequence.new(T.Accent, T.AccentDeep)
-				else
-					g.Color = ColorSequence.new(T.Surface3, T.Surface2)
+		-- Inventory open: hide left rail + bottom HUD so Figma inventory owns the screen
+		local invOpen = panel == "weapons"
+		if rail and rail:IsA("GuiObject") then
+			rail.Visible = not invOpen
+		end
+		if bal and bal:IsA("GuiObject") then
+			bal.Visible = not invOpen
+		end
+		if rbHost and rbHost:IsA("GuiObject") then
+			rbHost.Visible = not invOpen
+		end
+		if autoChip and autoChip:IsA("GuiObject") then
+			autoChip.Visible = not invOpen
+		end
+		if boosts and boosts:IsA("GuiObject") then
+			boosts.Visible = not invOpen
+		end
+		if dungBanner and dungBanner:IsA("GuiObject") then
+			dungBanner.Visible = not invOpen
+		end
+		if dungExitBanner and dungExitBanner:IsA("GuiObject") then
+			dungExitBanner.Visible = not invOpen
+		end
+		if anomBanner and anomBanner:IsA("GuiObject") and invOpen then
+			anomBanner.Visible = false
+		end
+
+		if not invOpen then
+			for id, b in railBtns do
+				local active = id == panel
+				local g = b:FindFirstChildOfClass("UIGradient")
+				if g then
+					if active then
+						g.Color = ColorSequence.new(T.Accent, T.AccentDeep)
+					else
+						g.Color = ColorSequence.new(T.Surface3, T.Surface2)
+					end
 				end
+				b.TextColor3 = T.Text
 			end
-			b.TextColor3 = T.Text
 		end
 
 		-- keep LOC for future top bar if needed

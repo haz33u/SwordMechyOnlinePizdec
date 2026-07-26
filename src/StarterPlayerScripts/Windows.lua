@@ -145,17 +145,20 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 		local wh = math.clamp((m.windowH or 0.62) + 0.10, 0.66, 0.80)
 		for id, root in frames do
 			if id == "weapons" then
-				root.Size = UDim2.fromScale(0.98, 0.96)
+				-- Near full-screen inventory (HUD rail/bottom hide while open)
+				root.Size = UDim2.fromScale(1, 1)
 				root.Position = UDim2.fromScale(0.5, 0.5)
 				root.AnchorPoint = Vector2.new(0.5, 0.5)
 				root.BackgroundTransparency = 1
 				root.BackgroundColor3 = Color3.new(0, 0, 0)
+				root.ZIndex = 80
 				stripWeaponsChrome(root)
 				local body = root:FindFirstChild("Body")
 				if body and body:IsA("GuiObject") then
 					body.BackgroundTransparency = 1
 					body.Size = UDim2.fromScale(1, 1)
 					body.Position = UDim2.fromOffset(0, 0)
+					body.ZIndex = 81
 				end
 			elseif id == "character" then
 				-- Larger panel; raised on screen so levels/stats clear of bottom HUD

@@ -67,14 +67,15 @@ local L = {
 	SELLbutton = { 0.13499, 0.80264, 0.09570, 0.04667 },
 	SELLallUNLOCKED = { 0.22991, 0.80180, 0.09933, 0.04844 },
 	MOUSEBINDScard = { 0.00000, 0.60792, 0.13144, 0.26360 },
-	WEAPONSBUTTON = { 0.17366, 0.87978, 0.08184, 0.11960 },
-	PETCBUTTON = { 0.26127, 0.87978, 0.08184, 0.11960 },
-	AURABUTTON = { 0.34888, 0.88040, 0.08184, 0.11960 },
-	RELICBUTTON = { 0.43648, 0.88040, 0.08184, 0.11960 },
-	CONSUMABLESBUTTON = { 0.52409, 0.88040, 0.08184, 0.11960 },
-	SHOPBUTTON = { 0.61170, 0.87978, 0.08184, 0.11960 },
-	PROFILEBUTTON = { 0.69844, 0.87978, 0.08184, 0.11960 },
-	SETTINGSBUTTON = { 0.82533, 0.87978, 0.08184, 0.11960 },
+	-- Bottom tab buttons — slightly lifted so they are never clipped off-screen
+	WEAPONSBUTTON = { 0.17366, 0.85500, 0.09000, 0.13000 },
+	PETCBUTTON = { 0.26127, 0.85500, 0.09000, 0.13000 },
+	AURABUTTON = { 0.34888, 0.85500, 0.09000, 0.13000 },
+	RELICBUTTON = { 0.43648, 0.85500, 0.09000, 0.13000 },
+	CONSUMABLESBUTTON = { 0.52409, 0.85500, 0.09000, 0.13000 },
+	SHOPBUTTON = { 0.61170, 0.85500, 0.09000, 0.13000 },
+	PROFILEBUTTON = { 0.69844, 0.85500, 0.09000, 0.13000 },
+	SETTINGSBUTTON = { 0.82533, 0.85500, 0.09000, 0.13000 },
 }
 
 local FIGMA_TABS = {
@@ -190,7 +191,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	root.BorderSizePixel = 0
 	root.AnchorPoint = Vector2.new(0.5, 0.5)
 	root.Position = UDim2.fromScale(0.5, 0.5)
-	root.Size = UDim2.fromScale(1, 1)
+	-- Fill host (almost full screen); aspect keeps proportions without clipping tabs
+	root.Size = UDim2.fromScale(0.995, 0.995)
 	root.ClipsDescendants = false
 	root.ZIndex = 30
 	root.Parent = parent
@@ -198,7 +200,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local aspect = Instance.new("UIAspectRatioConstraint")
 	aspect.AspectRatio = ASPECT
 	aspect.AspectType = Enum.AspectType.FitWithinMaxSize
-	aspect.DominantAxis = Enum.DominantAxis.Width
+	aspect.DominantAxis = Enum.DominantAxis.Height -- prefer keeping full height so bottom tabs stay on screen
 	aspect.Parent = root
 
 	---------------------------------------------------------------- shell
@@ -660,26 +662,27 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		makeSlot(i, nil)
 	end
 
-	---------------------------------------------------------------- bottom tab rail (absolute Figma coords)
+	---------------------------------------------------------------- bottom tab rail (high Z, never clipped)
 	for _, def in ipairs(FIGMA_TABS) do
-		local b = placeButton(root, def.id .. "Tab", def.key, def.box, 55, function()
+		local b = placeButton(root, def.id .. "Tab", def.key, def.box, 90, function()
 			if def.id == "weapons" then
 				return
 			end
 			if def.id == "settings" then
-				-- no settings panel yet — keep on weapons
 				return
 			end
 			args.onTab(def.id)
 		end)
+		b.Active = true
+		b.Visible = true
 		if def.id == "weapons" then
 			local sc = b:FindFirstChildOfClass("UIScale")
 			if sc then
-				sc.Scale = 1.08
+				sc.Scale = 1.1
 			end
 			b.ImageTransparency = 0
 		else
-			b.ImageTransparency = 0.12
+			b.ImageTransparency = 0.08
 		end
 	end
 end
