@@ -78,32 +78,9 @@ local B = {
 	SELLallUNLOCKED = { 0.113, 0.5611, 0.1698, 0.1009 },
 }
 
--- Slice centers from brief (source image px)
-local SLICE: { [string]: Rect } = {
-	BG_WeaponGrid = Rect.new(1177, 1177, 6422, 4175),
-	BTN_Close_3 = Rect.new(101, 101, 360, 370),
-	EQUIPMENTbackground = Rect.new(442, 442, 1569, 2611),
-	AURAcard = Rect.new(122, 122, 431, 431),
-	MAINswordCARD = Rect.new(179, 179, 633, 633),
-	SECONDswordCARD = Rect.new(179, 179, 633, 633),
-	PETcard1 = Rect.new(89, 89, 317, 317),
-	PETcard2 = Rect.new(89, 89, 317, 317),
-	PETcard3 = Rect.new(89, 89, 317, 317),
-	PETcard4 = Rect.new(89, 89, 317, 317),
-	WEAPONSBUTTON = Rect.new(209, 209, 741, 741),
-	PETCBUTTON = Rect.new(209, 209, 741, 741),
-	AURABUTTON = Rect.new(209, 209, 741, 741),
-	RELICBUTTON = Rect.new(209, 209, 741, 741),
-	CONSUMABLESBUTTON = Rect.new(209, 209, 741, 741),
-	SHOPBUTTON = Rect.new(209, 209, 741, 741),
-	PRESETcard1 = Rect.new(110, 110, 389, 389),
-	PRESETcard2 = Rect.new(110, 110, 392, 392),
-	PRESETcard3 = Rect.new(112, 112, 395, 395),
-	PRESETcard4 = Rect.new(114, 114, 403, 403),
-	RELICcard1 = Rect.new(122, 122, 431, 431),
-	RELICcard2 = Rect.new(122, 122, 431, 431),
-	RELICcard3 = Rect.new(122, 122, 431, 431),
-}
+-- NOTE: Do NOT use brief SliceCenter on our MechyForge IMAGE uploads —
+-- source PNG sizes differ → Roblox Slice turns frames into circles / mush.
+-- Fit = square cards/buttons keep aspect; Stretch = full-bleed plates only.
 
 local TITLE_CARD: { [string]: string } = {
 	weapons = "INVENTORYWEAPONcard",
@@ -127,6 +104,17 @@ local function art(key: string): string
 	return InventoryAssetConfig.Get(key)
 end
 
+-- Remap canvas box → relative to MAINBACKGROUD shell (keeps layout glued to art)
+local MB = B.MAINBACKGROUD
+local function rel(box: { number }): { number }
+	return {
+		(box[1] - MB[1]) / MB[3],
+		(box[2] - MB[2]) / MB[4],
+		box[3] / MB[3],
+		box[4] / MB[4],
+	}
+end
+
 local function place(
 	parent: Instance,
 	name: string,
@@ -134,7 +122,7 @@ local function place(
 	box: { number },
 	z: number,
 	isBtn: boolean?,
-	useSlice: boolean?
+	scaleType: Enum.ScaleType?
 ): GuiObject
 	local i: GuiObject
 	if isBtn then
@@ -147,18 +135,10 @@ local function place(
 	i.Name = name
 	i.BackgroundTransparency = 1
 	i.BorderSizePixel = 0
-	-- Studio Luau: avoid `;(x :: any).Prop` / ambiguous `(x :: any).Prop =` forms
 	local gi = i :: any
 	gi.Image = art(assetKey)
-	if useSlice and SLICE[assetKey] then
-		gi.ScaleType = Enum.ScaleType.Slice
-		gi.SliceCenter = SLICE[assetKey]
-	elseif useSlice and SLICE[name] then
-		gi.ScaleType = Enum.ScaleType.Slice
-		gi.SliceCenter = SLICE[name]
-	else
-		gi.ScaleType = Enum.ScaleType.Stretch
-	end
+	-- Fit = no circular slice distortion on square chrome
+	gi.ScaleType = scaleType or Enum.ScaleType.Fit
 	i.Position = UDim2.fromScale(box[1], box[2])
 	i.Size = UDim2.fromScale(box[3], box[4])
 	i.ZIndex = z
@@ -272,47 +252,47 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	host.ZIndex = 200
 	host.Parent = mountTo
 
-	---------------------------------------------------------------- MAINBACKGROUD (center of inventory)
-	local mainBg = place(host, "MAINBACKGROUD", "MAINBACKGROUD", B.MAINBACKGROUD, 1, false, false)
-	-- Slight vertical nudge down (center X unchanged — canvas already places it)
-	mainBg.Position = UDim2.fromScale(B.MAINBACKGROUD[1], B.MAINBACKGROUD[2] + 0.012)
+	---------------------------------------------------------------- MAINBACKGROUD shell — all inv chrome parented here
+	local mainBg = place(host, "MAINBACKGROUD", "MAINBACKGROUD", B.MAINBACKGROUD, 1, false, Enum.ScaleType.Stretch)
+	-- slight down only (X from brief)
+	mainBg.Position = UDim2.fromScale(MB[1], MB[2] + 0.012)
 
-	---------------------------------------------------------------- chrome
-	place(host, "EQUIPMENTbackground", "EQUIPMENTbackground", B.EQUIPMENTbackground, 4, false, true)
-	place(host, "Divider", "Divider_3_Minimal_1", B.Divider_3_Minimal_1, 5, false, false)
-	place(host, "btn_neutral_2_1", "btn_neutral_2_1", B.btn_neutral_2_1, 32, false, false)
-	place(host, "mousebind1", "mousebind1", B.mousebind1, 32, false, false)
-	place(host, "mousebind2", "mousebind2", B.mousebind2, 33, false, false)
-	place(host, "mousebind3", "mousebind3", B.mousebind3, 34, false, false)
-	place(host, "unequip", "unequip", B.unequip, 35, false, false)
-	place(host, "PRESETSbutton", "WORDMARK_presets__click_to_equip_1", B.PRESETSbutton, 28, false, false)
+	local function pShell(
+		name: string,
+		assetKey: string,
+		box: { number },
+		z: number,
+		isBtn: boolean?,
+		scaleType: Enum.ScaleType?
+	): GuiObject
+		return place(mainBg, name, assetKey, rel(box), z, isBtn, scaleType)
+	end
+
+	---------------------------------------------------------------- chrome (relative to MAINBACKGROUD)
+	pShell("EQUIPMENTbackground", "EQUIPMENTbackground", B.EQUIPMENTbackground, 4, false, Enum.ScaleType.Stretch)
+	pShell("Divider", "Divider_3_Minimal_1", B.Divider_3_Minimal_1, 5, false, Enum.ScaleType.Stretch)
+	pShell("btn_neutral_2_1", "btn_neutral_2_1", B.btn_neutral_2_1, 32, false, Enum.ScaleType.Stretch)
+	pShell("mousebind1", "mousebind1", B.mousebind1, 32, false, Enum.ScaleType.Fit)
+	pShell("mousebind2", "mousebind2", B.mousebind2, 33, false, Enum.ScaleType.Fit)
+	pShell("mousebind3", "mousebind3", B.mousebind3, 34, false, Enum.ScaleType.Fit)
+	pShell("unequip", "unequip", B.unequip, 35, false, Enum.ScaleType.Fit)
+	pShell("PRESETSbutton", "WORDMARK_presets__click_to_equip_1", B.PRESETSbutton, 28, false, Enum.ScaleType.Fit)
 	for i = 1, 4 do
-		place(host, "PRESETcard" .. i, "PRESETcard" .. i, B["PRESETcard" .. i], 24 + i, true, true)
+		pShell("PRESETcard" .. i, "PRESETcard" .. i, B["PRESETcard" .. i], 24 + i, true, Enum.ScaleType.Fit)
 	end
 
 	local titleArt = TITLE_CARD[invTab] or "INVENTORYWEAPONcard"
-	place(host, "TitleCard", titleArt, B.TitleCard, 99, false, false)
+	pShell("TitleCard", titleArt, B.TitleCard, 99, false, Enum.ScaleType.Fit)
 
-	local closeBtn = place(host, "BTN_Close_3", "BTN_Close_3", B.BTN_Close_3, 80, true, true) :: ImageButton
+	local closeBtn = pShell("BTN_Close_3", "BTN_Close_3", B.BTN_Close_3, 80, true, Enum.ScaleType.Fit) :: ImageButton
 	closeBtn.MouseButton1Click:Connect(args.onClose)
 
-	-- Title | Nick
-	local nickPlate = place(host, "WORDMARK_TITLE_NICK", "WORDMARK_TITLE_NICK_1_1", B.WORDMARK_TITLE_NICK, 98, false, false)
-	local nickLab = Instance.new("TextLabel")
-	nickLab.BackgroundTransparency = 1
-	nickLab.Size = UDim2.fromScale(0.92, 0.7)
-	nickLab.Position = UDim2.fromScale(0.5, 0.5)
-	nickLab.AnchorPoint = Vector2.new(0.5, 0.5)
-	local titleTxt = (profile and (profile.equippedTitle or profile.title)) or "TITLE"
-	local nickTxt = (Players.LocalPlayer and Players.LocalPlayer.Name) or "PLAYER"
-	nickLab.Text = string.upper(tostring(titleTxt) .. " | " .. tostring(nickTxt))
-	nickLab.ZIndex = 99
-	nickLab.Parent = nickPlate
-	UIKit.StyleText(nickLab, "gold", 2)
+	-- Nick plate art only — NO yellow TITLE | NICK TextLabel overlay
+	pShell("WORDMARK_TITLE_NICK", "WORDMARK_TITLE_NICK_1_1", B.WORDMARK_TITLE_NICK, 98, false, Enum.ScaleType.Fit)
 
 	---------------------------------------------------------------- equipment slots
 	local function fillPlate(name: string, assetKey: string, box: { number }, z: number): GuiObject
-		return place(host, name, assetKey, box, z, false, true)
+		return pShell(name, assetKey, box, z, false, Enum.ScaleType.Fit)
 	end
 
 	local function iconHost(parent: GuiObject, scale: number?): Frame
@@ -617,10 +597,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	---------------------------------------------------------------- Equip best / Sell mode buttons
-	local bestDmg = place(host, "EQUIPbestFORdamageBUTTON", "EQUIPbestFORdamageBUTTON", B.EQUIPbestFORdamageBUTTON, 8, true, false) :: ImageButton
-	local bestPow = place(host, "EQUIPbestFORpowerBUTTON", "EQUIPbestFORpowerBUTTON", B.EQUIPbestFORpowerBUTTON, 9, true, false) :: ImageButton
-	local sellBtn = place(host, "SELLbutton", "SELLbutton", B.SELLbutton, 8, true, false) :: ImageButton
-	local sellAllBtn = place(host, "SELLallUNLOCKEDbutton", "SELLallUNLOCKEDbutton", B.SELLallUNLOCKED, 9, true, false) :: ImageButton
+	local bestDmg = pShell("EQUIPbestFORdamageBUTTON", "EQUIPbestFORdamageBUTTON", B.EQUIPbestFORdamageBUTTON, 8, true, Enum.ScaleType.Fit) :: ImageButton
+	local bestPow = pShell("EQUIPbestFORpowerBUTTON", "EQUIPbestFORpowerBUTTON", B.EQUIPbestFORpowerBUTTON, 9, true, Enum.ScaleType.Fit) :: ImageButton
+	local sellBtn = pShell("SELLbutton", "SELLbutton", B.SELLbutton, 8, true, Enum.ScaleType.Fit) :: ImageButton
+	local sellAllBtn = pShell("SELLallUNLOCKEDbutton", "SELLallUNLOCKEDbutton", B.SELLallUNLOCKED, 9, true, Enum.ScaleType.Fit) :: ImageButton
 	sellBtn.Visible = false
 	sellAllBtn.Visible = false
 
@@ -689,9 +669,9 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		args.onRefresh()
 	end)
 
-	---------------------------------------------------------------- side tabs (6 — no profile/settings)
+	---------------------------------------------------------------- side tabs (6 — no profile/settings) — host-level (outside shell)
 	for _, def in ipairs(SIDE_TABS) do
-		local btn = place(host, def.id .. "Tab", def.key, def.box, 16, true, true) :: ImageButton
+		local btn = place(host, def.id .. "Tab", def.key, def.box, 16, true, Enum.ScaleType.Fit) :: ImageButton
 		btn.ImageTransparency = if def.id == invTab then 0 else 0.22
 		btn.MouseButton1Click:Connect(function()
 			if def.id == invTab then
@@ -704,21 +684,21 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end)
 	end
 
-	---------------------------------------------------------------- WeaponGrid — cards NEVER leave bounds
+	---------------------------------------------------------------- WeaponGrid — cards NEVER leave bounds (inside MAINBACKGROUD)
+	local gRel = rel(B.BG_WeaponGrid)
 	local gridHost = Instance.new("Frame")
 	gridHost.Name = "BG_WeaponGrid"
 	gridHost.BackgroundTransparency = 1
-	gridHost.Position = UDim2.fromScale(B.BG_WeaponGrid[1], B.BG_WeaponGrid[2])
-	gridHost.Size = UDim2.fromScale(B.BG_WeaponGrid[3], B.BG_WeaponGrid[4])
+	gridHost.Position = UDim2.fromScale(gRel[1], gRel[2])
+	gridHost.Size = UDim2.fromScale(gRel[3], gRel[4])
 	gridHost.ClipsDescendants = true -- hard rule
 	gridHost.ZIndex = 2
-	gridHost.Parent = host
+	gridHost.Parent = mainBg
 
 	local gridBg = Instance.new("ImageLabel")
 	gridBg.BackgroundTransparency = 1
 	gridBg.Image = art("BG_WeaponGrid")
-	gridBg.ScaleType = Enum.ScaleType.Slice
-	gridBg.SliceCenter = SLICE.BG_WeaponGrid
+	gridBg.ScaleType = Enum.ScaleType.Stretch -- no Slice (wrong source sizes → circles)
 	gridBg.Size = UDim2.fromScale(1, 1)
 	gridBg.ZIndex = 2
 	gridBg.Parent = gridHost
