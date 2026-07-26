@@ -405,9 +405,24 @@ local MobConfig = {
 }
 
 function MobConfig.ResolveId(id: string): string
+	if type(id) ~= "string" or id == "" then
+		return id
+	end
+	if MobConfig.Mobs[id] then
+		return id
+	end
 	local mapped = MobConfig.LegacyIdMap[id]
-	if type(mapped) == "string" and mapped ~= "" then
+	if type(mapped) == "string" and mapped ~= "" and MobConfig.Mobs[mapped] then
 		return mapped
+	end
+	-- Strip trailing numbers e.g. L1_DarkGoblin_01 -> L1_DarkGoblin
+	local stripped = string.gsub(id, "_%d+$", "")
+	if MobConfig.Mobs[stripped] then
+		return stripped
+	end
+	local mappedStripped = MobConfig.LegacyIdMap[stripped]
+	if type(mappedStripped) == "string" and mappedStripped ~= "" and MobConfig.Mobs[mappedStripped] then
+		return mappedStripped
 	end
 	return id
 end

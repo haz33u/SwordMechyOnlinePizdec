@@ -47,19 +47,41 @@ local function getLocFolder(locationId: number): Instance?
 	return Workspace:FindFirstChild(name)
 end
 
-function MobSpawnMarkerService.GetMobSpawnsFolder(locationId: number): Folder?
+function MobSpawnMarkerService.GetMobSpawnsFolder(locationId: number): Instance?
 	local loc = getLocFolder(locationId)
-	if not loc then
-		return nil
+	if loc then
+		local f = loc:FindFirstChild("MobSpawns") or loc:FindFirstChild("Mobspawns")
+		if f then
+			return f
+		end
 	end
-	local f = loc:FindFirstChild("MobSpawns")
-	if f and f:IsA("Folder") then
-		return f
+
+	-- Search Workspace directly for Mobspawns1 / MobSpawns / Mobspawns
+	local directNames = {
+		string.format("Mobspawns%d", locationId),
+		string.format("MobSpawns%d", locationId),
+		"Mobspawns",
+		"MobSpawns",
+	}
+	for _, n in directNames do
+		local found = Workspace:FindFirstChild(n)
+		if found then
+			return found
+		end
 	end
+
+	-- Generic wildcard search for mob spawn folder
+	for _, desc in Workspace:GetChildren() do
+		local lowerName = string.lower(desc.Name)
+		if string.find(lowerName, "mobspawn") or string.find(lowerName, "mob_spawn") then
+			return desc
+		end
+	end
+
 	return nil
 end
 
---- Collect all marker parts under LocXX.MobSpawns
+--- Collect all marker parts under MobSpawns folder
 function MobSpawnMarkerService.Collect(locationId: number): { SpawnPoint }
 	local points: { SpawnPoint } = {}
 	local folder = MobSpawnMarkerService.GetMobSpawnsFolder(locationId)
@@ -69,24 +91,25 @@ function MobSpawnMarkerService.Collect(locationId: number): { SpawnPoint }
 
 	for _, child in folder:GetDescendants() do
 		if child:IsA("BasePart") then
-			local mobId = child:GetAttribute("MobId")
-			if typeof(mobId) == "string" and mobId ~= "" then
-				local def = MobConfig.Get(mobId)
-				if def then
-					local zone = child:GetAttribute("Zone")
-					if typeof(zone) ~= "string" or zone == "" then
-						zone = def.defaultZone
-					end
-					table.insert(points, {
-						mobId = mobId,
-						position = child.Position,
-						zone = zone :: string,
-						markerName = child.Name,
-						marker = child,
-					})
-				else
-					warn("[MobSpawns] Unknown MobId on marker:", child:GetFullName(), mobId)
+			local rawMobId = child:GetAttribute("MobId")
+			if typeof(rawMobId) ~= "string" or rawMobId == "" then
+				rawMobId = child.Name
+			end
+
+			local resolvedId = MobConfig.ResolveId(rawMobId)
+			local def = MobConfig.Get(resolvedId)
+			if def and (def.location == locationId or locationId == 1) then
+				local zone = child:GetAttribute("Zone")
+				if typeof(zone) ~= "string" or zone == "" then
+					zone = def.defaultZone
 				end
+				table.insert(points, {
+					mobId = resolvedId,
+					position = child.Position,
+					zone = zone :: string,
+					markerName = child.Name,
+					marker = child,
+				})
 			end
 		end
 	end
