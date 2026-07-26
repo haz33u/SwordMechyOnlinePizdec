@@ -336,19 +336,20 @@ function App.Start()
 
 	pcall(function()
 		Net.Event("OpenGroupModal").OnClientEvent:Connect(function(payload)
-			local gid = (payload and payload.groupId) or 928205129
-			pcall(function()
-				local gs = game:GetService("GroupService") :: any
-				if gs and type(gs.PromptGroupJoin) == "function" then
-					gs:PromptGroupJoin(gid)
-				elseif gs and type(gs.PromptJoinGroup) == "function" then
-					gs:PromptJoinGroup(gid)
-				end
-			end)
-			pcall(function()
-				local ss = game:GetService("SocialService") :: any
-				if ss and type(ss.PromptGroupJoin) == "function" then
-					ss:PromptGroupJoin(game:GetService("Players").LocalPlayer, gid)
+			local gid = tonumber((payload and payload.groupId) or 928205129) or 928205129
+			local GroupService = game:GetService("GroupService") :: any
+			
+			task.spawn(function()
+				local ok, result = pcall(function()
+					return GroupService:PromptJoinAsync(gid)
+				end)
+				if ok then
+					print("[GroupPrompt] PromptJoinAsync status:", tostring(result))
+					if result == Enum.GroupMembershipStatus.Joined then
+						Net.Event("ClaimGroupChest"):FireServer()
+					end
+				else
+					warn("[GroupPrompt] Failed to prompt join:", tostring(result))
 				end
 			end)
 		end)
