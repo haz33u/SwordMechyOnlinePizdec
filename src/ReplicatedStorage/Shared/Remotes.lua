@@ -81,6 +81,7 @@ function Remotes.InitAll()
 	-- paid unlocks (stub until gamepass): "offhand" | "paidPetSlot"
 	Remotes.Event("UnlockPaidFeature")
 	Remotes.Event("SelectTitle")
+	Remotes.Event("ClaimGroupChest")
 
 	-- server -> client
 	Remotes.Event("ProfileUpdate")

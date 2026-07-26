@@ -43,6 +43,9 @@ local GameConfig = {
 	-- soft currency name
 	COIN_NAME = "Coins",
 
+	-- group reward chest (set your Roblox Group ID here, or 0 for instant claim test)
+	ROBLOX_GROUP_ID = 0,
+
 	-- save
 	DATASTORE_NAME = "SwordMasters_Skeleton_v1",
 	AUTOSAVE_SECONDS = 60,
