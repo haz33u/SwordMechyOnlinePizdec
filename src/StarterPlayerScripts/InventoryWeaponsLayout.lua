@@ -15,6 +15,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UIKit = require(script.Parent.UIKit)
 local Net = require(script.Parent.Net)
 local Rarity = require(script.Parent.Rarity)
+local Titles = require(script.Parent.Titles)
 local WeaponModels = require(script.Parent.WeaponModels)
 local PetVisual = require(script.Parent.PetVisual)
 local AuraVisual = require(script.Parent.AuraVisual)
@@ -26,6 +27,7 @@ local AuraConfig = require(Shared.Config.AuraConfig)
 local RelicConfig = require(Shared.Config.RelicConfig)
 local InventoryAssetConfig = require(Shared.Config.InventoryAssetConfig)
 local IconConfig = require(Shared.Config.IconConfig)
+local PotionIconConfig = require(Shared.Config.PotionIconConfig)
 
 local InventoryWeaponsLayout = {}
 
@@ -42,52 +44,103 @@ local B = {
 	BG_WeaponGrid = { 0.3214, 0.1667, 0.5323, 0.7769 },
 	BTN_Close_3 = { 0.7984, 0.0593, 0.0547, 0.1 },
 	EQUIPMENTbackground = { 0.0729, 0.1574, 0.2589, 0.4102 },
-	Divider_3_Minimal_1 = { 0.3344, 0.1093, 0.45, 0.0796 },
-	AURAcard = { 0.163, 0.1741, 0.076, 0.1352 },
+	-- Divider: lower + wider, same horizontal center as brief (0.3344+0.45/2)
+	Divider_3_Minimal_1 = { 0.2994, 0.125, 0.52, 0.072 },
 	EQUIPbestFORdamageBUTTON = { 0.112, 0.6574, 0.1724, 0.1019 },
 	EQUIPbestFORpowerBUTTON = { 0.113, 0.5611, 0.1698, 0.1009 },
-	MAINswordCARD = { 0.0901, 0.1704, 0.0776, 0.138 },
-	SECONDswordCARD = { 0.2359, 0.1741, 0.0771, 0.137 },
-	PETcard1 = { 0.0922, 0.3111, 0.0557, 0.0991 },
-	PETcard2 = { 0.1453, 0.3102, 0.0563, 0.1 },
-	PETcard3 = { 0.2021, 0.3093, 0.0563, 0.1 },
-	PETcard4 = { 0.2562, 0.3093, 0.0563, 0.1 },
-	WEAPONSBUTTON = { 0.8677, 0.0111, 0.0885, 0.1574 },
-	PETCBUTTON = { 0.8677, 0.1759, 0.0885, 0.1574 },
-	AURABUTTON = { 0.8677, 0.3389, 0.0885, 0.1574 },
-	RELICBUTTON = { 0.8667, 0.5037, 0.0885, 0.1574 },
-	CONSUMABLESBUTTON = { 0.8667, 0.6685, 0.0885, 0.1574 },
-	SHOPBUTTON = { 0.8677, 0.8287, 0.0885, 0.1574 },
-	PRESETcard1 = { 0.0786, 0.8278, 0.0625, 0.1111 },
-	PRESETcard2 = { 0.1385, 0.8287, 0.0625, 0.1111 },
-	PRESETcard3 = { 0.1974, 0.8269, 0.0625, 0.1111 },
-	PRESETcard4 = { 0.2562, 0.8278, 0.0625, 0.1111 },
-	RELICcard1 = { 0.0891, 0.413, 0.0776, 0.138 },
+	-- Uniform equipment slots (even sizes + spacing)
+	MAINswordCARD = { 0.100, 0.178, 0.074, 0.110 },
+	SECONDswordCARD = { 0.192, 0.178, 0.074, 0.110 },
+	PETcard1 = { 0.100, 0.318, 0.054, 0.080 },
+	PETcard2 = { 0.164, 0.318, 0.054, 0.080 },
+	PETcard3 = { 0.228, 0.318, 0.054, 0.080 },
+	PETcard4 = { 0.292, 0.318, 0.054, 0.080 },
+	RELICcard1 = { 0.100, 0.428, 0.068, 0.100 },
+	RELICcard2 = { 0.178, 0.428, 0.068, 0.100 },
+	RELICcard3 = { 0.256, 0.428, 0.068, 0.100 },
+	AURAcard = { 0.178, 0.548, 0.068, 0.100 },
+	WEAPONSBUTTON = { 0.8477, 0.0111, 0.0885, 0.1574 },
+	PETCBUTTON = { 0.8477, 0.1759, 0.0885, 0.1574 },
+	AURABUTTON = { 0.8477, 0.3389, 0.0885, 0.1574 },
+	RELICBUTTON = { 0.8467, 0.5037, 0.0885, 0.1574 },
+	CONSUMABLESBUTTON = { 0.8467, 0.6685, 0.0885, 0.1574 },
+	SHOPBUTTON = { 0.8477, 0.8287, 0.0885, 0.1574 },
+	PRESETcard1 = { 0.100, 0.830, 0.058, 0.086 },
+	PRESETcard2 = { 0.168, 0.830, 0.058, 0.086 },
+	PRESETcard3 = { 0.236, 0.830, 0.058, 0.086 },
+	PRESETcard4 = { 0.304, 0.830, 0.058, 0.086 },
 	PRESETSbutton = { 0.1135, 0.7593, 0.1734, 0.0769 },
-	RELICcard2 = { 0.162, 0.413, 0.0776, 0.138 },
-	RELICcard3 = { 0.238, 0.413, 0.0776, 0.138 },
-	btn_neutral_2_1 = { 0.5734, 0.0602, 0.2208, 0.0815 },
-	mousebind1 = { 0.3354, 0.1037, 0.1182, 0.0556 },
-	mousebind2 = { 0.5026, 0.0574, 0.0682, 0.0463 },
-	mousebind3 = { 0.45, 0.0898, 0.1255, 0.0574 },
-	unequip = { 0.3828, 0.0593, 0.1083, 0.0546 },
-	WORDMARK_TITLE_NICK = { 0.6005, 0.0593, 0.162, 0.0806 },
+	btn_neutral_2_1 = { 0.5534, 0.0602, 0.2208, 0.0815 },
+	mousebind1 = { 0.3154, 0.118, 0.1182, 0.0556 },
+	mousebind2 = { 0.4826, 0.072, 0.0682, 0.0463 },
+	mousebind3 = { 0.430, 0.104, 0.1255, 0.0574 },
+	unequip = { 0.3628, 0.072, 0.1083, 0.0546 },
+	TitleNickHost = { 0.5805, 0.0593, 0.182, 0.0806 },
 	TitleCard = { 0.0245, 0.0019, 0.3005, 0.1815 },
 	-- Sell mode: same slots as equip-best buttons
 	SELLbutton = { 0.112, 0.6574, 0.1724, 0.1019 },
 	SELLallUNLOCKED = { 0.113, 0.5611, 0.1698, 0.1009 },
 }
 
--- WeaponGrid slightly larger than brief (still on MAINBACKGROUD after rel())
+-- Shift inv cluster slightly left (grid + shell chrome + tabs already shifted above)
+local SHIFT_LEFT = 0.018
+
+-- WeaponGrid: larger + stretch UP toward divider (kill visual gap under divider)
 do
 	local g = B.BG_WeaponGrid
-	local left, right, top, bottom = 0.014, 0.022, 0.016, 0.014
+	local left, right, top, bottom = 0.020, 0.028, 0.045, 0.016
 	B.BG_WeaponGrid = {
 		g[1] - left,
 		g[2] - top,
 		g[3] + left + right,
 		g[4] + top + bottom,
 	}
+end
+
+-- Whole inv shell nudge left (tabs already have lower X in B)
+B.MAINBACKGROUD = {
+	B.MAINBACKGROUD[1] - SHIFT_LEFT,
+	B.MAINBACKGROUD[2],
+	B.MAINBACKGROUD[3],
+	B.MAINBACKGROUD[4],
+}
+-- Keep divider/equip/etc in shell-relative space: also shift their canvas X with shell
+for _, key in ipairs({
+	"Divider_3_Minimal_1",
+	"EQUIPMENTbackground",
+	"EQUIPbestFORdamageBUTTON",
+	"EQUIPbestFORpowerBUTTON",
+	"MAINswordCARD",
+	"SECONDswordCARD",
+	"PETcard1",
+	"PETcard2",
+	"PETcard3",
+	"PETcard4",
+	"RELICcard1",
+	"RELICcard2",
+	"RELICcard3",
+	"AURAcard",
+	"PRESETcard1",
+	"PRESETcard2",
+	"PRESETcard3",
+	"PRESETcard4",
+	"PRESETSbutton",
+	"btn_neutral_2_1",
+	"mousebind1",
+	"mousebind2",
+	"mousebind3",
+	"unequip",
+	"TitleNickHost",
+	"TitleCard",
+	"BTN_Close_3",
+	"SELLbutton",
+	"SELLallUNLOCKED",
+	"BG_WeaponGrid",
+}) do
+	local b = B[key]
+	if b then
+		B[key] = { b[1] - SHIFT_LEFT, b[2], b[3], b[4] }
+	end
 end
 
 -- NOTE: Do NOT use brief SliceCenter on our MechyForge IMAGE uploads —
@@ -290,7 +343,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	pShell("unequip", "unequip", B.unequip, 35, false, Enum.ScaleType.Fit)
 	pShell("PRESETSbutton", "WORDMARK_presets__click_to_equip_1", B.PRESETSbutton, 28, false, Enum.ScaleType.Fit)
 	for i = 1, 4 do
-		pShell("PRESETcard" .. i, "PRESETcard" .. i, B["PRESETcard" .. i], 24 + i, true, Enum.ScaleType.Fit)
+		local pc = pShell("PRESETcard" .. i, "PRESETcard" .. i, B["PRESETcard" .. i], 24 + i, true, Enum.ScaleType.Fit)
+		local ar = Instance.new("UIAspectRatioConstraint")
+		ar.AspectRatio = 1
+		ar.AspectType = Enum.AspectType.FitWithinMaxSize
+		ar.DominantAxis = Enum.DominantAxis.Width
+		ar.Parent = pc
 	end
 
 	local titleArt = TITLE_CARD[invTab] or "INVENTORYWEAPONcard"
@@ -299,12 +357,64 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local closeBtn = pShell("BTN_Close_3", "BTN_Close_3", B.BTN_Close_3, 80, true, Enum.ScaleType.Fit) :: ImageButton
 	closeBtn.MouseButton1Click:Connect(args.onClose)
 
-	-- Nick plate art only — NO yellow TITLE | NICK TextLabel overlay
-	pShell("WORDMARK_TITLE_NICK", "WORDMARK_TITLE_NICK_1_1", B.WORDMARK_TITLE_NICK, 98, false, Enum.ScaleType.Fit)
+	-- Real title | nick (Titles.PaintLine colors) — no wordmark image
+	do
+		local nickHost = Instance.new("Frame")
+		nickHost.Name = "TitleNickHost"
+		nickHost.BackgroundTransparency = 1
+		nickHost.BorderSizePixel = 0
+		local nb = rel(B.TitleNickHost)
+		nickHost.Position = UDim2.fromScale(nb[1], nb[2])
+		nickHost.Size = UDim2.fromScale(nb[3], nb[4])
+		nickHost.ZIndex = 98
+		nickHost.ClipsDescendants = false
+		nickHost.Parent = mainBg
+		local row = Instance.new("Frame")
+		row.BackgroundTransparency = 1
+		row.Size = UDim2.fromScale(1, 1)
+		row.Parent = nickHost
+		local list = Instance.new("UIListLayout")
+		list.FillDirection = Enum.FillDirection.Horizontal
+		list.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		list.VerticalAlignment = Enum.VerticalAlignment.Center
+		list.Padding = UDim.new(0, 6)
+		list.SortOrder = Enum.SortOrder.LayoutOrder
+		list.Parent = row
+		local function mkLab(order: number): TextLabel
+			local l = Instance.new("TextLabel")
+			l.BackgroundTransparency = 1
+			l.AutomaticSize = Enum.AutomaticSize.X
+			l.Size = UDim2.fromScale(0, 0.85)
+			l.LayoutOrder = order
+			l.TextSize = Titles.PlateTextSize
+			l.ZIndex = 99
+			l.Parent = row
+			return l
+		end
+		local tLab = mkLab(1)
+		local sLab = mkLab(2)
+		local nLab = mkLab(3)
+		local nick = (Players.LocalPlayer and ((Players.LocalPlayer.DisplayName ~= "" and Players.LocalPlayer.DisplayName) or Players.LocalPlayer.Name))
+			or "Player"
+		Titles.PaintLine(tLab, sLab, nLab, profile, nick)
+	end
 
 	---------------------------------------------------------------- equipment slots
+	local function forceSquare(g: GuiObject)
+		local ar = g:FindFirstChildOfClass("UIAspectRatioConstraint")
+		if not ar then
+			ar = Instance.new("UIAspectRatioConstraint")
+			ar.Parent = g
+		end
+		ar.AspectRatio = 1
+		ar.AspectType = Enum.AspectType.FitWithinMaxSize
+		ar.DominantAxis = Enum.DominantAxis.Width
+	end
+
 	local function fillPlate(name: string, assetKey: string, box: { number }, z: number): GuiObject
-		return pShell(name, assetKey, box, z, false, Enum.ScaleType.Fit)
+		local p = pShell(name, assetKey, box, z, false, Enum.ScaleType.Fit)
+		forceSquare(p)
+		return p
 	end
 
 	local function iconHost(parent: GuiObject, scale: number?): Frame
@@ -319,17 +429,20 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		return vp
 	end
 
-	---------------------------------------------------------------- tooltip system (gear + consumable)
+	---------------------------------------------------------------- tooltip system (gear + consumable) — non-interactive, gen-guarded
+	local tipGen = 0
 	local tip = Instance.new("Frame")
 	tip.Name = "Tooltip"
 	tip.BackgroundTransparency = 1
 	tip.Visible = false
+	tip.Active = false
 	tip.Size = UDim2.fromOffset(280, 170)
 	tip.ZIndex = 500
 	tip.Parent = host
 
 	local tipBg = Instance.new("ImageLabel")
 	tipBg.BackgroundTransparency = 1
+	tipBg.Active = false
 	tipBg.Image = art("TOOLTIPshell")
 	tipBg.ScaleType = Enum.ScaleType.Stretch
 	tipBg.Size = UDim2.fromScale(1, 1)
@@ -338,6 +451,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 
 	local tipBody = Instance.new("Frame")
 	tipBody.BackgroundTransparency = 1
+	tipBody.Active = false
 	tipBody.Size = UDim2.fromScale(1, 1)
 	tipBody.ZIndex = 10
 	tipBody.Parent = tip
@@ -382,10 +496,13 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	local function hideTip()
+		tipGen += 1
 		tip.Visible = false
 	end
 
 	local function showLines(lines: { any }, size: Vector2?)
+		tipGen += 1
+		local my = tipGen
 		clearTip()
 		if size then
 			tip.Size = UDim2.fromOffset(size.X, size.Y)
@@ -393,8 +510,15 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		for i, row in ipairs(lines) do
 			tipLine(tipBody, i, tostring(row[1]), if type(row[2]) == "string" then row[2] :: string else "purple", if type(row[3]) == "number" then row[3] :: number else 18)
 		end
+		if my ~= tipGen then
+			return
+		end
 		tip.Visible = true
-		task.defer(placeTip)
+		task.defer(function()
+			if my == tipGen then
+				placeTip()
+			end
+		end)
 		placeTip()
 	end
 
@@ -449,7 +573,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end
 	end)
 
-	local function bindHover(gui: GuiObject, builder: () -> (), onClick: (() -> ())?)
+	-- Equipment hover only when filled (no empty-slot tips — they lag/suck)
+	local function bindEquipHover(gui: GuiObject, filled: boolean, builder: () -> ())
+		if not filled then
+			gui.Active = false
+			return
+		end
 		gui.Active = true
 		local sc = Instance.new("UIScale")
 		sc.Parent = gui
@@ -461,16 +590,6 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
 			hideTip()
 		end)
-		if onClick and gui:IsA("GuiButton") then
-			gui.MouseButton1Click:Connect(onClick)
-		elseif onClick then
-			-- ImageLabel: use InputBegan
-			gui.InputBegan:Connect(function(input)
-				if input.UserInputType == Enum.UserInputType.MouseButton1 then
-					onClick()
-				end
-			end)
-		end
 	end
 
 	-- Main / offhand swords
@@ -489,11 +608,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				end
 			end
 		end
-		bindHover(plate, function()
-			if not matched then
-				showGearTip("Empty Slot", nil, "Equipped Main", nil, nil, nil, false)
-				return
-			end
+		bindEquipHover(plate, matched ~= nil, function()
 			local def = WeaponConfig.Get(matched.id)
 			showGearTip(
 				(def and def.name) or WeaponConfig.GetDisplayName(matched.id),
@@ -521,11 +636,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				end
 			end
 		end
-		bindHover(plate, function()
-			if not matched then
-				showGearTip("Empty Slot", nil, "Equipped Offhand", nil, nil, nil, false)
-				return
-			end
+		bindEquipHover(plate, matched ~= nil, function()
 			local def = WeaponConfig.Get(matched.id)
 			showGearTip(
 				(def and def.name) or WeaponConfig.GetDisplayName(matched.id),
@@ -539,7 +650,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end)
 	end
 
-	-- Pets 1–4 only
+	-- Pets 1–4 only (uniform size via forceSquare)
 	local team = profile.petTeam or {}
 	local petByUid: { [string]: any } = {}
 	for _, p in ipairs(profile.pets or {}) do
@@ -555,11 +666,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				PetVisual.TryFillInventoryIcon(vp, pet.id, 36)
 			end)
 		end
-		bindHover(plate, function()
-			if not pet then
-				showGearTip("Empty Slot", nil, "Pet Slot " .. i, nil, nil, nil, false)
-				return
-			end
+		bindEquipHover(plate, pet ~= nil, function()
 			local def = PetConfig.Get(pet.id)
 			showGearTip(
 				(def and def.name) or tostring(pet.id),
@@ -573,12 +680,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end)
 	end
 
-	-- Relics + Aura
+	-- Relics + Aura (same size, even row)
 	for i = 1, 3 do
 		local plate = fillPlate("RELICcard" .. i, "RELICcard" .. i, B["RELICcard" .. i], 26 + i)
-		bindHover(plate, function()
-			showGearTip("Empty Slot", nil, "Relic Slot " .. i, nil, nil, nil, false)
-		end)
+		bindEquipHover(plate, false, function() end)
 	end
 	do
 		local plate = fillPlate("AURAcard", "RELICcard1", B.AURAcard, 7)
@@ -589,11 +694,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				AuraVisual.TryFillInventoryIcon(vp, auraId, 40)
 			end)
 		end
-		bindHover(plate, function()
-			if not auraId then
-				showGearTip("Empty Slot", nil, "Equipped Aura", nil, nil, nil, false)
-				return
-			end
+		bindEquipHover(plate, auraId ~= nil, function()
 			local resolved = AuraConfig.ResolveId(tostring(auraId))
 			local def = AuraConfig.Get(resolved)
 			showGearTip(
@@ -732,6 +833,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local grid = Instance.new("UIGridLayout")
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
 	grid.FillDirectionMaxCells = GRID_COLS
+	-- Center each row so incomplete rows (e.g. 2 swords) sit in middle of WeaponGrid
 	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	grid.VerticalAlignment = Enum.VerticalAlignment.Top
 	grid.CellPadding = UDim2.fromOffset(2, 2)
@@ -742,7 +844,6 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		if w < 40 then
 			return
 		end
-		-- Tight gaps (hover 1.06 still needs ~2px)
 		local pad = math.max(2, math.floor(w * 0.0022))
 		grid.CellPadding = UDim2.fromOffset(pad, pad)
 		local cell = math.floor((w - pad * (GRID_COLS - 1)) / GRID_COLS)
@@ -752,18 +853,6 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(relayout)
 	task.defer(relayout)
 	task.delay(0.05, relayout)
-
-	local function emptySlot(order: number)
-		local btn = Instance.new("ImageButton")
-		btn.Name = "Empty_" .. order
-		btn.BackgroundTransparency = 1
-		btn.AutoButtonColor = false
-		btn.LayoutOrder = order
-		btn.ZIndex = 4
-		btn.Image = InventoryAssetConfig.GetSlotFrame("Empty")
-		btn.ScaleType = Enum.ScaleType.Stretch
-		btn.Parent = scroll
-	end
 
 	local function makeIconHost(btn: GuiObject): Frame
 		local iconHost = Instance.new("Frame")
@@ -777,12 +866,46 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		return iconHost
 	end
 
-	local itemCount = 0
+	-- Strong rarity glow: Legendary < Mythic < Secret < Limited
+	local function applyRarityGlow(btn: GuiObject, rar: string)
+		local thick = 0
+		local trans = 1
+		if rar == "Legendary" then
+			thick, trans = 5, 0.42
+		elseif rar == "Mythic" then
+			thick, trans = 7, 0.32
+		elseif rar == "Secret" then
+			thick, trans = 10, 0.18
+		elseif rar == "Limited" then
+			thick, trans = 13, 0.10
+		else
+			return
+		end
+		local col = Rarity.Of(rar)
+		local glow = Instance.new("UIStroke")
+		glow.Name = "RarityGlow"
+		glow.Color = col
+		glow.Thickness = thick
+		glow.Transparency = trans
+		glow.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		glow.LineJoinMode = Enum.LineJoinMode.Round
+		glow.Parent = btn
+		-- second softer outer ring for Secret/Limited
+		if rar == "Secret" or rar == "Limited" then
+			local outer = Instance.new("UIStroke")
+			outer.Name = "RarityGlowOuter"
+			outer.Color = col
+			outer.Thickness = thick + 6
+			outer.Transparency = math.clamp(trans + 0.25, 0, 0.85)
+			outer.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+			outer.LineJoinMode = Enum.LineJoinMode.Round
+			outer.Parent = btn
+		end
+	end
 
-	---------------------------------------------------------------- WEAPONS grid
+	---------------------------------------------------------------- WEAPONS grid (no empty filler slots)
 	if invTab == "weapons" then
 		local weapons = profile.weapons or {}
-		itemCount = #weapons
 		for i, w in ipairs(weapons) do
 			local btn = Instance.new("ImageButton")
 			btn.Name = "W_" .. w.uid
@@ -795,6 +918,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local rar = (def and def.rarity) or "Common"
 			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
 			btn.ScaleType = Enum.ScaleType.Stretch
+			applyRarityGlow(btn, rar)
 			local ih = makeIconHost(btn)
 			local used = false
 			pcall(function()
@@ -908,7 +1032,6 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	---------------------------------------------------------------- PETS
 	elseif invTab == "pets" then
 		local pets = profile.pets or {}
-		itemCount = #pets
 		local teamSet: { [string]: boolean } = {}
 		for _, uid in ipairs(profile.petTeam or {}) do
 			teamSet[tostring(uid)] = true
@@ -925,6 +1048,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local rar = (def and def.rarity) or "Common"
 			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
 			btn.ScaleType = Enum.ScaleType.Stretch
+			applyRarityGlow(btn, rar)
 			local ih = makeIconHost(btn)
 			pcall(function()
 				PetVisual.TryFillInventoryIcon(ih, p.id, 44)
@@ -970,7 +1094,6 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	---------------------------------------------------------------- AURAS
 	elseif invTab == "auras" then
 		local auras = profile.auras or {}
-		itemCount = #auras
 		for i, a in ipairs(auras) do
 			local btn = Instance.new("ImageButton")
 			btn.Name = "A_" .. tostring(a.uid or a.id or i)
@@ -985,6 +1108,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local rar = (def and def.rarity) or "Common"
 			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
 			btn.ScaleType = Enum.ScaleType.Stretch
+			applyRarityGlow(btn, rar)
 			local ih = makeIconHost(btn)
 			pcall(function()
 				AuraVisual.TryFillInventoryIcon(ih, resolved, 44)
@@ -1021,7 +1145,6 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	---------------------------------------------------------------- RELICS
 	elseif invTab == "relics" then
 		local relics = profile.relics or {}
-		itemCount = #relics
 		for i, r in ipairs(relics) do
 			local btn = Instance.new("ImageButton")
 			btn.Name = "R_" .. tostring(r.uid or i)
@@ -1034,6 +1157,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			local rar = (def and def.rarity) or r.rarity or "Common"
 			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
 			btn.ScaleType = Enum.ScaleType.Stretch
+			applyRarityGlow(btn, rar)
 			local ih = makeIconHost(btn)
 			local gl = Instance.new("TextLabel")
 			gl.BackgroundTransparency = 1
@@ -1060,23 +1184,22 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			end)
 		end
 
-	---------------------------------------------------------------- CONSUMABLES
+	---------------------------------------------------------------- CONSUMABLES (PotionIconConfig idle/hover)
 	elseif invTab == "items" then
 		local POTIONS = {
-			{ id = "SmallCoin", name = "Small Coin Potion", effect = "+25% Coins", duration = "10 min" },
-			{ id = "MidCoin", name = "Mid Coin Potion", effect = "+50% Coins", duration = "20 min" },
-			{ id = "BigCoin", name = "Big Coin Potion", effect = "+100% Coins", duration = "30 min" },
-			{ id = "SmallPower", name = "Small Power Potion", effect = "+25% Power", duration = "10 min" },
-			{ id = "MidPower", name = "Mid Power Potion", effect = "+50% Power", duration = "20 min" },
-			{ id = "BigPower", name = "Big Power Potion", effect = "+100% Power", duration = "30 min" },
-			{ id = "SmallDamage", name = "Small Damage Potion", effect = "+25% Damage", duration = "10 min" },
-			{ id = "MidDamage", name = "Mid Damage Potion", effect = "+50% Damage", duration = "20 min" },
-			{ id = "BigDamage", name = "Big Damage Potion", effect = "+100% Damage", duration = "30 min" },
-			{ id = "SmallLuck", name = "Small Luck Potion", effect = "+25% Luck", duration = "10 min" },
-			{ id = "MidLuck", name = "Mid Luck Potion", effect = "+50% Luck", duration = "20 min" },
-			{ id = "BigLuck", name = "Big Luck Potion", effect = "+100% Luck", duration = "30 min" },
+			{ id = "SmallCoin", size = "Small", stat = "Coin", name = "Small Coin Potion", effect = "+25% Coins", duration = "10 min" },
+			{ id = "MidCoin", size = "Mid", stat = "Coin", name = "Mid Coin Potion", effect = "+50% Coins", duration = "20 min" },
+			{ id = "BigCoin", size = "Big", stat = "Coin", name = "Big Coin Potion", effect = "+100% Coins", duration = "30 min" },
+			{ id = "SmallPower", size = "Small", stat = "Power", name = "Small Power Potion", effect = "+25% Power", duration = "10 min" },
+			{ id = "MidPower", size = "Mid", stat = "Power", name = "Mid Power Potion", effect = "+50% Power", duration = "20 min" },
+			{ id = "BigPower", size = "Big", stat = "Power", name = "Big Power Potion", effect = "+100% Power", duration = "30 min" },
+			{ id = "SmallDamage", size = "Small", stat = "Damage", name = "Small Damage Potion", effect = "+25% Damage", duration = "10 min" },
+			{ id = "MidDamage", size = "Mid", stat = "Damage", name = "Mid Damage Potion", effect = "+50% Damage", duration = "20 min" },
+			{ id = "BigDamage", size = "Big", stat = "Damage", name = "Big Damage Potion", effect = "+100% Damage", duration = "30 min" },
+			{ id = "SmallLuck", size = "Small", stat = "Luck", name = "Small Luck Potion", effect = "+25% Luck", duration = "10 min" },
+			{ id = "MidLuck", size = "Mid", stat = "Luck", name = "Mid Luck Potion", effect = "+50% Luck", duration = "20 min" },
+			{ id = "BigLuck", size = "Big", stat = "Luck", name = "Big Luck Potion", effect = "+100% Luck", duration = "30 min" },
 		}
-		itemCount = #POTIONS
 		for i, pot in ipairs(POTIONS) do
 			local btn = Instance.new("ImageButton")
 			btn.Name = "Pot_" .. pot.id
@@ -1085,25 +1208,26 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			btn.LayoutOrder = i
 			btn.ZIndex = 4
 			btn.Parent = scroll
-			btn.Image = InventoryAssetConfig.GetSlotFrame("Common")
-			btn.ScaleType = Enum.ScaleType.Stretch
-			local ih = makeIconHost(btn)
-			local gl = Instance.new("TextLabel")
-			gl.BackgroundTransparency = 1
-			gl.Size = UDim2.fromScale(1, 1)
-			gl.Text = "🧪"
-			gl.TextScaled = true
-			gl.ZIndex = 5
-			gl.Parent = ih
+			local idle = PotionIconConfig.GetIdle(pot.size :: any, pot.stat :: any)
+			local hover = PotionIconConfig.GetHover(pot.size :: any, pot.stat :: any)
+			if idle == "" then
+				btn.Image = InventoryAssetConfig.GetSlotFrame("Common")
+			else
+				btn.Image = idle
+			end
+			btn.ScaleType = Enum.ScaleType.Fit
 			local sc = Instance.new("UIScale")
 			sc.Parent = btn
 			btn.MouseEnter:Connect(function()
 				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = HOVER_SCALE }):Play()
+				if hover ~= "" then
+					btn.Image = hover
+				end
 				showConsumableTip(
 					pot.name,
-					"Common",
+					"Consumable",
 					string.format(
-						"Qty · Pet keys %d · Aura keys %d · Dust %d",
+						"Keys P%d · A%d · Dust %d",
 						profile.petKeys or 0,
 						profile.auraKeys or 0,
 						profile.enchantDust or 0
@@ -1114,6 +1238,9 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			end)
 			btn.MouseLeave:Connect(function()
 				TweenService:Create(sc, TweenInfo.new(0.1), { Scale = 1 }):Play()
+				if idle ~= "" then
+					btn.Image = idle
+				end
 				hideTip()
 			end)
 			btn.MouseButton1Click:Connect(function()
@@ -1121,15 +1248,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				args.onRefresh()
 			end)
 		end
-	else
-		-- shop tab routes via onTab; empty grid placeholder
-		itemCount = 0
 	end
-
-	local fillTo = math.min(48, math.max(12, math.ceil(math.max(itemCount, 1) / GRID_COLS) * GRID_COLS))
-	for i = itemCount + 1, fillTo do
-		emptySlot(i)
-	end
+	-- No empty filler slots on any page
 end
 
 return InventoryWeaponsLayout
