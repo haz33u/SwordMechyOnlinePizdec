@@ -10,11 +10,30 @@ local function folder(): Folder
 end
 
 function Net.Event(name: string): RemoteEvent
-	return folder():WaitForChild(name) :: RemoteEvent
+	local f = folder()
+	local existing = f:FindFirstChild(name)
+	if existing and existing:IsA("RemoteEvent") then
+		return existing
+	end
+	-- Timeout so a half-booted server cannot hang the entire client UI forever
+	local ev = f:WaitForChild(name, 20)
+	if not ev or not ev:IsA("RemoteEvent") then
+		error(string.format("[Net] RemoteEvent '%s' missing after 20s (server failed to Init remotes?)", name))
+	end
+	return ev :: RemoteEvent
 end
 
 function Net.Fn(name: string): RemoteFunction
-	return folder():WaitForChild(name) :: RemoteFunction
+	local f = folder()
+	local existing = f:FindFirstChild(name)
+	if existing and existing:IsA("RemoteFunction") then
+		return existing
+	end
+	local fn = f:WaitForChild(name, 20)
+	if not fn or not fn:IsA("RemoteFunction") then
+		error(string.format("[Net] RemoteFunction '%s' missing after 20s (server failed to Init remotes?)", name))
+	end
+	return fn :: RemoteFunction
 end
 
 function Net.Swing(source: string?)

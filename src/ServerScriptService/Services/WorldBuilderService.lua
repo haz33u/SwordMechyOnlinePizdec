@@ -83,125 +83,14 @@ local function makeMarker(parent: Instance, name: string, mobId: string, zone: s
 	p.Material = Enum.Material.Neon
 	p.Anchored = true
 	p.CanCollide = false
-	p.SetAttribute(p, "MobId", mobId)
-	p.SetAttribute(p, "Zone", zone)
+	p:SetAttribute("MobId", mobId)
+	p:SetAttribute("Zone", zone)
 	p.Parent = parent
 end
 
 function WorldBuilderService.Init()
 	-- Procedural generation disabled: player created their own custom map in Studio!
 	print("[WorldBuilder] Procedural map generation disabled — using Studio custom map")
-	return
-end
-	
-	art = ensureFolder(loc01, "Art")
-	local spawnsFolder = ensureFolder(loc01, "MobSpawns")
-	
-	print("[WorldBuilder] Constructing procedural Dark Goblin Forest map layout...")
-	
-	-- Ground Island: Dark Forest Soil
-	makePart(art, "ForestGround", Vector3.new(280, 6, 360), CFrame.new(0, -3, -60), Color3.fromRGB(40, 55, 35), Enum.Material.Grass)
-	
-	-- Player Spawn Pad (Entrance Camp A)
-	local spawnPad = makePart(art, "PlayerSpawn", Vector3.new(12, 1, 12), CFrame.new(0, 0.5, 90), Color3.fromRGB(220, 180, 50), Enum.Material.SmoothPlastic)
-	local spawnDecal = Instance.new("SpawnLocation")
-	spawnDecal.Size = Vector3.new(12, 1, 12)
-	spawnDecal.CFrame = spawnPad.CFrame
-	spawnDecal.Transparency = 1
-	spawnDecal.CanCollide = false
-	spawnDecal.Parent = spawnPad
-
-	-- Torches at entrance
-	makeTorch(art, CFrame.new(-10, 0, 80))
-	makeTorch(art, CFrame.new(10, 0, 80))
-
-	--------------------------------------------------------------------------
-	-- CAMP A: Goblin Outpost (Entrance)
-	--------------------------------------------------------------------------
-	makeHut(art, "OutpostHut1", Vector3.new(-25, 0, 50), Vector3.new(12, 8, 12))
-	makeHut(art, "OutpostHut2", Vector3.new(25, 0, 50), Vector3.new(12, 8, 12))
-	makeBonfire(art, Vector3.new(0, 0, 50))
-	
-	-- Mob Spawns Camp A (L1_Goblin)
-	makeMarker(spawnsFolder, "Spawn_A1", "L1_Goblin", "A", Vector3.new(-12, 1, 45))
-	makeMarker(spawnsFolder, "Spawn_A2", "L1_Goblin", "A", Vector3.new(12, 1, 45))
-	makeMarker(spawnsFolder, "Spawn_A3", "L1_Goblin", "A", Vector3.new(-18, 1, 60))
-	makeMarker(spawnsFolder, "Spawn_A4", "L1_Goblin", "A", Vector3.new(18, 1, 60))
-
-	--------------------------------------------------------------------------
-	-- CAMP B: Dark Goblin Village (Mid Field)
-	--------------------------------------------------------------------------
-	makeHut(art, "VillageHut1", Vector3.new(-45, 0, -10), Vector3.new(16, 10, 16))
-	makeHut(art, "VillageHut2", Vector3.new(45, 0, -10), Vector3.new(16, 10, 16))
-	makeBonfire(art, Vector3.new(0, 0, -10))
-	makeTorch(art, CFrame.new(-25, 0, -10))
-	makeTorch(art, CFrame.new(25, 0, -10))
-
-	-- Mob Spawns Camp B (L1_DarkGoblin)
-	makeMarker(spawnsFolder, "Spawn_B1", "L1_DarkGoblin", "B", Vector3.new(-20, 1, -15))
-	makeMarker(spawnsFolder, "Spawn_B2", "L1_DarkGoblin", "B", Vector3.new(20, 1, -15))
-	makeMarker(spawnsFolder, "Spawn_B3", "L1_DarkGoblin", "B", Vector3.new(-30, 1, 0))
-	makeMarker(spawnsFolder, "Spawn_B4", "L1_DarkGoblin", "B", Vector3.new(30, 1, 0))
-
-	--------------------------------------------------------------------------
-	-- CAMP C: Goblin Forge & Armory (Hard Zone)
-	--------------------------------------------------------------------------
-	makeHut(art, "ForgeHut", Vector3.new(0, 0, -80), Vector3.new(20, 12, 20))
-	makeBonfire(art, Vector3.new(-30, 0, -80))
-	makeBonfire(art, Vector3.new(30, 0, -80))
-
-	-- Mob Spawns Camp C (L1_GoblinWarrior)
-	makeMarker(spawnsFolder, "Spawn_C1", "L1_GoblinWarrior", "C", Vector3.new(-25, 1, -75))
-	makeMarker(spawnsFolder, "Spawn_C2", "L1_GoblinWarrior", "C", Vector3.new(25, 1, -75))
-	makeMarker(spawnsFolder, "Spawn_C3", "L1_GoblinWarrior", "C", Vector3.new(0, 1, -95))
-
-	--------------------------------------------------------------------------
-	-- CAMP D: Gate & Totems (Elite Zone)
-	--------------------------------------------------------------------------
-	-- Skull gate posts
-	makePart(art, "GatePillarLeft", Vector3.new(3, 16, 3), CFrame.new(-18, 8, -140), Color3.fromRGB(60, 40, 25), Enum.Material.Wood)
-	makePart(art, "GatePillarRight", Vector3.new(3, 16, 3), CFrame.new(18, 8, -140), Color3.fromRGB(60, 40, 25), Enum.Material.Wood)
-	makePart(art, "GateArch", Vector3.new(40, 3, 3), CFrame.new(0, 16, -140), Color3.fromRGB(70, 45, 25), Enum.Material.Wood)
-	makeTorch(art, CFrame.new(-18, 16, -140))
-	makeTorch(art, CFrame.new(18, 16, -140))
-
-	-- Mob Spawns Camp D (L1_GoblinScout)
-	makeMarker(spawnsFolder, "Spawn_D1", "L1_GoblinScout", "D", Vector3.new(-12, 1, -130))
-	makeMarker(spawnsFolder, "Spawn_D2", "L1_GoblinScout", "D", Vector3.new(12, 1, -130))
-
-	--------------------------------------------------------------------------
-	-- DUNGEON PORTAL: Dark Portal to Subterranean Arena
-	--------------------------------------------------------------------------
-	local dungeonPortalFrame = makePart(art, "DungeonPortalFrame", Vector3.new(12, 16, 2), CFrame.new(35, 8, -140), Color3.fromRGB(40, 20, 60), Enum.Material.Slate)
-	local dungeonPortalCore = makePart(art, "DungeonPortalCore", Vector3.new(8, 12, 0.4), CFrame.new(35, 7, -140), Color3.fromRGB(140, 30, 220), Enum.Material.Neon)
-	dungeonPortalCore.Transparency = 0.25
-
-	local dungeonPrompt = Instance.new("ProximityPrompt")
-	dungeonPrompt.ObjectText = "Dark Dungeon Portal"
-	dungeonPrompt.ActionText = "Enter Dungeon [E]"
-	dungeonPrompt.HoldDuration = 0.5
-	dungeonPrompt.MaxActivationDistance = 14
-	dungeonPrompt.Parent = dungeonPortalCore
-
-	dungeonPrompt.Triggered:Connect(function(player)
-		Remotes.Event("OpenPanel"):FireClient(player, "dungeons")
-	end)
-
-	--------------------------------------------------------------------------
-	-- BOSS ARENA: Goblin King's Throne
-	--------------------------------------------------------------------------
-	local throneBase = makePart(art, "ThroneAltar", Vector3.new(36, 3, 36), CFrame.new(0, 1.5, -190), Color3.fromRGB(70, 70, 75), Enum.Material.Cobblestone)
-	local throneChair = makePart(art, "GoblinThrone", Vector3.new(8, 10, 6), CFrame.new(0, 8, -202), Color3.fromRGB(90, 30, 20), Enum.Material.WoodPlanks)
-	
-	makeTorch(art, CFrame.new(-15, 3, -175))
-	makeTorch(art, CFrame.new(15, 3, -175))
-	makeTorch(art, CFrame.new(-15, 3, -205))
-	makeTorch(art, CFrame.new(15, 3, -205))
-
-	-- Boss Spawn Marker (L1_GoblinKing)
-	makeMarker(spawnsFolder, "Spawn_Boss", "L1_GoblinKing", "Boss", Vector3.new(0, 3, -190))
-
-	print("[WorldBuilder] Dark Goblin Forest procedural scaffold successfully built!")
 end
 
 function WorldBuilderService.GenerateStudioMarkers()

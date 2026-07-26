@@ -300,12 +300,21 @@ function App.Start()
 		MobIndexUI.Mount(gui, store)
 	end)
 
-	-- Ferryman NPC → open world travel panel
-	pcall(function()
-		Net.Event("OpenTravel").OnClientEvent:Connect(function()
-			store:OpenPanel("locations")
-			refreshAll()
-		end)
+	-- Ferryman NPC → open world travel panel (async: never block App.Start)
+	task.spawn(function()
+		local remotes = game:GetService("ReplicatedStorage"):FindFirstChild("Remotes")
+		if not remotes then
+			return
+		end
+		local ev = remotes:WaitForChild("OpenTravel", 20)
+		if ev and ev:IsA("RemoteEvent") then
+			ev.OnClientEvent:Connect(function()
+				store:OpenPanel("locations")
+				refreshAll()
+			end)
+		else
+			warn("[App] OpenTravel remote missing — ferryman travel UI disabled until server boots")
+		end
 	end)
 
 	-- Generic panel opener (Quest Master, Smith, Dungeon Portal, etc.)
