@@ -82,6 +82,7 @@ function Remotes.InitAll()
 	Remotes.Event("UnlockPaidFeature")
 	Remotes.Event("SelectTitle")
 	Remotes.Event("ClaimGroupChest")
+	Remotes.Event("OpenGroupModal")
 
 	-- server -> client
 	Remotes.Event("ProfileUpdate")

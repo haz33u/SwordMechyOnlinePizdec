@@ -39,8 +39,9 @@ function GroupChestService.Claim(player: Player)
 		end)
 		if not ok or not isMember then
 			print(string.format("[GroupChest] Player %s is NOT in Roblox Group %d", player.Name, groupId))
+			Remotes.Event("OpenGroupModal"):FireClient(player, { groupId = groupId })
 			Remotes.Event("Notify"):FireClient(player, {
-				text = string.format("👥 Join our Roblox Group (ID: %d) to unlock Daily Rewards!", groupId),
+				text = string.format("👥 Join our Roblox Group to unlock Daily Chest Rewards! (Group ID: %d)", groupId),
 				color = "yellow",
 			})
 			return

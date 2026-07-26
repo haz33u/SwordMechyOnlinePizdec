@@ -334,12 +334,16 @@ function App.Start()
 		end)
 	end)
 
+	local groupModalApi: any = nil
+	step("GroupChestModalUI", function()
+		local GroupChestModalUI = require(script.Parent.GroupChestModalUI)
+		groupModalApi = GroupChestModalUI.Mount(gui, store, toastApi)
+	end)
+
 	pcall(function()
-		Net.Event("OpenCasePreview").OnClientEvent:Connect(function(payload)
-			if casePreviewApi then
-				casePreviewApi.Show(payload)
-			else
-				openModal("caseOpen", payload)
+		Net.Event("OpenGroupModal").OnClientEvent:Connect(function(payload)
+			if groupModalApi then
+				groupModalApi.Show(payload)
 			end
 		end)
 	end)
