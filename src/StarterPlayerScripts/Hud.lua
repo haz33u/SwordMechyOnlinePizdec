@@ -202,6 +202,42 @@ function Hud.Mount(
 		railBtns[item.id] = b
 	end
 
+	---------------------------------------------------------------- EMERALD RAINBOW TELEPORT BUTTON GLOW
+	local tpBtn = railBtns.locations
+	if tpBtn then
+		tpBtn.Name = "TeleportSideButton"
+
+		-- Outer neon glow backdrop
+		local glow = Instance.new("Frame")
+		glow.Name = "EmeraldGlow"
+		glow.Size = UDim2.new(1, 8, 1, 8)
+		glow.Position = UDim2.new(0.5, 0, 0.5, 0)
+		glow.AnchorPoint = Vector2.new(0.5, 0.5)
+		glow.BackgroundColor3 = Color3.fromRGB(0, 230, 77)
+		glow.BackgroundTransparency = 0.55
+		glow.ZIndex = math.max(1, tpBtn.ZIndex - 1)
+		glow.Parent = tpBtn
+		UIKit.Corner(glow, T.R.sm)
+
+		-- Animated gradient stroke border
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 2.5
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		stroke.Color = Color3.fromRGB(102, 255, 140)
+		stroke.Parent = tpBtn
+
+		local grad = Instance.new("UIGradient")
+		grad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, Color3.fromRGB(102, 255, 140)),
+			ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 230, 77)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 153, 51)),
+		})
+		grad.Parent = stroke
+
+		local RainbowGradient = require(script.Parent.RainbowGradient)
+		RainbowGradient.ApplyShimmer(tpBtn, "emerald", 0.5, 180)
+	end
+
 	local questBadge = UIKit.Label({
 		Name = "QuestBadge",
 		Parent = railBtns.quests,
