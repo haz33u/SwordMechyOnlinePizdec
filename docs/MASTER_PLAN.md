@@ -407,11 +407,62 @@ Recorded 2026-07-25 — Figma `*LAYOUT` chrome + Studio upload. **Do not invent 
 | Headers | `INVENTORYWEAPONcard`, `PETScard`, `AURAScard`, `RELICcard`, `CONSUMABLEScard`, `SHOPcard`, `PROFIILEcard`, `SETTINGcard` |
 | Slots | `Slot_Empty_3` … `Slot_Mythic_5` (+ Secret/Limited → Mythic frame until art) |
 | Equip | `MAINswordCARD`, `SECONDswordCARD`, `SELLbutton`, `EQUIPbestFORpowerBUTTON`, `EQUIPbestFORdamageBUTTON`, `MOUSEBINDScard` |
-| Shop | `SECONDswordShopcard`, `A_1PetslotShopcard`, `A_1RELICslotShopcard`, `x3CaseopenShopcard`, `GamePass_card_empty_plate` |
+| Shop | `SECONDswordShopcard`, `A_1PetslotShopcard`, `A_1RELICslotShopcard`, `x3CaseopenShopcard`, `GamePass_card_empty_plate` / `GamePass_Card_Background` |
 | Profile | `AVATArcard`, `STATS1card`, `STATS2card`, `OPENtitlesLISTbutton` |
 | Settings | `Toggle_Rainbow_ON` / `OFF` |
 
 **Agent rule:** `InventoryAssetConfig.Get(key)` / `GetSlotFrame(rarity)` — wire inventory UI from this table only.
+
+### 8.5 Donate Shop — GamePass cards (LOCKED layout model)
+
+**Figma ref (composition):** HeroUI kit Group 59 style — shell `MAINBACKGROUD` + grid + 2×2 hero cards  
+(e.g. `…/HeroUI-Figma-Kit…?node-id=5247-74`). Selected chip node: `GamePass_PriceChip_A_Candy`.
+
+**Decision: compose cards in code — not one flat PNG per pass.**
+
+```
+Card root
+├── GamePass_Card_Background / empty plate     ← chrome PNG only
+├── LEFT: icon stack
+│     ├── GamePass icon (rbxthumb or custom PNG)
+│     └── optional +1 / badge wordmarks (small candy PNGs if needed)
+└── RIGHT: text panel (Tooltip_Shell_Empty-like)
+      ├── Title  → live TextLabel (candy style) — NOT baked "PASSES" PNG for section
+      ├── Desc   → live TextLabel (smaller / softer) — from GamePassConfig.desc
+      └── GamePass_PriceChip_A_Candy (empty chip art)
+            └── Price / OWNED TextLabel (+ optional ✓ ImageLabel)
+```
+
+| Layer | Source | Notes |
+|-------|--------|--------|
+| Card frame | `GamePass_card_empty_plate` / `GamePass_Card_Background` | Shared chrome |
+| Icon | `rbxthumb://type=GamePass&id={id}&w=150&h=150` | Prefer Roblox icon; custom only if ugly |
+| Title / desc | `GamePassConfig` EN strings | **Never** multi-line desc baked into PNG |
+| Price chip shell | `GamePass_PriceChip_A_Candy` (asset when uploaded) | Empty candy button art |
+| Price / OWNED text | **Live** `UIKit.StyleText` | See candy text rule below |
+| Checkmark on OWNED | small ImageLabel or `✓` in same font stack | Optional; match chip style |
+| Section header **PASSES** | **Live candy text**, not `WORDMARK_…passes` PNG | Same StyleText pipeline |
+
+**Candy / brand text (how we “write” it in-game) — LOCKED:**
+
+| | |
+|--|--|
+| API | `UIKit.StyleText(label, gradientName?, strokeThick?)` |
+| Font | **`LuckiestGuy`** (fallback `GothamBold`) |
+| Color | white fill + dark purple stroke + vertical UIGradient |
+| Gradients | `purple` (default), `gold`, `green`, etc. in `UIKit` `TEXT_GRADIENTS` |
+| Case | **ALL CAPS** for titles / PASSES / R$ / OWNED |
+| Do **not** | bake R$ price or OWNED into PNG; do not use Tier-B wordmark glue as full card |
+
+**States on price chip:**
+- Not owned → text like `R$ 199` (or `R$…` from Marketplace when available)
+- Owned → `OWNED` (+ checkmark if art exists)
+- Click → `Net.PromptGamePass(gamePassId)`
+
+**Data:** `GamePassConfig.Order` + `Passes[key]` (`gamePassId`, `title`, `desc`, `feature`).  
+Hero composed cards in Figma (Second sword / +1 pet / +1 relic / x3 case) = **same slot recipe**, different icon+copy — still one template.
+
+**Agent rule:** Shop grid = template + `GamePassConfig` + StyleText. Full pre-baked shop card PNGs only as optional art refs / rare heroes, not the scaling path.
 
 ---
 
@@ -690,7 +741,7 @@ Example server texts (EN):
 | **Auras** tab | Aura slots | Equip |
 | **Relics** tab | Read-only | Dungeon drops |
 | **Cases** tab | Pet Case / Aura Case | Small cards, button **Open** |
-| **Shop** tab | Gamepasses | Image + **R$** / **OWNED** |
+| **Shop** tab | Gamepasses | **Composed** cards (§8.5): plate + rbxthumb + StyleText title/desc + candy price chip **R$** / **OWNED** |
 | **Profile** tab | Stats + search | AvatarBust; `@username` search online |
 | Tooltip | Title, Rarity, Power/Sell/Level, Equipped | Cursor edge glue |
 | Actions | **Equip main**, **Equip off** / **Off 🔒**, **Enchant**, **Sell**, **Sell all unequipped** | Cartoon chips |
@@ -745,6 +796,8 @@ Example server texts (EN):
 | teleporter | Teleporter |
 | openChest3 | Open 3 chest |
 | openChest5 | Open 5 chest |
+
+Layout / text rules for Shop cards: **§8.5** (compose template + candy StyleText; no full-card PNG per pass).
 
 ### 12.9 Key files (friend wiring)
 | Concern | File |
