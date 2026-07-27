@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Studio 3D Viewport & Pet Renders</title>
+  <title>Roblox 7 Worlds Mobs, Pets & Case Opening Index</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -18,7 +18,7 @@
     body {
       width: 100vw;
       height: 100vh;
-      background: #06080e;
+      background: #080a11;
       color: #f1f5f9;
       font-family: 'Inter', sans-serif;
       display: flex;
@@ -27,9 +27,9 @@
     }
 
     header {
-      background: #0f1320;
+      background: #0f1322;
       border-bottom: 1px solid #1e293b;
-      padding: 16px 32px;
+      padding: 16px 28px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -44,238 +44,453 @@
       gap: 10px;
     }
 
+    /* World Tabs */
+    .nav-bar {
+      display: flex;
+      gap: 8px;
+      background: #0b0e18;
+      padding: 6px 16px;
+      border-bottom: 1px solid #1e293b;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: transparent;
+      border: 1px solid transparent;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .tab-btn.active {
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #38bdf8;
+      box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
+    }
+
+    /* Controls Subbar */
+    .controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 28px;
+      background: #0d111c;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .pill-group {
+      display: flex;
+      background: #080a10;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+      gap: 4px;
+    }
+
+    .pill-btn {
+      padding: 6px 14px;
+      border-radius: 6px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .pill-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+    }
+
+    .golden-pill.active {
+      background: linear-gradient(135deg, #eab308 0%, #ca8a04 100%);
+      color: #fff;
+    }
+
+    .shiny-pill.active {
+      background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+      color: #fff;
+    }
+
+    .void-pill.active {
+      background: linear-gradient(135deg, #a855f7 0%, #7e22ce 100%);
+      color: #fff;
+    }
+
     main {
       flex: 1;
-      padding: 28px;
+      padding: 24px 28px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 24px;
+      gap: 20px;
     }
 
-    .inventory-grid {
+    .index-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
       gap: 16px;
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
     }
 
-    /* 1:1 Roblox Inventory Slot Frame */
-    .roblox-inventory-card {
+    /* Multicolored Glowing Card */
+    .glowing-index-card {
       position: relative;
-      width: 100%;
-      aspect-ratio: 1 / 1;
-      background: radial-gradient(circle at 50% 30%, #1e2438 0%, #0d101b 100%);
-      border-radius: 14px;
-      border: 2px solid var(--border-color, #2b3654);
+      background: radial-gradient(circle at 50% 30%, #1a2034 0%, #0d101b 100%);
+      border-radius: 16px;
+      padding: 16px 12px;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       overflow: hidden;
-      cursor: pointer;
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 0, 0, 0.7);
-      transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.15s;
     }
 
-    .roblox-inventory-card::before {
+    .glowing-index-card::before {
       content: '';
       position: absolute;
-      inset: -2px;
-      border-radius: 16px;
-      background: var(--border-color, #2b3654);
-      opacity: 0.3;
-      filter: blur(10px);
+      inset: -4px;
+      border-radius: 20px;
+      background: var(--rarity-color, #3b82f6);
+      opacity: 0.4;
+      filter: blur(14px);
       z-index: -1;
     }
 
-    .roblox-inventory-card.selected {
-      border-color: #f59e0b;
-      box-shadow: 0 0 18px rgba(245, 158, 11, 0.6);
-    }
-
-    .roblox-inventory-card:hover {
-      transform: translateY(-3px) scale(1.04);
-      border-color: #38bdf8;
-    }
-
-    .pet-render-img {
-      width: 88%;
-      height: 88%;
-      object-fit: contain;
-      filter: drop-shadow(0 6px 12px rgba(0,0,0,0.7));
-      transition: transform 0.25s ease;
-    }
-
-    .roblox-inventory-card:hover .pet-render-img {
-      transform: scale(1.08) rotate(3deg);
-    }
-
-    .item-level-tag {
+    .glowing-index-card::after {
+      content: '';
       position: absolute;
-      top: 6px;
-      left: 6px;
-      font-size: 10px;
-      font-weight: 800;
-      color: #fff;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 2px 6px;
-      border-radius: 4px;
-      backdrop-filter: blur(4px);
-    }
-
-    .item-name-tag {
-      position: absolute;
-      bottom: 4px;
-      left: 0;
-      right: 0;
-      text-align: center;
-      font-size: 11px;
-      font-weight: 700;
-      color: #e2e8f0;
-      background: rgba(6, 8, 14, 0.88);
-      padding: 3px 2px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* Explanation & Code Box */
-    .guide-box {
-      max-width: 1200px;
-      width: 100%;
-      margin: 0 auto;
-      background: #0d111c;
-      border: 1px solid #1e293b;
+      inset: 0;
       border-radius: 16px;
-      padding: 24px;
+      padding: 2.5px;
+      background: linear-gradient(180deg, var(--rarity-color, #3b82f6) 0%, rgba(255, 255, 255, 0.2) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .glowing-index-card:hover {
+      transform: translateY(-5px) scale(1.03);
+    }
+
+    .card-icon-box {
+      width: 76px;
+      height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mini-3d-render {
+      width: 64px;
+      height: 70px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.7));
+    }
+
+    .item-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 16px;
+      color: #fff;
+      text-align: center;
+    }
+
+    .rarity-badge {
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: var(--rarity-color, #3b82f6);
+      color: #fff;
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .power-text {
+      font-size: 12px;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+
+    /* Case Opening Simulation Drawer */
+    .case-drawer {
+      background: #0f1322;
+      border: 1px solid #1e293b;
+      border-radius: 18px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       gap: 14px;
     }
 
-    .guide-box h2 {
-      font-family: 'Fredoka', sans-serif;
-      font-size: 18px;
-      color: #22c55e;
+    .case-drawer-header {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
     }
 
-    pre {
-      background: #020617;
-      padding: 16px;
+    .btn-test-spin {
+      background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+      color: #fff;
+      border: none;
+      padding: 10px 24px;
       border-radius: 10px;
-      color: #38bdf8;
-      font-family: monospace;
-      font-size: 13px;
-      line-height: 1.5;
-      overflow-x: auto;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(34, 197, 94, 0.4);
     }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>✨ Studio 3D Pet Renders & Viewport Setup Guide</h1>
+    <h1>📖 Roblox 7-Worlds Mobs & Pets Index</h1>
   </header>
 
-  <main>
-    <div class="inventory-grid" id="inventoryGrid">
-      <!-- Populated dynamically -->
+  <!-- WORLD TABS -->
+  <div class="nav-bar">
+    <button class="tab-btn active" onclick="selectWorld(1, this)">🌲 World 1: Dark Forest</button>
+    <button class="tab-btn" onclick="selectWorld(2, this)">🏴‍☠️ World 2: Pirate Shore</button>
+    <button class="tab-btn" onclick="selectWorld(3, this)">🥷 World 3: Shinobi Lands</button>
+    <button class="tab-btn" onclick="selectWorld(4, this)">❄️ World 4: Polar Tundra</button>
+    <button class="tab-btn" onclick="selectWorld(5, this)">🏜️ World 5: Desert Temple</button>
+    <button class="tab-btn" onclick="selectWorld(6, this)">🤖 World 6: Cyber City</button>
+    <button class="tab-btn" onclick="selectWorld(7, this)">🌌 World 7: Celestial Realm</button>
+  </div>
+
+  <!-- CONTROLS & VARIATIONS -->
+  <div class="controls-bar">
+    <div class="pill-group">
+      <button class="pill-btn active" onclick="setCategory('pets', this)">🐾 Pets (Петы)</button>
+      <button class="pill-btn" onclick="setCategory('mobs', this)">🧟 Mobs (Враги)</button>
+      <button class="pill-btn" onclick="setCategory('weapons', this)">⚔️ Weapons (Мечи)</button>
     </div>
 
-    <div class="guide-box">
-      <h2>💡 Как сделать 3D-рендеры петов в Roblox Studio сочными и реалистичными</h2>
-      <p style="font-size: 13px; color: #94a3b8; line-height: 1.6;">
-        В Roblox 3D-модели петов внутри ViewportFrame часто выглядят блекло, если не настроить правильную камеру и студийное освещение.  
-        Ниже приведена готовая функция для Luau, которая делает 3D-петы в инвентаре яркими, объемными и вращающимися:
-      </p>
+    <div class="pill-group">
+      <button class="pill-btn active" onclick="setVariation('Normal', this)">Normal (x1.0)</button>
+      <button class="pill-btn golden-pill" onclick="setVariation('Golden', this)">Golden 🪙 (x2.5)</button>
+      <button class="pill-btn shiny-pill" onclick="setVariation('Shiny', this)">Shiny ✨ (x5.0)</button>
+      <button class="pill-btn void-pill" onclick="setVariation('Void', this)">Void 🌌 (x10.0)</button>
+    </div>
+  </div>
 
-      <pre>
--- High-Quality Studio ViewportFrame Renderer for Roblox
-local function SetupStudioViewport(viewportFrame: ViewportFrame, petModel: Model)
-    viewportFrame.Ambient = Color3.fromRGB(180, 190, 210) -- Мягкий заполняющий свет
-    viewportFrame.LightColor = Color3.fromRGB(255, 245, 230) -- Тёплый студийный свет
-    viewportFrame.LightDirection = Vector3.new(-1, -1.5, -1).Unit -- Верхне-боковой угол
+  <main>
+    <div class="index-grid" id="indexGrid">
+      <!-- Cards rendered dynamically -->
+    </div>
 
-    local camera = Instance.new("Camera")
-    camera.FieldOfView = 25 -- Узкий FOV для глубокого студийного объёма
-    viewportFrame.CurrentCamera = camera
-    camera.Parent = viewportFrame
-
-    local cf, size = petModel:GetBoundingBox()
-    local maxExtent = math.max(size.X, size.Y, size.Z)
-    local dist = maxExtent * 2.2
-
-    camera.CFrame = CFrame.lookAt(
-        cf.Position + Vector3.new(dist * 0.4, dist * 0.3, dist),
-        cf.Position
-    )
-end</pre>
+    <!-- INTEGRATED CASE SIMULATOR MENU -->
+    <div class="case-drawer">
+      <div class="case-drawer-header">
+        <h3 style="font-family: 'Fredoka', sans-serif; color: #38bdf8;">🎰 Interactive Case Opening Test Menu</h3>
+        <button class="btn-test-spin" onclick="openCaseModal()">OPEN WORLD CASE (x1 / x3 / x5)</button>
+      </div>
+      <p style="font-size: 12px; color: #64748b;">Проверка рулетки кейсов со всеми петами, врагами и оружием выбранного Мира.</p>
     </div>
   </main>
 
   <script>
-    const rarityBorders = {
-      'Common': '#3b4259',
-      'Rare': '#2563eb',
-      'Epic': '#9333ea',
-      'Legendary': '#d97706',
-      'Mythic': '#dc2626',
+    const rarityColors = {
+      'Common': '#94a3b8',
+      'Rare': '#3b82f6',
+      'Epic': '#a855f7',
+      'Legendary': '#eab308',
+      'Mythic': '#ef4444',
+      'Secret': '#ec4899'
     };
 
-    // Rendered image URLs or fallback SVG placeholders
-    const petRenderImages = {
-      'Charon': 'file:///C:/Users/thisi/.gemini/antigravity-ide/brain/e4b1bcb3-3000-402c-9392-c2bcf5bb4da7/pet_render_charon_1785148296585.png',
-      'Nightmare': 'file:///C:/Users/thisi/.gemini/antigravity-ide/brain/e4b1bcb3-3000-402c-9392-c2bcf5bb4da7/pet_render_nightmare_1785148306810.png',
+    const variations = {
+      Normal: { mult: 1, prefix: '' },
+      Golden: { mult: 2.5, prefix: 'Golden ' },
+      Shiny: { mult: 5.0, prefix: 'Shiny ' },
+      Void: { mult: 10.0, prefix: 'Void ' }
     };
 
-    const pets = [
-      { name: 'Charon', rarity: 'Rare', power: 'x1.75', model: 'F' },
-      { name: 'Nightmare', rarity: 'Legendary', power: 'x6.0', model: '2-C' },
-      { name: 'Woodling', rarity: 'Common', power: 'x1.1', model: 'A' },
-      { name: 'Lurk', rarity: 'Common', power: 'x1.2', model: 'B' },
-      { name: 'Forestling', rarity: 'Rare', power: 'x1.35', model: 'C' },
-      { name: 'Hekata', rarity: 'Rare', power: 'x1.5', model: 'D' },
-      { name: 'Stiko', rarity: 'Legendary', power: 'x1.75', model: 'E' },
-      { name: 'Morpheus', rarity: 'Rare', power: 'x2.5', model: 'G' },
-      { name: 'Torn', rarity: 'Epic', power: 'x3.33', model: '2-A' },
-      { name: 'Nifel', rarity: 'Epic', power: 'x4.5', model: '2-B' },
-      { name: 'Grommash', rarity: 'Mythic', power: 'x8.0', model: '2-D' },
-    ];
+    let currentWorld = 1;
+    let currentCategory = 'pets';
+    let currentVariation = 'Normal';
 
-    function renderGrid() {
-      const grid = document.getElementById('inventoryGrid');
+    const worldData = {
+      1: {
+        pets: [
+          { name: 'Woodling', rarity: 'Common', basePower: 1.1, model: 'A' },
+          { name: 'Lurk', rarity: 'Common', basePower: 1.2, model: 'B' },
+          { name: 'Forestling', rarity: 'Rare', basePower: 1.35, model: 'C' },
+          { name: 'Hekata', rarity: 'Rare', basePower: 1.5, model: 'D' },
+          { name: 'Stiko', rarity: 'Legendary', basePower: 1.75, model: 'E' },
+          { name: 'Charon', rarity: 'Rare', basePower: 1.75, model: 'F' },
+          { name: 'Morpheus', rarity: 'Rare', basePower: 2.5, model: 'G' },
+          { name: 'Torn', rarity: 'Epic', basePower: 3.33, model: '2-A' },
+          { name: 'Nifel', rarity: 'Epic', basePower: 4.5, model: '2-B' },
+          { name: 'Nightmare', rarity: 'Legendary', basePower: 6.0, model: '2-C' },
+          { name: 'Grommash', rarity: 'Mythic', basePower: 8.0, model: '2-D' }
+        ],
+        mobs: [
+          { name: 'Forest Goblin', rarity: 'Common', basePower: 100, model: 'Goblin' },
+          { name: 'Treant Brute', rarity: 'Rare', basePower: 500, model: 'TreeStage' },
+          { name: 'Dark Warlock', rarity: 'Epic', basePower: 2500, model: 'Warlock' },
+          { name: 'Forest Guardian Boss', rarity: 'Mythic', basePower: 10000, model: 'Boss1' }
+        ],
+        weapons: [
+          { name: 'Wood Sword', rarity: 'Common', basePower: 10, model: 'Wood' },
+          { name: 'Iron Rapier', rarity: 'Rare', basePower: 50, model: 'Iron' },
+          { name: 'Elven Blade', rarity: 'Epic', basePower: 250, model: 'Elven' }
+        ]
+      },
+      2: {
+        pets: [
+          { name: 'Proteus', rarity: 'Common', basePower: 4.5, model: '3-C' },
+          { name: 'Atlas', rarity: 'Common', basePower: 6.75, model: '3-D' },
+          { name: 'Hermes', rarity: 'Rare', basePower: 12.0, model: '3-E' },
+          { name: 'Arix', rarity: 'Epic', basePower: 18.0, model: '3-F' },
+          { name: 'Ceres', rarity: 'Legendary', basePower: 31.0, model: '3-G' },
+          { name: 'Nereus', rarity: 'Mythic', basePower: 89.9, model: 'Waifu' }
+        ],
+        mobs: [
+          { name: 'Pirate Sailor', rarity: 'Common', basePower: 5000, model: 'Sailor' },
+          { name: 'Sea Siren', rarity: 'Rare', basePower: 25000, model: 'Siren' },
+          { name: 'Kraken Boss', rarity: 'Mythic', basePower: 500000, model: 'Kraken' }
+        ],
+        weapons: [
+          { name: 'Cutlass', rarity: 'Common', basePower: 1000, model: 'Cutlass' },
+          { name: 'Trident', rarity: 'Legendary', basePower: 50000, model: 'Trident' }
+        ]
+      },
+      3: {
+        pets: [
+          { name: 'Kirin', rarity: 'Common', basePower: 35.0, model: 'Ninja-A' },
+          { name: 'Shinobi Fox', rarity: 'Common', basePower: 60.0, model: 'Fox' },
+          { name: 'Shadow Raven', rarity: 'Rare', basePower: 120.0, model: 'Raven' },
+          { name: 'Samurai Tiger', rarity: 'Legendary', basePower: 1200.0, model: 'Tiger' },
+          { name: 'Kitsune God', rarity: 'Mythic', basePower: 5000.0, model: 'Kitsune' }
+        ],
+        mobs: [
+          { name: 'Ninja Genin', rarity: 'Common', basePower: 500000, model: 'Ninja' },
+          { name: 'Samurai Warlord', rarity: 'Mythic', basePower: 50000000, model: 'Samurai' }
+        ],
+        weapons: [
+          { name: 'Shinobi Katana', rarity: 'Rare', basePower: 100000, model: 'Katana' }
+        ]
+      },
+      4: {
+        pets: [
+          { name: 'Frost Bunny', rarity: 'Common', basePower: 2500, model: 'Bunny' },
+          { name: 'Ice Bear', rarity: 'Common', basePower: 5000, model: 'Bear' },
+          { name: 'Tundra Wolf', rarity: 'Epic', basePower: 35000, model: 'Wolf' },
+          { name: 'Yeti King', rarity: 'Mythic', basePower: 500000, model: 'Yeti' }
+        ],
+        mobs: [
+          { name: 'Frost Golem', rarity: 'Epic', basePower: 200000000, model: 'Golem' }
+        ],
+        weapons: [
+          { name: 'Ice Scythe', rarity: 'Legendary', basePower: 100000000, model: 'Scythe' }
+        ]
+      },
+      5: {
+        pets: [
+          { name: 'Scarab', rarity: 'Common', basePower: 2500000, model: 'Scarab' },
+          { name: 'Anubis Guard', rarity: 'Rare', basePower: 12500000, model: 'Anubis' },
+          { name: 'Sphinx', rarity: 'Epic', basePower: 50000000, model: 'Sphinx' },
+          { name: 'Pharaoh God', rarity: 'Mythic', basePower: 1500000000, model: 'Pharaoh' }
+        ],
+        mobs: [
+          { name: 'Mummy Warrior', rarity: 'Common', basePower: 1000000000, model: 'Mummy' }
+        ],
+        weapons: [
+          { name: 'Sun Khopesh', rarity: 'Mythic', basePower: 5000000000, model: 'Khopesh' }
+        ]
+      },
+      6: {
+        pets: [
+          { name: 'Cyber Cat', rarity: 'Common', basePower: 10000000000, model: 'CyberCat' },
+          { name: 'Mecha Wolf', rarity: 'Epic', basePower: 250000000000, model: 'MechaWolf' },
+          { name: 'Cyber Valkyrie', rarity: 'Mythic', basePower: 8000000000000, model: 'Valkyrie' }
+        ],
+        mobs: [
+          { name: 'Cyborg Enforcer', rarity: 'Rare', basePower: 50000000000, model: 'Cyborg' }
+        ],
+        weapons: [
+          { name: 'Plasma Saber', rarity: 'Mythic', basePower: 1000000000000, model: 'Saber' }
+        ]
+      },
+      7: {
+        pets: [
+          { name: 'Starlight Spirit', rarity: 'Common', basePower: 50000000000000, model: 'Starlight' },
+          { name: 'Solar Phoenix', rarity: 'Epic', basePower: 1200000000000000, model: 'Phoenix' },
+          { name: 'Archangel Prime', rarity: 'Mythic', basePower: 50000000000000000, model: 'Archangel' }
+        ],
+        mobs: [
+          { name: 'Celestial Titan', rarity: 'Mythic', basePower: 10000000000000000, model: 'Titan' }
+        ],
+        weapons: [
+          { name: 'God Slayer Blade', rarity: 'Mythic', basePower: 50000000000000000, model: 'GodSlayer' }
+        ]
+      }
+    };
+
+    function renderIndex() {
+      const grid = document.getElementById('indexGrid');
       grid.innerHTML = '';
 
-      pets.forEach((item, idx) => {
-        const bColor = rarityBorders[item.rarity] || '#3b4259';
-        const imgUrl = petRenderImages[item.name];
+      const wData = worldData[currentWorld] || worldData[1];
+      const items = wData[currentCategory] || wData.pets;
+      const varInfo = variations[currentVariation] || variations.Normal;
+
+      items.forEach(item => {
+        const rColor = rarityColors[item.rarity] || '#3b82f6';
+        const finalPower = (item.basePower * varInfo.mult).toLocaleString();
+        const finalName = varInfo.prefix + item.name;
 
         const card = document.createElement('div');
-        card.className = `roblox-inventory-card ${idx === 0 ? 'selected' : ''}`;
-        card.style.setProperty('--border-color', bColor);
-
-        let imgHtml = '';
-        if (imgUrl) {
-          imgHtml = `<img class="pet-render-img" src="${imgUrl}" alt="${item.name}">`;
-        } else {
-          imgHtml = `<div style="font-size:36px; filter:drop-shadow(0 4px 6px rgba(0,0,0,0.5));">🐾</div>`;
-        }
-
+        card.className = 'glowing-index-card';
+        card.style.setProperty('--rarity-color', rColor);
         card.innerHTML = `
-          <div class="item-level-tag">Lvl 1</div>
-          ${imgHtml}
-          <div class="item-name-tag">${item.name}</div>
+          <div class="card-icon-box">
+            <div style="font-size: 36px;">🐾</div>
+          </div>
+          <span class="item-title">${finalName}</span>
+          <span class="rarity-badge">${item.rarity}</span>
+          <span class="power-text">Power x${finalPower}</span>
+          <span style="font-size: 10px; color:#64748b;">Model: ${item.model}</span>
         `;
         grid.appendChild(card);
       });
     }
 
-    renderGrid();
+    function selectWorld(worldId, btn) {
+      currentWorld = worldId;
+      document.querySelectorAll('.nav-bar .tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderIndex();
+    }
+
+    function setCategory(cat, btn) {
+      currentCategory = cat;
+      document.querySelectorAll('.controls-bar .pill-group:first-child .pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderIndex();
+    }
+
+    function setVariation(varName, btn) {
+      currentVariation = varName;
+      document.querySelectorAll('.controls-bar .pill-group:last-child .pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderIndex();
+    }
+
+    function openCaseModal() {
+      window.location.href = '../ui_editor/case_editor.html';
+    }
+
+    // Init
+    renderIndex();
   </script>
 </body>
 </html>
