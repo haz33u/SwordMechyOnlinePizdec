@@ -521,26 +521,24 @@ function MobVisualService.UpdateHp(entry: any)
 		return
 	end
 
-	local barBg = bb:FindFirstChild("BarBg")
-	if barBg then
-		local fill = barBg:FindFirstChild("BarFill")
-		if fill and fill:IsA("Frame") then
-			fill.Size = UDim2.new(pct, 0, 1, 0)
-			if pct > 0.5 then
-				fill.BackgroundColor3 = Color3.fromRGB(90, 230, 120)
-			elseif pct > 0.25 then
-				fill.BackgroundColor3 = Color3.fromRGB(255, 205, 70)
-			else
-				fill.BackgroundColor3 = Color3.fromRGB(240, 80, 80)
-			end
-		end
-		local hpLbl = barBg:FindFirstChild("HP")
-		if hpLbl and hpLbl:IsA("TextLabel") then
-			hpLbl.Text = string.format("%s / %s", formatHp(hp), formatHp(maxHp))
+	local fill = bb:FindFirstChild("BarFill", true)
+	if fill and fill:IsA("Frame") then
+		fill.Size = UDim2.new(pct, 0, 1, 0)
+		if pct > 0.5 then
+			fill.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
+		elseif pct > 0.25 then
+			fill.BackgroundColor3 = Color3.fromRGB(245, 158, 11)
+		else
+			fill.BackgroundColor3 = Color3.fromRGB(239, 68, 68)
 		end
 	end
 
-	local nameLbl = bb:FindFirstChild("Name")
+	local hpLbl = bb:FindFirstChild("HP", true)
+	if hpLbl and hpLbl:IsA("TextLabel") then
+		hpLbl.Text = string.format("%s / %s", formatHp(hp), formatHp(maxHp))
+	end
+
+	local nameLbl = bb:FindFirstChild("Name", true)
 	if nameLbl and nameLbl:IsA("TextLabel") then
 		local prefix = entry.isDebug and "[DBG] " or (entry.isBoss and "[BOSS] " or "")
 		nameLbl.Text = prefix .. (entry.name or entry.mobId)

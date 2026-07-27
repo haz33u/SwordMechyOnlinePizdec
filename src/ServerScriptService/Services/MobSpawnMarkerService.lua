@@ -101,11 +101,14 @@ function MobSpawnMarkerService.Collect(locationId: number): { SpawnPoint }
 
 			local resolvedId = MobConfig.ResolveId(rawMobId)
 
-			-- Auto-distribute Location 1 camps by X/Z distance if all markers were set to generic "L1_Goblin"
+			-- Auto-distribute Location 1 camps by position/zone if all markers were set to generic "L1_Goblin"
 			if locationId == 1 and (resolvedId == "L1_Goblin" or rawMobId:lower():find("goblin")) then
 				local zoneAttr = child:GetAttribute("Zone")
 				local pos = child.Position
-				if zoneAttr == "B" or (pos.X > -50 and pos.X < 50 and pos.Z > -250 and pos.Z < -100) then
+				local lowerName = string.lower(child.Name)
+				if zoneAttr == "D" or lowerName:find("scout") or pos.Y > 10 then
+					resolvedId = "L1_GoblinScout"
+				elseif zoneAttr == "B" or (pos.X > -50 and pos.X < 50 and pos.Z > -250 and pos.Z < -100) then
 					resolvedId = "L1_DarkGoblin"
 				elseif zoneAttr == "C" or (pos.X >= 50 or pos.Z <= -250) then
 					resolvedId = "L1_GoblinWarrior"
