@@ -111,7 +111,7 @@ local MobConfig = {
 			location = 1,
 			tier = "hard",
 			defaultZone = "C",
-			hp = 50_000,
+			hp = 250_000,
 			powerReward = 120,
 			coinReward = 6_000,
 			weaponDropChance = 1,
@@ -119,7 +119,7 @@ local MobConfig = {
 			weaponPool = {},
 			respawnSeconds = 6,
 			visual = { preferredModelName = "GoblinWarrior", color = "#1E8449", scale = 1.35, shape = "goblin" },
-			description = "T3 heavy armored goblin warrior. HP 50K / coins 6K / power 120.",
+			description = "T3 heavy armored goblin warrior. HP 250K / coins 6K / power 120.",
 		},
 		L1_GoblinScout = {
 			id = "L1_GoblinScout",
