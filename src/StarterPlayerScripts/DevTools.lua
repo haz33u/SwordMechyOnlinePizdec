@@ -99,6 +99,9 @@ function DevTools.Mount(gui: ScreenGui)
 			return b
 		end
 
+		addBtn("🧹 STARTER WEAPON ONLY", Color3.fromRGB(180, 50, 60), function()
+			fire("clearWeapons")
+		end)
 		addBtn("⚠️ RESET DATA & REBIRTHS", Color3.fromRGB(160, 40, 50), function()
 			fire("resetData")
 		end)

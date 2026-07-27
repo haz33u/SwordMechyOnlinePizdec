@@ -55,14 +55,36 @@ function DebugService.Run(player: Player, action: string, payload: any)
 		return
 	end
 
-	if action == "resetData" or action == "resetRebirths" then
+	if action == "resetData" or action == "resetRebirths" or action == "clearWeapons" then
+		local HttpService = game:GetService("HttpService")
+		local starterUid = HttpService:GenerateGUID(false)
+
 		profile.rebirthLevel = 0
 		profile.rebirthMult = 1
 		profile.lifetimePower = 0
 		profile.coins = 0
 		profile.lifetimeDamage = 0
+
+		-- Strip all weapons down to Starter Weapon only
+		profile.weapons = {
+			{
+				uid = starterUid,
+				id = WeaponConfig.STARTER_WEAPON,
+				level = 1,
+				enchants = {},
+			},
+		}
+		profile.equippedMain = starterUid
+		profile.equippedOffhand = nil
+
+		-- Strip pets and auras for clean 1st location test
+		profile.pets = {}
+		profile.petTeam = {}
+		profile.auras = {}
+		profile.equippedAura = nil
+
 		ProfileService.Push(player)
-		notify(player, "Profile & Rebirths reset to 0!", "gold")
+		notify(player, "🧹 Inventory wiped! Starter Weapon ONLY.", "green")
 		return
 	end
 
