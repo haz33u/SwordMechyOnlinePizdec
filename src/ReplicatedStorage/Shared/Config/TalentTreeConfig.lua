@@ -44,6 +44,7 @@ export type TalentNodeDef = {
 		bagSlots: number?,
 		petSlots: number?,
 		relicSlots: number?,
+		maxCps: number?,
 	},
 }
 
@@ -230,27 +231,28 @@ for i = 1, 6 do
 	prevSpeed = id
 end
 
--- Attack Speed Branch off Speed_2 (Gated by Click Quester Sam Tier)
+-- Attack Speed & CPS Cap Branch off Speed_2 (Gated by Click Quester Sam Tier)
 local prevAtkSpeed = "S_Speed_2"
 for i = 1, 6 do
 	local id = "S_AtkSpeed_" .. i
 	local q = -1 - i
 	local r = 2 + i
+	local cpsAdd = if i == 6 then 5 elseif i >= 4 then 2 else 1
 	Nodes[id] = {
 		id = id,
-		name = "Quick Hands " .. i,
-		desc = string.format("+2%% Attack Speed per level [Click Quester Step %d]", i),
+		name = if i == 6 then "OVERCLOCK CLICKER" else ("Quick Hands " .. i),
+		desc = if i == 6 then "+5 CPS Limit & +10% Atk Speed [Keystone]" else string.format("+%d CPS Limit & +2%% Atk Speed/lvl [Step %d]", cpsAdd, i),
 		branch = "speed",
-		nodeType = if i % 3 == 0 then "major" else "minor",
+		nodeType = if i == 6 then "keystone" elseif i % 3 == 0 then "major" else "minor",
 		hexPos = Vector2.new(q, r),
-		icon = "🗡",
+		icon = if i == 6 then "⚡" else "🗡",
 		parents = { prevAtkSpeed },
 		costType = "coins",
 		baseCost = 1500 * (5 ^ (i - 1)),
 		costGrowth = 1.35,
-		maxLevel = 20,
+		maxLevel = if i == 6 then 1 else 10,
 		reqSamTier = i,
-		effectsPerLevel = { clickSpeed = 2 },
+		effectsPerLevel = { clickSpeed = 2, maxCps = cpsAdd },
 	}
 	prevAtkSpeed = id
 end
@@ -370,6 +372,7 @@ function TalentTreeConfig.ComputeStats(unlockedTalents: { [string]: any }?)
 		bagSlots = 0,
 		petSlots = 0,
 		relicSlots = 0,
+		maxCps = 0,
 	}
 	if not unlockedTalents then
 		return totals

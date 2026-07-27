@@ -134,22 +134,24 @@ function ClickConfig.GetSamClickCredit(profile: any): number
 	return ClickConfig.SAM_CREDIT_BY_TIER[tier] or 1
 end
 
---- Max CPS for this profile (Sam mastery + Loc1 + purchase)
+--- Max CPS for this profile (Base = 4 CPS + Talent Tree bonuses)
 function ClickConfig.GetMaxCPS(profile: any): number
+	local baseCps = 4.0 -- Base CPS cap is 4 clicks per second for everyone
+	if not profile then
+		return baseCps
+	end
+
+	local ok, TalentTreeConfig = pcall(function()
+		return require(script.Parent.TalentTreeConfig)
+	end)
+	local talentStats = if ok and TalentTreeConfig then TalentTreeConfig.ComputeStats(profile.unlockedTalents) else nil
+	local bonusCps = (talentStats and talentStats.maxCps) or 0
+
+	local totalCps = baseCps + bonusCps
 	if ClickConfig.IsAutoPurchased(profile) then
-		return ClickConfig.MAX_CPS_PURCHASED
+		return math.min(ClickConfig.MAX_CPS_PURCHASED, math.max(baseCps, totalCps))
 	end
-	local loc = (profile and profile.currentLocation) or 1
-	if loc <= 1 then
-		-- Loc1: hard 4 unless already has Sam progress from visit Loc2
-		local sam = ClickConfig.GetSamCpsCap(profile)
-		if (profile and profile.samClickTier or 0) > 0 then
-			return math.min(ClickConfig.MAX_CPS_WITHOUT_AUTO, sam)
-		end
-		return ClickConfig.LOC1_CPS_CAP
-	end
-	-- Loc2+: Sam track is the free CPS path
-	return math.min(ClickConfig.MAX_CPS_WITHOUT_AUTO, ClickConfig.GetSamCpsCap(profile))
+	return math.clamp(totalCps, ClickConfig.MIN_CPS, ClickConfig.MAX_CPS_WITHOUT_AUTO)
 end
 
 ClickConfig.MAX_CPS = ClickConfig.MAX_CPS_WITHOUT_AUTO

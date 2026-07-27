@@ -779,14 +779,15 @@ function Hud.Mount(
 		end
 		rbFill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
 
+		local maxCps = Formulas.GetMaxCPS(profile)
 		if st.autoClicker then
-			autoChip.Text = "AUTO ON"
+			autoChip.Text = string.format("AUTO ON (%d CPS)", math.floor(maxCps))
 			local g = autoChip:FindFirstChildOfClass("UIGradient")
 			if g then
 				g.Color = ColorSequence.new(T.AutoOn, T.AutoOnDeep)
 			end
 		else
-			autoChip.Text = "AUTO"
+			autoChip.Text = string.format("AUTO OFF (%d CPS)", math.floor(maxCps))
 			local g = autoChip:FindFirstChildOfClass("UIGradient")
 			if g then
 				g.Color = ColorSequence.new(T.AutoOff, T.AutoOffDeep)
