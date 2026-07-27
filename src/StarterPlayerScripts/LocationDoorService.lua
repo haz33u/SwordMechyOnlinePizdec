@@ -2,7 +2,7 @@
 --[[
 	LocationDoorService — Handles zone transition doors & barrier walls between locations.
 	Features:
-	  - Finds door/wall parts in Workspace ("Doors -1", "Doors-1", "Door", "Loc2Door", "Gate", etc.)
+	  - Supports folder hierarchy: Workspace.Doors["1"], Workspace.Doors["2"], etc.
 	  - Attaches SurfaceGuis to ALL 4 FACES (Front, Back, Left, Right) + 3D BillboardGui overhead:
 	      🔒 AREA LOCKED
 	      ⚡ REQUIRES REBIRTH 1
@@ -148,8 +148,12 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 		local list: { Instance } = {}
 		for _, item in Workspace:GetDescendants() do
 			if item:IsA("Model") or item:IsA("BasePart") then
+				local parent = item.Parent
+				local parentName = parent and string.lower(parent.Name) or ""
 				local lowerName = string.lower(item.Name)
-				if string.find(lowerName, "door") or string.find(lowerName, "gate") or string.find(lowerName, "wall") or item:GetAttribute("UnlockRebirth") ~= nil then
+				local isInsideDoorsFolder = parentName == "doors" or string.find(parentName, "door") ~= nil or string.find(parentName, "gate") ~= nil
+
+				if isInsideDoorsFolder or string.find(lowerName, "door") or string.find(lowerName, "gate") or string.find(lowerName, "wall") or item:GetAttribute("UnlockRebirth") ~= nil then
 					if not boundDoors[item] then
 						table.insert(list, item)
 					end
@@ -173,17 +177,22 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 			return
 		end
 
-		-- Read rebirth requirement attribute (e.g. UnlockRebirth = 1 or 10)
+		-- Read rebirth requirement from attribute OR item name (e.g. "1" under Doors -> Rebirth 1)
 		local reqRebirth = inst:GetAttribute("UnlockRebirth")
 		if typeof(reqRebirth) ~= "number" then
-			local loc2 = LocationConfig.Get(2)
-			reqRebirth = (loc2 and loc2.unlockRebirth) or 1
+			local numInName = tonumber(inst.Name)
+			if numInName then
+				reqRebirth = numInName
+			else
+				local loc2 = LocationConfig.Get(2)
+				reqRebirth = (loc2 and loc2.unlockRebirth) or 1
+			end
 		end
 
 		local reqNum = reqRebirth :: number
 		local titleName = RebirthConfig.GetRankName(reqNum)
-		local loc2Meta = LocationConfig.Get(2)
-		local locName = (loc2Meta and loc2Meta.name) or "Location 2"
+		local locTargetMeta = LocationConfig.Get(reqNum + 1) or LocationConfig.Get(2)
+		local locName = (locTargetMeta and locTargetMeta.name) or string.format("Location %d", reqNum + 1)
 
 		local tag = createDoorTag(anchor, reqNum, titleName, locName)
 
@@ -200,7 +209,7 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 			primary = anchor,
 			reqRebirth = reqNum,
 			reqTitle = titleName,
-			targetLocId = 2,
+			targetLocId = reqNum + 1,
 			tag = tag,
 			surfaces = surfaces,
 		})
@@ -273,7 +282,7 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 
 	-- Initial scanner loop
 	task.spawn(function()
-		for _ = 1, 5 do
+		for _ = 1, 6 do
 			for _, door in findDoorInstances() do
 				setupDoor(door)
 			end
