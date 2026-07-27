@@ -343,7 +343,18 @@ local function buildBody(def: any, position: Vector3): Model
 
 	model.PrimaryPart = root
 	weldVisual(model, root)
-	snapModelToGround(model, position)
+
+	local bboxCF, bboxSize = model:GetBoundingBox()
+	local _, ry, _ = bboxCF:ToOrientation()
+
+	local rayParam = RaycastParams.new()
+	rayParam.FilterType = Enum.RaycastFilterType.Exclude
+	rayParam.FilterDescendantsInstances = { model, Workspace:FindFirstChild("Mobs") }
+
+	local rayResult = Workspace:Raycast(position + Vector3.new(0, 15, 0), Vector3.new(0, -50, 0), rayParam)
+	local groundY = rayResult and rayResult.Position.Y or position.Y
+
+	model:PivotTo(CFrame.new(position.X, groundY + (bboxSize.Y / 2), position.Z) * CFrame.Angles(0, ry, 0))
 
 	-- tier outline feel
 	local hl = Instance.new("Highlight")
@@ -399,76 +410,37 @@ local function buildBody(def: any, position: Vector3): Model
 	return model
 end
 
-local function getProperRootPart(model: Model): BasePart?
-	if model.PrimaryPart then
-		return model.PrimaryPart
-	end
-	for _, name in { "HumanoidRootPart", "Torso", "Root", "LowerTorso", "UpperTorso", "Head", "Body" } do
-		local p = model:FindFirstChild(name, true)
-		if p and p:IsA("BasePart") then
-			return p
-		end
-	end
-	for _, p in model:GetDescendants() do
-		if p:IsA("BasePart") then
-			local lowerName = string.lower(p.Name)
-			if not (string.find(lowerName, "spear") or string.find(lowerName, "sword")
-				or string.find(lowerName, "weapon") or string.find(lowerName, "tool")
-				or string.find(lowerName, "handle") or string.find(lowerName, "blade")
-				or string.find(lowerName, "hat") or string.find(lowerName, "acc")) then
-				return p
-			end
-		end
-	end
-	return model:FindFirstChildWhichIsA("BasePart", true)
-end
-
 local function snapModelToGround(model: Model, targetPos: Vector3)
-	local root = getProperRootPart(model)
+	local root = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
 	if not root then return end
 	model.PrimaryPart = root
 
-	-- 1. Check if model has pitch/roll tilt from Studio asset export and correct it upright
 	local bboxCF, bboxSize = model:GetBoundingBox()
-	local rx, ry, rz = bboxCF:ToOrientation()
+	local _, ry, _ = bboxCF:ToOrientation()
 
-	-- If template is lying flat (pitch or roll > 30 degrees), fix orientation upright
-	if math.abs(rx) > math.rad(30) or math.abs(rz) > math.rad(30) then
-		model:PivotTo(bboxCF * CFrame.Angles(-rx, 0, -rz))
-		bboxCF, bboxSize = model:GetBoundingBox()
-		rx, ry, rz = bboxCF:ToOrientation()
-	end
-
-	-- 2. Raycast down to find exact ground/terrain height
+	-- Raycast down to find ground level, excluding model, mobs, trees, and props
 	local rayParam = RaycastParams.new()
 	rayParam.FilterType = Enum.RaycastFilterType.Exclude
 
 	local excludeList = { model, Workspace:FindFirstChild("Mobs") }
 	for _, child in Workspace:GetChildren() do
 		local lower = string.lower(child.Name)
-		if string.find(lower, "tree") or string.find(lower, "decor") or string.find(lower, "fence")
-			or string.find(lower, "prop") or string.find(lower, "mountain") or string.find(lower, "rock") then
+		if string.find(lower, "tree") or string.find(lower, "decor") or string.find(lower, "fence") or string.find(lower, "prop") then
 			table.insert(excludeList, child)
 		end
 	end
 	rayParam.FilterDescendantsInstances = excludeList
 
-	-- Raycast from 25 studs above targetPos down 100 studs to hit baseplate/grass
-	local rayResult = Workspace:Raycast(Vector3.new(targetPos.X, targetPos.Y + 25, targetPos.Z), Vector3.new(0, -100, 0), rayParam)
+	local rayResult = Workspace:Raycast(targetPos + Vector3.new(0, 10, 0), Vector3.new(0, -40, 0), rayParam)
 	local groundY = rayResult and rayResult.Position.Y or targetPos.Y
 
-	-- 3. Temporarily pivot upright to measure body feet offset
-	local uprightRot = CFrame.Angles(0, ry, 0)
-	model:PivotTo(CFrame.new(targetPos.X, groundY + 10, targetPos.Z) * uprightRot)
-
-	-- Find lowest point of body parts (excluding held spears/weapons)
+	-- Calculate distance from PrimaryPart to actual body feet (ignoring held spears/weapons)
 	local lowestBodyY = math.huge
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") then
 			local lowerName = string.lower(p.Name)
-			if not (string.find(lowerName, "spear") or string.find(lowerName, "sword")
-				or string.find(lowerName, "weapon") or string.find(lowerName, "tool")
-				or string.find(lowerName, "handle") or string.find(lowerName, "blade")) then
+			-- Skip held weapons/spears when finding feet position
+			if not (string.find(lowerName, "spear") or string.find(lowerName, "sword") or string.find(lowerName, "weapon") or string.find(lowerName, "tool") or string.find(lowerName, "handle")) then
 				local bottomY = p.Position.Y - (p.Size.Y / 2)
 				if bottomY < lowestBodyY then
 					lowestBodyY = bottomY
@@ -477,16 +449,15 @@ local function snapModelToGround(model: Model, targetPos: Vector3)
 		end
 	end
 
-	local footOffset = 0
-	if lowestBodyY < math.huge then
+	local footOffset = 3.0 -- default R6 height offset
+	if lowestBodyY < math.huge and root.Position.Y > lowestBodyY then
 		footOffset = root.Position.Y - lowestBodyY
 	else
 		footOffset = bboxSize.Y / 2
 	end
 
-	-- 4. Final positioning: feet firmly ON the ground surface
-	local finalCF = CFrame.new(targetPos.X, groundY + footOffset, targetPos.Z) * uprightRot
-	model:PivotTo(finalCF)
+	local uprightCF = CFrame.new(targetPos.X, groundY + footOffset, targetPos.Z) * CFrame.Angles(0, ry, 0)
+	model:PivotTo(uprightCF)
 end
 
 local function buildPlaceholder(def: any, position: Vector3): Model
