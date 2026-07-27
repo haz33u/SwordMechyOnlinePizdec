@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roblox Case Opening & Reel Visual Editor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Inter:wght@400;600;700;800&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: #080a0f;
+      color: #f1f5f9;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      overflow: hidden;
+    }
+
+    .editor-layout {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Main Preview Area */
+    .preview-canvas {
+      flex: 1;
+      position: relative;
+      background: radial-gradient(circle at 50% 50%, #161b28 0%, #06070a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      padding: 20px;
+    }
+
+    .grid-bg {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 32px 32px;
+      pointer-events: none;
+    }
+
+    /* Rainbow Animated Outer Glow & Case Window */
+    .case-window {
+      position: relative;
+      width: 640px;
+      max-height: 94vh;
+      background: rgba(14, 17, 26, 0.94);
+      border-radius: 20px;
+      backdrop-filter: blur(20px);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 10;
+      overflow-y: auto;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9);
+    }
+
+    /* Multicolored Rainbow Outer Aura Glow */
+    .case-window::before {
+      content: '';
+      position: absolute;
+      inset: -16px;
+      border-radius: 32px;
+      background: linear-gradient(135deg, #ff007f, #7f00ff, #00f0ff, #00ff88, #ffea00, #ff007f);
+      background-size: 300% 300%;
+      opacity: 0.45;
+      filter: blur(22px);
+      z-index: -2;
+      animation: rainbow-glow-move 8s ease infinite;
+    }
+
+    /* Multicolored Border UIStroke Gradient */
+    .case-window::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      padding: 3px;
+      background: linear-gradient(135deg, #ff007f, #7f00ff, #00f0ff, #00ff88, #ffea00, #ff007f);
+      background-size: 300% 300%;
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      z-index: 1;
+      pointer-events: none;
+      animation: rainbow-glow-move 8s ease infinite;
+    }
+
+    @keyframes rainbow-glow-move {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    /* Case Header */
+    .case-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 2;
+    }
+
+    .case-title {
+      font-family: 'Fredoka', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      color: #ffffff;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
+
+    .case-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .stat-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 5px 12px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(4px);
+    }
+
+    .close-btn {
+      width: 34px;
+      height: 34px;
+      background: radial-gradient(circle, #ef4444 0%, #b91c1c 100%);
+      border: 1px solid #fca5a5;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 900;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.5);
+      transition: transform 0.15s;
+    }
+
+    .close-btn:hover {
+      transform: scale(1.08);
+    }
+
+    /* Container for Multi Reels (x1, x3, x5) */
+    .multi-reels-container {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 2;
+    }
+
+    /* Reel / Roulette Section */
+    .reel-wrapper {
+      position: relative;
+      width: 100%;
+      height: 104px;
+      background: #0a0c13;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+    }
+
+    /* Center Indicator Needle */
+    .reel-indicator {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 4px;
+      background: #ff3b5c;
+      transform: translateX(-50%);
+      z-index: 5;
+      box-shadow: 0 0 14px #ff3b5c;
+    }
+
+    .reel-indicator::before, .reel-indicator::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+    }
+
+    .reel-indicator::before {
+      top: 0;
+      border-top: 9px solid #ff3b5c;
+    }
+
+    .reel-indicator::after {
+      bottom: 0;
+      border-bottom: 9px solid #ff3b5c;
+    }
+
+    .reel-track {
+      display: flex;
+      gap: 10px;
+      padding: 0 10px;
+      position: absolute;
+      left: 0;
+      transition: transform 0.1s linear;
+      will-change: transform;
+    }
+
+    /* Slot Card in Reel (Roblox 1:1 ViewportFrame Look) */
+    .slot-card {
+      flex-shrink: 0;
+      width: 82px;
+      height: 90px;
+      background: radial-gradient(circle at 50% 30%, #1e2438 0%, #0d101b 100%);
+      border-radius: 12px;
+      border: 2px solid var(--rarity-color, #3b82f6);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 4px;
+      box-shadow: inset 0 0 12px var(--rarity-glow, rgba(59, 130, 246, 0.25));
+    }
+
+    .mini-3d-character {
+      width: 52px;
+      height: 58px;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6));
+    }
+
+    .slot-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: #e2e8f0;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+
+    /* Controls Row */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      z-index: 2;
+    }
+
+    .pill-group {
+      display: flex;
+      background: #0d0f18;
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      gap: 4px;
+    }
+
+    .pill-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .pill-btn.active {
+      background: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(37, 99, 235, 0.4);
+    }
+
+    .robux-pill.active {
+      background: linear-gradient(135deg, #00b0ff 0%, #0077ff 100%);
+      box-shadow: 0 2px 10px rgba(0, 176, 255, 0.4);
+    }
+
+    /* Big Spin CTA Button */
+    .spin-cta-btn {
+      width: 100%;
+      height: 52px;
+      background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+      border: 1.5px solid #86efac;
+      border-radius: 14px;
+      color: #ffffff;
+      font-family: 'Fredoka', sans-serif;
+      font-size: 19px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      z-index: 2;
+    }
+
+    .spin-cta-btn.robux-mode {
+      background: linear-gradient(135deg, #00c6ff 0%, #0072ff 100%);
+      border-color: #70e2ff;
+      box-shadow: 0 6px 18px rgba(0, 198, 255, 0.45);
+    }
+
+    .spin-cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 22px rgba(34, 197, 94, 0.5);
+    }
+
+    .spin-cta-btn:active {
+      transform: translateY(1px);
+    }
+
+    .spin-cta-btn:disabled {
+      background: #334155;
+      border-color: #475569;
+      box-shadow: none;
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .robux-icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      color: #0072ff;
+      font-weight: 900;
+      font-size: 13px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* Possible Rewards Grid */
+    .rewards-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      z-index: 2;
+    }
+
+    .rewards-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.5px;
+    }
+
+    .rewards-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    /* Glowing Reward Cards */
+    .reward-card {
+      position: relative;
+      background: radial-gradient(circle at 50% 30%, #1e2438 0%, #0d101b 100%);
+      border-radius: 14px;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      cursor: default;
+      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+      overflow: hidden;
+    }
+
+    /* Outer Rarity Glow Aura */
+    .reward-card::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 18px;
+      background: var(--rarity-color, #3b82f6);
+      opacity: 0.4;
+      filter: blur(12px);
+      z-index: -1;
+      transition: opacity 0.2s ease;
+    }
+
+    /* Gradient UIStroke Border */
+    .reward-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      padding: 2.5px;
+      background: linear-gradient(180deg, var(--rarity-color, #3b82f6) 0%, rgba(255, 255, 255, 0.25) 100%);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      pointer-events: none;
+    }
+
+    .reward-card:hover {
+      transform: translateY(-4px) scale(1.04);
+    }
+
+    .reward-card:hover::before {
+      opacity: 0.75;
+      filter: blur(16px);
+    }
+
+    .rarity-badge {
+      padding: 3px 10px;
+      border-radius: 6px;
+      background: var(--rarity-color, #3b82f6);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    .chance-text {
+      font-size: 13px;
+      font-weight: 800;
+      color: #ffffff;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    }
+
+    .power-text {
+      font-size: 11px;
+      font-weight: 700;
+      color: #38bdf8;
+    }
+
+    /* Inspector Right Panel */
+    .inspector-panel {
+      width: 420px;
+      background: #0f121a;
+      border-left: 1px solid #1e293b;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      z-index: 20;
+    }
+
+    .panel-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid #1e293b;
+      background: #131722;
+    }
+
+    .panel-header h1 {
+      font-size: 18px;
+      font-weight: 800;
+      color: #22c55e;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-header p {
+      font-size: 12px;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .panel-content {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .field-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+
+    .field-group input[type="text"], .field-group select {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 10px 12px;
+      color: #fff;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .panel-footer {
+      padding: 20px 24px;
+      border-top: 1px solid #1e293b;
+      background: #131722;
+    }
+
+    .btn-export {
+      width: 100%;
+      background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 14px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3);
+    }
+
+    /* Winner Popup Overlay */
+    .winner-modal {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(10px);
+      z-index: 50;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .winner-modal.open {
+      display: flex;
+    }
+
+    .winner-box {
+      background: #121622;
+      border: 2px solid #38bdf8;
+      border-radius: 24px;
+      padding: 30px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 0 50px rgba(56, 189, 248, 0.35);
+      max-width: 560px;
+      width: 92%;
+      animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .winner-grid {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .win-card-item {
+      background: #181d2c;
+      border: 2.5px solid var(--win-rarity-color, #eab308);
+      border-radius: 16px;
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      min-width: 105px;
+      box-shadow: 0 0 25px var(--win-glow, rgba(234, 179, 8, 0.35));
+    }
+
+    .btn-claim {
+      background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+      color: #fff;
+      border: none;
+      padding: 14px 36px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(34, 197, 94, 0.4);
+      transition: transform 0.15s;
+    }
+
+    .btn-claim:hover { transform: scale(1.04); }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes popIn { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+    /* Modal for Export Code */
+    .code-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.8);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .code-modal.open { display: flex; }
+
+    .modal-box {
+      width: 680px;
+      max-height: 80vh;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      padding: 16px 24px;
+      background: #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-body { padding: 20px; overflow-y: auto; }
+
+    pre {
+      background: #020617;
+      padding: 16px;
+      border-radius: 8px;
+      color: #86efac;
+      font-family: monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="editor-layout">
+    
+    <!-- CANVAS -->
+    <div class="preview-canvas">
+      <div class="grid-bg"></div>
+
+      <!-- CASE MODAL -->
+      <div class="case-window">
+        
+        <!-- HEADER -->
+        <div class="case-header">
+          <span class="case-title" id="lblCaseTitle">Pet Case (50K)</span>
+          <div class="case-stats">
+            <div class="stat-chip" id="chipHeaderKey">🔑 <span id="lblKeys">22</span></div>
+            <div class="stat-chip" id="chipHeaderRobux" style="color: #00b0ff;">R$ <span id="lblRobux">1,250</span></div>
+            <div class="stat-chip">🪙 <span id="lblCoins">1.2M</span></div>
+            <button class="close-btn">✕</button>
+          </div>
+        </div>
+
+        <!-- MULTI REELS WRAPPER (Dynamic 1, 3 or 5 reels) -->
+        <div class="multi-reels-container" id="multiReelsContainer">
+          <!-- Rendered dynamically -->
+        </div>
+
+        <!-- CONTROLS -->
+        <div class="controls-row">
+          <div class="pill-group">
+            <button class="pill-btn active" onclick="setMulti(1, this)">x1</button>
+            <button class="pill-btn" onclick="setMulti(3, this)">x3</button>
+            <button class="pill-btn" onclick="setMulti(5, this)">x5</button>
+          </div>
+
+          <div class="pill-group">
+            <button class="pill-btn active" onclick="setCurrency('coins', this)">For Coins 🪙</button>
+            <button class="pill-btn" onclick="setCurrency('keys', this)">For Key 🔑</button>
+            <button class="pill-btn robux-pill" onclick="setCurrency('robux', this)">For Robux R$</button>
+          </div>
+        </div>
+
+        <!-- SPIN BUTTON -->
+        <button class="spin-cta-btn" id="btnSpin" onclick="spinReel()">
+          <span id="lblSpinText">Open x1 for 50K 🪙</span>
+        </button>
+
+        <!-- POSSIBLE REWARDS -->
+        <div class="rewards-section">
+          <span class="rewards-title">Possible Rewards</span>
+          <div class="rewards-grid" id="rewardsGrid">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MULTI-WINNER POPUP OVERLAY -->
+      <div class="winner-modal" id="winnerModal">
+        <div class="winner-box">
+          <h2 style="font-family: 'Fredoka', sans-serif; color: #fff; font-size: 24px;" id="winModalTitle">YOU OBTAINED REWARDS!</h2>
+          
+          <div class="winner-grid" id="winnerGrid">
+            <!-- Populated on spin completion -->
+          </div>
+
+          <button class="btn-claim" onclick="closeWinnerModal()">EQUIP / CLAIM ALL</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- INSPECTOR PANEL -->
+    <div class="inspector-panel">
+      <div class="panel-header">
+        <h1>🎰 Case & Reel Visual Editor</h1>
+        <p>Настройка рулетки кейса, наград и подписки Robux / Coins</p>
+      </div>
+
+      <div class="panel-content">
+        <div>
+          <div class="section-title">Параметры Кейса</div>
+          <div class="field-group">
+            <label>Название Кейса</label>
+            <input type="text" id="inpCaseTitle" value="Pet Case (50K)" oninput="updateCaseTitle()">
+          </div>
+          <div class="field-group">
+            <label>Стоимость открытия (Coins)</label>
+            <input type="text" id="inpCaseCost" value="50K" oninput="updateCaseTitle()">
+          </div>
+          <div class="field-group">
+            <label>Стоимость открытия (Robux R$ x1)</label>
+            <input type="text" id="inpRobuxCost" value="49" oninput="updateCaseTitle()">
+          </div>
+        </div>
+
+        <div>
+          <div class="section-title">Список предметов в кейсе</div>
+          <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">Предметы и их шансы выпадения (Rarity & Drop Rate):</p>
+          <div id="itemsInspectorList">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-footer">
+        <button class="btn-export" onclick="openExportModal()">
+          <span>🚀 Сгенерировать Roblox Case Code (1 в 1)</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EXPORT CODE MODAL -->
+  <div class="code-modal" id="exportModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 style="color: #86efac;">Готовый CaseOpening.lua модуль для Roblox Studio</h3>
+        <button class="close-btn" style="background:none; border:none; color:#94a3b8; font-size:20px; cursor:pointer;" onclick="closeExportModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: #94a3b8; margin-bottom: 12px;">Скопируйте этот модуль в вашу систему открытия кейсов:</p>
+        <pre id="codeOutput"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const rarityColors = {
+      'RARE': { color: '#3b82f6', glow: 'rgba(59, 130, 246, 0.4)' },
+      'EPIC': { color: '#a855f7', glow: 'rgba(168, 85, 247, 0.4)' },
+      'LEGENDARY': { color: '#eab308', glow: 'rgba(234, 179, 8, 0.4)' },
+      'MYTHIC': { color: '#ef4444', glow: 'rgba(239, 68, 68, 0.4)' },
+      'SECRET': { color: '#ec4899', glow: 'rgba(236, 72, 153, 0.4)' }
+    };
+
+    // Roblox 3D Viewport Character SVG Renders matching Screenshot 2
+    const pet3DRenders = {
+      'Charon': `<svg class="mini-3d-character" viewBox="0 0 64 80"><rect x="18" y="24" width="28" height="36" rx="6" fill="#c2410c"/><rect x="22" y="10" width="20" height="20" rx="4" fill="#ea580c"/><circle cx="28" cy="18" r="2.5" fill="#fff"/><circle cx="36" cy="18" r="2.5" fill="#fff"/><polygon points="22,10 16,0 26,8" fill="#9a3412"/><polygon points="42,10 48,0 38,8" fill="#9a3412"/><rect x="22" y="60" width="8" height="16" rx="4" fill="#9a3412"/><rect x="34" y="60" width="8" height="16" rx="4" fill="#9a3412"/></svg>`,
+      'Morpheus': `<svg class="mini-3d-character" viewBox="0 0 64 80"><path d="M 8 36 Q 0 10 30 24 Q 0 62 8 36 Z" fill="#0284c7"/><path d="M 56 36 Q 64 10 34 24 Q 64 62 56 36 Z" fill="#0284c7"/><circle cx="32" cy="36" r="14" fill="#0369a1"/><circle cx="27" cy="34" r="2.5" fill="#fff"/><circle cx="37" cy="34" r="2.5" fill="#fff"/></svg>`,
+      'Torn': `<svg class="mini-3d-character" viewBox="0 0 64 80"><rect x="18" y="24" width="28" height="36" rx="6" fill="#6b21a8"/><rect x="22" y="10" width="20" height="20" rx="4" fill="#7e22ce"/><circle cx="28" cy="18" r="2.5" fill="#ff0055"/><circle cx="36" cy="18" r="2.5" fill="#ff0055"/><polygon points="22,10 14,-2 26,8" fill="#581c87"/><polygon points="42,10 50,-2 38,8" fill="#581c87"/><rect x="22" y="60" width="8" height="16" rx="4" fill="#581c87"/><rect x="34" y="60" width="8" height="16" rx="4" fill="#581c87"/></svg>`,
+      'Nifel': `<svg class="mini-3d-character" viewBox="0 0 64 80"><circle cx="32" cy="40" r="24" fill="#0369a1"/><path d="M 18 20 Q 12 0 26 12 Z" fill="#38bdf8"/><path d="M 46 20 Q 52 0 38 12 Z" fill="#38bdf8"/><circle cx="25" cy="34" r="3" fill="#38bdf8"/><circle cx="39" cy="34" r="3" fill="#38bdf8"/></svg>`,
+      'Nightmare': `<svg class="mini-3d-character" viewBox="0 0 64 80"><rect x="18" y="24" width="28" height="36" rx="6" fill="#854d0e"/><rect x="22" y="10" width="20" height="20" rx="4" fill="#ca8a04"/><circle cx="28" cy="18" r="2.5" fill="#fff"/><circle cx="36" cy="18" r="2.5" fill="#fff"/><polygon points="20,10 12,-4 26,6" fill="#eab308"/><polygon points="44,10 52,-4 38,6" fill="#eab308"/><rect x="22" y="60" width="8" height="16" rx="4" fill="#78350f"/><rect x="34" y="60" width="8" height="16" rx="4" fill="#78350f"/></svg>`,
+      'Grommash': `<svg class="mini-3d-character" viewBox="0 0 64 80"><rect x="16" y="20" width="32" height="42" rx="8" fill="#991b1b"/><rect x="20" y="6" width="24" height="22" rx="6" fill="#b91c1c"/><circle cx="27" cy="16" r="3" fill="#ff0055"/><circle cx="37" cy="16" r="3" fill="#ff0055"/><polygon points="20,6 10,-8 26,4" fill="#7f1d1d"/><polygon points="44,6 54,-8 38,4" fill="#7f1d1d"/><rect x="20" y="62" width="10" height="16" rx="4" fill="#7f1d1d"/><rect x="34" y="62" width="10" height="16" rx="4" fill="#7f1d1d"/></svg>`
+    };
+
+    let items = [
+      { name: 'Charon', power: 'x1.75', rarity: 'RARE', chance: 40.0 },
+      { name: 'Morpheus', power: 'x2.5', rarity: 'RARE', chance: 30.0 },
+      { name: 'Torn', power: 'x3.33', rarity: 'EPIC', chance: 15.0 },
+      { name: 'Nifel', power: 'x4.5', rarity: 'EPIC', chance: 10.0 },
+      { name: 'Nightmare', power: 'x6.0', rarity: 'LEGENDARY', chance: 4.5 },
+      { name: 'Grommash', power: 'x8.0', rarity: 'MYTHIC', chance: 0.5 },
+    ];
+
+    let currentMulti = 1;
+    let currentCurrency = 'coins';
+    let isSpinning = false;
+
+    function getPetSVG(name) {
+      return pet3DRenders[name] || pet3DRenders['Charon'];
+    }
+
+    function renderReels() {
+      const container = document.getElementById('multiReelsContainer');
+      container.innerHTML = '';
+
+      for (let r = 0; r < currentMulti; r++) {
+        const reelWrapper = document.createElement('div');
+        reelWrapper.className = 'reel-wrapper';
+        reelWrapper.style.height = currentMulti > 1 ? '78px' : '104px';
+
+        const indicator = document.createElement('div');
+        indicator.className = 'reel-indicator';
+
+        const track = document.createElement('div');
+        track.className = 'reel-track';
+        track.id = `reelTrack_${r}`;
+
+        let sequence = [];
+        for (let i = 0; i < 20; i++) {
+          sequence = sequence.concat(items);
+        }
+
+        sequence.forEach(item => {
+          const rInfo = rarityColors[item.rarity] || rarityColors['RARE'];
+          const card = document.createElement('div');
+          card.className = 'slot-card';
+          if (currentMulti > 1) {
+            card.style.width = '68px';
+            card.style.height = '72px';
+          }
+          card.style.setProperty('--rarity-color', rInfo.color);
+          card.style.setProperty('--rarity-glow', rInfo.glow);
+          card.innerHTML = `
+            ${getPetSVG(item.name)}
+            <span class="slot-name" style="${currentMulti > 1 ? 'font-size:9px;' : ''}">${item.name}</span>
+          `;
+          track.appendChild(card);
+        });
+
+        reelWrapper.appendChild(indicator);
+        reelWrapper.appendChild(track);
+        container.appendChild(reelWrapper);
+      }
+    }
+
+    function renderRewards() {
+      const grid = document.getElementById('rewardsGrid');
+      grid.innerHTML = '';
+
+      items.forEach(item => {
+        const rInfo = rarityColors[item.rarity] || rarityColors['RARE'];
+        const div = document.createElement('div');
+        div.className = 'reward-card';
+        div.style.setProperty('--rarity-color', rInfo.color);
+        div.innerHTML = `
+          ${getPetSVG(item.name)}
+          <span class="slot-name" style="font-weight: 700; font-size:13px; color:#fff;">${item.name}</span>
+          <span class="rarity-badge">${item.rarity}</span>
+          <span class="power-text">Power ${item.power}</span>
+          <span class="chance-text">${item.chance.toFixed(2)}%</span>
+        `;
+        grid.appendChild(div);
+      });
+    }
+
+    function renderInspectorItems() {
+      const list = document.getElementById('itemsInspectorList');
+      list.innerHTML = '';
+
+      items.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'field-group';
+        div.style.background = '#1e293b';
+        div.style.padding = '10px';
+        div.style.borderRadius = '8px';
+        div.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:700; color:#cbd5e1;">
+            <span>${item.name} (${item.power})</span>
+            <span style="color:${rarityColors[item.rarity].color};">${item.rarity}</span>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:6px;">
+            <input type="text" value="${item.name}" style="flex:1;" onchange="updateItemName(${idx}, this.value)">
+            <input type="text" value="${item.chance}" style="width:70px;" onchange="updateItemChance(${idx}, this.value)">
+          </div>
+        `;
+        list.appendChild(div);
+      });
+    }
+
+    function updateItemName(idx, val) {
+      items[idx].name = val;
+      renderReels();
+      renderRewards();
+    }
+
+    function updateItemChance(idx, val) {
+      items[idx].chance = parseFloat(val) || 0;
+      renderRewards();
+    }
+
+    function updateCaseTitle() {
+      const title = document.getElementById('inpCaseTitle').value;
+      document.getElementById('lblCaseTitle').textContent = title;
+      updateSpinBtnText();
+    }
+
+    function setMulti(val, btn) {
+      currentMulti = val;
+      document.querySelectorAll('.controls-row .pill-group:first-child .pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderReels();
+      updateSpinBtnText();
+    }
+
+    function setCurrency(curr, btn) {
+      currentCurrency = curr;
+      document.querySelectorAll('.controls-row .pill-group:last-child .pill-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const spinBtn = document.getElementById('btnSpin');
+      if (curr === 'robux') {
+        spinBtn.classList.add('robux-mode');
+      } else {
+        spinBtn.classList.remove('robux-mode');
+      }
+
+      updateSpinBtnText();
+    }
+
+    function updateSpinBtnText() {
+      const costStr = document.getElementById('inpCaseCost').value;
+      const robuxBase = parseInt(document.getElementById('inpRobuxCost').value) || 49;
+      const btn = document.getElementById('lblSpinText');
+
+      if (currentCurrency === 'coins') {
+        let multCost = costStr;
+        if (costStr.endsWith('K')) {
+          const val = parseFloat(costStr) * currentMulti;
+          multCost = `${val}K`;
+        }
+        btn.innerHTML = `Open x${currentMulti} for ${multCost} 🪙`;
+      } else if (currentCurrency === 'keys') {
+        btn.innerHTML = `Open x${currentMulti} for ${currentMulti} Key 🔑`;
+      } else if (currentCurrency === 'robux') {
+        let rPrice = robuxBase;
+        if (currentMulti === 3) rPrice = Math.round(robuxBase * 2.6);
+        if (currentMulti === 5) rPrice = Math.round(robuxBase * 4.0);
+
+        btn.innerHTML = `Open x${currentMulti} for R$ ${rPrice} <span class="robux-icon-badge">R$</span>`;
+      }
+    }
+
+    function getRandomItem() {
+      const rand = Math.random() * 100;
+      let cumulative = 0;
+      for (let item of items) {
+        cumulative += item.chance;
+        if (rand <= cumulative) return item;
+      }
+      return items[0];
+    }
+
+    function spinReel() {
+      if (isSpinning) return;
+      isSpinning = true;
+      document.getElementById('btnSpin').disabled = true;
+
+      const winners = [];
+      const cardWidth = currentMulti > 1 ? 78 : 92;
+
+      for (let r = 0; r < currentMulti; r++) {
+        const winningItem = getRandomItem();
+        winners.push(winningItem);
+
+        const track = document.getElementById(`reelTrack_${r}`);
+        const targetIndex = 40 + items.indexOf(winningItem);
+        const targetOffset = -(targetIndex * cardWidth - (track.parentElement.clientWidth / 2) + (cardWidth / 2));
+
+        track.style.transition = 'none';
+        track.style.transform = 'translateX(0px)';
+
+        setTimeout(() => {
+          track.style.transition = `transform ${3.5 + r * 0.3}s cubic-bezier(0.15, 0.9, 0.2, 1)`;
+          track.style.transform = `translateX(${targetOffset}px)`;
+        }, 50 + r * 100);
+      }
+
+      setTimeout(() => {
+        showWinners(winners);
+        isSpinning = false;
+        document.getElementById('btnSpin').disabled = false;
+      }, 4200);
+    }
+
+    function showWinners(winnerList) {
+      const modal = document.getElementById('winnerModal');
+      const grid = document.getElementById('winnerGrid');
+      const title = document.getElementById('winModalTitle');
+
+      title.textContent = winnerList.length > 1 ? `YOU OBTAINED ${winnerList.length} REWARDS!` : `YOU OBTAINED A REWARD!`;
+      grid.innerHTML = '';
+
+      winnerList.forEach(item => {
+        const rInfo = rarityColors[item.rarity] || rarityColors['RARE'];
+        const card = document.createElement('div');
+        card.className = 'win-card-item';
+        card.style.setProperty('--win-rarity-color', rInfo.color);
+        card.style.setProperty('--win-glow', rInfo.glow);
+        card.innerHTML = `
+          ${getPetSVG(item.name)}
+          <span class="rarity-badge" style="background:${rInfo.color}">${item.rarity}</span>
+          <span class="win-title-text">${item.name}</span>
+          <span class="power-text">Power ${item.power}</span>
+        `;
+        grid.appendChild(card);
+      });
+
+      modal.classList.add('open');
+    }
+
+    function closeWinnerModal() {
+      document.getElementById('winnerModal').classList.remove('open');
+    }
+
+    function openExportModal() {
+      let code = `--!strict\n-- Auto-Generated 1-in-1 Multi-Reel Case Opening Module for Roblox Studio\n\nlocal CaseConfig = {\n`;
+      code += `    Title = "${document.getElementById('inpCaseTitle').value}",\n`;
+      code += `    CoinsCost = "${document.getElementById('inpCaseCost').value}",\n`;
+      code += `    RobuxCostX1 = ${document.getElementById('inpRobuxCost').value},\n`;
+      code += `    Items = {\n`;
+
+      items.forEach(it => {
+        code += `        { Name = "${it.name}", Icon = "${it.name}", PowerMult = "${it.power}", Rarity = "${it.rarity}", DropChance = ${it.chance} },\n`;
+      });
+
+      code += `    }\n}\n\nreturn CaseConfig`;
+
+      document.getElementById('codeOutput').textContent = code;
+      document.getElementById('exportModal').classList.add('open');
+    }
+
+    function closeExportModal() {
+      document.getElementById('exportModal').classList.remove('open');
+    }
+
+    // Init
+    renderReels();
+    renderRewards();
+    renderInspectorItems();
+    updateSpinBtnText();
+  </script>
+</body>
+</html>

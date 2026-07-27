@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Side Menu UI Preview (Anime Expeditions / SAO Style)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at 30% 50%, #1a1e2d 0%, #0d0f17 100%);
+      font-family: 'Fredoka', 'Montserrat', sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      padding-left: 40px;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    /* Ambient background grid pattern */
+    .bg-grid {
+      position: absolute;
+      inset: 0;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+    }
+
+    /* Side Menu Main Container */
+    .side-menu-container {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    /* Individual Button Frame */
+    .menu-btn {
+      position: relative;
+      width: 190px;
+      height: 52px;
+      border-radius: 12px;
+      background: rgba(14, 17, 26, 0.85);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      cursor: pointer;
+      transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease;
+      text-decoration: none;
+    }
+
+    /* Outer Glow Layer */
+    .menu-btn::before {
+      content: '';
+      position: absolute;
+      inset: -12px;
+      border-radius: 20px;
+      background: var(--glow-color);
+      opacity: 0.35;
+      filter: blur(14px);
+      z-index: -2;
+      transition: opacity 0.25s ease, filter 0.25s ease;
+    }
+
+    /* Dual Border UIStroke simulation */
+    .menu-btn::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 12px;
+      padding: 3px;
+      background: var(--border-gradient);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    /* Inner Dark Texture Overlay */
+    .btn-texture {
+      position: absolute;
+      inset: 2px;
+      border-radius: 10px;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 0);
+      background-size: 6px 6px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Hover & Active Effects */
+    .menu-btn:hover {
+      transform: scale(1.06) translateX(4px);
+      background: rgba(22, 27, 40, 0.95);
+    }
+
+    .menu-btn:hover::before {
+      opacity: 0.75;
+      filter: blur(18px);
+    }
+
+    .menu-btn:active {
+      transform: scale(0.96) translateX(2px);
+    }
+
+    /* Icon Container & Styling */
+    .btn-icon-wrapper {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-right: 10px;
+      z-index: 2;
+      filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    }
+
+    /* Button Text Styling */
+    .btn-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: #ffffff;
+      text-shadow: 
+        -1.5px -1.5px 0 #0a0824,  
+         1.5px -1.5px 0 #0a0824,
+        -1.5px  1.5px 0 #0a0824,
+         1.5px  1.5px 0 #0a0824,
+         0 3px 6px rgba(0, 0, 0, 0.8);
+      z-index: 2;
+      background: var(--text-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 0px #0a0824);
+    }
+
+    /* Keybind Badge Pill */
+    .keybind-pill {
+      margin-left: auto;
+      background: rgba(26, 32, 48, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 6px;
+      padding: 2px 7px;
+      font-size: 12px;
+      font-weight: 800;
+      color: #e2e8f0;
+      box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.4);
+      z-index: 2;
+    }
+
+    /* Notification Alert Badge */
+    .alert-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ff3b5c 0%, #d91438 100%);
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 10px #ff1e43, 0 2px 4px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 900;
+      color: #ffffff;
+      z-index: 5;
+      animation: pulse-alert 1.5s infinite ease-in-out;
+    }
+
+    @keyframes pulse-alert {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 8px #ff1e43; }
+      50% { transform: scale(1.15); box-shadow: 0 0 16px #ff1e43; }
+    }
+
+    /* Rainbow Moving Gradient Effect for Store Button */
+    @keyframes rainbow-spin {
+      0% { filter: hue-rotate(0deg); }
+      100% { filter: hue-rotate(360deg); }
+    }
+
+    .rainbow-btn {
+      animation: rainbow-spin 4s linear infinite;
+    }
+
+    /* Control Panel for Previewing */
+    .preview-info {
+      position: fixed;
+      top: 30px;
+      right: 40px;
+      background: rgba(15, 18, 26, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 380px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(12px);
+    }
+
+    .preview-info h2 {
+      font-size: 20px;
+      color: #38bdf8;
+      margin-bottom: 8px;
+    }
+
+    .preview-info p {
+      font-size: 13px;
+      line-height: 1.5;
+      color: #94a3b8;
+      margin-bottom: 16px;
+    }
+
+    .badge-tag {
+      display: inline-block;
+      background: rgba(56, 189, 248, 0.15);
+      color: #38bdf8;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+
+  <!-- SIDE MENU PREVIEW -->
+  <div class="side-menu-container">
+    
+    <!-- STORE (STORE / RAINBOW) -->
+    <div class="menu-btn rainbow-btn" style="
+      --glow-color: #ff007f;
+      --border-gradient: linear-gradient(135deg, #ff007f, #7f00ff, #00f0ff, #ffea00);
+      --text-gradient: linear-gradient(180deg, #ffffff 0%, #ffd0ec 100%);
+    " onclick="triggerEffect(this)">
+      <div class="btn-texture"></div>
+      <div class="btn-icon-wrapper">🛒</div>
+      <span class="btn-title">Store</span>
+    </div>
+
+    <!-- UNITS (GOLD / YELLOW) -->
+    <div class="menu-btn" style="
+      --glow-color: #ffaa00;
+      --border-gradient: linear-gradient(135deg, #ffee55 0%, #ffaa00 100%);
+      --text-gradient: linear-gradient(180deg, #ffffff 0%, #ffe885 100%);
+    " onclick="triggerEffect(this)">
+      <div class="btn-texture"></div>
+      <div class="btn-icon-wrapper">⭐</div>
+      <span class="btn-title">Units</span>
+      <div class="keybind-pill">H</div>
+    </div>
+
+    <!-- ITEMS (CYAN / BLUE) -->
+    <div class="menu-btn" style="
+      --glow-color: #00bfff;
+      --border-gradient: linear-gradient(135deg, #70e2ff 0%, #0088ff 100%);
+      --text-gradient: linear-gradient(180deg, #ffffff 0%, #99e5ff 100%);
+    " onclick="triggerEffect(this)">
+      <div class="btn-texture"></div>
+      <div class="btn-icon-wrapper">🎒</div>
+      <span class="btn-title">Items</span>
+      <div class="keybind-pill">J</div>
+    </div>
+
+    <!-- QUESTS (ORANGE / RED) -->
+    <div class="menu-btn" style="
+      --glow-color: #ff5500;
+      --border-gradient: linear-gradient(135deg, #ff9933 0%, #e63900 100%);
+      --text-gradient: linear-gradient(180deg, #ffffff 0%, #ffcc99 100%);
+    " onclick="triggerEffect(this)">
+      <div class="btn-texture"></div>
+      <div class="btn-icon-wrapper">📜</div>
+      <span class="btn-title">Quests</span>
+      <div class="alert-badge">!</div>
+    </div>
+
+    <!-- SUMMON (PURPLE / VIOLET) -->
+    <div class="menu-btn" style="
+      --glow-color: #aa00ff;
+      --border-gradient: linear-gradient(135deg, #e066ff 0%, #8800cc 100%);
+      --text-gradient: linear-gradient(180deg, #ffffff 0%, #f0b3ff 100%);
+    " onclick="triggerEffect(this)">
+      <div class="btn-texture"></div>
+      <div class="btn-icon-wrapper">💎</div>
+      <span class="btn-title">Summon</span>
+    </div>
+
+    <!-- AREAS (GREEN / LIME) -->
+    <div class="menu-btn" style="
+      --glow-color: #00e64d;
+      --border-gradient: linear-gradient(135deg, #66ff8c 0%, #009933 100%);
+      --text-gradient: linear-gradient(180deg, #ffffff 0%, #b3ffcc 100%);
+    " onclick="triggerEffect(this)">
+      <div class="btn-texture"></div>
+      <div class="btn-icon-wrapper">🧭</div>
+      <span class="btn-title">Areas</span>
+    </div>
+
+    <!-- PLAY (TEAL / SHIP) -->
+    <div class="menu-btn" style="
+      --glow-color: #00e5cc;
+      --border-gradient: linear-gradient(135deg, #66fff0 0%, #009988 100%);
+      --text-gradient: linear-gradient(180deg, #ffffff 0%, #b3fff7 100%);
+    " onclick="triggerEffect(this)">
+      <div class="btn-texture"></div>
+      <div class="btn-icon-wrapper">⛵</div>
+      <span class="btn-title">Play</span>
+    </div>
+
+    <!-- EVENTS (PINK / RED) -->
+    <div class="menu-btn" style="
+      --glow-color: #ff0055;
+      --border-gradient: linear-gradient(135deg, #ff6699 0%, #cc0044 100%);
+      --text-gradient: linear-gradient(180deg, #ffffff 0%, #ffb3cc 100%);
+    " onclick="triggerEffect(this)">
+      <div class="btn-texture"></div>
+      <div class="btn-icon-wrapper">🎉</div>
+      <span class="btn-title">Events</span>
+    </div>
+
+  </div>
+
+  <!-- CONTROL / INFO PANEL -->
+  <div class="preview-info">
+    <span class="badge-tag">TEMPORARY MOCKUP PREVIEW</span>
+    <h2>Interactive UI Preview</h2>
+    <p>Это **изолированная интерактивная предпросмотровая страница**. Ни один исходный файл вашей игры в <code>src/</code> не был затронут!</p>
+    <p>Вы можете наводить курсор на кнопки и кликать по ним, чтобы проверить свечение, обводку, анимации и внешний вид.</p>
+    <p style="color: #cbd5e1; font-weight: 600;">Удалить этот файл макета можно в любой момент по вашей команде.</p>
+  </div>
+
+  <script>
+    function triggerEffect(btn) {
+      btn.style.transform = 'scale(0.92) translateX(2px)';
+      setTimeout(() => {
+        btn.style.transform = '';
+      }, 150);
+    }
+  </script>
+</body>
+</html>
