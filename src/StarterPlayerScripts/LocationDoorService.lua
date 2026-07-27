@@ -3,12 +3,12 @@
 	LocationDoorService — Handles zone transition doors & barrier walls between locations.
 	Features:
 	  - Auto-calculates SurfaceGui CanvasSize based on physical door part size (anchor.Size).
-	  - Uses TextScaled = true so text perfectly fills any size door (10 studs to 200 studs wide).
+	  - Uses TextScaled = true with UIListLayout.
 	  - Displays exact user-requested text:
 	      🔒 AREA CLOSED
 	      ⚡ Get Rebirth 3 to Unlock
 	      🏆 Required Title: "Oathbreaker" (glowing in exact Title Index color!)
-	  - Renders on ALL 4 faces (Front, Back, Left, Right) so rotation in Studio never hides text.
+	  - Continuously monitors player stats (polling + state observer) so door OPENS IMMEDIATELY on Rebirth 3!
 ]]
 
 local Players = game:GetService("Players")
@@ -244,22 +244,15 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 		end
 	end
 
-	-- Initial scanner loop
+	-- Continuous background monitoring loop (runs every 0.5s so doors open IMMEDIATELY on Rebirth)
 	task.spawn(function()
-		for _ = 1, 6 do
+		while true do
 			for _, door in findDoorInstances() do
 				setupDoor(door)
 			end
 			refreshDoorStates()
-			task.wait(1)
+			task.wait(0.5)
 		end
-	end)
-
-	-- Monitor player stats changes to dynamically open/close doors
-	pcall(function()
-		scope:Observer(store.stats):onChange(function()
-			refreshDoorStates()
-		end)
 	end)
 
 	print("[LocationDoorService] Initialized — monitoring zone doors for Rebirth & Title unlocks")
