@@ -101,39 +101,42 @@ end
 local function makeHpHud(parent: BasePart, title: string, tierColor: Color3)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "MobHud"
-	bb.Size = UDim2.fromOffset(180, 46)
-	bb.StudsOffset = Vector3.new(0, 3.2, 0)
+	-- Stud-based 3D proportion: 4.5 studs wide, 1.1 studs tall in world space
+	bb.Size = UDim2.new(4.5, 0, 1.1, 0)
+	bb.StudsOffset = Vector3.new(0, 3.0, 0)
 	bb.AlwaysOnTop = false
-	bb.MaxDistance = 60
+	bb.MaxDistance = 38 -- Hide clean when out of combat range
+	bb.DistanceLowerLimit = 8
+	bb.DistanceUpperLimit = 35
 	bb.Parent = parent
 
 	local barBg = Instance.new("Frame")
 	barBg.Name = "BarBg"
 	barBg.BackgroundColor3 = Color3.fromRGB(12, 16, 26)
-	barBg.BackgroundTransparency = 0.1
+	barBg.BackgroundTransparency = 0.15
 	barBg.BorderSizePixel = 0
 	barBg.Size = UDim2.new(1, 0, 1, 0)
 	barBg.Parent = bb
 
 	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 10)
+	corner.CornerRadius = UDim.new(0, 8)
 	corner.Parent = barBg
 
 	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 2.0
+	stroke.Thickness = 1.8
 	stroke.Color = tierColor
-	stroke.Transparency = 0.1
+	stroke.Transparency = 0.15
 	stroke.Parent = barBg
 
 	local nameLbl = Instance.new("TextLabel")
 	nameLbl.Name = "Name"
 	nameLbl.BackgroundTransparency = 1
-	nameLbl.Size = UDim2.new(1, -12, 0, 20)
-	nameLbl.Position = UDim2.new(0, 6, 0, 3)
+	nameLbl.Size = UDim2.new(1, -8, 0.45, 0)
+	nameLbl.Position = UDim2.new(0, 4, 0, 2)
 	nameLbl.Font = Enum.Font.FredokaOne
-	nameLbl.TextSize = 13
+	nameLbl.TextScaled = true
 	nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-	nameLbl.TextStrokeTransparency = 0.5
+	nameLbl.TextStrokeTransparency = 0.4
 	nameLbl.TextXAlignment = Enum.TextXAlignment.Center
 	nameLbl.Text = title
 	nameLbl.Parent = barBg
@@ -142,11 +145,11 @@ local function makeHpHud(parent: BasePart, title: string, tierColor: Color3)
 	fillTrack.Name = "FillTrack"
 	fillTrack.BackgroundColor3 = Color3.fromRGB(24, 30, 44)
 	fillTrack.BorderSizePixel = 0
-	fillTrack.Size = UDim2.new(1, -16, 0, 16)
-	fillTrack.Position = UDim2.new(0, 8, 0, 24)
+	fillTrack.Size = UDim2.new(1, -12, 0.4, 0)
+	fillTrack.Position = UDim2.new(0, 6, 0.52, 0)
 	fillTrack.Parent = barBg
 	local trackCorner = Instance.new("UICorner")
-	trackCorner.CornerRadius = UDim.new(0, 6)
+	trackCorner.CornerRadius = UDim.new(0, 5)
 	trackCorner.Parent = fillTrack
 
 	local fill = Instance.new("Frame")
@@ -156,7 +159,7 @@ local function makeHpHud(parent: BasePart, title: string, tierColor: Color3)
 	fill.Size = UDim2.new(1, 0, 1, 0)
 	fill.Parent = fillTrack
 	local fillCorner = Instance.new("UICorner")
-	fillCorner.CornerRadius = UDim.new(0, 6)
+	fillCorner.CornerRadius = UDim.new(0, 5)
 	fillCorner.Parent = fill
 
 	local hpLbl = Instance.new("TextLabel")
@@ -164,9 +167,9 @@ local function makeHpHud(parent: BasePart, title: string, tierColor: Color3)
 	hpLbl.BackgroundTransparency = 1
 	hpLbl.Size = UDim2.new(1, 0, 1, 0)
 	hpLbl.Font = Enum.Font.FredokaOne
-	hpLbl.TextSize = 11
+	hpLbl.TextScaled = true
 	hpLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-	hpLbl.TextStrokeTransparency = 0.5
+	hpLbl.TextStrokeTransparency = 0.4
 	hpLbl.ZIndex = 2
 	hpLbl.Text = "100 / 100"
 	hpLbl.Parent = fillTrack
@@ -338,7 +341,15 @@ local function buildBody(def: any, position: Vector3): Model
 
 	local bboxCF, bboxSize = model:GetBoundingBox()
 	local _, ry, _ = bboxCF:ToOrientation()
-	model:PivotTo(CFrame.new(position.X, position.Y + (bboxSize.Y / 2), position.Z) * CFrame.Angles(0, ry, 0))
+
+	local rayParam = RaycastParams.new()
+	rayParam.FilterType = Enum.RaycastFilterType.Exclude
+	rayParam.FilterDescendantsInstances = { model, Workspace:FindFirstChild("Mobs") }
+
+	local rayResult = Workspace:Raycast(position + Vector3.new(0, 15, 0), Vector3.new(0, -50, 0), rayParam)
+	local groundY = rayResult and rayResult.Position.Y or position.Y
+
+	model:PivotTo(CFrame.new(position.X, groundY + (bboxSize.Y / 2), position.Z) * CFrame.Angles(0, ry, 0))
 
 	-- tier outline feel
 	local hl = Instance.new("Highlight")
@@ -394,19 +405,32 @@ local function buildBody(def: any, position: Vector3): Model
 	return model
 end
 
+local function snapModelToGround(model: Model, targetPos: Vector3)
+	local root = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
+	if not root then return end
+	model.PrimaryPart = root
+
+	local bboxCF, bboxSize = model:GetBoundingBox()
+	local _, ry, _ = bboxCF:ToOrientation()
+
+	-- Raycast down to find ground level
+	local rayParam = RaycastParams.new()
+	rayParam.FilterType = Enum.RaycastFilterType.Exclude
+	rayParam.FilterDescendantsInstances = { model, Workspace:FindFirstChild("Mobs") }
+
+	local rayResult = Workspace:Raycast(targetPos + Vector3.new(0, 15, 0), Vector3.new(0, -50, 0), rayParam)
+	local groundY = rayResult and rayResult.Position.Y or targetPos.Y
+
+	local uprightCF = CFrame.new(targetPos.X, groundY + (bboxSize.Y / 2), targetPos.Z) * CFrame.Angles(0, ry, 0)
+	model:PivotTo(uprightCF)
+end
+
 local function buildPlaceholder(def: any, position: Vector3): Model
 	local studio = tryStudioModel(def)
 	if studio then
-		local root = studio.PrimaryPart or studio:FindFirstChildWhichIsA("BasePart", true)
-		if root and root:IsA("BasePart") then
-			studio.PrimaryPart = root
-
-			-- Position model so its bottom feet sit 100% flush on top of the ground and 100% upright
-			local bboxCF, bboxSize = studio:GetBoundingBox()
-			local _, ry, _ = bboxCF:ToOrientation()
-			local uprightCF = CFrame.new(position.X, position.Y + (bboxSize.Y / 2), position.Z) * CFrame.Angles(0, ry, 0)
-			studio:PivotTo(uprightCF)
-
+		snapModelToGround(studio, position)
+		local root = studio.PrimaryPart
+		if root then
 			if not root:FindFirstChildOfClass("ClickDetector") then
 				local click = Instance.new("ClickDetector")
 				click.MaxActivationDistance = 72
