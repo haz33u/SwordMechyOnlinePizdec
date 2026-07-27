@@ -152,6 +152,43 @@ add("P4_L1", "Polar Drake", "Legendary", 120000, 4, "loc4_2b", 1.5, 1_000_000_00
 add("P4_M1", "Yeti King", "Mythic", 500000, 4, "loc4_2b", 0.5, 5_000_000_000)
 
 ----------------------------------------------------------------------
+-- Loc5 Desert Temple (coin 100B)
+----------------------------------------------------------------------
+add("P5_C1", "Scarab", "Common", 2_500_000, 5, "loc5_100b", 44.0, 500_000_000)
+add("P5_R1", "Anubis Guard", "Rare", 12_500_000, 5, "loc5_100b", 35.0, 2_000_000_000)
+add("P5_E1", "Sphinx", "Epic", 50_000_000, 5, "loc5_100b", 14.0, 10_000_000_000)
+add("P5_L1", "Sun Drake", "Legendary", 250_000_000, 5, "loc5_100b", 5.0, 50_000_000_000)
+add("P5_M1", "Pharaoh God", "Mythic", 1_500_000_000, 5, "loc5_100b", 0.5, 300_000_000_000)
+
+----------------------------------------------------------------------
+-- Loc6 Cyber City (coin 5T)
+----------------------------------------------------------------------
+add("P6_C1", "Cyber Cat", "Common", 10_000_000_000, 6, "loc6_5t", 44.0, 15_000_000_000)
+add("P6_R1", "Neon Hawk", "Rare", 50_000_000_000, 6, "loc6_5t", 35.0, 80_000_000_000)
+add("P6_E1", "Mecha Wolf", "Epic", 250_000_000_000, 6, "loc6_5t", 14.0, 400_000_000_000)
+add("P6_L1", "Plasma Dragon", "Legendary", 1_200_000_000_000, 6, "loc6_5t", 5.0, 2_000_000_000_000)
+add("P6_M1", "Cyber Valkyrie", "Mythic", 8_000_000_000_000, 6, "loc6_5t", 0.5, 10_000_000_000_000)
+
+----------------------------------------------------------------------
+-- Loc7 Celestial Realm (coin 100T)
+----------------------------------------------------------------------
+add("P7_C1", "Starlight Spirit", "Common", 50_000_000_000_000, 7, "loc7_100t", 44.0, 100_000_000_000)
+add("P7_R1", "Seraphim", "Rare", 250_000_000_000_000, 7, "loc7_100t", 35.0, 500_000_000_000)
+add("P7_E1", "Solar Phoenix", "Epic", 1_200_000_000_000_000, 7, "loc7_100t", 14.0, 2_000_000_000_000)
+add("P7_L1", "Celestial Dragon", "Legendary", 6_000_000_000_000_000, 7, "loc7_100t", 5.0, 10_000_000_000_000)
+add("P7_M1", "Archangel Prime", "Mythic", 50_000_000_000_000_000, 7, "loc7_100t", 0.5, 100_000_000_000_000)
+
+----------------------------------------------------------------------
+-- Pet Variations System (Normal, Golden, Shiny/Void)
+----------------------------------------------------------------------
+PetConfig.Variations = {
+	Normal = { PowerMult = 1.0, Prefix = "", Color = Color3.fromRGB(255, 255, 255) },
+	Golden = { PowerMult = 2.5, Prefix = "Golden ", Color = Color3.fromRGB(255, 215, 0) },
+	Shiny = { PowerMult = 5.0, Prefix = "Shiny ", Color = Color3.fromRGB(0, 255, 255) },
+	Void = { PowerMult = 10.0, Prefix = "Void ", Color = Color3.fromRGB(180, 0, 255) }
+}
+
+----------------------------------------------------------------------
 -- API
 ----------------------------------------------------------------------
 
@@ -160,8 +197,13 @@ function PetConfig.Get(id: string): PetDef?
 end
 
 --- Pure Мощь xN
-function PetConfig.GetPowerMult(def: PetDef): number
-	return def.powerMult or 1
+function PetConfig.GetPowerMult(def: PetDef, variation: string?): number
+	local base = def.powerMult or 1
+	local varInfo = variation and PetConfig.Variations[variation]
+	if varInfo then
+		return base * varInfo.PowerMult
+	end
+	return base
 end
 
 --- Compatibility for UI that still shows +% (not used in combat math)
