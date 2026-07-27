@@ -12,15 +12,52 @@ local Remotes = require(Shared.Remotes)
 local GameConfig = require(Shared.Config.GameConfig)
 local Formulas = require(Shared.Formulas)
 
--- Purge old toolbox scripts in Workspace that throw errors
+-- Kill free-model / toolbox scripts in Workspace (ChestServer, PoseTexture, Robux kits…).
+-- They often run *before* Main; still disable+destroy so they don't re-fire on respawn/stream.
 pcall(function()
-	for _, desc in game:GetService("Workspace"):GetDescendants() do
-		if desc:IsA("LuaSourceContainer") then
-			if desc.Name == "ChestServer" or desc.Name == "ChestClient" or desc.Name == "PoseTexture" or desc.Name == "TextureConfiguration" then
-				desc:Destroy()
-			end
+	local Workspace = game:GetService("Workspace")
+	local BAD_NAMES = {
+		ChestServer = true,
+		ChestClient = true,
+		ChestRemotes = true,
+		PoseTexture = true,
+		TextureConfiguration = true,
+		LightConfig = true,
+		AuraChest = true,
+	}
+	local function isBadScript(inst: Instance): boolean
+		if not inst:IsA("LuaSourceContainer") then
+			return false
 		end
+		if BAD_NAMES[inst.Name] then
+			return true
+		end
+		-- Free-model Robux kits spam MarketplaceService 403
+		local p = inst.Parent
+		while p and p ~= Workspace do
+			local n = string.lower(p.Name)
+			if string.find(n, "robux", 1, true) then
+				return true
+			end
+			p = p.Parent
+		end
+		return false
 	end
+	local function kill(inst: Instance)
+		if not isBadScript(inst) then
+			return
+		end
+		if inst:IsA("BaseScript") then
+			(inst :: BaseScript).Disabled = true
+		end
+		inst:Destroy()
+	end
+	for _, desc in Workspace:GetDescendants() do
+		kill(desc)
+	end
+	Workspace.DescendantAdded:Connect(function(desc)
+		task.defer(kill, desc)
+	end)
 end)
 
 local Services = script.Parent:WaitForChild("Services")
