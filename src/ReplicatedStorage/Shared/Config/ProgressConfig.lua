@@ -25,8 +25,7 @@ local ProgressConfig = {
 	-- Pet slots (equip team) — bag size is UpgradeConfig.BASE_BAG_SLOTS
 	----------------------------------------------------------------------
 	START_PET_SLOTS = 3,
-	MAX_PET_SLOTS = 8, -- equip team hard cap
-	MAX_PETS_OWNED = 32, -- legacy default; runtime uses Formulas.GetPetBagCap
+	MAX_PET_SLOTS = 4, -- equip team hard cap (3 F2P + 1 Paid shop slot)
 
 	-- When rebirthLevel reaches `rebirth`, +`slots` (recalculated, not stacked spam)
 	PetSlotsFromRebirth = {

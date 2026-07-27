@@ -197,7 +197,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | P3 | Leaderboard / full BP economy / Wings | meta | stable core |
 | P4 | DataStore versioning, anti-cheat, soft launch | skeleton | soft launch |
 
-**Already shipped (do not re-do):** clicks/CPS/rebirth dual-cost · upgrades · weapons drop/enchant/ban · case keys + CaseResult · pet slots 3→7 + paid offhand · Loc1 quests skeleton · reference game lang dump · **INVETAR inventory shell** · **gamepass donate shop + auto unlock** · case open no-dim center result.
+**Already shipped (do not re-do):** clicks/CPS/rebirth dual-cost · upgrades · weapons drop/enchant/ban · case keys + CaseResult · pet slots (3 F2P → 4 max with paid slot) + paid offhand · Loc1 quests skeleton · reference game lang dump · **INVETAR inventory shell** · **gamepass donate shop + auto unlock** · case open no-dim center result.
 
 ---
 
