@@ -6,7 +6,7 @@
 	      🔒 AREA CLOSED
 	      ⚡ Get Rebirth 3 to Unlock
 	      🏆 Required Title: "Oathbreaker" (glowing in exact Title Index color!)
-	  - Supports Workspace.Doors["1"], Workspace.Doors["2"], etc.
+	  - Supports Workspace.Doors["1"], Workspace.Doors["2"], etc. anywhere in Workspace tree.
 ]]
 
 local Players = game:GetService("Players")
@@ -40,8 +40,9 @@ local function createSurfaceLock(anchor: BasePart, face: Enum.NormalId, reqRebir
 	sg.Name = name
 	sg.Face = face
 	sg.CanvasSize = Vector2.new(1000, 550)
-	sg.AlwaysOnTop = false
+	sg.AlwaysOnTop = true
 	sg.LightInfluence = 0
+	sg.Adornee = anchor
 	sg.Parent = anchor
 
 	local container = Instance.new("Frame")
@@ -107,6 +108,7 @@ local function createDoorTag(anchor: BasePart, reqRebirth: number, titleName: st
 	bb.StudsOffset = Vector3.new(0, 8.0, 0)
 	bb.AlwaysOnTop = true
 	bb.MaxDistance = 250
+	bb.Adornee = anchor
 	bb.Parent = anchor
 
 	local title = Instance.new("TextLabel")
@@ -156,10 +158,19 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 			end
 		end
 
-		-- 1. Match ONLY direct children of Workspace.Doors / Workspace.LocationDoors
-		local doorsFolder = Workspace:FindFirstChild("Doors") or Workspace:FindFirstChild("LocationDoors")
-		if doorsFolder then
-			for _, child in doorsFolder:GetChildren() do
+		-- 1. Search deep for any folder named "Doors" or "LocationDoors" anywhere in Workspace
+		local doorsFolders: { Instance } = {}
+		for _, desc in Workspace:GetDescendants() do
+			if desc:IsA("Folder") or desc:IsA("Model") then
+				local lName = string.lower(desc.Name)
+				if lName == "doors" or lName == "locationdoors" then
+					table.insert(doorsFolders, desc)
+				end
+			end
+		end
+
+		for _, folder in doorsFolders do
+			for _, child in folder:GetChildren() do
 				if (child:IsA("Model") or child:IsA("BasePart")) and not boundDoors[child] then
 					table.insert(list, child)
 				end
