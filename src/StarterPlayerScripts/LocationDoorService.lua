@@ -2,12 +2,13 @@
 --[[
 	LocationDoorService — Handles zone transition doors & barrier walls between locations.
 	Features:
-	  - Displays compact, clean text ON THE DOOR SURFACE:
+	  - Auto-calculates SurfaceGui CanvasSize based on physical door part size (anchor.Size).
+	  - Uses TextScaled = true so text perfectly fills any size door (10 studs to 200 studs wide).
+	  - Displays exact user-requested text:
 	      🔒 AREA CLOSED
 	      ⚡ Get Rebirth 3 to Unlock
-	      🏆 Required Title: "Oathbreaker" (glowing in index color)
-	  - AlwaysOnTop = true with MaxDistance = 120 (visible through smooth plastic glass without clipping or screen-filling).
-	  - Material: SmoothPlastic semi-transparent red (no weird ForceField texture glithes).
+	      🏆 Required Title: "Oathbreaker" (glowing in exact Title Index color!)
+	  - Renders on ALL 4 faces (Front, Back, Left, Right) so rotation in Studio never hides text.
 ]]
 
 local Players = game:GetService("Players")
@@ -37,13 +38,19 @@ local function createSurfaceLock(anchor: BasePart, face: Enum.NormalId, reqRebir
 	local rankStyle = RebirthConfig.GetRankStyle(reqRebirth)
 	local titleHex = colorToHex(rankStyle.color or Color3.fromRGB(120, 220, 255))
 
+	-- Auto-calculate CanvasSize based on physical part size in studs
+	local pSize = anchor.Size
+	local w = math.max(pSize.X, pSize.Z, 12)
+	local h = math.max(pSize.Y, 8)
+	local canvasW = math.clamp(math.floor(w * 40), 1000, 4000)
+	local canvasH = math.clamp(math.floor(h * 40), 600, 2400)
+
 	local sg = Instance.new("SurfaceGui")
 	sg.Name = name
 	sg.Face = face
-	sg.CanvasSize = Vector2.new(600, 300)
-	sg.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
+	sg.CanvasSize = Vector2.new(canvasW, canvasH)
 	sg.AlwaysOnTop = true
-	sg.MaxDistance = 120
+	sg.MaxDistance = 180
 	sg.LightInfluence = 0
 	sg.Adornee = anchor
 	sg.Parent = anchor
@@ -53,44 +60,48 @@ local function createSurfaceLock(anchor: BasePart, face: Enum.NormalId, reqRebir
 	container.BackgroundTransparency = 1
 	container.Parent = sg
 
+	local layout = Instance.new("UIListLayout")
+	layout.FillDirection = Enum.FillDirection.Vertical
+	layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	layout.VerticalAlignment = Enum.VerticalAlignment.Center
+	layout.Padding = UDim.new(0.04, 0)
+	layout.Parent = container
+
 	-- Line 1: Area Closed
 	local lockHeader = Instance.new("TextLabel")
-	lockHeader.Size = UDim2.new(1, 0, 0, 60)
-	lockHeader.Position = UDim2.fromScale(0, 0.08)
+	lockHeader.Size = UDim2.new(0.9, 0, 0.26, 0)
 	lockHeader.BackgroundTransparency = 1
 	lockHeader.Font = Enum.Font.Arcade
-	lockHeader.TextSize = 38
+	lockHeader.TextScaled = true
 	lockHeader.TextColor3 = Color3.fromRGB(255, 70, 80)
 	lockHeader.Text = "🔒 AREA CLOSED"
 	lockHeader.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	lockHeader.TextStrokeTransparency = 0.2
+	lockHeader.TextStrokeTransparency = 0
 	lockHeader.Parent = container
 
 	-- Line 2: Get Rebirth X to Unlock
 	local rebLine = Instance.new("TextLabel")
-	rebLine.Size = UDim2.new(1, 0, 0, 50)
-	rebLine.Position = UDim2.fromScale(0, 0.38)
+	rebLine.Size = UDim2.new(0.9, 0, 0.22, 0)
 	rebLine.BackgroundTransparency = 1
 	rebLine.Font = Enum.Font.Arcade
-	rebLine.TextSize = 28
+	rebLine.TextScaled = true
 	rebLine.TextColor3 = Color3.fromRGB(255, 215, 80)
 	rebLine.Text = string.format("Get Rebirth %d to Unlock", reqRebirth)
 	rebLine.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	rebLine.TextStrokeTransparency = 0.2
+	rebLine.TextStrokeTransparency = 0
 	rebLine.Parent = container
 
 	-- Line 3: Required Title
 	local titleLine = Instance.new("TextLabel")
-	titleLine.Size = UDim2.new(1, 0, 0, 45)
-	titleLine.Position = UDim2.fromScale(0, 0.65)
+	titleLine.Size = UDim2.new(0.9, 0, 0.22, 0)
 	titleLine.BackgroundTransparency = 1
 	titleLine.Font = Enum.Font.Arcade
 	titleLine.RichText = true
-	titleLine.TextSize = 24
+	titleLine.TextScaled = true
 	titleLine.TextColor3 = Color3.fromRGB(240, 240, 250)
 	titleLine.Text = string.format("Required Title: <font color=\"%s\">\"%s\"</font>", titleHex, titleName)
 	titleLine.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	titleLine.TextStrokeTransparency = 0.2
+	titleLine.TextStrokeTransparency = 0
 	titleLine.Parent = container
 
 	return sg
@@ -178,10 +189,12 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 		local locTargetMeta = LocationConfig.Get(numInName + 1) or LocationConfig.Get(2)
 		local locName = (locTargetMeta and locTargetMeta.name) or string.format("Location %d", numInName + 1)
 
-		-- Attach SurfaceGui to Front and Back faces strictly ON THE WALL SURFACE
+		-- Attach SurfaceGui to ALL 4 FACES (Front, Back, Left, Right)
 		local surfaces: { SurfaceGui } = {
 			createSurfaceLock(anchor, Enum.NormalId.Front, reqNum, titleName, locName),
 			createSurfaceLock(anchor, Enum.NormalId.Back, reqNum, titleName, locName),
+			createSurfaceLock(anchor, Enum.NormalId.Left, reqNum, titleName, locName),
+			createSurfaceLock(anchor, Enum.NormalId.Right, reqNum, titleName, locName),
 		}
 
 		table.insert(doorObjects, {
@@ -206,7 +219,7 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 			-- Update visibility, material, and collision of door parts
 			if data.model:IsA("BasePart") then
 				data.model.CanCollide = not isUnlocked
-				data.model.Transparency = isUnlocked and 1 or 0.4
+				data.model.Transparency = isUnlocked and 1 or 0.35
 				if not isUnlocked then
 					data.model.Material = Enum.Material.SmoothPlastic
 					data.model.Color = Color3.fromRGB(220, 50, 60)
@@ -215,7 +228,7 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 				for _, part in data.model:GetDescendants() do
 					if part:IsA("BasePart") then
 						part.CanCollide = not isUnlocked
-						part.Transparency = isUnlocked and 1 or 0.4
+						part.Transparency = isUnlocked and 1 or 0.35
 						if not isUnlocked then
 							part.Material = Enum.Material.SmoothPlastic
 							part.Color = Color3.fromRGB(220, 50, 60)
