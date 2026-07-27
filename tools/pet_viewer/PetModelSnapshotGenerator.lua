@@ -1,21 +1,15 @@
 --!strict
 --[[
-	Pet Model Studio Snapshot Generator
+	Pet Model Studio Snapshot Generator (Fixed BoundingBox logic for Models & BaseParts)
 	
 	ИНСТРУКЦИЯ ПО ИСПОЛЬЗОВАНИЮ:
 	1. Откройте ваш проект в Roblox Studio.
 	2. Откройте Command Bar (Command Bar внизу экрана или через меню View -> Command Bar).
 	3. Вставьте весь этот код в Command Bar и нажмите Enter.
-	
-	ЧТО СДЕЛАЕТ СКРИПТ:
-	- Создаст на вашем экране сетку со ВСЕМИ 3D-моделями петов из ReplicatedStorage.PetModels.
-	- Настроит идеальный студийный свет, правильную камеру (FOV 25) и чистый темно-фиолетовый/прозрачный фон.
-	- Каждый пет будет отрендерен ровно в его 1-в-1 игровом виде!
 ]]
 
 local CoreGui = game:GetService("CoreGui")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 
 local petModelsFolder = ReplicatedStorage:FindFirstChild("PetModels")
 if not petModelsFolder then
@@ -100,13 +94,17 @@ for _, item in petModelsFolder:GetChildren() do
 		viewport.CurrentCamera = cam
 		cam.Parent = viewport
 
-		-- Centering camera around model bounding box
-		local cf, size
+		-- Safe BoundingBox extraction for Model vs BasePart
+		local cf: CFrame
+		local size: Vector3
 		if modelClone:IsA("Model") then
 			cf, size = modelClone:GetBoundingBox()
-		else
+		elseif modelClone:IsA("BasePart") then
 			cf = modelClone.CFrame
 			size = modelClone.Size
+		else
+			cf = CFrame.new()
+			size = Vector3.new(2, 2, 2)
 		end
 
 		local maxExtent = math.max(size.X, size.Y, size.Z)
