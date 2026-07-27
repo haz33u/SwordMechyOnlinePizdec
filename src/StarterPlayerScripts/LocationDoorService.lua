@@ -2,13 +2,11 @@
 --[[
 	LocationDoorService — Handles zone transition doors & barrier walls between locations.
 	Features:
-	  - Supports folder hierarchy: Workspace.Doors["1"], Workspace.Doors["2"], etc.
-	  - Attaches SurfaceGuis to ALL 4 FACES (Front, Back, Left, Right) + 3D BillboardGui overhead:
-	      🔒 AREA LOCKED
-	      ⚡ REQUIRES REBIRTH 1
-	      🏆 REQUIRED TITLE: "Tarnished Blade"
-	  - Gives barrier a glowing ForceField effect when locked.
-	  - Fades away barrier (CanCollide = false, Transparency = 1) when player reaches required Rebirth.
+	  - Displays exact user-requested text:
+	      🔒 AREA CLOSED
+	      ⚡ Get Rebirth 3 to Unlock
+	      🏆 Required Title: "Oathbreaker" (glowing in exact Title Index color!)
+	  - Supports Workspace.Doors["1"], Workspace.Doors["2"], etc.
 ]]
 
 local Players = game:GetService("Players")
@@ -24,12 +22,19 @@ local LocationDoorService = {}
 local boundDoors: { [Instance]: boolean } = {}
 local doorObjects: { { model: Instance, primary: BasePart, reqRebirth: number, reqTitle: string, targetLocId: number, tag: BillboardGui, surfaces: { SurfaceGui } } } = {}
 
+local function colorToHex(c: Color3): string
+	return string.format("#%02X%02X%02X", math.floor(c.R * 255), math.floor(c.G * 255), math.floor(c.B * 255))
+end
+
 local function createSurfaceLock(anchor: BasePart, face: Enum.NormalId, reqRebirth: number, titleName: string, locName: string): SurfaceGui
 	local name = "DoorSurface_" .. face.Name
 	local old = anchor:FindFirstChild(name)
 	if old then
 		old:Destroy()
 	end
+
+	local rankStyle = RebirthConfig.GetRankStyle(reqRebirth)
+	local titleHex = colorToHex(rankStyle.color or Color3.fromRGB(120, 220, 255))
 
 	local sg = Instance.new("SurfaceGui")
 	sg.Name = name
@@ -44,57 +49,45 @@ local function createSurfaceLock(anchor: BasePart, face: Enum.NormalId, reqRebir
 	container.BackgroundTransparency = 1
 	container.Parent = sg
 
-	-- Top Lock Header
+	-- Line 1: Area Closed
 	local lockHeader = Instance.new("TextLabel")
 	lockHeader.Size = UDim2.new(1, 0, 0, 110)
-	lockHeader.Position = UDim2.fromScale(0, 0.05)
+	lockHeader.Position = UDim2.fromScale(0, 0.06)
 	lockHeader.BackgroundTransparency = 1
 	lockHeader.Font = Enum.Font.Arcade
 	lockHeader.TextScaled = true
-	lockHeader.TextColor3 = Color3.fromRGB(255, 60, 70)
-	lockHeader.Text = "🔒 AREA LOCKED"
+	lockHeader.TextColor3 = Color3.fromRGB(255, 65, 75)
+	lockHeader.Text = "🔒 AREA CLOSED"
 	lockHeader.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 	lockHeader.TextStrokeTransparency = 0
 	lockHeader.Parent = container
 
-	-- Rebirth Requirement Line
+	-- Line 2: Get Rebirth X to Unlock
 	local rebLine = Instance.new("TextLabel")
-	rebLine.Size = UDim2.new(1, 0, 0, 90)
-	rebLine.Position = UDim2.fromScale(0, 0.30)
+	rebLine.Size = UDim2.new(1, 0, 0, 95)
+	rebLine.Position = UDim2.fromScale(0, 0.32)
 	rebLine.BackgroundTransparency = 1
 	rebLine.Font = Enum.Font.Arcade
 	rebLine.TextScaled = true
 	rebLine.TextColor3 = Color3.fromRGB(255, 215, 80)
-	rebLine.Text = string.format("⚡ REQUIRES REBIRTH %d", reqRebirth)
+	rebLine.Text = string.format("Get Rebirth %d to Unlock", reqRebirth)
 	rebLine.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 	rebLine.TextStrokeTransparency = 0
 	rebLine.Parent = container
 
-	-- Title Requirement Line
+	-- Line 3: Required Title (glowing with exact index color!)
 	local titleLine = Instance.new("TextLabel")
-	titleLine.Size = UDim2.new(1, 0, 0, 85)
-	titleLine.Position = UDim2.fromScale(0, 0.54)
+	titleLine.Size = UDim2.new(1, 0, 0, 90)
+	titleLine.Position = UDim2.fromScale(0, 0.58)
 	titleLine.BackgroundTransparency = 1
 	titleLine.Font = Enum.Font.Arcade
+	titleLine.RichText = true
 	titleLine.TextScaled = true
-	titleLine.TextColor3 = Color3.fromRGB(100, 220, 255)
-	titleLine.Text = string.format("🏆 REQUIRED TITLE: \"%s\"", titleName)
+	titleLine.TextColor3 = Color3.fromRGB(240, 240, 250)
+	titleLine.Text = string.format("Required Title: <font color=\"%s\">\"%s\"</font>", titleHex, titleName)
 	titleLine.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 	titleLine.TextStrokeTransparency = 0
 	titleLine.Parent = container
-
-	-- Location Subtitle Line
-	local subLine = Instance.new("TextLabel")
-	subLine.Size = UDim2.new(1, 0, 0, 65)
-	subLine.Position = UDim2.fromScale(0, 0.78)
-	subLine.BackgroundTransparency = 1
-	subLine.Font = Enum.Font.Arcade
-	subLine.TextScaled = true
-	subLine.TextColor3 = Color3.fromRGB(240, 240, 255)
-	subLine.Text = string.format("Reach Rebirth %d to enter %s", reqRebirth, locName)
-	subLine.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-	subLine.TextStrokeTransparency = 0
-	subLine.Parent = container
 
 	return sg
 end
@@ -105,9 +98,12 @@ local function createDoorTag(anchor: BasePart, reqRebirth: number, titleName: st
 		old:Destroy()
 	end
 
+	local rankStyle = RebirthConfig.GetRankStyle(reqRebirth)
+	local titleHex = colorToHex(rankStyle.color or Color3.fromRGB(120, 220, 255))
+
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "DoorLockTag"
-	bb.Size = UDim2.fromOffset(360, 95)
+	bb.Size = UDim2.fromOffset(380, 100)
 	bb.StudsOffset = Vector3.new(0, 8.0, 0)
 	bb.AlwaysOnTop = true
 	bb.MaxDistance = 250
@@ -120,7 +116,7 @@ local function createDoorTag(anchor: BasePart, reqRebirth: number, titleName: st
 	title.Font = Enum.Font.Arcade
 	title.TextSize = 26
 	title.TextColor3 = Color3.fromRGB(255, 70, 80)
-	title.Text = string.format("🔒 REQUIRES REBIRTH %d", reqRebirth)
+	title.Text = "🔒 AREA CLOSED"
 	title.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 	title.TextStrokeTransparency = 0.1
 	title.Parent = bb
@@ -131,9 +127,10 @@ local function createDoorTag(anchor: BasePart, reqRebirth: number, titleName: st
 	sub.Position = UDim2.fromOffset(0, 42)
 	sub.BackgroundTransparency = 1
 	sub.Font = Enum.Font.Arcade
+	sub.RichText = true
 	sub.TextSize = 16
 	sub.TextColor3 = Color3.fromRGB(255, 215, 80)
-	sub.Text = string.format("🏆 Title: \"%s\" · %s", titleName, locName)
+	sub.Text = string.format("Get Rebirth %d to Unlock · Title: <font color=\"%s\">\"%s\"</font>", reqRebirth, titleHex, titleName)
 	sub.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 	sub.TextStrokeTransparency = 0.2
 	sub.Parent = bb
@@ -153,7 +150,7 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 				local p = desc.Parent
 				local pParent = p and p.Parent
 				local parentName = pParent and string.lower(pParent.Name) or ""
-				if parentName ~= "doors" and p and p:GetAttribute("UnlockRebirth") == nil then
+				if parentName ~= "doors" and parentName ~= "locationdoors" and p and p:GetAttribute("UnlockRebirth") == nil then
 					desc:Destroy()
 				end
 			end
@@ -229,7 +226,7 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 			primary = anchor,
 			reqRebirth = reqNum,
 			reqTitle = titleName,
-			targetLocId = reqNum + 1,
+			targetLocId = numInName + 1,
 			tag = tag,
 			surfaces = surfaces,
 		})
@@ -246,7 +243,7 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 				local stats = store:PeekStats() or {}
 				local rebirth = stats.rebirthLevel or 0
 				if rebirth < reqNum and toastApi then
-					toastApi.Show(string.format("🔒 Requires Rebirth %d (Title: \"%s\") to enter %s!", reqNum, titleName, locName), "yellow")
+					toastApi.Show(string.format("🔒 Area Closed! Get Rebirth %d to Unlock!", reqNum), "yellow")
 				end
 			end
 		end
