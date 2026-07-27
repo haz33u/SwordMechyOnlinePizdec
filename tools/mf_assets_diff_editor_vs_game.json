@@ -1,0 +1,45 @@
+{
+  "diffs": [
+    {
+      "key": "INVENTORYWEAPONcard",
+      "was_editor": "126211504937247",
+      "now_game": "90473285925317"
+    },
+    {
+      "key": "GamePass card empty plate",
+      "was_editor": "114666751356961",
+      "now_game": "83871405491605"
+    },
+    {
+      "key": "Toggle_Rainbow_OFF",
+      "was_editor": "84770005695822",
+      "now_game": "111522661732585"
+    },
+    {
+      "key": "Toggle_Rainbow_ON",
+      "was_editor": "131748337490424",
+      "now_game": "86770309543198"
+    },
+    {
+      "key": "Slot_Limited_Body",
+      "was_editor": "72397855713663",
+      "now_game": "75311528289040"
+    },
+    {
+      "key": "Slot_Limited_Rim",
+      "was_editor": "133165389836845",
+      "now_game": "83892126340335"
+    },
+    {
+      "key": "Slot_Secret",
+      "was_editor": "73278259891657",
+      "now_game": "125029706914658"
+    },
+    {
+      "key": "BTN_Confirm_Check 1",
+      "was_editor": "138577700896730",
+      "now_game": "130276735253420"
+    }
+  ],
+  "gameKeyCount": 123
+}
