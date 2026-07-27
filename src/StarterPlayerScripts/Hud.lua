@@ -22,15 +22,23 @@ local RainbowGradient = require(script.Parent.RainbowGradient)
 
 local Hud = {}
 
--- Side Menu Item Definitions matching SideMenuConfig & game panels
-local SIDE_ITEMS = {
+-- Full Backup of all original Side Rail Buttons (preserved for future reference):
+--[[
+local ALL_SIDE_ITEMS_BACKUP = {
 	{ id = "locations", title = "Teleport", icon = "🧭", glowColor = Color3.fromRGB(0, 230, 77), border1 = Color3.fromRGB(102, 255, 140), border2 = Color3.fromRGB(0, 153, 51), rainbow = true },
 	{ id = "shop", title = "Store", icon = "🛒", glowColor = Color3.fromRGB(255, 0, 127), border1 = Color3.fromRGB(255, 0, 127), border2 = Color3.fromRGB(127, 0, 255), rainbow = true },
 	{ id = "pets", title = "Pets", icon = "⭐", glowColor = Color3.fromRGB(255, 170, 0), border1 = Color3.fromRGB(255, 238, 85), border2 = Color3.fromRGB(255, 170, 0), rainbow = false },
 	{ id = "weapons", title = "Weapons", icon = "⚔️", glowColor = Color3.fromRGB(0, 191, 255), border1 = Color3.fromRGB(112, 226, 255), border2 = Color3.fromRGB(0, 136, 255), rainbow = false },
 	{ id = "quests", title = "Quests", icon = "📜", glowColor = Color3.fromRGB(255, 85, 0), border1 = Color3.fromRGB(255, 153, 51), border2 = Color3.fromRGB(230, 57, 0), alert = true, rainbow = false },
 	{ id = "cases", title = "Summon", icon = "💎", glowColor = Color3.fromRGB(170, 0, 255), border1 = Color3.fromRGB(224, 102, 255), border2 = Color3.fromRGB(136, 0, 204), rainbow = false },
-	{ id = "character", title = "Upgrades", icon = "💪", glowColor = Color3.fromRGB(0, 229, 204), border1 = Color3.fromRGB(102, 255, 240), border2 = Color3.fromRGB(0, 153, 136), rainbow = false },
+	{ id = "character", title = "Skill Tree", icon = "🌳", glowColor = Color3.fromRGB(0, 229, 204), border1 = Color3.fromRGB(102, 255, 240), border2 = Color3.fromRGB(0, 153, 136), rainbow = false },
+}
+--]]
+
+-- Currently active top-left buttons (Teleport & Skill Tree only)
+local SIDE_ITEMS = {
+	{ id = "locations", title = "Teleport", icon = "🧭", glowColor = Color3.fromRGB(0, 230, 77), border1 = Color3.fromRGB(102, 255, 140), border2 = Color3.fromRGB(0, 153, 51), rainbow = true },
+	{ id = "character", title = "Skill Tree", icon = "🌳", glowColor = Color3.fromRGB(0, 229, 204), border1 = Color3.fromRGB(102, 255, 240), border2 = Color3.fromRGB(0, 153, 136), rainbow = false },
 }
 
 local LOC = {
@@ -61,7 +69,7 @@ function Hud.Mount(
 	---------------------------------------------------------------- SIDE RAIL MENU (Modern Glowing Pills)
 	local rail = Instance.new("Frame")
 	rail.Name = "SideMenuContainer"
-	rail.Size = UDim2.fromOffset(165, 420)
+	rail.Size = UDim2.fromOffset(165, 100)
 	rail.Position = UDim2.fromOffset(14, 14)
 	rail.BackgroundTransparency = 1
 	rail.ZIndex = 10
