@@ -17,20 +17,20 @@ local Layout = require(script.Parent.Layout)
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Formulas = require(Shared.Formulas)
+local SideMenuConfig = require(Shared.Config.SideMenuConfig)
+local RainbowGradient = require(script.Parent.RainbowGradient)
 
 local Hud = {}
 
-local RAIL = {
-	{ id = "character", glyph = "UP" },
-	{ id = "weapons", glyph = "SW" },
-	{ id = "pets", glyph = "PT" },
-	{ id = "auras", glyph = "AU" },
-	{ id = "relics", glyph = "RL" },
-	{ id = "quests", glyph = "QS" },
-	{ id = "locations", glyph = "TP" },
-	{ id = "dungeons", glyph = "DG" },
-	{ id = "cases", glyph = "CS" },
-	{ id = "shop", glyph = "$" },
+-- Side Menu Item Definitions matching SideMenuConfig & game panels
+local SIDE_ITEMS = {
+	{ id = "locations", title = "Teleport", icon = "🧭", glowColor = Color3.fromRGB(0, 230, 77), border1 = Color3.fromRGB(102, 255, 140), border2 = Color3.fromRGB(0, 153, 51), rainbow = true },
+	{ id = "shop", title = "Store", icon = "🛒", glowColor = Color3.fromRGB(255, 0, 127), border1 = Color3.fromRGB(255, 0, 127), border2 = Color3.fromRGB(127, 0, 255), rainbow = true },
+	{ id = "pets", title = "Pets", icon = "⭐", glowColor = Color3.fromRGB(255, 170, 0), border1 = Color3.fromRGB(255, 238, 85), border2 = Color3.fromRGB(255, 170, 0), rainbow = false },
+	{ id = "weapons", title = "Weapons", icon = "⚔️", glowColor = Color3.fromRGB(0, 191, 255), border1 = Color3.fromRGB(112, 226, 255), border2 = Color3.fromRGB(0, 136, 255), rainbow = false },
+	{ id = "quests", title = "Quests", icon = "📜", glowColor = Color3.fromRGB(255, 85, 0), border1 = Color3.fromRGB(255, 153, 51), border2 = Color3.fromRGB(230, 57, 0), alert = true, rainbow = false },
+	{ id = "cases", title = "Summon", icon = "💎", glowColor = Color3.fromRGB(170, 0, 255), border1 = Color3.fromRGB(224, 102, 255), border2 = Color3.fromRGB(136, 0, 204), rainbow = false },
+	{ id = "character", title = "Upgrades", icon = "💪", glowColor = Color3.fromRGB(0, 229, 204), border1 = Color3.fromRGB(102, 255, 240), border2 = Color3.fromRGB(0, 153, 136), rainbow = false },
 }
 
 local LOC = {
@@ -58,22 +58,140 @@ function Hud.Mount(
 	root.Name = "HUD"
 	root.Parent = gui
 
-	local nRail = #RAIL
+	---------------------------------------------------------------- SIDE RAIL MENU (Modern Glowing Pills)
+	local rail = Instance.new("Frame")
+	rail.Name = "SideMenuContainer"
+	rail.Size = UDim2.fromOffset(165, 420)
+	rail.Position = UDim2.fromOffset(14, 14)
+	rail.BackgroundTransparency = 1
+	rail.ZIndex = 10
+	rail.Parent = root
 
-	---------------------------------------------------------------- RAIL (left menus)
-	local rail = UIKit.Glass({
-		Name = "Rail",
-		Parent = root,
-		Size = UDim2.fromOffset(72, 420),
-		Position = UDim2.fromOffset(12, 12),
-		Radius = T.R.sm,
-		Z = 10,
-		Deep = true,
-	})
-	local railPad = UIKit.Pad(rail, 10)
-	local railList = UIKit.List(rail, 8, false, Enum.HorizontalAlignment.Center)
+	local railList = Instance.new("UIListLayout")
+	railList.Padding = UDim.new(0, 8)
+	railList.SortOrder = Enum.SortOrder.LayoutOrder
+	railList.HorizontalAlignment = Enum.HorizontalAlignment.Left
 	railList.VerticalAlignment = Enum.VerticalAlignment.Top
-	UIKit.SizeConstraint(rail, Vector2.new(56, 200), Vector2.new(120, 900))
+	railList.Parent = rail
+
+	local railBtns: { [string]: Frame } = {}
+
+	for i, item in ipairs(SIDE_ITEMS) do
+		-- Outer pill container frame
+		local pill = Instance.new("Frame")
+		pill.Name = item.id .. "Button"
+		pill.Size = UDim2.fromOffset(155, 42)
+		pill.LayoutOrder = i
+		pill.BackgroundColor3 = Color3.fromRGB(14, 24, 18)
+		pill.BackgroundTransparency = 0.15
+		pill.ZIndex = 12
+		pill.Parent = rail
+
+		local pillCorner = Instance.new("UICorner")
+		pillCorner.CornerRadius = UDim.new(0, 14)
+		pillCorner.Parent = pill
+
+		-- Dark gradient fill inside pill
+		local pillGrad = Instance.new("UIGradient")
+		pillGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, item.glowColor:Lerp(Color3.fromRGB(10, 15, 20), 0.75)),
+			ColorSequenceKeypoint.new(1, Color3.fromRGB(8, 12, 16)),
+		})
+		pillGrad.Rotation = 90
+		pillGrad.Parent = pill
+
+		-- Outer Glow Shadow Frame
+		local glow = Instance.new("Frame")
+		glow.Name = "NeonGlow"
+		glow.Size = UDim2.new(1, 6, 1, 6)
+		glow.Position = UDim2.fromScale(0.5, 0.5)
+		glow.AnchorPoint = Vector2.new(0.5, 0.5)
+		glow.BackgroundColor3 = item.glowColor
+		glow.BackgroundTransparency = 0.65
+		glow.ZIndex = 11
+		glow.Parent = pill
+
+		local glowCorner = Instance.new("UICorner")
+		glowCorner.CornerRadius = UDim.new(0, 16)
+		glowCorner.Parent = glow
+
+		-- Border UIStroke with Neon Gradient
+		local stroke = Instance.new("UIStroke")
+		stroke.Thickness = 2.2
+		stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		stroke.Color = item.border1
+		stroke.Parent = pill
+
+		local strokeGrad = Instance.new("UIGradient")
+		strokeGrad.Color = ColorSequence.new({
+			ColorSequenceKeypoint.new(0, item.border1),
+			ColorSequenceKeypoint.new(0.5, item.glowColor),
+			ColorSequenceKeypoint.new(1, item.border2),
+		})
+		strokeGrad.Parent = stroke
+
+		-- Left Icon Circle
+		local iconBg = Instance.new("Frame")
+		iconBg.Size = UDim2.fromOffset(28, 28)
+		iconBg.Position = UDim2.fromOffset(8, 7)
+		iconBg.BackgroundColor3 = item.glowColor
+		iconBg.BackgroundTransparency = 0.75
+		iconBg.ZIndex = 13
+		iconBg.Parent = pill
+
+		local iconCorner = Instance.new("UICorner")
+		iconCorner.CornerRadius = UDim.new(1, 0)
+		iconCorner.Parent = iconBg
+
+		local iconLbl = Instance.new("TextLabel")
+		iconLbl.Size = UDim2.fromScale(1, 1)
+		iconLbl.BackgroundTransparency = 1
+		iconLbl.Text = item.icon
+		iconLbl.TextSize = 16
+		iconLbl.ZIndex = 14
+		iconLbl.Parent = iconBg
+
+		-- Right Title Label
+		local titleLbl = Instance.new("TextLabel")
+		titleLbl.Size = UDim2.new(1, -48, 1, 0)
+		titleLbl.Position = UDim2.fromOffset(42, 0)
+		titleLbl.BackgroundTransparency = 1
+		titleLbl.Text = item.title
+		titleLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+		titleLbl.Font = Enum.Font.FredokaOne
+		titleLbl.TextSize = 15
+		titleLbl.TextXAlignment = Enum.TextXAlignment.Left
+		titleLbl.ZIndex = 13
+		titleLbl.Parent = pill
+
+		-- Invisible Click Button overlay
+		local clickBtn = Instance.new("TextButton")
+		clickBtn.Size = UDim2.fromScale(1, 1)
+		clickBtn.BackgroundTransparency = 1
+		clickBtn.Text = ""
+		clickBtn.ZIndex = 20
+		clickBtn.Parent = pill
+
+		-- Click Handler
+		clickBtn.MouseButton1Click:Connect(function()
+			if item.id == "character" then
+				store:OpenPanel("character")
+			elseif item.id == "weapons" or item.id == "pets" then
+				local s = store :: any
+				s._invTab = item.id
+				store:OpenPanel("weapons")
+			else
+				store:OpenPanel(item.id)
+			end
+		end)
+
+		-- Apply Shimmer Animation if enabled
+		if item.rainbow then
+			RainbowGradient.ApplyShimmer(pill, "emerald", 0.5, 120)
+		end
+
+		railBtns[item.id] = pill
+	end
 	---------------------------------------------------------------- DUNGEON QUICK TELEPORT BUTTON
 	local dungBanner = Instance.new("Frame")
 	dungBanner.Name = "DungeonQuickTeleport"
