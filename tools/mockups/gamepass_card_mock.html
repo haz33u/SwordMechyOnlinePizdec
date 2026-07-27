@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GamePass card mock — Second sword slot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 960px;
+      height: 500px;
+      overflow: hidden;
+      background: transparent;
+    }
+    .card {
+      position: relative;
+      width: 960px;
+      height: 500px;
+    }
+    .bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+      pointer-events: none;
+    }
+    /* Left icon zone ~ Figma left stack */
+    .icon-wrap {
+      position: absolute;
+      left: 7%;
+      top: 18%;
+      width: 28%;
+      height: 64%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 28px;
+      background: radial-gradient(circle at 40% 35%, rgba(90,50,160,0.55), rgba(20,10,45,0.92));
+      box-shadow: inset 0 0 0 3px rgba(180,120,255,0.35), 0 10px 24px rgba(0,0,0,0.4);
+      overflow: hidden;
+    }
+    .icon-wrap img {
+      max-width: 88%;
+      max-height: 88%;
+      object-fit: contain;
+      filter: drop-shadow(0 8px 14px rgba(0,0,0,0.5));
+    }
+    .plus1 {
+      position: absolute;
+      right: -4%;
+      top: 8%;
+      font-family: "Luckiest Guy", system-ui, sans-serif;
+      font-size: 64px;
+      color: #fff;
+      -webkit-text-stroke: 6px #120a28;
+      paint-order: stroke fill;
+      background: linear-gradient(180deg, #ffe98a 0%, #ff9a3c 45%, #e04cff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 4px 0 #1a0a30);
+    }
+    /* Right text panel */
+    .panel {
+      position: absolute;
+      left: 40%;
+      top: 14%;
+      width: 52%;
+      height: 72%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 4% 3% 3%;
+    }
+    .title {
+      font-family: "Luckiest Guy", system-ui, sans-serif;
+      font-size: 42px;
+      line-height: 1.05;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #fff;
+      -webkit-text-stroke: 5px #120a28;
+      paint-order: stroke fill;
+      background: linear-gradient(180deg, #f4e8ff 0%, #d4a0ff 40%, #8b5cff 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 10px;
+      max-width: 100%;
+    }
+    .desc {
+      font-family: "Luckiest Guy", system-ui, sans-serif;
+      font-size: 26px;
+      line-height: 1.15;
+      text-align: center;
+      text-transform: uppercase;
+      color: #fff;
+      -webkit-text-stroke: 3.5px #120a28;
+      paint-order: stroke fill;
+      background: linear-gradient(180deg, #fff6d0 0%, #ffd56a 50%, #ff9a40 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: auto;
+      padding: 0 4%;
+    }
+    .chip-wrap {
+      position: relative;
+      width: 78%;
+      height: 28%;
+      min-height: 88px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .chip-wrap img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: fill;
+    }
+    .price {
+      position: relative;
+      z-index: 2;
+      font-family: "Luckiest Guy", system-ui, sans-serif;
+      font-size: 40px;
+      text-transform: uppercase;
+      color: #fff;
+      -webkit-text-stroke: 5px #120a28;
+      paint-order: stroke fill;
+      background: linear-gradient(180deg, #fff 0%, #ffe08a 40%, #ffb020 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      letter-spacing: 1px;
+    }
+    .check {
+      position: relative;
+      z-index: 2;
+      margin-right: 10px;
+      font-size: 36px;
+      color: #7dff9a;
+      -webkit-text-stroke: 3px #0a2814;
+      filter: drop-shadow(0 2px 0 #000);
+      display: none;
+    }
+    .owned .check { display: inline; }
+    .owned .price {
+      background: linear-gradient(180deg, #d8ffd0 0%, #7dff9a 50%, #2ecc71 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+  </style>
+</head>
+<body>
+  <!-- One composed GamePass card mock (not for Studio — proof of template approach) -->
+  <div class="card" id="card">
+    <img class="bg" src="plate.png" alt="" />
+    <div class="icon-wrap">
+      <img id="icon" src="sword_icon.png" alt="pass icon" />
+      <!-- optional badge; leave empty for second-sword mock -->
+    </div>
+    <div class="panel">
+      <div class="title">SECOND SWORD SLOT</div>
+      <div class="desc">Unlock offhand weapon (50% power)</div>
+      <div class="chip-wrap">
+        <img src="chip.svg" alt="" />
+        <span class="check">✓</span>
+        <span class="price" id="priceText">R$ 199</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

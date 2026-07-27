@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Price chip A - candy CTA (blue - pink - purple)
+  Empty center for live price text (e.g. R$ 199 / OWNED).
+  Size 360x120 - scale freely. Transparent outside.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="120" viewBox="0 0 360 120" fill="none">
+  <defs>
+    <linearGradient id="fillA" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3d7bff"/>
+      <stop offset="28%" stop-color="#8b4dff"/>
+      <stop offset="55%" stop-color="#ff4ec8"/>
+      <stop offset="78%" stop-color="#b44dff"/>
+      <stop offset="100%" stop-color="#5a3dff"/>
+    </linearGradient>
+    <linearGradient id="fillA2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.35"/>
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#1a0a40" stop-opacity="0.35"/>
+    </linearGradient>
+    <linearGradient id="rimA" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#7cf0ff"/>
+      <stop offset="35%" stop-color="#e070ff"/>
+      <stop offset="65%" stop-color="#ff5ad6"/>
+      <stop offset="100%" stop-color="#a78bff"/>
+    </linearGradient>
+    <filter id="glowA" x="-40%" y="-60%" width="180%" height="220%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="360" height="120" fill="none"/>
+  <!-- outer glow -->
+  <rect x="12" y="14" width="336" height="92" rx="46" ry="46"
+        fill="none" stroke="#ff4ec8" stroke-width="14" opacity="0.28" filter="url(#glowA)"/>
+  <!-- rim -->
+  <rect x="16" y="18" width="328" height="84" rx="42" ry="42"
+        fill="url(#rimA)" stroke="#2a1050" stroke-width="2.5"/>
+  <!-- body -->
+  <rect x="24" y="26" width="312" height="68" rx="34" ry="34" fill="url(#fillA)"/>
+  <rect x="24" y="26" width="312" height="68" rx="34" ry="34" fill="url(#fillA2)"/>
+  <!-- top gloss strip -->
+  <rect x="36" y="32" width="288" height="22" rx="12" ry="12"
+        fill="#ffffff" opacity="0.18"/>
+</svg>

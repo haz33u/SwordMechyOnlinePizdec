@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  GamePass card BACKGROUND (clean - no corner stars).
+  Deep navy panel + soft multi purple neon rim.
+  Center gradient is smooth (no harsh band).
+  Optional sparkles: GamePass_Card_Sparkles_*.svg on top.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600" fill="none">
+  <defs>
+    <!-- Smooth vertical body (gentle, no hard steps) -->
+    <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#222a88"/>
+      <stop offset="20%" stop-color="#141a62"/>
+      <stop offset="50%" stop-color="#0c0e42"/>
+      <stop offset="78%" stop-color="#09082e"/>
+      <stop offset="100%" stop-color="#06051c"/>
+    </linearGradient>
+
+    <!-- Soft radial: bright-ish center, smooth falloff to edges -->
+    <radialGradient id="bodyRadial" cx="50%" cy="45%" r="75%" fx="50%" fy="40%">
+      <stop offset="0%" stop-color="#2a38a0" stop-opacity="0.55"/>
+      <stop offset="35%" stop-color="#1a2480" stop-opacity="0.28"/>
+      <stop offset="65%" stop-color="#0c1048" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0.35"/>
+    </radialGradient>
+
+    <!-- Very soft top sheen (wide, low contrast) -->
+    <linearGradient id="topSheen" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="12%" stop-color="#c8d4ff" stop-opacity="0.12"/>
+      <stop offset="35%" stop-color="#ffffff" stop-opacity="0.03"/>
+      <stop offset="55%" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="rimOuter" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#e070ff"/>
+      <stop offset="25%" stop-color="#b040ff"/>
+      <stop offset="50%" stop-color="#ff5ad6"/>
+      <stop offset="75%" stop-color="#9060ff"/>
+      <stop offset="100%" stop-color="#c070ff"/>
+    </linearGradient>
+
+    <linearGradient id="rimMid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#f0c0ff"/>
+      <stop offset="45%" stop-color="#c080ff"/>
+      <stop offset="100%" stop-color="#8040d0"/>
+    </linearGradient>
+
+    <linearGradient id="rimInner" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.75"/>
+      <stop offset="35%" stop-color="#e8d0ff" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#a060ff" stop-opacity="0.3"/>
+    </linearGradient>
+
+    <filter id="outerGlow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="14" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect width="800" height="600" fill="none"/>
+
+  <!-- Outer glow -->
+  <rect x="28" y="28" width="744" height="544" rx="56" ry="56"
+        fill="none" stroke="#c050ff" stroke-width="28" opacity="0.2" filter="url(#outerGlow)"/>
+
+  <!-- Rim layers -->
+  <rect x="36" y="36" width="728" height="528" rx="52" ry="52"
+        fill="url(#rimOuter)" stroke="#2a1050" stroke-width="3"/>
+  <rect x="48" y="48" width="704" height="504" rx="46" ry="46"
+        fill="url(#rimMid)"/>
+  <rect x="58" y="58" width="684" height="484" rx="42" ry="42"
+        fill="#0a0828"/>
+  <rect x="66" y="66" width="668" height="468" rx="38" ry="38"
+        fill="none" stroke="url(#rimInner)" stroke-width="3.5"/>
+
+  <!-- Main fill: smooth stack -->
+  <rect x="72" y="72" width="656" height="456" rx="34" ry="34" fill="url(#bodyGrad)"/>
+  <rect x="72" y="72" width="656" height="456" rx="34" ry="34" fill="url(#bodyRadial)"/>
+  <rect x="72" y="72" width="656" height="456" rx="34" ry="34" fill="url(#topSheen)"/>
+</svg>
