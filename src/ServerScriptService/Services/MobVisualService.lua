@@ -434,7 +434,29 @@ local function snapModelToGround(model: Model, targetPos: Vector3)
 	local rayResult = Workspace:Raycast(targetPos + Vector3.new(0, 10, 0), Vector3.new(0, -40, 0), rayParam)
 	local groundY = rayResult and rayResult.Position.Y or targetPos.Y
 
-	local uprightCF = CFrame.new(targetPos.X, groundY + (bboxSize.Y / 2), targetPos.Z) * CFrame.Angles(0, ry, 0)
+	-- Calculate distance from PrimaryPart to actual body feet (ignoring held spears/weapons)
+	local lowestBodyY = math.huge
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			local lowerName = string.lower(p.Name)
+			-- Skip held weapons/spears when finding feet position
+			if not (string.find(lowerName, "spear") or string.find(lowerName, "sword") or string.find(lowerName, "weapon") or string.find(lowerName, "tool") or string.find(lowerName, "handle")) then
+				local bottomY = p.Position.Y - (p.Size.Y / 2)
+				if bottomY < lowestBodyY then
+					lowestBodyY = bottomY
+				end
+			end
+		end
+	end
+
+	local footOffset = 3.0 -- default R6 height offset
+	if lowestBodyY < math.huge and root.Position.Y > lowestBodyY then
+		footOffset = root.Position.Y - lowestBodyY
+	else
+		footOffset = bboxSize.Y / 2
+	end
+
+	local uprightCF = CFrame.new(targetPos.X, groundY + footOffset, targetPos.Z) * CFrame.Angles(0, ry, 0)
 	model:PivotTo(uprightCF)
 end
 
