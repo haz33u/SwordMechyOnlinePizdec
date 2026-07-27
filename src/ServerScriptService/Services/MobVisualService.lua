@@ -101,60 +101,75 @@ end
 local function makeHpHud(parent: BasePart, title: string, tierColor: Color3)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "MobHud"
-	bb.Size = UDim2.fromOffset(110, 32)
-	bb.StudsOffset = Vector3.new(0, 2.4, 0)
+	bb.Size = UDim2.fromOffset(180, 46)
+	bb.StudsOffset = Vector3.new(0, 3.2, 0)
 	bb.AlwaysOnTop = false
-	bb.MaxDistance = 45
+	bb.MaxDistance = 60
 	bb.Parent = parent
+
+	local barBg = Instance.new("Frame")
+	barBg.Name = "BarBg"
+	barBg.BackgroundColor3 = Color3.fromRGB(12, 16, 26)
+	barBg.BackgroundTransparency = 0.1
+	barBg.BorderSizePixel = 0
+	barBg.Size = UDim2.new(1, 0, 1, 0)
+	barBg.Parent = bb
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 10)
+	corner.Parent = barBg
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 2.0
+	stroke.Color = tierColor
+	stroke.Transparency = 0.1
+	stroke.Parent = barBg
 
 	local nameLbl = Instance.new("TextLabel")
 	nameLbl.Name = "Name"
 	nameLbl.BackgroundTransparency = 1
-	nameLbl.Size = UDim2.new(1, 0, 0, 14)
-	nameLbl.Font = Enum.Font.GothamBold
-	nameLbl.TextSize = 11
+	nameLbl.Size = UDim2.new(1, -12, 0, 20)
+	nameLbl.Position = UDim2.new(0, 6, 0, 3)
+	nameLbl.Font = Enum.Font.FredokaOne
+	nameLbl.TextSize = 13
 	nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-	nameLbl.TextStrokeTransparency = 0.25
+	nameLbl.TextStrokeTransparency = 0.5
+	nameLbl.TextXAlignment = Enum.TextXAlignment.Center
 	nameLbl.Text = title
-	nameLbl.Parent = bb
+	nameLbl.Parent = barBg
 
-	local barBg = Instance.new("Frame")
-	barBg.Name = "BarBg"
-	barBg.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
-	barBg.BorderSizePixel = 0
-	barBg.Size = UDim2.new(1, 0, 0, 14)
-	barBg.Position = UDim2.new(0, 0, 0, 18)
-	barBg.Parent = bb
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 4)
-	corner.Parent = barBg
-	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 1.5
-	stroke.Color = tierColor
-	stroke.Transparency = 0.25
-	stroke.Parent = barBg
+	local fillTrack = Instance.new("Frame")
+	fillTrack.Name = "FillTrack"
+	fillTrack.BackgroundColor3 = Color3.fromRGB(24, 30, 44)
+	fillTrack.BorderSizePixel = 0
+	fillTrack.Size = UDim2.new(1, -16, 0, 16)
+	fillTrack.Position = UDim2.new(0, 8, 0, 24)
+	fillTrack.Parent = barBg
+	local trackCorner = Instance.new("UICorner")
+	trackCorner.CornerRadius = UDim.new(0, 6)
+	trackCorner.Parent = fillTrack
 
 	local fill = Instance.new("Frame")
 	fill.Name = "BarFill"
-	fill.BackgroundColor3 = Color3.fromRGB(90, 230, 120)
+	fill.BackgroundColor3 = Color3.fromRGB(16, 185, 129)
 	fill.BorderSizePixel = 0
 	fill.Size = UDim2.new(1, 0, 1, 0)
-	fill.Parent = barBg
+	fill.Parent = fillTrack
 	local fillCorner = Instance.new("UICorner")
-	fillCorner.CornerRadius = UDim.new(0, 4)
+	fillCorner.CornerRadius = UDim.new(0, 6)
 	fillCorner.Parent = fill
 
 	local hpLbl = Instance.new("TextLabel")
 	hpLbl.Name = "HP"
 	hpLbl.BackgroundTransparency = 1
 	hpLbl.Size = UDim2.new(1, 0, 1, 0)
-	hpLbl.Font = Enum.Font.GothamBold
+	hpLbl.Font = Enum.Font.FredokaOne
 	hpLbl.TextSize = 11
 	hpLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
-	hpLbl.TextStrokeTransparency = 0.3
+	hpLbl.TextStrokeTransparency = 0.5
 	hpLbl.ZIndex = 2
-	hpLbl.Text = "0/0"
-	hpLbl.Parent = barBg
+	hpLbl.Text = "100 / 100"
+	hpLbl.Parent = fillTrack
 end
 
 local function tryStudioModel(def: any): Model?
