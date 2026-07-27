@@ -28,6 +28,8 @@ local RelicConfig = require(Shared.Config.RelicConfig)
 local InventoryAssetConfig = require(Shared.Config.InventoryAssetConfig)
 local IconConfig = require(Shared.Config.IconConfig)
 local PotionIconConfig = require(Shared.Config.PotionIconConfig)
+local GamePassConfig = require(Shared.Config.GamePassConfig)
+local MarketplaceService = game:GetService("MarketplaceService")
 
 local InventoryWeaponsLayout = {}
 
@@ -76,6 +78,8 @@ local B = {
 	TitleCard = { 0.0245, -0.012, 0.3005, 0.1815 },
 	SELLbutton = { 0.112, 0.6574, 0.1724, 0.1019 },
 	SELLallUNLOCKED = { 0.113, 0.5611, 0.1698, 0.1009 },
+	-- Shop tab: full-width grid for gamepass cards (no left equipment column)
+	SHOP_BG_WeaponGrid = { 0.0781, 0.1648, 0.7755, 0.7769 },
 }
 
 -- Mild left shift for inv + tabs
@@ -125,6 +129,7 @@ for _, key in ipairs({
 	"SELLbutton",
 	"SELLallUNLOCKED",
 	"BG_WeaponGrid",
+	"SHOP_BG_WeaponGrid",
 }) do
 	local b = B[key]
 	if b then
@@ -262,6 +267,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	if TITLE_CARD[invTab] == nil and invTab ~= "shop" then
 		invTab = "weapons"
 	end
+	local isShop = invTab == "shop"
 
 	local sellMode = false
 	local selectedSellUid: string? = nil
@@ -344,14 +350,18 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	---------------------------------------------------------------- chrome (relative to MAINBACKGROUD)
-	-- no mousebind / unequip
-	pShell("EQUIPMENTbackground", "EQUIPMENTbackground", B.EQUIPMENTbackground, 4, false, Enum.ScaleType.Stretch)
-	pShell("Divider", "Divider_3_Minimal_1", B.Divider_3_Minimal_1, 5, false, Enum.ScaleType.Stretch)
-	pShell("PRESETSbutton", "WORDMARK_presets__click_to_equip_1", B.PRESETSbutton, 28, false, Enum.ScaleType.Fit)
-	for i = 1, 4 do
-		pShell("PRESETcard" .. i, "PRESETcard" .. i, B["PRESETcard" .. i], 24 + i, true, Enum.ScaleType.Fit)
+	-- Shop: no left equipment / presets — full grid only. Other tabs: full shell.
+	if not isShop then
+		pShell("EQUIPMENTbackground", "EQUIPMENTbackground", B.EQUIPMENTbackground, 4, false, Enum.ScaleType.Stretch)
+		pShell("PRESETSbutton", "WORDMARK_presets__click_to_equip_1", B.PRESETSbutton, 28, false, Enum.ScaleType.Fit)
+		for i = 1, 4 do
+			pShell("PRESETcard" .. i, "PRESETcard" .. i, B["PRESETcard" .. i], 24 + i, true, Enum.ScaleType.Fit)
+		end
 	end
+	-- Divider on every tab (same asset / boxes as live game)
+	pShell("Divider", "Divider_3_Minimal_1", B.Divider_3_Minimal_1, 5, false, Enum.ScaleType.Stretch)
 
+	-- Header badge: SHOPcard only on shop; weapons/pets/… their own cards
 	local titleArt = TITLE_CARD[invTab] or "INVENTORYWEAPONcard"
 	pShell("TitleCard", titleArt, B.TitleCard, 99, false, Enum.ScaleType.Fit)
 
@@ -417,8 +427,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		sLab.Text = " | "
 	end
 
-	---------------------------------------------------------------- equipment slots (brief boxes, Fit, no forceSquare)
-	-- wrap + center pivot so hover grows all sides; glow is sibling under plate (moves with scale)
+	---------------------------------------------------------------- equipment slots (skipped on shop tab)
 	local function makeEquipSlot(name: string, assetKey: string, box: { number }, z: number): (Frame, GuiObject)
 		local r = rel(box)
 		local wrap = Instance.new("Frame")
@@ -673,6 +682,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end)
 	end
 
+	-- Hoisted so side-tab handlers always resolve (no-op on shop)
+	local setSellMode: (boolean) -> () = function(_on: boolean) end
+
+	if isShop then
+		-- Shop has no left loadout column
+	else
 	-- Main / offhand swords
 	do
 		local wrap, plate = makeEquipSlot("MAINswordCARD", "MAINswordCARD", B.MAINswordCARD, 10)
@@ -856,7 +871,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		args.onRefresh()
 	end)
 
-	local function setSellMode(on: boolean)
+	setSellMode = function(on: boolean)
 		sellMode = on
 		bestDmg.Visible = not on
 		bestPow.Visible = not on
@@ -883,6 +898,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		setSellMode(false)
 		args.onRefresh()
 	end)
+	end -- not isShop (equipment + sell chrome)
 
 	---------------------------------------------------------------- side tabs (6 — no profile/settings) — host-level (outside shell)
 	for _, def in ipairs(SIDE_TABS) do
@@ -892,15 +908,16 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			if def.id == invTab then
 				return
 			end
-			if sellMode then
+			if (not isShop) and sellMode then
 				setSellMode(false)
 			end
 			args.onTab(def.id)
 		end)
 	end
 
-	---------------------------------------------------------------- WeaponGrid — cards NEVER leave bounds (inside MAINBACKGROUD)
-	local gRel = rel(B.BG_WeaponGrid)
+	---------------------------------------------------------------- WeaponGrid — shop = full width; other tabs = right column
+	local gridBox = if isShop then B.SHOP_BG_WeaponGrid else B.BG_WeaponGrid
+	local gRel = rel(gridBox)
 	local gridHost = Instance.new("Frame")
 	gridHost.Name = "BG_WeaponGrid"
 	gridHost.BackgroundTransparency = 1
@@ -918,12 +935,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	gridBg.ZIndex = 2
 	gridBg.Parent = gridHost
 
-	-- Cards sit INSIDE the painted frame (not flush on rim) — bigger inset than before
+	-- Cards sit INSIDE the painted frame (not flush on rim)
 	local scroll = Instance.new("ScrollingFrame")
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
-	scroll.Size = UDim2.fromScale(0.86, 0.82)
-	scroll.Position = UDim2.fromScale(0.07, 0.10)
+	scroll.Size = UDim2.fromScale(0.90, 0.88)
+	scroll.Position = UDim2.fromScale(0.05, 0.06)
 	scroll.ScrollBarThickness = 4
 	scroll.ScrollBarImageColor3 = Color3.fromRGB(180, 140, 255)
 	scroll.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -932,14 +949,49 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	scroll.ZIndex = 3
 	scroll.Parent = gridHost
 
+	local cols = if isShop then 2 else GRID_COLS
+	-- Shop: vertical stack [PASSES header] + cardsHost; other tabs: flat grid on scroll
+	local cardsHost: Frame = scroll :: any
+	if isShop then
+		local vlist = Instance.new("UIListLayout")
+		vlist.SortOrder = Enum.SortOrder.LayoutOrder
+		vlist.HorizontalAlignment = Enum.HorizontalAlignment.Center
+		vlist.VerticalAlignment = Enum.VerticalAlignment.Top
+		vlist.Padding = UDim.new(0, 10)
+		vlist.Parent = scroll
+
+		local passesHead = Instance.new("TextLabel")
+		passesHead.Name = "PassesHeader"
+		passesHead.BackgroundTransparency = 1
+		passesHead.Size = UDim2.new(1, -16, 0, 42)
+		passesHead.LayoutOrder = 0
+		passesHead.Text = "-- PASSES --"
+		passesHead.TextXAlignment = Enum.TextXAlignment.Center
+		passesHead.TextYAlignment = Enum.TextYAlignment.Center
+		passesHead.ZIndex = 4
+		passesHead.Parent = scroll
+		UIKit.StyleText(passesHead, "purple", 3)
+		UIKit.TextConstraint(passesHead, 18, 36)
+
+		local host = Instance.new("Frame")
+		host.Name = "GamePassCards"
+		host.BackgroundTransparency = 1
+		host.Size = UDim2.new(1, -8, 0, 200)
+		host.AutomaticSize = Enum.AutomaticSize.Y
+		host.LayoutOrder = 1
+		host.ZIndex = 3
+		host.Parent = scroll
+		cardsHost = host
+	end
+
 	local grid = Instance.new("UIGridLayout")
 	grid.SortOrder = Enum.SortOrder.LayoutOrder
-	grid.FillDirectionMaxCells = GRID_COLS
-	-- Center each row so incomplete rows sit in the middle of WeaponGrid (not left-packed)
+	grid.FillDirectionMaxCells = cols
+	-- Center each row so incomplete / odd last card sits in the middle
 	grid.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	grid.VerticalAlignment = Enum.VerticalAlignment.Top
 	grid.CellPadding = UDim2.fromOffset(2, 2)
-	grid.Parent = scroll
+	grid.Parent = cardsHost
 
 	-- Hide until first cell size is known — kills left-edge flash / torn layout
 	scroll.Visible = false
@@ -949,12 +1001,20 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		if w < 40 then
 			return false
 		end
-		-- room for centered hover scale + barely-there under-glow
-		local pad = math.max(8, math.floor(w * 0.012))
-		grid.CellPadding = UDim2.fromOffset(pad, pad)
-		local cell = math.floor((w - pad * (GRID_COLS - 1)) / GRID_COLS)
-		cell = math.max(42, cell)
-		grid.CellSize = UDim2.fromOffset(cell, cell)
+		if isShop then
+			local pad = math.max(14, math.floor(w * 0.02))
+			grid.CellPadding = UDim2.fromOffset(pad, pad)
+			local cellW = math.floor((w - pad * (cols - 1) - 16) / cols)
+			cellW = math.max(200, cellW)
+			local cellH = math.floor(cellW * 0.52)
+			grid.CellSize = UDim2.fromOffset(cellW, cellH)
+		else
+			local pad = math.max(8, math.floor(w * 0.012))
+			grid.CellPadding = UDim2.fromOffset(pad, pad)
+			local cell = math.floor((w - pad * (cols - 1)) / cols)
+			cell = math.max(42, cell)
+			grid.CellSize = UDim2.fromOffset(cell, cell)
+		end
 		return true
 	end
 	scroll:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
@@ -985,7 +1045,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		-- center pivot so UIScale grows in all directions (not down-right)
 		wrap.AnchorPoint = Vector2.new(0.5, 0.5)
 		wrap.ClipsDescendants = false
-		wrap.Parent = scroll
+		wrap.Parent = cardsHost
 
 		local col = Rarity.Of(rar)
 		-- barely-there halo: ~1px overshoot on a ~70px cell; high transparency
@@ -1063,7 +1123,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		relayout()
 		scroll.Visible = true
 		local wraps: { Frame } = {}
-		for _, ch in scroll:GetChildren() do
+		for _, ch in cardsHost:GetChildren() do
 			if ch:IsA("Frame") and (string.sub(ch.Name, 1, 9) == "SlotWrap_" or string.sub(ch.Name, 1, 8) == "PotWrap_") then
 				table.insert(wraps, ch)
 			end
@@ -1094,6 +1154,197 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				end)
 			end
 		end
+	end
+
+	---------------------------------------------------------------- SHOP — 2-col gamepass cards (composed plate + rbxthumb + StyleText)
+	if isShop then
+		local unlocks = profile.unlocks or {}
+		local priceCache: { [number]: string } = {}
+
+		local function isOwned(def: any): boolean
+			if def.feature and unlocks[def.feature] == true then
+				return true
+			end
+			if def.feature == "autoClicker" and profile.purchasedAutoClicker == true then
+				return true
+			end
+			return false
+		end
+
+		local function fetchPrice(passId: number, lab: TextLabel)
+			if priceCache[passId] then
+				lab.Text = priceCache[passId]
+				return
+			end
+			task.spawn(function()
+				local ok, info = pcall(function()
+					return MarketplaceService:GetProductInfo(passId, Enum.InfoType.GamePass)
+				end)
+				if ok and type(info) == "table" and type(info.PriceInRobux) == "number" then
+					local txt = "R$ " .. tostring(info.PriceInRobux)
+					priceCache[passId] = txt
+					if lab.Parent then
+						lab.Text = txt
+					end
+				elseif lab.Parent and lab.Text == "…" then
+					lab.Text = "R$"
+				end
+			end)
+		end
+
+		for i, key in ipairs(GamePassConfig.Order) do
+			local def = GamePassConfig.Get(key)
+			if def then
+				local owned = isOwned(def)
+				local wrap = Instance.new("Frame")
+				wrap.Name = "SlotWrap_GP_" .. key
+				wrap.BackgroundTransparency = 1
+				wrap.BorderSizePixel = 0
+				wrap.LayoutOrder = i
+				wrap.AnchorPoint = Vector2.new(0.5, 0.5)
+				wrap.ClipsDescendants = false
+				wrap.ZIndex = 4
+				wrap.Parent = cardsHost
+
+				local plate = Instance.new("ImageLabel")
+				plate.Name = "Plate"
+				plate.BackgroundTransparency = 1
+				plate.Image = art("GamePass_card_empty_plate")
+				plate.ScaleType = Enum.ScaleType.Stretch
+				plate.Size = UDim2.fromScale(1, 1)
+				plate.ZIndex = 4
+				plate.Parent = wrap
+
+				-- Left icon (GamePass thumb — big, keep aspect)
+				local icon = Instance.new("ImageLabel")
+				icon.Name = "Icon"
+				icon.BackgroundTransparency = 1
+				icon.Image = GamePassConfig.ThumbUrl(def.gamePassId, 150)
+				icon.ScaleType = Enum.ScaleType.Fit
+				icon.AnchorPoint = Vector2.new(0.5, 0.5)
+				icon.Position = UDim2.fromScale(0.22, 0.52)
+				icon.Size = UDim2.fromScale(0.38, 0.78)
+				icon.ZIndex = 5
+				icon.Parent = plate
+
+				-- Right text stack
+				local title = Instance.new("TextLabel")
+				title.Name = "Title"
+				title.BackgroundTransparency = 1
+				title.AnchorPoint = Vector2.new(0.5, 0)
+				title.Position = UDim2.fromScale(0.68, 0.12)
+				title.Size = UDim2.fromScale(0.52, 0.22)
+				title.Text = string.upper(def.title)
+				title.TextXAlignment = Enum.TextXAlignment.Center
+				title.TextYAlignment = Enum.TextYAlignment.Center
+				title.TextWrapped = true
+				title.ZIndex = 6
+				title.Parent = plate
+				UIKit.StyleText(title, "purple", 2.5)
+				UIKit.TextConstraint(title, 12, 28)
+
+				local desc = Instance.new("TextLabel")
+				desc.Name = "Desc"
+				desc.BackgroundTransparency = 1
+				desc.AnchorPoint = Vector2.new(0.5, 0)
+				desc.Position = UDim2.fromScale(0.68, 0.34)
+				desc.Size = UDim2.fromScale(0.50, 0.22)
+				desc.Text = string.upper(def.desc)
+				desc.TextXAlignment = Enum.TextXAlignment.Center
+				desc.TextYAlignment = Enum.TextYAlignment.Top
+				desc.TextWrapped = true
+				desc.ZIndex = 6
+				desc.Parent = plate
+				UIKit.StyleText(desc, "gold", 2)
+				UIKit.TextConstraint(desc, 10, 18)
+
+				-- Candy price chip (frame stand-in until chip PNG is in InventoryAssetConfig)
+				local chip = Instance.new("ImageButton")
+				chip.Name = "PriceChip"
+				chip.AutoButtonColor = not owned
+				chip.AnchorPoint = Vector2.new(0.5, 0.5)
+				chip.Position = UDim2.fromScale(0.68, 0.78)
+				chip.Size = UDim2.fromScale(0.46, 0.28)
+				chip.BackgroundColor3 = Color3.fromRGB(120, 70, 220)
+				chip.BackgroundTransparency = 0.05
+				chip.BorderSizePixel = 0
+				chip.ZIndex = 6
+				chip.Parent = plate
+				UIKit.Corner(chip, 999)
+				UIKit.Stroke(chip, Color3.fromRGB(255, 160, 255), 2, 0.25)
+				local chipGrad = Instance.new("UIGradient")
+				chipGrad.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 140, 255)),
+					ColorSequenceKeypoint.new(0.5, Color3.fromRGB(120, 80, 240)),
+					ColorSequenceKeypoint.new(1, Color3.fromRGB(90, 50, 200)),
+				})
+				chipGrad.Rotation = 90
+				chipGrad.Parent = chip
+
+				local priceLab = Instance.new("TextLabel")
+				priceLab.Name = "Price"
+				priceLab.BackgroundTransparency = 1
+				priceLab.Size = UDim2.fromScale(0.9, 0.75)
+				priceLab.Position = UDim2.fromScale(0.5, 0.5)
+				priceLab.AnchorPoint = Vector2.new(0.5, 0.5)
+				priceLab.Text = if owned then "OWNED" else "…"
+				priceLab.TextXAlignment = Enum.TextXAlignment.Center
+				priceLab.ZIndex = 7
+				priceLab.Parent = chip
+				UIKit.StyleText(priceLab, if owned then "green" else "gold", 2.5)
+				UIKit.TextConstraint(priceLab, 12, 26)
+				if not owned then
+					fetchPrice(def.gamePassId, priceLab)
+				end
+
+				local sc = Instance.new("UIScale")
+				sc.Name = "SlotScale"
+				sc.Scale = 0.01
+				sc.Parent = wrap
+
+				local function buy()
+					if not owned then
+						Net.PromptGamePass(def.gamePassId)
+					end
+				end
+				chip.MouseButton1Click:Connect(buy)
+				-- whole card click
+				local hit = Instance.new("TextButton")
+				hit.Name = "Hit"
+				hit.Size = UDim2.fromScale(1, 1)
+				hit.BackgroundTransparency = 1
+				hit.Text = ""
+				hit.ZIndex = 8
+				hit.Parent = plate
+				hit.MouseButton1Click:Connect(buy)
+				hit.MouseEnter:Connect(function()
+					if sc.Scale >= 0.5 then
+						TweenService:Create(sc, TweenInfo.new(0.12), { Scale = HOVER_SCALE }):Play()
+					end
+				end)
+				hit.MouseLeave:Connect(function()
+					if sc.Scale >= 0.5 then
+						TweenService:Create(sc, TweenInfo.new(0.12), { Scale = 1 }):Play()
+					end
+				end)
+			end
+		end
+
+		task.defer(function()
+			if not scroll.Parent then
+				return
+			end
+			if not relayout() then
+				task.delay(0.05, function()
+					if scroll.Parent then
+						playGridEnter()
+					end
+				end)
+				return
+			end
+			playGridEnter()
+		end)
+		return
 	end
 
 	---------------------------------------------------------------- WEAPONS grid (no empty filler slots)
@@ -1365,7 +1616,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			wrap.ZIndex = 4
 			wrap.AnchorPoint = Vector2.new(0.5, 0.5)
 			wrap.ClipsDescendants = false
-			wrap.Parent = scroll
+			wrap.Parent = cardsHost
 			local frame = Instance.new("ImageLabel")
 			frame.Name = "CommonFrame"
 			frame.BackgroundTransparency = 1

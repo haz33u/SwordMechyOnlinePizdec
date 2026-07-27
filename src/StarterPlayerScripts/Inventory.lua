@@ -1109,12 +1109,13 @@ function Inventory.Bind(
 		hideTooltip()
 		preloadPrices()
 
-		-- Figma inventory pages: weapons / pets / auras / relics / items
+		-- Figma inventory pages: weapons / pets / auras / relics / items / shop
 		local figmaInv = tab == "weapons"
 			or tab == "pets"
 			or tab == "auras"
 			or tab == "relics"
 			or tab == "items"
+			or tab == "shop"
 		if not figmaInv then
 			InventoryWeaponsLayout.Destroy(body)
 			local figmaHost = body:FindFirstChild(ROOT_FIGMA_HOST)
@@ -1203,8 +1204,8 @@ function Inventory.Bind(
 		setMini(2, "O", profile.unlocks and profile.unlocks.offhand and GOLD or TL)
 		setMini(3, "A", profile.equippedAura and GREEN or TL)
 
-		---------------------------------------------------------------- FIGMA INV (weapons / pets / auras / relics / consumables)
-		if tab == "weapons" or tab == "pets" or tab == "auras" or tab == "relics" or tab == "items" then
+		---------------------------------------------------------------- FIGMA INV (weapons / pets / auras / relics / consumables / shop)
+		if tab == "weapons" or tab == "pets" or tab == "auras" or tab == "relics" or tab == "items" or tab == "shop" then
 			-- Full Figma inventory page — hide ENTIRE legacy InvCanvas (gray plate)
 			if canvas then
 				canvas.Visible = false
@@ -1223,6 +1224,8 @@ function Inventory.Bind(
 					countLab.Text = string.format("%d auras", #(profile.auras or {}))
 				elseif tab == "relics" then
 					countLab.Text = string.format("%d relics", #(profile.relics or {}))
+				elseif tab == "shop" then
+					countLab.Text = "Gamepasses"
 				else
 					countLab.Text = string.format(
 						"Keys: Pet %d · Aura %d | Dust: %d",
