@@ -184,22 +184,7 @@ local function tryStudioModel(def: any): Model?
 		string.gsub(def.id, "^L%d+_", ""),
 	}
 
-	-- 1. Deep search in Workspace for models placed by user in Place (any folder/subfolder)
-	for _, desc in Workspace:GetDescendants() do
-		if desc:IsA("Model") and not desc:GetAttribute("IsLiveCombatMob") then
-			for _, n in searchNames do
-				if typeof(n) == "string" and n ~= "" then
-					if string.lower(desc.Name) == string.lower(n) or string.find(string.lower(desc.Name), string.lower(n)) then
-						local clone = desc:Clone()
-						clone.Name = def.id
-						return clone
-					end
-				end
-			end
-		end
-	end
-
-	-- 2. Search containers (MobTemplates, MobsFolder, MinionModels, ReplicatedStorage)
+	-- 1. Search primary asset containers FIRST (ReplicatedStorage, INCREMENTAL ASSETS, MinionModels)
 	local inc = game:GetService("ReplicatedStorage"):FindFirstChild("INCREMENTAL ASSETS")
 	local incMobs = inc and inc:FindFirstChild("MobsFolder")
 	local incMinions = inc and inc:FindFirstChild("MinionModels")
@@ -207,12 +192,11 @@ local function tryStudioModel(def: any): Model?
 	local repPets = game:GetService("ReplicatedStorage"):FindFirstChild("PetModels")
 	local containers = {
 		repMinions,
-		repPets,
 		incMinions,
+		repPets,
 		incMobs,
 		Workspace:FindFirstChild("MobTemplates"),
 		game:GetService("ReplicatedStorage"):FindFirstChild("MobTemplates"),
-		Workspace:FindFirstChild("Mobs"),
 	}
 
 	for _, container in containers do
@@ -222,6 +206,21 @@ local function tryStudioModel(def: any): Model?
 					local src = container:FindFirstChild(n)
 					if src and src:IsA("Model") then
 						local clone = src:Clone()
+						clone.Name = def.id
+						return clone
+					end
+				end
+			end
+		end
+	end
+
+	-- 2. Fallback: Search Workspace descendants for custom placed models
+	for _, desc in Workspace:GetDescendants() do
+		if desc:IsA("Model") and not desc:GetAttribute("IsLiveCombatMob") and desc.Parent and desc.Parent.Name ~= "Mobs" then
+			for _, n in searchNames do
+				if typeof(n) == "string" and n ~= "" then
+					if string.lower(desc.Name) == string.lower(n) then
+						local clone = desc:Clone()
 						clone.Name = def.id
 						return clone
 					end
@@ -419,12 +418,20 @@ local function snapModelToGround(model: Model, targetPos: Vector3)
 	local bboxCF, bboxSize = model:GetBoundingBox()
 	local _, ry, _ = bboxCF:ToOrientation()
 
-	-- Raycast down to find ground level
+	-- Raycast down to find ground level, excluding model, mobs, trees, and props
 	local rayParam = RaycastParams.new()
 	rayParam.FilterType = Enum.RaycastFilterType.Exclude
-	rayParam.FilterDescendantsInstances = { model, Workspace:FindFirstChild("Mobs") }
 
-	local rayResult = Workspace:Raycast(targetPos + Vector3.new(0, 15, 0), Vector3.new(0, -50, 0), rayParam)
+	local excludeList = { model, Workspace:FindFirstChild("Mobs") }
+	for _, child in Workspace:GetChildren() do
+		local lower = string.lower(child.Name)
+		if string.find(lower, "tree") or string.find(lower, "decor") or string.find(lower, "fence") or string.find(lower, "prop") then
+			table.insert(excludeList, child)
+		end
+	end
+	rayParam.FilterDescendantsInstances = excludeList
+
+	local rayResult = Workspace:Raycast(targetPos + Vector3.new(0, 10, 0), Vector3.new(0, -40, 0), rayParam)
 	local groundY = rayResult and rayResult.Position.Y or targetPos.Y
 
 	local uprightCF = CFrame.new(targetPos.X, groundY + (bboxSize.Y / 2), targetPos.Z) * CFrame.Angles(0, ry, 0)
