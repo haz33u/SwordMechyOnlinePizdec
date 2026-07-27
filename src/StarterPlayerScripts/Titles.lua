@@ -23,7 +23,16 @@ function Titles.Of(profile: any?): string
 	if type(profile) == "table" and type(profile.title) == "string" then
 		local t = (profile.title :: string):match("^%s*(.-)%s*$")
 		if t and t ~= "" then
-			return t
+			local isRank = false
+			for _, rName in RebirthConfig.RANK_NAME do
+				if rName == t then
+					isRank = true
+					break
+				end
+			end
+			if not isRank then
+				return t
+			end
 		end
 	end
 	return Titles.RankOf(profile)
@@ -75,13 +84,35 @@ end
 
 --- Fill three plain labels: title | nick (fixed TextSize, no RichText)
 function Titles.PaintLine(titleLab: TextLabel, sepLab: TextLabel?, nickLab: TextLabel, profile: any?, nick: string)
-	local hasCustom = type(profile) == "table" and type(profile.title) == "string" and (profile.title :: string):match("^%s*(.-)%s*$") ~= ""
-	if hasCustom then
-		titleLab.Text = profile.title
+	local hasCustom = false
+	local customTitle: string? = nil
+	if type(profile) == "table" and type(profile.title) == "string" then
+		local t = (profile.title :: string):match("^%s*(.-)%s*$")
+		if t and t ~= "" then
+			local isRank = false
+			for _, rName in RebirthConfig.RANK_NAME do
+				if rName == t then
+					isRank = true
+					break
+				end
+			end
+			if not isRank then
+				hasCustom = true
+				customTitle = t
+			end
+		end
+	end
+
+	if hasCustom and customTitle then
+		titleLab.Text = customTitle
 		titleLab.TextColor3 = Titles.TitleColor
 		titleLab.Font = Titles.Font
 		titleLab.TextScaled = false
 		titleLab.RichText = false
+		local grad = titleLab:FindFirstChildOfClass("UIGradient")
+		if grad then
+			grad:Destroy()
+		end
 	else
 		local rbLevel = (profile and profile.rebirthLevel) or 0
 		Titles.PaintRank(titleLab, rbLevel)

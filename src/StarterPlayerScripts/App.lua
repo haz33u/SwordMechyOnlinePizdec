@@ -418,6 +418,11 @@ function App.Start()
 			pcall(function()
 				AuraVisual.Refresh(store:PeekProfile())
 			end)
+			if nameplateApi then
+				pcall(function()
+					nameplateApi.Refresh()
+				end)
+			end
 			local panel = store:PeekPanel()
 			if panel and panel ~= "none" and windowsApi then
 				windowsApi.RefreshAll()

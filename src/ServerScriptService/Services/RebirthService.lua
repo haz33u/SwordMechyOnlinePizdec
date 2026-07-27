@@ -56,6 +56,17 @@ function RebirthService.Try(player: Player): boolean
 	profile.rebirthLevel = nextLevel
 	profile.rebirthMult = RebirthConfig.GetMultAfter(nextLevel)
 	profile.talentPoints = (profile.talentPoints or 0) + 1
+
+	-- If player had no title or old rank title, clear it so current rebirth rank title updates dynamically
+	if profile.title then
+		for _, rName in RebirthConfig.RANK_NAME do
+			if rName == profile.title then
+				profile.title = nil
+				break
+			end
+		end
+	end
+
 	local rankName = RebirthConfig.GetRankName(nextLevel)
 
 	-- soft: do NOT wipe weapons/pets/locations

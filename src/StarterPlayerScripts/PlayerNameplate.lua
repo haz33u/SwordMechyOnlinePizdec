@@ -60,10 +60,6 @@ local function paint(bb: BillboardGui, store: any)
 		if s and s:IsA("TextLabel") then
 			s.TextSize = Titles.PlateTextSize
 		end
-
-		local UIKit = require(script.Parent.UIKit)
-		UIKit.ApplyRainbow(t, 0.4, 0.35, 90)
-		UIKit.ApplyRainbow(n, 0.4, 0.35, 90)
 	end
 end
 
