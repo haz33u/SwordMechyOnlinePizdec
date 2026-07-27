@@ -457,10 +457,9 @@ local function snapModelToGround(model: Model, targetPos: Vector3)
 	end
 
 	local isGoblinWarrior = string.find(model.Name, "GoblinWarrior") ~= nil
-	local extraRot = if isGoblinWarrior then math.rad(45) else 0
-	local heightLower = if isGoblinWarrior then 7.5 else 0 -- 1.5 character heights (1.5 * 5 = 7.5 studs)
+	local pitchX = if isGoblinWarrior then math.rad(90) else 0
 
-	local uprightCF = CFrame.new(targetPos.X, math.max(0, groundY + footOffset - heightLower), targetPos.Z) * CFrame.Angles(0, ry + extraRot, 0)
+	local uprightCF = CFrame.new(targetPos.X, groundY + footOffset, targetPos.Z) * CFrame.Angles(pitchX, ry, 0)
 	model:PivotTo(uprightCF)
 end
 
