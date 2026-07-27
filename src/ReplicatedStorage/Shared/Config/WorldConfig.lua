@@ -125,13 +125,13 @@ local WorldConfig = {
 			name = "Pirate Ship",
 			theme = "pirate",
 			unlockPower = 0,
-			unlockRebirth = 2,
+			unlockRebirth = 3,
 			travelCostCoins = 500_000,
 			coinMult = 3,
 			powerMult = 4,
 			combatWall = 2_000_000,
 			status = "stub",
-			blurb = "R2 + 500K once. First big wall.",
+			blurb = "R3 + 500K once. First big wall.",
 		},
 		-- Loc3+: B→T jump (see docs/SCALE_LOCS.md). Approx ±×3 OK for playtest.
 		{

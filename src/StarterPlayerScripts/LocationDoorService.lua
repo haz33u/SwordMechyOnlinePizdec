@@ -177,22 +177,24 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 			return
 		end
 
-		-- Read rebirth requirement from attribute OR item name (e.g. "1" under Doors -> Rebirth 1)
+		-- Read rebirth requirement from attribute OR item name (e.g. "1" under Doors -> Location 2 unlockRebirth = 3)
 		local reqRebirth = inst:GetAttribute("UnlockRebirth")
 		if typeof(reqRebirth) ~= "number" then
 			local numInName = tonumber(inst.Name)
 			if numInName then
-				reqRebirth = numInName
+				local targetLoc = LocationConfig.Get(numInName + 1)
+				reqRebirth = (targetLoc and targetLoc.unlockRebirth) or (numInName * 3)
 			else
 				local loc2 = LocationConfig.Get(2)
-				reqRebirth = (loc2 and loc2.unlockRebirth) or 1
+				reqRebirth = (loc2 and loc2.unlockRebirth) or 3
 			end
 		end
 
 		local reqNum = reqRebirth :: number
 		local titleName = RebirthConfig.GetRankName(reqNum)
-		local locTargetMeta = LocationConfig.Get(reqNum + 1) or LocationConfig.Get(2)
-		local locName = (locTargetMeta and locTargetMeta.name) or string.format("Location %d", reqNum + 1)
+		local numInName = tonumber(inst.Name) or 1
+		local locTargetMeta = LocationConfig.Get(numInName + 1) or LocationConfig.Get(2)
+		local locName = (locTargetMeta and locTargetMeta.name) or string.format("Location %d", numInName + 1)
 
 		local tag = createDoorTag(anchor, reqNum, titleName, locName)
 
