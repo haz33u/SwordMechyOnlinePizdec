@@ -44,8 +44,17 @@ local ProgressConfig = {
 	PAID_PET_SLOT = 1,
 
 	----------------------------------------------------------------------
-	-- Offhand (second sword for power) — paid only
+	-- Location Unlock Requirements (Rebirth Rank Gate)
 	----------------------------------------------------------------------
+	LocationRebirthReq = {
+		[1] = 0,  -- Location 1: Start (Ashborn)
+		[2] = 3,  -- Location 2: Requires Rebirth 3 (Oathbreaker)
+		[3] = 6,  -- Location 3: Requires Rebirth 6 (Stormbane)
+		[4] = 10, -- Location 4: Requires Rebirth 10 (Starscourge)
+		[5] = 15, -- Location 5: Requires Rebirth 15 (Red Omen)
+		[6] = 20, -- Location 6: Requires Rebirth 20 (Demigod)
+		[7] = 25, -- Location 7: Requires Rebirth 25 (Starfallen)
+	} :: { [number]: number },
 	OFFHAND_PAID = true,
 
 	----------------------------------------------------------------------

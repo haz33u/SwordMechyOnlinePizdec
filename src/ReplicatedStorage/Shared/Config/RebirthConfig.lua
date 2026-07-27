@@ -35,9 +35,9 @@ local RebirthConfig = {
 	GROWTH_AFTER_R3 = 28,
 
 	COIN_COST = {
-		[1] = 0,
-		[2] = 0,
-		[3] = 0,
+		[1] = 25_000, -- R1 coin cost
+		[2] = 150_000, -- R2 coin cost
+		[3] = 750_000, -- R3 coin cost (Exit from Location 1)
 	} :: { [number]: number },
 	WIPE_COINS_ON_REBIRTH = true,
 	WIPE_POWER_ON_REBIRTH = true,
