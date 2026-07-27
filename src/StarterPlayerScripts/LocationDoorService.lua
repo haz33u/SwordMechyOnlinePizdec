@@ -146,20 +146,38 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 
 	local function findDoorInstances(): { Instance }
 		local list: { Instance } = {}
-		for _, item in Workspace:GetDescendants() do
-			if item:IsA("Model") or item:IsA("BasePart") then
-				local parent = item.Parent
-				local parentName = parent and string.lower(parent.Name) or ""
-				local lowerName = string.lower(item.Name)
-				local isInsideDoorsFolder = parentName == "doors" or string.find(parentName, "door") ~= nil or string.find(parentName, "gate") ~= nil
 
-				if isInsideDoorsFolder or string.find(lowerName, "door") or string.find(lowerName, "gate") or string.find(lowerName, "wall") or item:GetAttribute("UnlockRebirth") ~= nil then
-					if not boundDoors[item] then
-						table.insert(list, item)
-					end
+		-- Purge any accidental SurfaceGuis or Tags created on generic map walls
+		for _, desc in Workspace:GetDescendants() do
+			if desc.Name == "DoorLockTag" or string.find(desc.Name, "DoorSurface_") then
+				local p = desc.Parent
+				local pParent = p and p.Parent
+				local parentName = pParent and string.lower(pParent.Name) or ""
+				if parentName ~= "doors" and p and p:GetAttribute("UnlockRebirth") == nil then
+					desc:Destroy()
 				end
 			end
 		end
+
+		-- 1. Match ONLY direct children of Workspace.Doors / Workspace.LocationDoors
+		local doorsFolder = Workspace:FindFirstChild("Doors") or Workspace:FindFirstChild("LocationDoors")
+		if doorsFolder then
+			for _, child in doorsFolder:GetChildren() do
+				if (child:IsA("Model") or child:IsA("BasePart")) and not boundDoors[child] then
+					table.insert(list, child)
+				end
+			end
+		end
+
+		-- 2. Match parts with explicit UnlockRebirth attribute
+		for _, item in Workspace:GetDescendants() do
+			if (item:IsA("Model") or item:IsA("BasePart")) and item:GetAttribute("UnlockRebirth") ~= nil then
+				if not boundDoors[item] then
+					table.insert(list, item)
+				end
+			end
+		end
+
 		return list
 	end
 
