@@ -219,79 +219,84 @@ function DevTools.Mount(gui: ScreenGui)
 			padding.PaddingRight = UDim.new(0, 20)
 			padding.Parent = scroll
 
-			local foldersToScan = {}
-			local petModels = ReplicatedStorage:FindFirstChild("PetModels")
-			if petModels then table.insert(foldersToScan, petModels) end
+			local foldersToScan = {
+				{ Name = "🐾 PETS", Folder = ReplicatedStorage:FindFirstChild("PetModels") },
+			}
 
 			local inc = ReplicatedStorage:FindFirstChild("INCREMENTAL ASSETS")
 			if inc then
-				for _, child in inc:GetChildren() do
-					if child:IsA("Folder") then table.insert(foldersToScan, child) end
-				end
+				local m = inc:FindFirstChild("MinionModels")
+				if m then table.insert(foldersToScan, { Name = "🧟 MINIONS", Folder = m }) end
 			end
 
-			for _, folder in foldersToScan do
-				for _, item in folder:GetChildren() do
-					if item:IsA("Model") or item:IsA("BasePart") then
-						local card = Instance.new("Frame")
-						card.Name = item.Name
-						card.BackgroundColor3 = Color3.fromRGB(24, 30, 48)
-						card.BorderSizePixel = 0
-						UIKit.Corner(card, 14)
-						UIKit.Stroke(card, Color3.fromRGB(56, 189, 248), 1.5, 0.2)
+			local axes = ReplicatedStorage:FindFirstChild("AxesFolder")
+			if axes then table.insert(foldersToScan, { Name = "⚔️ WEAPONS", Folder = axes }) end
 
-						local viewport = Instance.new("ViewportFrame")
-						viewport.Size = UDim2.new(1, -16, 1, -40)
-						viewport.Position = UDim2.new(0, 8, 0, 8)
-						viewport.BackgroundTransparency = 1
-						viewport.Ambient = Color3.fromRGB(210, 220, 240)
-						viewport.LightColor = Color3.fromRGB(255, 255, 255)
-						viewport.LightDirection = Vector3.new(-1, -1.2, -1).Unit
-						viewport.Parent = card
+			for _, entry in foldersToScan do
+				local folder = entry.Folder
+				if folder then
+					for _, item in folder:GetChildren() do
+						if item:IsA("Model") or item:IsA("BasePart") then
+							local card = Instance.new("Frame")
+							card.Name = item.Name
+							card.BackgroundColor3 = Color3.fromRGB(24, 30, 48)
+							card.BorderSizePixel = 0
+							UIKit.Corner(card, 14)
+							UIKit.Stroke(card, Color3.fromRGB(56, 189, 248), 1.5, 0.2)
 
-						local modelClone = item:Clone()
-						modelClone.Parent = viewport
+							local viewport = Instance.new("ViewportFrame")
+							viewport.Size = UDim2.new(1, -16, 1, -40)
+							viewport.Position = UDim2.new(0, 8, 0, 8)
+							viewport.BackgroundTransparency = 1
+							viewport.Ambient = Color3.fromRGB(210, 220, 240)
+							viewport.LightColor = Color3.fromRGB(255, 255, 255)
+							viewport.LightDirection = Vector3.new(-1, -1.2, -1).Unit
+							viewport.Parent = card
 
-						for _, d in modelClone:GetDescendants() do
-							if d:IsA("BaseScript") or d:IsA("Sound") then d:Destroy() end
+							local modelClone = item:Clone()
+							modelClone.Parent = viewport
+
+							for _, d in modelClone:GetDescendants() do
+								if d:IsA("BaseScript") or d:IsA("Sound") then d:Destroy() end
+							end
+
+							local cam = Instance.new("Camera")
+							cam.FieldOfView = 22
+							viewport.CurrentCamera = cam
+							cam.Parent = viewport
+
+							local cf: CFrame, size: Vector3
+							if modelClone:IsA("Model") then
+								cf, size = modelClone:GetBoundingBox()
+							elseif modelClone:IsA("BasePart") then
+								cf = modelClone.CFrame
+								size = modelClone.Size
+							else
+								cf = CFrame.new()
+								size = Vector3.new(2, 2, 2)
+							end
+
+							local maxExtent = math.max(size.X, size.Y, size.Z)
+							if maxExtent < 0.1 then maxExtent = 1 end
+							local dist = maxExtent * 1.65
+
+							cam.CFrame = CFrame.lookAt(
+								cf.Position + Vector3.new(dist * 0.5, dist * 0.35, dist * 0.9),
+								cf.Position
+							)
+
+							local label = Instance.new("TextLabel")
+							label.Size = UDim2.new(1, 0, 0, 28)
+							label.Position = UDim2.new(0, 0, 1, -28)
+							label.BackgroundColor3 = Color3.fromRGB(14, 18, 28)
+							label.Text = entry.Name .. ": " .. item.Name
+							label.TextColor3 = Color3.fromRGB(255, 255, 255)
+							label.TextSize = 12
+							label.Font = Enum.Font.FredokaOne
+							label.Parent = card
+
+							card.Parent = scroll
 						end
-
-						local cam = Instance.new("Camera")
-						cam.FieldOfView = 22
-						viewport.CurrentCamera = cam
-						cam.Parent = viewport
-
-						local cf: CFrame, size: Vector3
-						if modelClone:IsA("Model") then
-							cf, size = modelClone:GetBoundingBox()
-						elseif modelClone:IsA("BasePart") then
-							cf = modelClone.CFrame
-							size = modelClone.Size
-						else
-							cf = CFrame.new()
-							size = Vector3.new(2, 2, 2)
-						end
-
-						local maxExtent = math.max(size.X, size.Y, size.Z)
-						if maxExtent < 0.1 then maxExtent = 1 end
-						local dist = maxExtent * 1.65
-
-						cam.CFrame = CFrame.lookAt(
-							cf.Position + Vector3.new(dist * 0.5, dist * 0.35, dist * 0.9),
-							cf.Position
-						)
-
-						local label = Instance.new("TextLabel")
-						label.Size = UDim2.new(1, 0, 0, 28)
-						label.Position = UDim2.new(0, 0, 1, -28)
-						label.BackgroundColor3 = Color3.fromRGB(14, 18, 28)
-						label.Text = "[" .. folder.Name .. "] " .. item.Name
-						label.TextColor3 = Color3.fromRGB(255, 255, 255)
-						label.TextSize = 12
-						label.Font = Enum.Font.FredokaOne
-						label.Parent = card
-
-						card.Parent = scroll
 					end
 				end
 			end
