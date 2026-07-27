@@ -199,13 +199,19 @@ local function tryStudioModel(def: any): Model?
 		end
 	end
 
-	-- 2. Search containers (MobTemplates, MobsFolder, Mobs)
+	-- 2. Search containers (MobTemplates, MobsFolder, MinionModels, ReplicatedStorage)
 	local inc = game:GetService("ReplicatedStorage"):FindFirstChild("INCREMENTAL ASSETS")
 	local incMobs = inc and inc:FindFirstChild("MobsFolder")
+	local incMinions = inc and inc:FindFirstChild("MinionModels")
+	local repMinions = game:GetService("ReplicatedStorage"):FindFirstChild("MinionModels")
+	local repPets = game:GetService("ReplicatedStorage"):FindFirstChild("PetModels")
 	local containers = {
+		repMinions,
+		repPets,
+		incMinions,
+		incMobs,
 		Workspace:FindFirstChild("MobTemplates"),
 		game:GetService("ReplicatedStorage"):FindFirstChild("MobTemplates"),
-		incMobs,
 		Workspace:FindFirstChild("Mobs"),
 	}
 
