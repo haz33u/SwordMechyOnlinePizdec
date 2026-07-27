@@ -2,12 +2,12 @@
 --[[
 	LocationDoorService — Handles zone transition doors & barrier walls between locations.
 	Features:
-	  - Displays compact, elegant text ON THE DOOR SURFACE:
+	  - Displays compact, clean text ON THE DOOR SURFACE:
 	      🔒 AREA CLOSED
 	      ⚡ Get Rebirth 3 to Unlock
 	      🏆 Required Title: "Oathbreaker" (glowing in index color)
-	  - AlwaysOnTop = false (renders strictly on wall surface, never over player screen).
-	  - Zero toast notifications on touch (no notification spam).
+	  - AlwaysOnTop = true with MaxDistance = 120 (visible through smooth plastic glass without clipping or screen-filling).
+	  - Material: SmoothPlastic semi-transparent red (no weird ForceField texture glithes).
 ]]
 
 local Players = game:GetService("Players")
@@ -40,9 +40,10 @@ local function createSurfaceLock(anchor: BasePart, face: Enum.NormalId, reqRebir
 	local sg = Instance.new("SurfaceGui")
 	sg.Name = name
 	sg.Face = face
-	sg.CanvasSize = Vector2.new(800, 400)
+	sg.CanvasSize = Vector2.new(600, 300)
 	sg.SizingMode = Enum.SurfaceGuiSizingMode.FixedSize
-	sg.AlwaysOnTop = false
+	sg.AlwaysOnTop = true
+	sg.MaxDistance = 120
 	sg.LightInfluence = 0
 	sg.Adornee = anchor
 	sg.Parent = anchor
@@ -54,12 +55,12 @@ local function createSurfaceLock(anchor: BasePart, face: Enum.NormalId, reqRebir
 
 	-- Line 1: Area Closed
 	local lockHeader = Instance.new("TextLabel")
-	lockHeader.Size = UDim2.new(1, 0, 0, 70)
+	lockHeader.Size = UDim2.new(1, 0, 0, 60)
 	lockHeader.Position = UDim2.fromScale(0, 0.08)
 	lockHeader.BackgroundTransparency = 1
 	lockHeader.Font = Enum.Font.Arcade
-	lockHeader.TextSize = 42
-	lockHeader.TextColor3 = Color3.fromRGB(255, 65, 75)
+	lockHeader.TextSize = 38
+	lockHeader.TextColor3 = Color3.fromRGB(255, 70, 80)
 	lockHeader.Text = "🔒 AREA CLOSED"
 	lockHeader.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 	lockHeader.TextStrokeTransparency = 0.2
@@ -67,11 +68,11 @@ local function createSurfaceLock(anchor: BasePart, face: Enum.NormalId, reqRebir
 
 	-- Line 2: Get Rebirth X to Unlock
 	local rebLine = Instance.new("TextLabel")
-	rebLine.Size = UDim2.new(1, 0, 0, 55)
+	rebLine.Size = UDim2.new(1, 0, 0, 50)
 	rebLine.Position = UDim2.fromScale(0, 0.38)
 	rebLine.BackgroundTransparency = 1
 	rebLine.Font = Enum.Font.Arcade
-	rebLine.TextSize = 32
+	rebLine.TextSize = 28
 	rebLine.TextColor3 = Color3.fromRGB(255, 215, 80)
 	rebLine.Text = string.format("Get Rebirth %d to Unlock", reqRebirth)
 	rebLine.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
@@ -80,12 +81,12 @@ local function createSurfaceLock(anchor: BasePart, face: Enum.NormalId, reqRebir
 
 	-- Line 3: Required Title
 	local titleLine = Instance.new("TextLabel")
-	titleLine.Size = UDim2.new(1, 0, 0, 50)
+	titleLine.Size = UDim2.new(1, 0, 0, 45)
 	titleLine.Position = UDim2.fromScale(0, 0.65)
 	titleLine.BackgroundTransparency = 1
 	titleLine.Font = Enum.Font.Arcade
 	titleLine.RichText = true
-	titleLine.TextSize = 26
+	titleLine.TextSize = 24
 	titleLine.TextColor3 = Color3.fromRGB(240, 240, 250)
 	titleLine.Text = string.format("Required Title: <font color=\"%s\">\"%s\"</font>", titleHex, titleName)
 	titleLine.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
@@ -205,18 +206,18 @@ function LocationDoorService.Init(store: any, toastApi: any?)
 			-- Update visibility, material, and collision of door parts
 			if data.model:IsA("BasePart") then
 				data.model.CanCollide = not isUnlocked
-				data.model.Transparency = isUnlocked and 1 or 0.35
+				data.model.Transparency = isUnlocked and 1 or 0.4
 				if not isUnlocked then
-					data.model.Material = Enum.Material.ForceField
+					data.model.Material = Enum.Material.SmoothPlastic
 					data.model.Color = Color3.fromRGB(220, 50, 60)
 				end
 			else
 				for _, part in data.model:GetDescendants() do
 					if part:IsA("BasePart") then
 						part.CanCollide = not isUnlocked
-						part.Transparency = isUnlocked and 1 or 0.35
+						part.Transparency = isUnlocked and 1 or 0.4
 						if not isUnlocked then
-							part.Material = Enum.Material.ForceField
+							part.Material = Enum.Material.SmoothPlastic
 							part.Color = Color3.fromRGB(220, 50, 60)
 						end
 					end
