@@ -64,6 +64,22 @@ function DebugService.Run(player: Player, action: string, payload: any)
 		profile.lifetimePower = 0
 		profile.coins = 0
 		profile.lifetimeDamage = 0
+		profile.title = nil
+
+		-- Reset Character Upgrades & Talent Tree
+		profile.upgradeLevels = {
+			RunSpeed = 0,
+			Backpack = 0,
+			Power = 0,
+			ClickSpeed = 0,
+			CritChance = 0,
+			MultiCrit = 0,
+			Luck = 0,
+		}
+		profile.unlockedTalents = {}
+		profile.relics = {}
+		profile.equippedRelics = {}
+		profile.boosts = {}
 
 		-- Strip all weapons down to Starter Weapon only
 		profile.weapons = {
@@ -84,7 +100,7 @@ function DebugService.Run(player: Player, action: string, payload: any)
 		profile.equippedAura = nil
 
 		ProfileService.Push(player)
-		notify(player, "🧹 Inventory wiped! Starter Weapon ONLY.", "green")
+		notify(player, "🧹 Full reset complete! Upgrades & Inventory wiped.", "green")
 		return
 	end
 

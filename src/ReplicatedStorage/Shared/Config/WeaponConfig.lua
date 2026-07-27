@@ -80,27 +80,27 @@ local WeaponConfig = {
 			Common = 56.995, -- 24.998+31.997
 			Rare = 21.998,
 			Epic = 15.998,
-			Legendary = 5.009,
+			Legendary = 2.5045,
 		},
 		hard = {
 			Common = 45.541, -- 15.84+29.701
 			Rare = 33.661,
 			Epic = 16.830,
-			Legendary = 2.877,
+			Legendary = 1.4385,
 			Mythic = 1.091,
 		},
 		elite = {
 			Common = 36.0, -- 12+24
 			Rare = 30.0,
 			Epic = 20.0,
-			Legendary = 10.0,
+			Legendary = 5.0,
 			Mythic = 3.9999,
 			Secret = 0.0001,
 		},
 		boss = {
 			Rare = 28.0,
 			Epic = 35.0,
-			Legendary = 25.0,
+			Legendary = 12.5,
 			Mythic = 10.0,
 			Secret = 2.0,
 		},

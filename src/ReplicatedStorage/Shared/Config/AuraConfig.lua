@@ -273,7 +273,7 @@ local AuraConfig = {
 		},
 
 		----------------------------------------------------------------------
-		-- LEGENDARY (~0.7016% each)
+		-- LEGENDARY (~0.3508% each)
 		----------------------------------------------------------------------
 		A_Vampirism = {
 			id = "A_Vampirism",
@@ -284,7 +284,7 @@ local AuraConfig = {
 			coinPct = 0,
 			critPct = 0,
 			multiCritPct = 0,
-			dropWeight = 0.7016,
+			dropWeight = 0.3508,
 		},
 		A_Fire = {
 			id = "A_Fire",
@@ -295,7 +295,7 @@ local AuraConfig = {
 			coinPct = 0,
 			critPct = 20,
 			multiCritPct = 20,
-			dropWeight = 0.7016,
+			dropWeight = 0.3508,
 		},
 		A_Water = {
 			id = "A_Water",
@@ -306,7 +306,7 @@ local AuraConfig = {
 			coinPct = 0,
 			critPct = 0,
 			multiCritPct = 0,
-			dropWeight = 0.7016,
+			dropWeight = 0.3508,
 		},
 		A_Nature = {
 			id = "A_Nature",
@@ -317,7 +317,7 @@ local AuraConfig = {
 			coinPct = 0,
 			critPct = 0,
 			multiCritPct = 0,
-			dropWeight = 0.7016,
+			dropWeight = 0.3508,
 		},
 		A_Voodoo = {
 			id = "A_Voodoo",
@@ -328,7 +328,7 @@ local AuraConfig = {
 			coinPct = 0,
 			critPct = 0,
 			multiCritPct = 0,
-			dropWeight = 0.7016,
+			dropWeight = 0.3508,
 		},
 		A_Pumpkin = {
 			id = "A_Pumpkin",
@@ -339,7 +339,7 @@ local AuraConfig = {
 			coinPct = 10,
 			critPct = 0,
 			multiCritPct = 0,
-			dropWeight = 0.7016,
+			dropWeight = 0.3508,
 		},
 		A_Science = {
 			id = "A_Science",
@@ -350,7 +350,7 @@ local AuraConfig = {
 			coinPct = 0,
 			critPct = 0,
 			multiCritPct = 0,
-			dropWeight = 0.7016,
+			dropWeight = 0.3508,
 		},
 		A_Consciousness = {
 			id = "A_Consciousness",
@@ -361,7 +361,7 @@ local AuraConfig = {
 			coinPct = 0,
 			critPct = 0,
 			multiCritPct = 0,
-			dropWeight = 0.7016,
+			dropWeight = 0.3508,
 		},
 
 		----------------------------------------------------------------------
