@@ -101,16 +101,16 @@ function Formulas.GetUpgradeLevel(profile: any, id: string): number
 	return profile.upgradeLevels[id] or 0
 end
 
-function Formulas.GetWeaponPowerMult(profile: any): number
+function Formulas.GetWeaponPower(profile: any): number
 	if not profile then
-		return 1
+		return 0
 	end
 	local main = findWeapon(profile, profile.equippedMain)
-	local mult = 1
+	local totalAdd = 0
 	if main then
 		local def = WeaponConfig.Get(main.id)
 		if def then
-			mult = WeaponConfig.GetEffectivePower(def, main.level or 1)
+			totalAdd = WeaponConfig.GetEffectivePower(def, main.level or 1)
 		end
 	end
 	-- offhand only if paid unlock
@@ -119,11 +119,15 @@ function Formulas.GetWeaponPowerMult(profile: any): number
 		if off then
 			local def = WeaponConfig.Get(off.id)
 			if def then
-				mult += WeaponConfig.GetEffectivePower(def, off.level or 1) * 0.5
+				totalAdd += WeaponConfig.GetEffectivePower(def, off.level or 1) * 0.5
 			end
 		end
 	end
-	return mult
+	return totalAdd
+end
+
+function Formulas.GetWeaponPowerMult(profile: any): number
+	return Formulas.GetWeaponPower(profile)
 end
 
 function Formulas.GetEnchantPools(profile: any): { [string]: number }
@@ -319,10 +323,10 @@ function Formulas.GetMasteryBonuses(profile: any): (number, number)
 end
 
 function Formulas.GetTotalPower(profile: any, player: Player?): number
-	local base = GameConfig.BASE_POWER + (profile.lifetimePower or 0)
+	local weaponPower = Formulas.GetWeaponPower(profile)
+	local base = GameConfig.BASE_POWER + weaponPower + (profile.lifetimePower or 0)
 	local rebirthMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
 
-	local weaponMult = Formulas.GetWeaponPowerMult(profile) -- pure dump Сила
 	local petMult = Formulas.GetPetPowerMult(profile) -- pure dump Мощь product/stack
 	local ench = Formulas.GetEnchantPools(profile)
 	local auraP = Formulas.GetAuraPct(profile)
@@ -343,7 +347,6 @@ function Formulas.GetTotalPower(profile: any, player: Player?): number
 
 	local total = base
 		* rebirthMult
-		* weaponMult
 		* petMult
 		* friendMult
 		* premiumMult

@@ -16,6 +16,7 @@ local UIKit = require(script.Parent.UIKit)
 local Net = require(script.Parent.Net)
 local Rarity = require(script.Parent.Rarity)
 local Titles = require(script.Parent.Titles)
+local Format = require(script.Parent.Format)
 local WeaponModels = require(script.Parent.WeaponModels)
 local PetVisual = require(script.Parent.PetVisual)
 local AuraVisual = require(script.Parent.AuraVisual)
@@ -711,11 +712,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end
 		bindEquipHover(wrap, plate, matched ~= nil, rar, function()
 			local def = WeaponConfig.Get(matched.id)
+			local effP = if def then WeaponConfig.GetEffectivePower(def, matched.level or 1) else 0
 			showGearTip(
 				(def and def.name) or WeaponConfig.GetDisplayName(matched.id),
 				(def and def.rarity) or "Common",
 				"Equipped Main",
-				string.format("POWER: ×%.2f", (def and def.powerMult) or 1),
+				string.format("POWER: +%s", Format.Num(effP)),
 				(def and def.sellPrice) or 5,
 				matched.level or 1,
 				lockedUids[tostring(matched.uid)] == true
@@ -744,11 +746,12 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		end
 		bindEquipHover(wrap, plate, matched ~= nil, rar, function()
 			local def = WeaponConfig.Get(matched.id)
+			local effP = if def then WeaponConfig.GetEffectivePower(def, matched.level or 1) * 0.5 else 0
 			showGearTip(
 				(def and def.name) or WeaponConfig.GetDisplayName(matched.id),
 				(def and def.rarity) or "Common",
 				"Equipped Offhand",
-				string.format("POWER: ×%.2f", (def and def.powerMult) or 1),
+				string.format("POWER: +%s", Format.Num(effP)),
 				(def and def.sellPrice) or 5,
 				matched.level or 1,
 				lockedUids[tostring(matched.uid)] == true
@@ -1387,9 +1390,9 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			end
 
 			local name = (def and def.name) or WeaponConfig.GetDisplayName(w.id)
-			local mult = (def and def.powerMult) or 1
-			local sellP = (def and def.sellPrice) or 5
 			local lv = w.level or 1
+			local effPow = if def then WeaponConfig.GetEffectivePower(def, lv) else 1
+			local sellP = (def and def.sellPrice) or 5
 			local wrap = btn.Parent :: Frame
 			bindWrapHover(wrap, btn, function()
 				local where = ""
@@ -1398,7 +1401,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				elseif profile.equippedOffhand == w.uid then
 					where = "Equipped Offhand"
 				end
-				showGearTip(name, rar, where, string.format("POWER: ×%.2f", mult), sellP, lv, lockedUids[tostring(w.uid)] == true)
+				showGearTip(name, rar, where, string.format("POWER: +%s", Format.Num(effPow)), sellP, lv, lockedUids[tostring(w.uid)] == true)
 			end, hideTip)
 
 			-- LMB: equip/unequip chain
@@ -1456,7 +1459,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 					elseif profile.equippedOffhand == w.uid then
 						where = "Equipped Offhand"
 					end
-					showGearTip(name, rar, where, string.format("POWER: ×%.2f", mult), sellP, lv, lockedUids[key] == true)
+					showGearTip(name, rar, where, string.format("POWER: +%s", Format.Num(effPow)), sellP, lv, lockedUids[key] == true)
 				else
 					Net.MergeWeapon(w.uid)
 					args.onRefresh()
