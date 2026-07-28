@@ -24,14 +24,13 @@ local ProgressConfig = {
 	----------------------------------------------------------------------
 	-- Pet slots (equip team) — bag size is UpgradeConfig.BASE_BAG_SLOTS
 	----------------------------------------------------------------------
-	START_PET_SLOTS = 3,
+	START_PET_SLOTS = 1, -- Start with 1 pet slot F2P
 	MAX_PET_SLOTS = 4, -- equip team hard cap (3 F2P + 1 Paid shop slot)
 
 	-- When rebirthLevel reaches `rebirth`, +`slots` (recalculated, not stacked spam)
 	PetSlotsFromRebirth = {
-		{ rebirth = 2, slots = 1, id = "rb_r2" }, -- 4th
-		{ rebirth = 6, slots = 1, id = "rb_r6" }, -- 5th
-		{ rebirth = 12, slots = 1, id = "rb_r12" }, -- 7th before paid fills 8
+		{ rebirth = 4, slots = 1, id = "rb_r4" }, -- 2nd slot unlocked at Loc3 / R4
+		{ rebirth = 8, slots = 1, id = "rb_r8" }, -- 3rd slot unlocked at Loc5 / R8
 	} :: { { rebirth: number, slots: number, id: string } },
 
 	-- Dungeon clears (profile.dungeonStage[tier] >= clears)

@@ -201,6 +201,36 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 
 ---
 
+## 6.5 Locked Hardcore Progression Rules (Loc1–Loc7 Balance)
+
+### Unlock & Monetization Rules (Locked)
+1. **Pet Equip Slots:**
+   - **Loc1–Loc2:** **1 Pet Slot** (F2P starting slot).
+   - **Loc3 (Shinobi Lands):** **2nd Pet Slot** (unlocked via Rebirth 4 / coins).
+   - **Loc5 (Ash Canyons):** **3rd Pet Slot** (unlocked via Rebirth 8 / coins).
+   - **4th Pet Slot:** **Paid GamePass only** (`paidPetSlot`).
+2. **Second Sword (Offhand Slot):**
+   - **Paid GamePass only** (`offhand` — 50% power from second weapon).
+3. **Clicks & Auto-Clicker:**
+   - F2P CPS cap scales via **Talent Tree & Quests** (4 → 8 CPS max).
+   - Full Auto-Clicker & Unlimited CPS: **Paid GamePass** (`autoClicker`).
+4. **Hardcore Combat Wall:**
+   - Unlocking a new location does **NOT** allow stomping Camp A.
+   - Requires farming **30–40+ mobs on the previous location** to earn Rebirth / upgrades / weapons before comfortably clearing Camp A.
+
+### 28 Mobs Progression Table (Loc1–Loc7)
+| Loc | Camp A | Camp B | Camp C | Camp D (Elite) |
+|-----|--------|--------|--------|----------------|
+| **Loc1 (Goblin City)** | Goblin (5K) | Dark Goblin (500K) | Goblin Warrior (2.5M) | Goblin Scout (15M) |
+| **Loc2 (Pirate Ship)** | Sailor (50M) | Gunner (400M) | Captain (3.5B) | Pirate Corsair (25B) |
+| **Loc3 (Shinobi Lands)** | Shadow Scout (120B) | Blade Adept (1T) | Samurai Warden (8T) | Shadow Master (50T) |
+| **Loc4 (Polar Tundra)** | Frost Wolf (250T) | Ice Berserker (2Qa) | Tundra Giant (15Qa) | Frost Lich (100Qa) |
+| **Loc5 (Ash Canyons)** | Ash Scout (500Qa) | Flame Golem (4Qi) | Magma Demon (30Qi) | Ash Overlord (200Qi) |
+| **Loc6 (Neon Docks)** | Cyber Drone (1Sx) | Neon Mercenary (8Sx) | Mech Enforcer (60Sx) | Cyber Boss (400Sx) |
+| **Loc7 (Bone Cathedral)** | Skeletal Guard (2Sp) | Bone Acolyte (15Sp) | Lich Priest (100Sp) | Bone Monarch (750Sp) |
+
+---
+
 ## 7. Дорожная карта (что делать)
 
 ### P0 — stabilization (sprint 1) ✅/→
