@@ -1,0 +1,9 @@
+DF_StarterStick: length=4.32 y=[-1.12,3.20] w=0.43 verts=109 polys=86
+DF_MossRust: length=3.91 y=[-0.99,2.92] w=0.67 verts=68 polys=58
+DF_BoneThorn: length=2.89 y=[-0.81,2.08] w=0.24 verts=55 polys=48
+DF_RootMace: length=3.74 y=[-0.77,2.97] w=0.89 verts=198 polys=191
+DF_Twinleaf: length=3.95 y=[-0.95,3.00] w=1.12 verts=76 polys=64
+DF_SpiritBranch: length=4.55 y=[-0.75,3.80] w=0.84 verts=140 polys=125
+DF_Amberheart: length=4.04 y=[-1.01,3.03] w=0.65 verts=102 polys=100
+DF_CanopyFang: length=4.17 y=[-0.97,3.20] w=0.75 verts=106 polys=91
+DF_UmbralBough: length=4.06 y=[-0.98,3.08] w=0.68 verts=88 polys=82

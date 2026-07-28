@@ -28,3 +28,7 @@ art/icons/_failed_v1/
 art/icons/weapons/_draw_test.png
 art_assets
 TOOLTIPS
+
+# Extracted 3D imports & heavy .rbxmx models (local asset library)
+art/imports/
+*.rbxmx
