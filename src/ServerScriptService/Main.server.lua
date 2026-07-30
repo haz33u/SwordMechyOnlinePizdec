@@ -12,7 +12,7 @@ local Remotes = require(Shared.Remotes)
 local GameConfig = require(Shared.Config.GameConfig)
 local Formulas = require(Shared.Formulas)
 
--- Kill free-model / toolbox scripts in Workspace (ChestServer, PoseTexture, Robux kits…).
+-- Kill free-model / toolbox scripts in Workspace ChestServer, PoseTexture, Robux kits...
 -- They often run *before* Main; still disable+destroy so they don't re-fire on respawn/stream.
 pcall(function()
 	local Workspace = game:GetService("Workspace")
@@ -114,8 +114,8 @@ TitleService.Init()
 GroupChestService.Init()
 DebugService.Init()
 
--- Loc1 mobs + DEBUG dummy as killable placeholders
-CombatService.BootstrapLocation1()
+-- Spawn mobs for all locations after game starts (Loc1 uses your placed markers; others use fallback or markers if placed)
+CombatService.BootstrapAllLocations()
 
 Remotes.Function("GetProfile").OnServerInvoke = function(player)
 	local profile = ProfileService.Get(player)
