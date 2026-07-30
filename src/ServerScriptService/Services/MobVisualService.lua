@@ -438,6 +438,10 @@ local function snapModelToGround(model: Model, targetPos: Vector3)
 	local lowestBodyY = math.huge
 	for _, p in model:GetDescendants() do
 		if p:IsA("BasePart") then
+			-- Combat mobs are stationary. Unanchored templates fall through the floor
+			-- while SetAlive disables collision during the respawn delay.
+			p.Anchored = true
+
 			local lowerName = string.lower(p.Name)
 			-- Skip held weapons/spears when finding feet position
 			if not (string.find(lowerName, "spear") or string.find(lowerName, "sword") or string.find(lowerName, "weapon") or string.find(lowerName, "tool") or string.find(lowerName, "handle")) then
@@ -579,6 +583,9 @@ function MobVisualService.SetAlive(entry: any, alive: boolean)
 		return
 	end
 	if alive then
+		-- Restore the authoritative spawn point before revealing the model. This also
+		-- repairs templates that moved or fell while hidden during the respawn delay.
+		snapModelToGround(model, entry.position)
 		for _, d in model:GetDescendants() do
 			if d:IsA("BasePart") then
 				d.Transparency = 0
