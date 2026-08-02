@@ -281,6 +281,13 @@ function Modals.Mount(gui: ScreenGui, store: any)
 			primaryConn = primary.MouseButton1Click:Connect(function()
 				store:CloseModal()
 			end)
+		elseif m.kind == "settings" then
+			title.Text = "Settings"
+			body.Text = "Open the side menu settings panel."
+			primary.Text = "Open"
+			primaryConn = primary.MouseButton1Click:Connect(function()
+				store:CloseModal()
+			end)
 		else
 			title.Text = "Window"
 			body.Text = tostring(m.kind)

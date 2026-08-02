@@ -30,6 +30,8 @@ local PetVisual = require(script.Parent.PetVisual)
 local AuraVisual = require(script.Parent.AuraVisual)
 local LootVFX = require(script.Parent.LootVFX)
 local PlayerNameplate = require(script.Parent.PlayerNameplate)
+local SettingsUI = require(script.Parent.SettingsUI)
+local Settings = require(script.Parent.Settings)
 local T = require(script.Parent.Theme)
 
 local App = {}
@@ -160,6 +162,7 @@ function App.Start()
 	local upgradeTreeApi: any = nil
 	local clickPop: any = nil
 	local onCombatFx: any = nil
+	local settingsApi: any = nil
 
 	local function openModal(kind: string, payload: any?)
 		if kind == "casePreview" then
@@ -303,6 +306,10 @@ function App.Start()
 		local MobIndexUI = require(script.Parent.MobIndexUI)
 		MobIndexUI.Mount(gui, store)
 	end)
+	step("SettingsUI", function()
+		settingsApi = SettingsUI.Mount(gui, store)
+		settingsApi.Hide()
+	end)
 
 	-- Ferryman NPC → open world travel panel (async: never block App.Start)
 	task.spawn(function()
@@ -371,6 +378,14 @@ function App.Start()
 				if caseApi then
 					caseApi.Begin(modalObj.payload)
 				end
+			elseif modalObj.kind == "settings" then
+				if settingsApi then
+					settingsApi.Show()
+				end
+			end
+		else
+			if settingsApi then
+				settingsApi.Hide()
 			end
 		end
 		if modalsApi then

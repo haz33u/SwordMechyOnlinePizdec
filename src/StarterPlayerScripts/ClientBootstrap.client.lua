@@ -32,6 +32,8 @@ local ok, err = pcall(function()
 	App.Start()
 	local MobInspect = require(script.Parent.MobInspect)
 	MobInspect.Init()
+	local SideTabMenu = require(script.Parent.SideTabMenu)
+	SideTabMenu.Init()
 end)
 
 if not ok then
