@@ -31,4 +31,13 @@ TOOLTIPS
 
 # Extracted 3D imports & heavy .rbxmx models (local asset library)
 art/imports/
-*.rbxmx
+*.rbxmx
+art/mobs/**/mobs/*.xml
+
+# Place files are built by Rojo from src/ — never the source of truth
+*.rbxlx
+*.rbxl
+
+# Local tool scratch output
+verdicts.json
+.grok/
