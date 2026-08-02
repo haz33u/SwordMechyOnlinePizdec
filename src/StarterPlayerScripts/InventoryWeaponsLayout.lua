@@ -36,6 +36,10 @@ local InventoryWeaponsLayout = {}
 
 local ROOT_NAME = "FigmaWeaponsRoot"
 local HOVER_SCALE = 1.06
+-- Chrome (tabs / close / presets / CTA art) reacts a touch softer than item cards
+local CHROME_HOVER_SCALE = 1.05
+local HOVER_INFO = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local PRESS_INFO = TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local GRID_COLS = 6
 
 -- Client-side lock set (Ctrl+MMB). Visual: LOCKED in tooltip only.
@@ -206,6 +210,53 @@ local function place(
 	return i
 end
 
+-- Move a scale-positioned chrome element onto a centre pivot so UIScale grows in
+-- all directions instead of down-right. Visual position is unchanged.
+local function centerPivot(gui: GuiObject)
+	if gui.AnchorPoint == Vector2.new(0.5, 0.5) then
+		return
+	end
+	local p, s = gui.Position, gui.Size
+	gui.AnchorPoint = Vector2.new(0.5, 0.5)
+	gui.Position = UDim2.new(
+		p.X.Scale + s.X.Scale * 0.5,
+		p.X.Offset + math.floor(s.X.Offset * 0.5),
+		p.Y.Scale + s.Y.Scale * 0.5,
+		p.Y.Offset + math.floor(s.Y.Offset * 0.5)
+	)
+end
+
+-- Soft hover for chrome buttons: scale only (never UIStroke thickness — MASTER_PLAN §10.12).
+-- fadeIdle: optional ImageTransparency for the resting state (inactive side tabs).
+local function bindBtnHover(btn: GuiObject, hoverScale: number?, fadeIdle: number?): UIScale
+	centerPivot(btn)
+	local sc = UIKit.Scale(btn, 1)
+	local peak = hoverScale or CHROME_HOVER_SCALE
+	local img = btn :: any
+	btn.MouseEnter:Connect(function()
+		TweenService:Create(sc, HOVER_INFO, { Scale = peak }):Play()
+		if fadeIdle then
+			TweenService:Create(img, HOVER_INFO, { ImageTransparency = 0.06 }):Play()
+		end
+	end)
+	btn.MouseLeave:Connect(function()
+		TweenService:Create(sc, HOVER_INFO, { Scale = 1 }):Play()
+		if fadeIdle then
+			TweenService:Create(img, HOVER_INFO, { ImageTransparency = fadeIdle }):Play()
+		end
+	end)
+	if btn:IsA("ImageButton") or btn:IsA("TextButton") then
+		local b = btn :: any
+		b.MouseButton1Down:Connect(function()
+			TweenService:Create(sc, PRESS_INFO, { Scale = peak * 0.94 }):Play()
+		end)
+		b.MouseButton1Up:Connect(function()
+			TweenService:Create(sc, HOVER_INFO, { Scale = peak }):Play()
+		end)
+	end
+	return sc
+end
+
 local function tipLine(parent: Instance, order: number, text: string, grad: string?, h: number?): TextLabel
 	local l = Instance.new("TextLabel")
 	l.Name = "T" .. order
@@ -356,7 +407,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		pShell("EQUIPMENTbackground", "EQUIPMENTbackground", B.EQUIPMENTbackground, 4, false, Enum.ScaleType.Stretch)
 		pShell("PRESETSbutton", "WORDMARK_presets__click_to_equip_1", B.PRESETSbutton, 28, false, Enum.ScaleType.Fit)
 		for i = 1, 4 do
-			pShell("PRESETcard" .. i, "PRESETcard" .. i, B["PRESETcard" .. i], 24 + i, true, Enum.ScaleType.Fit)
+			local preset = pShell("PRESETcard" .. i, "PRESETcard" .. i, B["PRESETcard" .. i], 24 + i, true, Enum.ScaleType.Fit)
+			bindBtnHover(preset)
 		end
 	end
 	-- Divider on every tab (same asset / boxes as live game)
@@ -368,6 +420,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 
 	local closeBtn = pShell("BTN_Close_3", "BTN_Close_3", B.BTN_Close_3, 80, true, Enum.ScaleType.Fit) :: ImageButton
 	closeBtn.MouseButton1Click:Connect(args.onClose)
+	bindBtnHover(closeBtn, 1.1)
 
 	-- Title | Nick on blank card (btn_neutral_2_2 = rbxassetid://71855129271456)
 	do
@@ -457,6 +510,9 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		return wrap, plate
 	end
 
+	-- Rounded rarity rim under an equipped slot.
+	-- RelativeYY square so the rim hugs the Fit-scaled art instead of the wider wrap box;
+	-- CornerRadius is proportional so it stays round at any slot size.
 	local function applyEquipRarityGlow(wrap: Frame, rar: string?)
 		for _, ch in wrap:GetChildren() do
 			if ch.Name == "GlowOuter" or ch.Name == "GlowInner" then
@@ -466,43 +522,43 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		if type(rar) ~= "string" then
 			return
 		end
-		local showGlow = true
-		local t1, t2, s1, s2 = 0.92, 0.97, 1.0, 1.008
+		-- Every equipped item gets a rim; higher tiers just burn brighter.
+		local halo, rim, spread = 0.62, 0.34, 0.055
 		if rar == "Legendary" then
-			t1, t2, s1, s2 = 0.90, 0.96, 1.0, 1.01
+			halo, rim, spread = 0.54, 0.26, 0.065
 		elseif rar == "Mythic" then
-			t1, t2, s1, s2 = 0.86, 0.94, 1.0, 1.012
+			halo, rim, spread = 0.48, 0.22, 0.072
 		elseif rar == "Secret" then
-			t1, t2, s1, s2 = 0.82, 0.92, 1.0, 1.014
+			halo, rim, spread = 0.42, 0.18, 0.078
 		elseif rar == "Limited" then
-			t1, t2, s1, s2 = 0.78, 0.90, 1.0, 1.016
-		elseif rar == "Common" or rar == "Uncommon" or rar == "Rare" or rar == "Epic" then
-			showGlow = false
-		else
-			-- unknown / low tiers: skip
-			showGlow = false
-		end
-		if not showGlow then
-			return
+			halo, rim, spread = 0.36, 0.14, 0.085
 		end
 		local col = Rarity.Of(rar)
-		local function under(name: string, scale: number, trans: number, zOff: number)
+		local function under(name: string, scale: number, trans: number, zOff: number): Frame
 			local f = Instance.new("Frame")
 			f.Name = name
 			f.AnchorPoint = Vector2.new(0.5, 0.5)
 			f.Position = UDim2.fromScale(0.5, 0.5)
+			-- square side driven by the wrap height → matches the Fit-scaled art
 			f.Size = UDim2.fromScale(scale, scale)
+			f.SizeConstraint = Enum.SizeConstraint.RelativeYY
 			f.BackgroundColor3 = col
 			f.BackgroundTransparency = trans
 			f.BorderSizePixel = 0
 			f.ZIndex = wrap.ZIndex + zOff
 			f.Active = false
 			f.Parent = wrap
-			UIKit.Corner(f, 12)
+			local c = Instance.new("UICorner")
+			c.CornerRadius = UDim.new(0.22, 0)
+			c.Parent = f
 			return f
 		end
-		under("GlowOuter", s2, t2, 0)
-		under("GlowInner", s1, t1, 1)
+		-- Soft bloom behind the card…
+		under("GlowOuter", 1 + spread * 2, halo, 0)
+		-- …plus a crisp rounded contour. Transparent fill so the slot art stays readable.
+		-- Stroke thickness is static: never tweened (MASTER_PLAN §10.12).
+		local inner = under("GlowInner", 1 + spread, 1, 1)
+		UIKit.Stroke(inner, col, 2.5, rim)
 	end
 
 	local function iconHost(parent: GuiObject, scale: number?): Frame
@@ -836,6 +892,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	local sellAllBtn = pShell("SELLallUNLOCKEDbutton", "SELLallUNLOCKEDbutton", B.SELLallUNLOCKED, 9, true, Enum.ScaleType.Fit) :: ImageButton
 	sellBtn.Visible = false
 	sellAllBtn.Visible = false
+	bindBtnHover(bestDmg)
+	bindBtnHover(bestPow)
+	bindBtnHover(sellBtn)
+	bindBtnHover(sellAllBtn)
 
 	local function rankWeapons()
 		local ranked = {}
@@ -906,7 +966,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	---------------------------------------------------------------- side tabs (6 — no profile/settings) — host-level (outside shell)
 	for _, def in ipairs(SIDE_TABS) do
 		local btn = place(host, def.id .. "Tab", def.key, def.box, 16, true, Enum.ScaleType.Fit) :: ImageButton
-		btn.ImageTransparency = if def.id == invTab then 0 else 0.22
+		local isActive = def.id == invTab
+		btn.ImageTransparency = if isActive then 0 else 0.22
+		-- inactive tabs also brighten on hover (image transparency, not stroke — §10.12)
+		bindBtnHover(btn, nil, if isActive then nil else 0.22)
 		btn.MouseButton1Click:Connect(function()
 			if def.id == invTab then
 				return
@@ -1005,10 +1068,16 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			return false
 		end
 		if isShop then
+			-- Narrow panels get a single column instead of two squashed cards.
+			local want = if w < 460 then 1 else 2
+			if want ~= cols then
+				cols = want
+				grid.FillDirectionMaxCells = cols
+			end
 			local pad = math.max(14, math.floor(w * 0.02))
 			grid.CellPadding = UDim2.fromOffset(pad, pad)
-			local cellW = math.floor((w - pad * (cols - 1) - 16) / cols)
-			cellW = math.max(200, cellW)
+			-- Derive purely from the container: a hard 200px floor overflowed narrow shells.
+			local cellW = math.max(140, math.floor((w - pad * (cols - 1) - 16) / cols))
 			local cellH = math.floor(cellW * 0.52)
 			grid.CellSize = UDim2.fromOffset(cellW, cellH)
 		else
@@ -1141,7 +1210,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 		-- short cascade from center of set (not left→right hard cut)
 		local info = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 		for i, wrap in ipairs(wraps) do
-			local sc = wrap:FindFirstChild("SlotScale")
+			-- recursive: shop cards keep the UIScale on an inner centre-pivoted Card frame
+			local sc = wrap:FindFirstChild("SlotScale", true)
 			if sc and sc:IsA("UIScale") then
 				sc.Scale = 0.72
 				-- delay peaks in the middle of the list slightly less than edges? keep simple radial-ish by order
@@ -1204,10 +1274,24 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				wrap.BackgroundTransparency = 1
 				wrap.BorderSizePixel = 0
 				wrap.LayoutOrder = i
-				wrap.AnchorPoint = Vector2.new(0.5, 0.5)
+				-- Grid children must keep the default pivot: a centred AnchorPoint shifted
+				-- every card half a cell up-left and clipped it against the scroll frame.
+				wrap.AnchorPoint = Vector2.new(0, 0)
+				wrap.Size = UDim2.fromScale(1, 1)
 				wrap.ClipsDescendants = false
 				wrap.ZIndex = 4
 				wrap.Parent = cardsHost
+
+				-- Centre-pivoted inner card so UIScale (pop-in + hover) grows from the middle.
+				local card = Instance.new("Frame")
+				card.Name = "Card"
+				card.BackgroundTransparency = 1
+				card.BorderSizePixel = 0
+				card.AnchorPoint = Vector2.new(0.5, 0.5)
+				card.Position = UDim2.fromScale(0.5, 0.5)
+				card.Size = UDim2.fromScale(1, 1)
+				card.ZIndex = 4
+				card.Parent = wrap
 
 				local plate = Instance.new("ImageLabel")
 				plate.Name = "Plate"
@@ -1216,7 +1300,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				plate.ScaleType = Enum.ScaleType.Stretch
 				plate.Size = UDim2.fromScale(1, 1)
 				plate.ZIndex = 4
-				plate.Parent = wrap
+				plate.Parent = card
 
 				-- Left icon (GamePass thumb — big, keep aspect)
 				local icon = Instance.new("ImageLabel")
@@ -1227,16 +1311,16 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				icon.AnchorPoint = Vector2.new(0.5, 0.5)
 				icon.Position = UDim2.fromScale(0.22, 0.52)
 				icon.Size = UDim2.fromScale(0.38, 0.78)
-				icon.ZIndex = 5
+				icon.ZIndex = 6
 				icon.Parent = plate
 
-				-- Right text stack
+				-- Right text stack — title / desc / chip share one centre line and never overlap
 				local title = Instance.new("TextLabel")
 				title.Name = "Title"
 				title.BackgroundTransparency = 1
 				title.AnchorPoint = Vector2.new(0.5, 0)
-				title.Position = UDim2.fromScale(0.68, 0.12)
-				title.Size = UDim2.fromScale(0.52, 0.22)
+				title.Position = UDim2.fromScale(0.68, 0.10)
+				title.Size = UDim2.fromScale(0.56, 0.22)
 				title.Text = string.upper(def.title)
 				title.TextXAlignment = Enum.TextXAlignment.Center
 				title.TextYAlignment = Enum.TextYAlignment.Center
@@ -1250,8 +1334,9 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				desc.Name = "Desc"
 				desc.BackgroundTransparency = 1
 				desc.AnchorPoint = Vector2.new(0.5, 0)
-				desc.Position = UDim2.fromScale(0.68, 0.34)
-				desc.Size = UDim2.fromScale(0.50, 0.22)
+				desc.Position = UDim2.fromScale(0.68, 0.33)
+				-- wider + taller than the old 0.50/0.22 box, which clipped two-line descriptions
+				desc.Size = UDim2.fromScale(0.58, 0.28)
 				desc.Text = string.upper(def.desc)
 				desc.TextXAlignment = Enum.TextXAlignment.Center
 				desc.TextYAlignment = Enum.TextYAlignment.Top
@@ -1266,12 +1351,13 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				chip.Name = "PriceChip"
 				chip.AutoButtonColor = not owned
 				chip.AnchorPoint = Vector2.new(0.5, 0.5)
-				chip.Position = UDim2.fromScale(0.68, 0.78)
-				chip.Size = UDim2.fromScale(0.46, 0.28)
-				chip.BackgroundColor3 = Color3.fromRGB(120, 70, 220)
+				chip.Position = UDim2.fromScale(0.68, 0.79)
+				chip.Size = UDim2.fromScale(0.46, 0.26)
+				chip.BackgroundColor3 = if owned then Color3.fromRGB(70, 60, 100) else Color3.fromRGB(120, 70, 220)
 				chip.BackgroundTransparency = 0.05
 				chip.BorderSizePixel = 0
-				chip.ZIndex = 6
+				-- above the full-card Hit button (ZIndex 5) so the chip stays clickable
+				chip.ZIndex = 7
 				chip.Parent = plate
 				UIKit.Corner(chip, 999)
 				UIKit.Stroke(chip, Color3.fromRGB(255, 160, 255), 2, 0.25)
@@ -1303,7 +1389,7 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				local sc = Instance.new("UIScale")
 				sc.Name = "SlotScale"
 				sc.Scale = 0.01
-				sc.Parent = wrap
+				sc.Parent = card
 
 				local function buy()
 					if not owned then
@@ -1311,23 +1397,23 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 					end
 				end
 				chip.MouseButton1Click:Connect(buy)
-				-- whole card click
+				-- whole-card click, but keep it BELOW the chip so the price button stays its own target
 				local hit = Instance.new("TextButton")
 				hit.Name = "Hit"
 				hit.Size = UDim2.fromScale(1, 1)
 				hit.BackgroundTransparency = 1
 				hit.Text = ""
-				hit.ZIndex = 8
+				hit.ZIndex = 5
 				hit.Parent = plate
 				hit.MouseButton1Click:Connect(buy)
 				hit.MouseEnter:Connect(function()
-					if sc.Scale >= 0.5 then
-						TweenService:Create(sc, TweenInfo.new(0.12), { Scale = HOVER_SCALE }):Play()
+					if not owned and sc.Scale >= 0.5 then
+						TweenService:Create(sc, HOVER_INFO, { Scale = HOVER_SCALE }):Play()
 					end
 				end)
 				hit.MouseLeave:Connect(function()
 					if sc.Scale >= 0.5 then
-						TweenService:Create(sc, TweenInfo.new(0.12), { Scale = 1 }):Play()
+						TweenService:Create(sc, HOVER_INFO, { Scale = 1 }):Play()
 					end
 				end)
 			end
