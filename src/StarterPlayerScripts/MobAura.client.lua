@@ -3,15 +3,17 @@
 	Client-side mob aura visuals. Applies lightweight aura VFX to live mobs by tier.
 ]]
 
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AuraModelConfig = require(Shared.Config.AuraModelConfig)
+local Settings = require(script.Parent.Settings)
 
-local player = Players.LocalPlayer
 local activeAuras: { [Model]: Model } = {}
+--- Live mobs we know about, whether or not they currently wear an aura. Needed so
+--- flipping the "Show Auras" toggle can affect mobs that already spawned.
+local trackedMobs: { [Model]: boolean } = {}
 
 local TIER_AURA = {
 	simple = "A_Leaf",
@@ -101,8 +103,12 @@ local function onMobAdded(mob: Instance)
 	if mob:GetAttribute("IsLiveCombatMob") ~= true then
 		return
 	end
-	applyAura(mob)
+	trackedMobs[mob] = true
+	if Settings.ShouldShowVisual("auras") then
+		applyAura(mob)
+	end
 	mob.Destroying:Once(function()
+		trackedMobs[mob] = nil
 		removeAura(mob)
 	end)
 end
@@ -116,6 +122,21 @@ local function init()
 		onMobAdded(child)
 	end
 	mobsFolder.ChildAdded:Connect(onMobAdded)
+
+	-- "Show Auras" toggle applies to mobs already on screen, not just future spawns.
+	Settings.OnChange("visualAuras", function(enabled: boolean)
+		for mob in pairs(trackedMobs) do
+			if mob.Parent then
+				if enabled then
+					applyAura(mob)
+				else
+					removeAura(mob)
+				end
+			else
+				trackedMobs[mob] = nil
+			end
+		end
+	end)
 end
 
 init()

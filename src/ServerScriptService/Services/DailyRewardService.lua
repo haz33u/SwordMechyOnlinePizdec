@@ -63,8 +63,18 @@ function DailyRewardService.Claim(player: Player): boolean
 		streak = profile.dailyStreak,
 		reward = reward,
 	})
+	local text = string.format(
+		"Daily Day %d! +%s coins, +%d keys, +%d dust",
+		profile.dailyStreak,
+		tostring(reward.coins),
+		reward.keys,
+		reward.dust
+	)
+	if reward.petKeys > 0 then
+		text ..= string.format(", +%d pet keys", reward.petKeys)
+	end
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Daily Day %d! +%s coins, +%d keys, +%d dust", profile.dailyStreak, tostring(reward.coins), reward.keys, reward.dust),
+		text = text,
 		color = "gold",
 	})
 	ProfileService.Push(player)

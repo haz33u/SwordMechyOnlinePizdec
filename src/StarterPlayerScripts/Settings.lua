@@ -90,13 +90,62 @@ function Settings.OnChange(key: SettingKey, callback: (boolean) -> ()): () -> ()
 	end
 end
 
+--[[
+	Audio routing.
+
+	SoundService has no MusicVolume / SoundGroups properties — the earlier
+	implementation wrote both inside a pcall, so every audio toggle silently did
+	nothing. Instead we own one real SoundGroup per audio key; callers tag their
+	Sound with Settings.GetSoundGroup(category) and muting the group mutes them.
+]]
+local SFX_GROUPS: { [SettingKey]: SoundGroup } = {}
+local AUDIO_KEYS: { SettingKey } = { "sfxUi", "sfxCombat", "sfxWorld", "musicAmbient", "musicDungeon" }
+local MUSIC_VOLUME = 0.7
+
+local function ensureGroup(key: SettingKey): SoundGroup
+	local existing = SFX_GROUPS[key]
+	if existing and existing.Parent then
+		return existing
+	end
+	local name = "SM_" .. key
+	local found = SoundService:FindFirstChild(name)
+	local group: SoundGroup
+	if found and found:IsA("SoundGroup") then
+		group = found
+	else
+		group = Instance.new("SoundGroup")
+		group.Name = name
+		group.Parent = SoundService
+	end
+	SFX_GROUPS[key] = group
+	return group
+end
+
+local function categoryKey(category: string): SettingKey
+	if category == "ui" then
+		return "sfxUi"
+	elseif category == "combat" then
+		return "sfxCombat"
+	elseif category == "musicAmbient" then
+		return "musicAmbient"
+	elseif category == "musicDungeon" then
+		return "musicDungeon"
+	end
+	return "sfxWorld"
+end
+
+--- Assign this to Sound.SoundGroup so the matching toggle can mute it.
+function Settings.GetSoundGroup(category: string): SoundGroup
+	return ensureGroup(categoryKey(category))
+end
+
 function Settings.ApplyAudio()
-	local music = Settings.Get("musicAmbient") or Settings.Get("musicDungeon")
-	local sfx = Settings.Get("sfxUi") or Settings.Get("sfxCombat") or Settings.Get("sfxWorld")
-	pcall(function()
-		SoundService.MusicVolume = music and 0.7 or 0
-		SoundService.SoundGroups.Master.Volume = sfx and 1 or 0
-	end)
+	for _, key in ipairs(AUDIO_KEYS) do
+		local group = ensureGroup(key)
+		local isMusic = key == "musicAmbient" or key == "musicDungeon"
+		local on = Settings.Get(key)
+		group.Volume = if on then (if isMusic then MUSIC_VOLUME else 1) else 0
+	end
 end
 
 function Settings.CanPlaySound(category: "ui" | "combat" | "world"): boolean
@@ -135,5 +184,6 @@ end
 for key, default in pairs(DEFAULTS) do
 	values[key :: SettingKey] = default
 end
+Settings.ApplyAudio()
 
 return Settings

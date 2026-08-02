@@ -70,14 +70,16 @@ function AntiCheatService.ValidateSwingRate(player: Player): boolean
 	return true
 end
 
+--- Melee reach check. `isAuto` swings come from the auto-clicker, which fires
+--- while the player walks, so they get a slightly longer leash than manual hits.
 function AntiCheatService.ValidateHitDistance(player: Player, mobPos: Vector3, isAuto: boolean?): boolean
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not hrp then
 		return false
 	end
-	local maxRange = if isAuto then (Formulas.GetMaxCPS(profile) and 18 or 12) else 14
-	maxRange += 2.5 -- epsilon
+	local maxRange = if isAuto then 18 else 14
+	maxRange += 2.5 -- epsilon for replication lag
 	return (mobPos - hrp.Position).Magnitude <= maxRange
 end
 
@@ -104,6 +106,8 @@ function AntiCheatService.CheckMovement(player: Player)
 	local last = _lastPositions[player.UserId]
 	if last then
 		local delta = (hrp.Position - last).Magnitude
+		-- Approximate: the heartbeat is ~1s, so dt is hardcoded. Threshold is
+		-- deliberately lenient — this only warns, it never acts on the player.
 		local dt = 1
 		local maxDist = MAX_TELEPORT_STUDS_PER_SECOND * dt
 		if delta > maxDist then

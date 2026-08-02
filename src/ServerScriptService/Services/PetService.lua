@@ -58,15 +58,26 @@ local function removeFromTeam(profile: any, petUid: string)
 	end
 end
 
-function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?)
+--[[
+	Open one or more pet cases.
+
+	optsArg.free = true → skip coin/key cost entirely (used by PurchaseService when
+	the player already paid Robux for a Developer Product; charging game currency
+	on top of that would be a double charge).
+
+	Returns true only when pets were actually granted. PurchaseService relies on
+	this: a false return must NOT be reported to Roblox as PurchaseGranted.
+]]
+function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?, optsArg: any?): boolean
 	local count = math.clamp(math.floor(tonumber(countArg) or 1), 1, 5)
 	if count ~= 1 and count ~= 3 and count ~= 5 then
 		count = 1
 	end
+	local free = type(optsArg) == "table" and optsArg.free == true
 
 	local profile = ProfileService.Get(player)
 	if not profile then
-		return
+		return false
 	end
 
 	if count == 3 then
@@ -74,14 +85,14 @@ function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?)
 		if not ok3 then
 			Remotes.Event("Notify"):FireClient(player, { text = "Unlock Open 3x GamePass first", color = "red" })
 			fireCaseFail(player, "gamepass_required")
-			return
+			return false
 		end
 	elseif count == 5 then
 		local ok5 = (profile.unlocks and profile.unlocks.openChest5 == true) or ProgressConfig.DEBUG_FREE_PAID
 		if not ok5 then
 			Remotes.Event("Notify"):FireClient(player, { text = "Unlock Open 5x GamePass first", color = "red" })
 			fireCaseFail(player, "gamepass_required")
-			return
+			return false
 		end
 	end
 
@@ -102,6 +113,10 @@ function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?)
 
 	local keyCost = singleKeyCost * count
 	local coinCost = singleCoinCost * count
+	if free then
+		keyCost = 0
+		coinCost = 0
+	end
 
 	local keys = profile.petKeys or 0
 	local coins = profile.coins or 0
@@ -115,7 +130,7 @@ function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?)
 			color = "red",
 		})
 		fireCaseFail(player, "need_keys", keyCost, coinCost)
-		return
+		return false
 	end
 	if needCoins then
 		Remotes.Event("Notify"):FireClient(player, {
@@ -123,7 +138,7 @@ function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?)
 			color = "red",
 		})
 		fireCaseFail(player, "need_coins", keyCost, coinCost)
-		return
+		return false
 	end
 
 	local Formulas = require(Shared.Formulas)
@@ -134,7 +149,7 @@ function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?)
 			color = "red",
 		})
 		fireCaseFail(player, "bag_full", keyCost, coinCost)
-		return
+		return false
 	end
 
 	if keyCost > 0 then
@@ -209,6 +224,7 @@ function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?)
 		table.insert(profile.petTeam, first.uid)
 	end
 	ProfileService.Push(player)
+	return true
 end
 
 function PetService.Equip(player: Player, petUid: any)

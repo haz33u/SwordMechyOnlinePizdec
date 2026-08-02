@@ -9,6 +9,7 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local EnchantConfig = require(Shared.Config.EnchantConfig)
 local Remotes = require(Shared.Remotes)
@@ -16,6 +17,34 @@ local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 
 local EnchantService = {}
+
+--[[
+	Pending rolls live in server memory, NOT on the profile.
+
+	Putting them on profile.weapons[i] would persist transient state into the
+	DataStore (ProfileService.Save writes the whole profile), so a roll previewed
+	and never applied would survive rejoins forever.
+
+	Keyed by userId → weaponUid → EnchantRoll. Cleared on leave.
+]]
+local _pending: { [number]: { [string]: any } } = {}
+
+local function getPending(player: Player, weaponUid: string): any?
+	local byWeapon = _pending[player.UserId]
+	return byWeapon and byWeapon[weaponUid]
+end
+
+local function setPending(player: Player, weaponUid: string, roll: any?)
+	local byWeapon = _pending[player.UserId]
+	if not byWeapon then
+		if roll == nil then
+			return
+		end
+		byWeapon = {}
+		_pending[player.UserId] = byWeapon
+	end
+	byWeapon[weaponUid] = roll
+end
 
 local function findWeapon(profile: any, uid: string): (any?, number?)
 	for i, w in profile.weapons or {} do
@@ -42,9 +71,23 @@ function EnchantService.Init()
 	Remotes.Event("TransferEnchant").OnServerEvent:Connect(function(player, fromUid, toUid, enchantIndex)
 		EnchantService.Transfer(player, fromUid, toUid, enchantIndex)
 	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		_pending[player.UserId] = nil
+	end)
 end
 
+--[[
+	Roll a new enchant. Dust is charged HERE, per roll — that is what makes
+	rerolling expensive. Previously dust was only taken on apply, so a client
+	could spam RollEnchant for free until a good roll appeared and pay once.
+
+	Applying an already-paid-for roll is free (see ApplyRolledEnchant).
+]]
 function EnchantService.RollPreview(player: Player, weaponUid: string)
+	if type(weaponUid) ~= "string" then
+		return
+	end
 	local profile = ProfileService.Get(player)
 	local weapon = profile and findWeapon(profile, weaponUid)
 	if not weapon then
@@ -58,21 +101,39 @@ function EnchantService.RollPreview(player: Player, weaponUid: string)
 
 	local rerolls = weapon.enchantRerolls or 0
 	local cost = EnchantConfig.GetRollDustCost(rerolls)
-	local roll = EnchantConfig.Roll()
+	local dust = profile.enchantDust or 0
+	if dust < cost then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Need %d enchant dust to roll (have %d)", cost, dust),
+			color = "red",
+		})
+		return
+	end
 
-	weapon._pendingEnchant = roll
+	profile.enchantDust = dust - cost
+	weapon.enchantRerolls = rerolls + 1
+
+	local roll = EnchantConfig.Roll()
+	setPending(player, weaponUid, roll)
+
 	Remotes.Event("EnchantRollPreview"):FireClient(player, {
 		weaponUid = weaponUid,
 		enchant = roll,
 		dustCost = cost,
-		hasDust = (profile.enchantDust or 0) >= cost,
+		nextDustCost = EnchantConfig.GetRollDustCost(rerolls + 1),
+		hasDust = true,
 	})
+	ProfileService.Push(player)
 end
 
 function EnchantService.ApplyRolledEnchant(player: Player, weaponUid: string)
+	if type(weaponUid) ~= "string" then
+		return
+	end
 	local profile = ProfileService.Get(player)
 	local weapon = profile and findWeapon(profile, weaponUid)
-	if not weapon or not weapon._pendingEnchant then
+	local roll = getPending(player, weaponUid)
+	if not weapon or not roll then
 		Remotes.Event("Notify"):FireClient(player, { text = "No pending enchant", color = "red" })
 		return
 	end
@@ -81,21 +142,11 @@ function EnchantService.ApplyRolledEnchant(player: Player, weaponUid: string)
 		return
 	end
 
-	local rerolls = weapon.enchantRerolls or 0
-	local cost = EnchantConfig.GetRollDustCost(rerolls)
-	if (profile.enchantDust or 0) < cost then
-		Remotes.Event("Notify"):FireClient(player, { text = string.format("Need %d enchant dust", cost), color = "red" })
-		return
-	end
-
-	profile.enchantDust -= cost
-	weapon.enchantRerolls = rerolls + 1
+	-- Dust was already charged by RollPreview; applying is free.
+	setPending(player, weaponUid, nil)
 	if not weapon.enchants then
 		weapon.enchants = {}
 	end
-
-	local roll = weapon._pendingEnchant
-	weapon._pendingEnchant = nil
 
 	-- Stack same-family enchants
 	local def = EnchantConfig.Get(roll.id)
@@ -123,6 +174,13 @@ function EnchantService.ApplyRolledEnchant(player: Player, weaponUid: string)
 end
 
 function EnchantService.Transfer(player: Player, fromUid: string, toUid: string, enchantIndex: number)
+	if type(fromUid) ~= "string" or type(toUid) ~= "string" or type(enchantIndex) ~= "number" then
+		return
+	end
+	if fromUid == toUid then
+		Remotes.Event("Notify"):FireClient(player, { text = "Pick a different target weapon", color = "red" })
+		return
+	end
 	local profile = ProfileService.Get(player)
 	local fromW = profile and findWeapon(profile, fromUid)
 	local toW = profile and findWeapon(profile, toUid)
@@ -140,7 +198,8 @@ function EnchantService.Transfer(player: Player, fromUid: string, toUid: string,
 		Remotes.Event("Notify"):FireClient(player, { text = "Target weapon full", color = "red" })
 		return
 	end
-	if (profile.enchantDust or 0) < EnchantConfig.TRANSFER_DUST then
+	local dust = profile.enchantDust or 0
+	if dust < EnchantConfig.TRANSFER_DUST then
 		Remotes.Event("Notify"):FireClient(player, {
 			text = string.format("Need %d dust to transfer", EnchantConfig.TRANSFER_DUST),
 			color = "red",
@@ -148,7 +207,7 @@ function EnchantService.Transfer(player: Player, fromUid: string, toUid: string,
 		return
 	end
 
-	profile.enchantDust -= EnchantConfig.TRANSFER_DUST
+	profile.enchantDust = dust - EnchantConfig.TRANSFER_DUST
 	if math.random() > EnchantConfig.TRANSFER_SUCCESS then
 		Remotes.Event("Notify"):FireClient(player, { text = "Transfer failed! Dust consumed.", color = "red" })
 		ProfileService.Push(player)

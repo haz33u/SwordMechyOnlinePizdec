@@ -14,6 +14,7 @@ local SoundService = game:GetService("SoundService")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Remotes = require(Shared.Remotes)
+local Settings = require(script.Parent.Settings)
 
 local LootVFX = {}
 local localPlayer = Players.LocalPlayer
@@ -31,11 +32,15 @@ local function getVFXFolder(): Folder
 end
 
 local function playDropSound()
+	if not Settings.CanPlaySound("world") then
+		return
+	end
 	task.spawn(function()
 		pcall(function()
 			local sound = Instance.new("Sound")
 			sound.SoundId = "rbxassetid://9114221327"
 			sound.Volume = 0.15
+			sound.SoundGroup = Settings.GetSoundGroup("world")
 			sound.Parent = SoundService
 			sound:Play()
 			task.delay(1, function() pcall(function() sound:Destroy() end) end)
@@ -44,12 +49,16 @@ local function playDropSound()
 end
 
 local function playCollectSound()
+	if not Settings.CanPlaySound("world") then
+		return
+	end
 	task.spawn(function()
 		pcall(function()
 			local sound = Instance.new("Sound")
 			sound.SoundId = "rbxassetid://9114221327"
 			sound.Volume = 0.2
 			sound.PlaybackSpeed = 1.2
+			sound.SoundGroup = Settings.GetSoundGroup("world")
 			sound.Parent = SoundService
 			sound:Play()
 			task.delay(1, function() pcall(function() sound:Destroy() end) end)

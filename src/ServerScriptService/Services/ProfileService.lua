@@ -308,6 +308,10 @@ function ProfileService.Load(player: Player)
 		local offUid = data.equippedOffhand
 		for _, w in ipairs(data.weapons or {}) do
 			if type(w) == "table" and type(w.id) == "string" then
+				-- Migration: older builds stored the un-applied enchant roll on the
+				-- weapon itself, so it was written to the DataStore and survived
+				-- rejoins. Rolls are server-memory only now — strip the leftovers.
+				w._pendingEnchant = nil
 				local resolved = WeaponConfig.ResolveId(w.id)
 				if WeaponConfig.Get(resolved) then
 					w.id = resolved

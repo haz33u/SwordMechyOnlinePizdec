@@ -19,12 +19,14 @@ local Remotes = require(Shared.Remotes)
 
 local ProfileService = require(script.Parent.ProfileService)
 local LocationService = require(script.Parent.LocationService)
-local WorldService = require(script.Parent.WorldService)
 
 local DoorService = {}
 
 local COOLDOWN_SECONDS = 1.5
 local _lastTouch = {} :: { [number]: number }
+--- Guards against double-wiring: Init() sweeps existing parts and DescendantAdded
+--- can fire for the same part again (e.g. re-parented art).
+local _wired = {} :: { [BasePart]: boolean }
 
 local function isDoor(part: BasePart): boolean
 	local attr = part:GetAttribute("DoorLocationId")
@@ -110,12 +112,24 @@ local function onTouch(part: BasePart, other: BasePart)
 	end
 end
 
+--[[
+	Wire a door part for touch.
+
+	Deliberately does NOT change Transparency/CanCollide: doors are map art and
+	an artist-placed visible portal must stay visible. If a specific door should
+	be an invisible trigger volume, set that on the part itself in Studio.
+
+	Only CanTouch is forced on, since a part with CanTouch=false never fires.
+]]
 local function wireDoor(part: BasePart)
 	if not isDoor(part) then
 		return
 	end
-	part.CanCollide = false
-	part.Transparency = 1
+	if _wired[part] then
+		return
+	end
+	_wired[part] = true
+	part.CanTouch = true
 	part.Touched:Connect(function(other)
 		onTouch(part, other)
 	end)

@@ -10,8 +10,6 @@
 
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local PrestigeConfig = require(Shared.Config.PrestigeConfig)
-local RebirthConfig = require(Shared.Config.RebirthConfig)
-local NumberFormat = require(Shared.NumberFormat)
 local Remotes = require(Shared.Remotes)
 
 local ProfileService = require(script.Parent.ProfileService)

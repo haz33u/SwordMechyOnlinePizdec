@@ -86,6 +86,12 @@ function Remotes.InitAll()
 	Remotes.Event("ClaimDaily")
 	Remotes.Event("DailyClaimed")
 	Remotes.Event("PromptDevProduct")
+	Remotes.Event("RollEnchant")
+	Remotes.Event("ApplyEnchant")
+	Remotes.Event("EnchantRollPreview")
+	-- prestige: server listens today, client UI still to be built
+	Remotes.Event("RequestAscension")
+	Remotes.Event("RequestTranscendence")
 
 	-- server -> client
 	Remotes.Event("ProfileUpdate")

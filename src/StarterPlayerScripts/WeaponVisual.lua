@@ -16,6 +16,7 @@ local AuraConfig = require(Shared.Config.AuraConfig)
 local AuraModelConfig = require(Shared.Config.AuraModelConfig)
 local Rarity = require(script.Parent.Rarity)
 local WeaponModels = require(script.Parent.WeaponModels)
+local Settings = require(script.Parent.Settings)
 
 local WeaponVisual = {}
 
@@ -589,6 +590,9 @@ local function mcCurve(x: number): (number, number, number)
 end
 
 local function ensureMcSound(): Sound?
+	if not Settings.CanPlaySound("combat") then
+		return nil
+	end
 	if mcSlash and mcSlash.Parent then
 		return mcSlash
 	end
@@ -597,6 +601,7 @@ local function ensureMcSound(): Sound?
 	s.Name = "SM_MCSlash"
 	s.SoundId = cfg.SoundId or "rbxasset://sounds/swordslash.wav"
 	s.Volume = cfg.SoundVolume or 0.6
+	s.SoundGroup = Settings.GetSoundGroup("combat")
 	s.Parent = player:FindFirstChild("PlayerGui") or player
 	mcSlash = s
 	return s
