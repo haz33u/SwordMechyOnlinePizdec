@@ -71,6 +71,7 @@ function LootService.GrantWeapon(player: Player, profile: any, def: any)
 		level = 1,
 		enchants = {},
 	})
+	ProfileService.IndexWeapon(profile, def.id)
 
 	local cur = nil
 	for _, w in profile.weapons do
@@ -92,6 +93,35 @@ function LootService.GrantWeapon(player: Player, profile: any, def: any)
 
 	-- No toast on every weapon drop (clutters UI). Inventory updates via ProfileUpdate.
 	-- Bag-full / dust / keys still Notify.
+end
+
+--- Pick a slightly-better-than-common weapon for a guaranteed first drop.
+function LootService._pickStarterWeaponForLocation(locationId: number): any?
+	local candidates = WeaponConfig.GetByLocation(locationId)
+	if #candidates == 0 then
+		return nil
+	end
+	-- Prefer the best Common or the worst Rare of the location.
+	local bestCommon = nil
+	local worstRare = nil
+	for _, def in candidates do
+		if def.rarity == "Common" then
+			if not bestCommon or def.powerMult > bestCommon.powerMult then
+				bestCommon = def
+			end
+		elseif def.rarity == "Rare" then
+			if not worstRare or def.powerMult < worstRare.powerMult then
+				worstRare = def
+			end
+		end
+	end
+	if worstRare then
+		return worstRare
+	end
+	if bestCommon then
+		return bestCommon
+	end
+	return candidates[1]
 end
 
 local function rollExactDropTable(dropTable: { [string]: number }, profile: any): any?
@@ -131,6 +161,24 @@ function LootService.TryWeaponDrop(player: Player, profile: any, mobDef: any)
 	local locationId = mobDef.location or profile.currentLocation or 1
 	if locationId < 1 then
 		return
+	end
+
+	-- Guaranteed first kill on a new location drops a starter-tier weapon
+	-- so the player never feels "stuck" with the default blade.
+	if not profile.firstWeaponDropped then
+		profile.firstWeaponDropped = {}
+	end
+	if profile.firstWeaponDropped[locationId] ~= true then
+		local starter = LootService._pickStarterWeaponForLocation(locationId)
+		if starter then
+			LootService.GrantWeapon(player, profile, starter)
+			profile.firstWeaponDropped[locationId] = true
+			Remotes.Event("Notify"):FireClient(player, {
+				text = string.format("First kill bonus: %s!", starter.name),
+				color = "green",
+			})
+			return
+		end
 	end
 
 	-- Loc2 dump: exact weapon % table on the mob
@@ -287,7 +335,7 @@ function LootService.BuildMobInspect(mobDef: any, profile: any?): any?
 	local hits, seconds, dmgAvg, yourPower, cps = 0, 0, 0, 0, 0
 	if profile then
 		hits, seconds, dmgAvg, yourPower, cps =
-			Formulas.EstimateKill(profile, mobDef.hp, mobDef.armorFlat)
+			Formulas.EstimateKill(profile, mobDef.hp, mobDef.armorFlat, mobDef.isBoss)
 	end
 
 	local mainName = nil

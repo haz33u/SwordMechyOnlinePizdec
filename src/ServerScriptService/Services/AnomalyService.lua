@@ -1,6 +1,6 @@
 --!strict
 --[[
-	Server-wide anomaly scheduler.
+	Server-wide anomaly scheduler + global events.
 	Writes ReplicatedStorage.WorldState attributes for client HUD + Formulas.
 ]]
 
@@ -16,6 +16,7 @@ local AnomalyService = {}
 AnomalyService._activeId = nil :: string?
 AnomalyService._endsAt = 0
 AnomalyService._thread = nil :: thread?
+AnomalyService._history = {} :: { { id: string, name: string, started: number, ended: number } }
 
 local function worldFolder(): Folder
 	local f = ReplicatedStorage:FindFirstChild(AnomalyConfig.WORLD_FOLDER)
@@ -37,14 +38,18 @@ local function clearAttrs()
 	f:SetAttribute(AnomalyConfig.ATTR_NAME, "")
 	f:SetAttribute(AnomalyConfig.ATTR_ENDS, 0)
 	f:SetAttribute(AnomalyConfig.ATTR_STARTS, 0)
+	f:SetAttribute("AnomalyType", "")
+	f:SetAttribute("AnomalyNextAt", 0)
 end
 
-local function writeAttrs(def: any, startsAt: number, endsAt: number)
+local function writeAttrs(def: any, startsAt: number, endsAt: number, nextAt: number, typeLabel: string)
 	local f = worldFolder()
 	f:SetAttribute(AnomalyConfig.ATTR_ID, def.id)
 	f:SetAttribute(AnomalyConfig.ATTR_NAME, def.name)
 	f:SetAttribute(AnomalyConfig.ATTR_STARTS, startsAt)
 	f:SetAttribute(AnomalyConfig.ATTR_ENDS, endsAt)
+	f:SetAttribute("AnomalyType", typeLabel)
+	f:SetAttribute("AnomalyNextAt", nextAt)
 end
 
 local function announce(text: string, color: string?)
@@ -68,6 +73,10 @@ function AnomalyService.GetActiveDef(): any?
 	return AnomalyConfig.Get(id)
 end
 
+function AnomalyService.GetHistory(): { { id: string, name: string, started: number, ended: number } }
+	return table.clone(AnomalyService._history)
+end
+
 function AnomalyService.End(silent: boolean?)
 	if AnomalyService._activeId and not silent then
 		local def = AnomalyConfig.Get(AnomalyService._activeId)
@@ -76,25 +85,35 @@ function AnomalyService.End(silent: boolean?)
 			"yellow"
 		)
 	end
+	if AnomalyService._activeId then
+		table.insert(AnomalyService._history, 1, {
+			id = AnomalyService._activeId,
+			name = (AnomalyConfig.Get(AnomalyService._activeId) or {}).name or AnomalyService._activeId,
+			started = worldFolder():GetAttribute(AnomalyConfig.ATTR_STARTS) or 0,
+			ended = os.time(),
+		})
+		if #AnomalyService._history > 20 then
+			table.remove(AnomalyService._history)
+		end
+	end
 	AnomalyService._activeId = nil
 	AnomalyService._endsAt = 0
 	clearAttrs()
 end
 
-function AnomalyService.Start(def: any, durationOverride: number?): boolean
+function AnomalyService.Start(def: any, durationOverride: number?, typeLabel: string?): boolean
 	if type(def) ~= "table" or type(def.id) ~= "string" then
 		return false
 	end
 	local dur = durationOverride
 		or def.durationSeconds
 		or AnomalyConfig.DEFAULT_DURATION
-	if GameConfig.DEBUG == true and not durationOverride and not def.durationSeconds then
-		-- keep full duration unless DEBUG short mode requested via Force
-	end
 	local now = os.time()
+	local interval = if GameConfig.DEBUG then AnomalyConfig.DEBUG_INTERVAL_SECONDS else AnomalyConfig.INTERVAL_SECONDS
+	local nextAt = now + math.max(30, interval)
 	AnomalyService._activeId = def.id
 	AnomalyService._endsAt = now + math.max(15, math.floor(dur))
-	writeAttrs(def, now, AnomalyService._endsAt)
+	writeAttrs(def, now, AnomalyService._endsAt, nextAt, typeLabel or "")
 	announce(
 		string.format("ANOMALY: %s — %s (%dm)", def.name, def.blurb or "", math.floor(dur / 60 + 0.5)),
 		def.color or "gold"
@@ -132,15 +151,19 @@ function AnomalyService.Init()
 				local delaySec = if GameConfig.DEBUG then AnomalyConfig.DEBUG_FIRST_DELAY else 90
 				task.wait(delaySec)
 			else
-				-- quiet remainder of cycle after active ends
 				local quiet = math.max(30, interval - duration)
 				task.wait(quiet)
 			end
 
-			local def = AnomalyConfig.Roll()
-			AnomalyService.Start(def, duration)
+			local roll = math.random()
+			if roll <= AnomalyConfig.EVENT_CHANCE then
+				local def = AnomalyConfig.RollEvent()
+				AnomalyService.Start(def, def.durationSeconds, "event")
+			else
+				local def = AnomalyConfig.Roll()
+				AnomalyService.Start(def, duration, "anomaly")
+			end
 
-			-- wait until end (or until Force replaced endsAt)
 			while AnomalyService._activeId and os.time() < AnomalyService._endsAt do
 				task.wait(1)
 			end

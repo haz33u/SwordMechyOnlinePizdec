@@ -102,11 +102,63 @@ local MOB_OVERRIDES: {
 		caseId = "Case_Loc3",
 	},
 	[4] = {
-		mobs = {},
-		bossId = nil,
+		mobs = {
+			{ mobId = "L4_FrostWolf", count = 12, zone = "A" },
+			{ mobId = "L4_IceGolem", count = 8, zone = "B" },
+			{ mobId = "L4_TundraYeti", count = 5, zone = "C" },
+		},
+		bossId = "L4_GlacierDragonBoss",
 		debugMobs = {},
 		questIds = {},
 		caseId = "Case_Loc4",
+	},
+
+	----------------------------------------------------------------------
+	-- LOC 5 — Ash Canyons
+	----------------------------------------------------------------------
+	[5] = {
+		mobs = {
+			{ mobId = "L5_CinderWolf", count = 12, zone = "A" },
+			{ mobId = "L5_MagmaScout", count = 8, zone = "B" },
+			{ mobId = "L5_AshBrute", count = 5, zone = "C" },
+			{ mobId = "L5_EmberLord", count = 4, zone = "D" },
+		},
+		bossId = "L5_VolcanoKingBoss",
+		debugMobs = {},
+		questIds = {},
+		caseId = "Case_Loc5",
+	},
+
+	----------------------------------------------------------------------
+	-- LOC 6 — Neon Docks
+	----------------------------------------------------------------------
+	[6] = {
+		mobs = {
+			{ mobId = "L6_DockRat", count = 12, zone = "A" },
+			{ mobId = "L6_NeonThug", count = 8, zone = "B" },
+			{ mobId = "L6_CyberSamurai", count = 5, zone = "C" },
+			{ mobId = "L6_NeonBoss", count = 4, zone = "D" },
+		},
+		bossId = "L6_DockOverseerBoss",
+		debugMobs = {},
+		questIds = {},
+		caseId = "Case_Loc6",
+	},
+
+	----------------------------------------------------------------------
+	-- LOC 7 — Bone Cathedral
+	----------------------------------------------------------------------
+	[7] = {
+		mobs = {
+			{ mobId = "L7_BoneImp", count = 12, zone = "A" },
+			{ mobId = "L7_CryptGuard", count = 8, zone = "B" },
+			{ mobId = "L7_SoulReaper", count = 5, zone = "C" },
+			{ mobId = "L7_CathedralWraith", count = 4, zone = "D" },
+		},
+		bossId = "L7_BoneOverlordBoss",
+		debugMobs = {},
+		questIds = {},
+		caseId = "Case_Loc7",
 	},
 }
 

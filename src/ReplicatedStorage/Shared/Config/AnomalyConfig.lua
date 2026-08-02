@@ -1,7 +1,7 @@
 --!strict
 --[[
-	Global timed anomalies (server-wide).
-	Every INTERVAL_SECONDS roll one; ACTIVE_SECONDS duration; rest of interval quiet.
+	Global timed anomalies + rare events (server-wide).
+	Every INTERVAL_SECONDS roll one anomaly; EVENT_CHANCE replaces it with a rare event.
 
 	mods (all optional):
 	  coinMult      — multiplies GetCoinMult result
@@ -12,9 +12,10 @@
 	  dropMult      — multiplies weapon drop chance
 	  dustMult      — multiplies enchant dust grants
 	  keyChanceMult — multiplies pet/aura key roll chances
-	  mobHpMult     — multiplies mob max HP (Blood Moon style; applied on spawn/refresh if used)
+	  mobHpMult     — multiplies mob max HP (Blood Moon style)
 
 	hud: keys for top-left pills { money|power|damage|luck = fraction e.g. 0.3 = +30% }
+	event: if true, uses special client HUD styling and server hook tag
 ]]
 
 export type AnomalyMods = {
@@ -36,23 +37,28 @@ export type AnomalyDef = {
 	weight: number,
 	durationSeconds: number?,
 	mods: AnomalyMods,
-	hud: { [string]: number }?, -- money/power/damage/luck → pct fraction for HUD
-	color: string?, -- notify color
+	hud: { [string]: number }?,
+	color: string?,
+	event: boolean?,
 }
 
 local AnomalyConfig = {
 	-- Full cycle between rolls (active sits inside this window)
-	INTERVAL_SECONDS = 35 * 60, -- 35 min
-	DEFAULT_DURATION = 10 * 60, -- 10 min
-	-- Studio / DEBUG: first anomaly sooner so you can see it
+	INTERVAL_SECONDS = 35 * 60,
+	DEFAULT_DURATION = 10 * 60,
+	-- Studio / DEBUG
 	DEBUG_FIRST_DELAY = 45,
 	DEBUG_INTERVAL_SECONDS = 3 * 60,
 	DEBUG_DURATION = 60,
 
+	-- Chance to roll a rare global event instead of normal anomaly
+	EVENT_CHANCE = 0.08,
+	EVENT_DURATION = 5 * 60,
+
 	WORLD_FOLDER = "WorldState",
 	ATTR_ID = "AnomalyId",
 	ATTR_NAME = "AnomalyName",
-	ATTR_ENDS = "AnomalyEndsAt", -- unix time
+	ATTR_ENDS = "AnomalyEndsAt",
 	ATTR_STARTS = "AnomalyStartsAt",
 
 	List = {
@@ -83,7 +89,7 @@ local AnomalyConfig = {
 			blurb = "Mobs respawn 30% faster",
 			weight = 16,
 			mods = { spawnMult = 0.70 },
-			hud = { damage = 0.05 }, -- weak pill so something shows
+			hud = { damage = 0.05 },
 			color = "cyan",
 		},
 		{
@@ -144,10 +150,49 @@ local AnomalyConfig = {
 			color = "orange",
 		},
 	} :: { AnomalyDef },
+
+	Events = {
+		{
+			id = "EV_RAID",
+			name = "Boss Raid",
+			blurb = "Raid boss spawns in every location! Bonus loot on kill.",
+			weight = 6,
+			durationSeconds = 5 * 60,
+			mods = { dropMult = 1.5, dustMult = 1.5 },
+			hud = { damage = 0.20, luck = 0.25 },
+			color = "purple",
+			event = true,
+		},
+		{
+			id = "EV_RAIN",
+			name = "Aurora Rain",
+			blurb = "All players gain +15% luck and coins.",
+			weight = 8,
+			durationSeconds = 5 * 60,
+			mods = { coinMult = 1.15, luckAdd = 0.15 },
+			hud = { money = 0.15, luck = 0.15 },
+			color = "cyan",
+			event = true,
+		},
+		{
+			id = "EV_HERALD",
+			name = "Herald's Grace",
+			blurb = "Power ×1.2 and respawn ×1.3 faster.",
+			weight = 6,
+			durationSeconds = 5 * 60,
+			mods = { powerMult = 1.2, spawnMult = 0.75 },
+			hud = { power = 0.20, damage = 0.05 },
+			color = "gold",
+			event = true,
+		},
+	} :: { AnomalyDef },
 }
 
 local byId: { [string]: AnomalyDef } = {}
 for _, def in AnomalyConfig.List do
+	byId[def.id] = def
+end
+for _, def in AnomalyConfig.Events do
 	byId[def.id] = def
 end
 
@@ -155,20 +200,28 @@ function AnomalyConfig.Get(id: string): AnomalyDef?
 	return byId[id]
 end
 
-function AnomalyConfig.Roll(): AnomalyDef
+local function rollFrom(pool: { AnomalyDef }): AnomalyDef
 	local total = 0
-	for _, def in AnomalyConfig.List do
+	for _, def in pool do
 		total += def.weight
 	end
 	local r = math.random() * math.max(total, 1)
 	local acc = 0
-	for _, def in AnomalyConfig.List do
+	for _, def in pool do
 		acc += def.weight
 		if r <= acc then
 			return def
 		end
 	end
-	return AnomalyConfig.List[1]
+	return pool[1]
+end
+
+function AnomalyConfig.Roll(): AnomalyDef
+	return rollFrom(AnomalyConfig.List)
+end
+
+function AnomalyConfig.RollEvent(): AnomalyDef
+	return rollFrom(AnomalyConfig.Events)
 end
 
 function AnomalyConfig.EmptyMods(): AnomalyMods

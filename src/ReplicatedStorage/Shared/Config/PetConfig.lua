@@ -39,12 +39,27 @@ local PetConfig = {
 		loc1_key49 = { coinCost = 0, keyCost = 49, location = 1 },
 		loc2_3_75m = { coinCost = 3_750_000, keyCost = 0, location = 2 },
 		loc2_key54 = { coinCost = 0, keyCost = 54, location = 2 },
+		loc3_50m = { coinCost = 50_000_000, keyCost = 0, location = 3 },
+		loc3_key60 = { coinCost = 0, keyCost = 60, location = 3 },
+		loc4_2b = { coinCost = 2_000_000_000, keyCost = 0, location = 4 },
+		loc4_key65 = { coinCost = 0, keyCost = 65, location = 4 },
+		loc5_100b = { coinCost = 100_000_000_000, keyCost = 0, location = 5 },
+		loc5_key70 = { coinCost = 0, keyCost = 70, location = 5 },
+		loc6_5t = { coinCost = 5_000_000_000_000, keyCost = 0, location = 6 },
+		loc6_key75 = { coinCost = 0, keyCost = 75, location = 6 },
+		loc7_100t = { coinCost = 100_000_000_000_000, keyCost = 0, location = 7 },
+		loc7_key80 = { coinCost = 0, keyCost = 80, location = 7 },
 	},
 
 	-- default open for current location = main coin case
 	DefaultPoolByLocation = {
 		[1] = "loc1_500",
 		[2] = "loc2_3_75m",
+		[3] = "loc3_50m",
+		[4] = "loc4_2b",
+		[5] = "loc5_100b",
+		[6] = "loc6_5t",
+		[7] = "loc7_100t",
 	},
 
 	Pets = {} :: { [string]: PetDef },
@@ -132,51 +147,51 @@ add("P2_K_E1", "Calypso", "Epic", 65.25, 2, "loc2_key54", 34.996, 10_000_000)
 add("P2_K_L1", "Argus", "Legendary", 100.05, 2, "loc2_key54", 7.499, 25_000_000)
 add("P2_K_L2", "Nereid", "Legendary", 150.8, 2, "loc2_key54", 2.5045, 50_000_000)
 ----------------------------------------------------------------------
--- Loc3 Shinobi Lands (coin 50M)
+-- Loc3 Shinobi Lands (coin 50M) — SCALE_LOCS.md: Common~8, Rare~15, Epic~25, Legend~45, Mythic~90
 ----------------------------------------------------------------------
-add("P3_C1", "Kirin", "Common", 35, 3, "loc3_50m", 44.0, 500_000)
-add("P3_C2", "Shinobi Fox", "Common", 60, 3, "loc3_50m", 35.0, 800_000)
-add("P3_R1", "Shadow Raven", "Rare", 120, 3, "loc3_50m", 14.0, 1_500_000)
-add("P3_E1", "Dragon Kin", "Epic", 350, 3, "loc3_50m", 5.0, 5_000_000)
-add("P3_L1", "Samurai Tiger", "Legendary", 1200, 3, "loc3_50m", 0.75, 20_000_000)
-add("P3_M1", "Kitsune God", "Mythic", 5000, 3, "loc3_50m", 0.5, 100_000_000)
+add("P3_C1", "Kirin", "Common", 8, 3, "loc3_50m", 44.0, 500_000)
+add("P3_C2", "Shinobi Fox", "Common", 10, 3, "loc3_50m", 35.0, 800_000)
+add("P3_R1", "Shadow Raven", "Rare", 15, 3, "loc3_50m", 14.0, 1_500_000)
+add("P3_E1", "Dragon Kin", "Epic", 25, 3, "loc3_50m", 5.0, 5_000_000)
+add("P3_L1", "Samurai Tiger", "Legendary", 45, 3, "loc3_50m", 0.75, 20_000_000)
+add("P3_M1", "Kitsune God", "Mythic", 90, 3, "loc3_50m", 0.5, 100_000_000)
 
 ----------------------------------------------------------------------
--- Loc4 Polar Tundra (coin 2B)
+-- Loc4 Polar Tundra (coin 2B) — interpolation Loc3→Loc5
 ----------------------------------------------------------------------
-add("P4_C1", "Frost Bunny", "Common", 2500, 4, "loc4_2b", 44.0, 10_000_000)
-add("P4_C2", "Ice Bear", "Common", 5000, 4, "loc4_2b", 35.0, 20_000_000)
-add("P4_R1", "Glacier Penguin", "Rare", 12500, 4, "loc4_2b", 14.0, 50_000_000)
-add("P4_E1", "Tundra Wolf", "Epic", 35000, 4, "loc4_2b", 5.0, 200_000_000)
-add("P4_L1", "Polar Drake", "Legendary", 120000, 4, "loc4_2b", 0.75, 1_000_000_000)
-add("P4_M1", "Yeti King", "Mythic", 500000, 4, "loc4_2b", 0.5, 5_000_000_000)
+add("P4_C1", "Frost Bunny", "Common", 20, 4, "loc4_2b", 44.0, 10_000_000)
+add("P4_C2", "Ice Bear", "Common", 25, 4, "loc4_2b", 35.0, 20_000_000)
+add("P4_R1", "Glacier Penguin", "Rare", 40, 4, "loc4_2b", 14.0, 50_000_000)
+add("P4_E1", "Tundra Wolf", "Epic", 80, 4, "loc4_2b", 5.0, 200_000_000)
+add("P4_L1", "Polar Drake", "Legendary", 150, 4, "loc4_2b", 0.75, 1_000_000_000)
+add("P4_M1", "Yeti King", "Mythic", 300, 4, "loc4_2b", 0.5, 5_000_000_000)
 
 ----------------------------------------------------------------------
--- Loc5 Desert Temple (coin 100B)
+-- Loc5 Desert Temple (coin 100B) — SCALE_LOCS.md: Common~40, Rare~80, Epic~150, Legend~300, Mythic~700
 ----------------------------------------------------------------------
-add("P5_C1", "Scarab", "Common", 2_500_000, 5, "loc5_100b", 44.0, 500_000_000)
-add("P5_R1", "Anubis Guard", "Rare", 12_500_000, 5, "loc5_100b", 35.0, 2_000_000_000)
-add("P5_E1", "Sphinx", "Epic", 50_000_000, 5, "loc5_100b", 14.0, 10_000_000_000)
-add("P5_L1", "Sun Drake", "Legendary", 250_000_000, 5, "loc5_100b", 2.5, 50_000_000_000)
-add("P5_M1", "Pharaoh God", "Mythic", 1_500_000_000, 5, "loc5_100b", 0.5, 300_000_000_000)
+add("P5_C1", "Scarab", "Common", 40, 5, "loc5_100b", 44.0, 500_000_000)
+add("P5_R1", "Anubis Guard", "Rare", 80, 5, "loc5_100b", 35.0, 2_000_000_000)
+add("P5_E1", "Sphinx", "Epic", 150, 5, "loc5_100b", 14.0, 10_000_000_000)
+add("P5_L1", "Sun Drake", "Legendary", 300, 5, "loc5_100b", 2.5, 50_000_000_000)
+add("P5_M1", "Pharaoh God", "Mythic", 700, 5, "loc5_100b", 0.5, 300_000_000_000)
 
 ----------------------------------------------------------------------
--- Loc6 Cyber City (coin 5T)
+-- Loc6 Cyber City (coin 5T) — interpolation Loc5→Loc7
 ----------------------------------------------------------------------
-add("P6_C1", "Cyber Cat", "Common", 10_000_000_000, 6, "loc6_5t", 44.0, 15_000_000_000)
-add("P6_R1", "Neon Hawk", "Rare", 50_000_000_000, 6, "loc6_5t", 35.0, 80_000_000_000)
-add("P6_E1", "Mecha Wolf", "Epic", 250_000_000_000, 6, "loc6_5t", 14.0, 400_000_000_000)
-add("P6_L1", "Plasma Dragon", "Legendary", 1_200_000_000_000, 6, "loc6_5t", 2.5, 2_000_000_000_000)
-add("P6_M1", "Cyber Valkyrie", "Mythic", 8_000_000_000_000, 6, "loc6_5t", 0.5, 10_000_000_000_000)
+add("P6_C1", "Cyber Cat", "Common", 100, 6, "loc6_5t", 44.0, 15_000_000_000)
+add("P6_R1", "Neon Hawk", "Rare", 220, 6, "loc6_5t", 35.0, 80_000_000_000)
+add("P6_E1", "Mecha Wolf", "Epic", 450, 6, "loc6_5t", 14.0, 400_000_000_000)
+add("P6_L1", "Plasma Dragon", "Legendary", 1000, 6, "loc6_5t", 2.5, 2_000_000_000_000)
+add("P6_M1", "Cyber Valkyrie", "Mythic", 2500, 6, "loc6_5t", 0.5, 10_000_000_000_000)
 
 ----------------------------------------------------------------------
--- Loc7 Celestial Realm (coin 100T)
+-- Loc7 Celestial Realm (coin 100T) — SCALE_LOCS.md: Common~200, Rare~450, Epic~900, Legend~2K, Mythic~5K
 ----------------------------------------------------------------------
-add("P7_C1", "Starlight Spirit", "Common", 50_000_000_000_000, 7, "loc7_100t", 44.0, 100_000_000_000)
-add("P7_R1", "Seraphim", "Rare", 250_000_000_000_000, 7, "loc7_100t", 35.0, 500_000_000_000)
-add("P7_E1", "Solar Phoenix", "Epic", 1_200_000_000_000_000, 7, "loc7_100t", 14.0, 2_000_000_000_000)
-add("P7_L1", "Celestial Dragon", "Legendary", 6_000_000_000_000_000, 7, "loc7_100t", 2.5, 10_000_000_000_000)
-add("P7_M1", "Archangel Prime", "Mythic", 50_000_000_000_000_000, 7, "loc7_100t", 0.5, 100_000_000_000_000)
+add("P7_C1", "Starlight Spirit", "Common", 200, 7, "loc7_100t", 44.0, 100_000_000_000)
+add("P7_R1", "Seraphim", "Rare", 450, 7, "loc7_100t", 35.0, 500_000_000_000)
+add("P7_E1", "Solar Phoenix", "Epic", 900, 7, "loc7_100t", 14.0, 2_000_000_000_000)
+add("P7_L1", "Celestial Dragon", "Legendary", 2000, 7, "loc7_100t", 2.5, 10_000_000_000_000)
+add("P7_M1", "Archangel Prime", "Mythic", 5000, 7, "loc7_100t", 0.5, 100_000_000_000_000)
 
 ----------------------------------------------------------------------
 -- Pet Variations System (Normal, Golden, Shiny/Void)
@@ -285,10 +300,16 @@ end
 
 --- Loc1 coin pools for Cases UI
 function PetConfig.ListOpenablePools(locationId: number): { string }
-	if locationId >= 2 then
-		return { "loc2_3_75m", "loc2_key54" }
-	end
-	return { "loc1_500", "loc1_50k", "loc1_key49" }
+	local map = {
+		[1] = { "loc1_500", "loc1_50k", "loc1_key49" },
+		[2] = { "loc2_3_75m", "loc2_key54" },
+		[3] = { "loc3_50m", "loc3_key60" },
+		[4] = { "loc4_2b", "loc4_key65" },
+		[5] = { "loc5_100b", "loc5_key70" },
+		[6] = { "loc6_5t", "loc6_key75" },
+		[7] = { "loc7_100t", "loc7_key80" },
+	}
+	return map[locationId] or { "loc1_500" }
 end
 
 return PetConfig

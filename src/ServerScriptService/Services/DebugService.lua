@@ -248,13 +248,35 @@ function DebugService.Run(player: Player, action: string, payload: any)
 
 	if action == "setLocation" then
 		local loc = if type(payload) == "number" then math.floor(payload) else 1
-		loc = math.clamp(loc, 1, 4)
+		loc = math.clamp(loc, 1, 7)
 		profile.currentLocation = loc
+		ProfileService.UnlockLocation(profile, loc)
 		local WorldService = require(script.Parent.WorldService)
 		pcall(function()
 			WorldService.TeleportToLocation(player, loc)
 		end)
 		notify(player, "Dev: location " .. tostring(loc), "cyan")
+		ProfileService.Push(player)
+		return
+	end
+
+	if action == "setRebirth" then
+		local lv = if type(payload) == "number" then math.floor(payload) else 0
+		lv = math.clamp(lv, 0, 60)
+		profile.rebirthLevel = lv
+		profile.rebirthMult = require(Shared.Config.RebirthConfig).GetMultAfter(lv)
+		local PetService = require(script.Parent.PetService)
+		PetService.SyncSlots(profile)
+		notify(player, "Dev: rebirth " .. tostring(lv), "cyan")
+		ProfileService.Push(player)
+		return
+	end
+
+	if action == "resetLifetime" then
+		profile.lifetimePower = 0
+		profile.lifetimeDamage = 0
+		profile.totalClicks = 0
+		notify(player, "Dev: lifetime power/damage/clicks reset", "cyan")
 		ProfileService.Push(player)
 		return
 	end

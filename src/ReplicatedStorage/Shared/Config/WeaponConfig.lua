@@ -53,6 +53,11 @@ local WeaponConfig = {
 	LocationProgression = {
 		[1] = { dropChanceMult = 1.00, highRarityMult = 1.00, timeHint = "Loc1 dump" },
 		[2] = { dropChanceMult = 1.00, highRarityMult = 1.00, timeHint = "Loc2 dump" },
+		[3] = { dropChanceMult = 1.00, highRarityMult = 0.90, timeHint = "Loc3 T-scale" },
+		[4] = { dropChanceMult = 1.00, highRarityMult = 0.80, timeHint = "Loc4 Tundra" },
+		[5] = { dropChanceMult = 1.00, highRarityMult = 0.70, timeHint = "Loc5 Ash" },
+		[6] = { dropChanceMult = 1.00, highRarityMult = 0.60, timeHint = "Loc6 Neon" },
+		[7] = { dropChanceMult = 1.00, highRarityMult = 0.50, timeHint = "Loc7 Cathedral (soft wall)" },
 	} :: { [number]: LocationProgression },
 
 	TierDropChance = {
@@ -218,15 +223,15 @@ end
 ----------------------------------------------------------------------
 -- LOC 1 — dump names (id = readable slug, name = player-facing English)
 ----------------------------------------------------------------------
-add("starter_weapon", "Starter Weapon", "Common", 1, 1, 10, "Dump strength 1")
-add("old_sword", "Old Sword", "Common", 1, 2, 40, "Dump strength 2")
-add("bone_dagger", "Bone Dagger", "Common", 1, 3, 50, "Dump strength 3")
-add("wooden_mace", "Wooden Mace", "Rare", 1, 10, 150, "Dump strength 10")
-add("double_edged_sword", "Double-Edged Sword", "Epic", 1, 17, 200, "Dump strength 17")
-add("forest_spirit_staff", "Forest Spirit Staff", "Epic", 1, 28, 250, "Dump strength 28")
-add("ardite", "Ardite", "Legendary", 1, 50, 500, "Dump strength 50")
-add("forest_sword", "Forest Sword", "Mythic", 1, 125, 1000, "Dump strength 125")
-add("forest_shadow", "Forest Shadow", "Secret", 1, 150, 1500, "Dump strength 150")
+add("starter_weapon", "Starter Weapon", "Common", 1, 50, 10, "A worn blade given to every newcomer. Strength 50.")
+add("old_sword", "Old Sword", "Common", 1, 100, 40, "Slightly better than bare hands. Strength 100.")
+add("bone_dagger", "Bone Dagger", "Common", 1, 175, 50, "Goblin-carved bone. Strength 175.")
+add("wooden_mace", "Wooden Mace", "Rare", 1, 400, 150, "Heavy and reliable. Strength 400.")
+add("double_edged_sword", "Double-Edged Sword", "Epic", 1, 900, 200, "Two edges, twice the trouble. Strength 900.")
+add("forest_spirit_staff", "Forest Spirit Staff", "Epic", 1, 1_500, 250, "Channelled forest magic. Strength 1.5K.")
+add("ardite", "Ardite", "Legendary", 1, 3_500, 500, "Gleaming green alloy. Strength 3.5K.")
+add("forest_sword", "Forest Sword", "Mythic", 1, 8_000, 1000, "Blade of the deep woods. Strength 8K.")
+add("forest_shadow", "Forest Shadow", "Secret", 1, 15_000, 1500, "A whisper made steel. Strength 15K.")
 
 ----------------------------------------------------------------------
 -- LOC 2 — dump names
@@ -243,10 +248,53 @@ add("sea_dagger", "Sea Dagger", "Legendary", 2, 4250, 120_000_000, "Dump strengt
 ----------------------------------------------------------------------
 -- LOC 3 — Shinobi Lands
 ----------------------------------------------------------------------
-add("shinobi_katana", "Shinobi Katana", "Common", 3, 10_000, 2_500_000, "Loc3 Katana")
-add("shadow_kunai", "Shadow Kunai", "Rare", 3, 35_000, 10_000_000, "Loc3 Kunai")
-add("dragon_tanto", "Dragon Tanto", "Epic", 3, 120_000, 50_000_000, "Loc3 Tanto")
-add("muramasa_blade", "Muramasa Blade", "Legendary", 3, 500_000, 250_000_000, "Loc3 Katana")
+add("shinobi_katana", "Shinobi Katana", "Common", 3, 80, 2_500_000, "Loc3 Katana")
+add("shadow_kunai", "Shadow Kunai", "Rare", 3, 250, 10_000_000, "Loc3 Kunai")
+add("dragon_tanto", "Dragon Tanto", "Epic", 3, 600, 50_000_000, "Loc3 Tanto")
+add("muramasa_blade", "Muramasa Blade", "Legendary", 3, 1_500, 250_000_000, "Loc3 Katana")
+add("samurai_god_katana", "Samurai God Katana", "Mythic", 3, 4_000, 750_000_000, "Loc3 Mythic")
+add("shadow_shogun_blade", "Shadow Shogun Blade", "Secret", 3, 6_000, 1_500_000_000, "Loc3 Secret")
+
+----------------------------------------------------------------------
+-- LOC 4 — Polar Tundra
+----------------------------------------------------------------------
+add("ice_dagger", "Ice Dagger", "Common", 4, 400, 5_000_000, "Loc4 dagger")
+add("frost_cleaver", "Frost Cleaver", "Rare", 4, 1_200, 20_000_000, "Loc4 cleaver")
+add("glacier_scythe", "Glacier Scythe", "Epic", 4, 3_000, 100_000_000, "Loc4 scythe")
+add("blizzard_sword", "Blizzard Sword", "Legendary", 4, 8_000, 500_000_000, "Loc4 sword")
+add("ice_dragon_fang", "Ice Dragon Fang", "Mythic", 4, 20_000, 2_000_000_000, "Loc4 mythic")
+add("polar_sovereign_blade", "Polar Sovereign Blade", "Secret", 4, 30_000, 5_000_000_000, "Loc4 secret")
+
+----------------------------------------------------------------------
+-- LOC 5 — Ash Canyons
+----------------------------------------------------------------------
+add("ash_shiv", "Ash Shiv", "Common", 5, 2_000, 50_000_000, "Loc5 shiv")
+add("magma_maul", "Magma Maul", "Rare", 5, 6_000, 200_000_000, "Loc5 maul")
+add("obsidian_glaive", "Obsidian Glaive", "Epic", 5, 15_000, 1_000_000_000, "Loc5 glaive")
+add("inferno_blade", "Inferno Blade", "Legendary", 5, 40_000, 5_000_000_000, "Loc5 blade")
+add("volcano_god_sword", "Volcano God Sword", "Mythic", 5, 100_000, 25_000_000_000, "Loc5 mythic")
+add("phoenix_ash_blade", "Phoenix Ash Blade", "Secret", 5, 150_000, 80_000_000_000, "Loc5 secret")
+
+----------------------------------------------------------------------
+-- LOC 6 — Neon Docks
+----------------------------------------------------------------------
+add("neon_dagger", "Neon Dagger", "Common", 6, 10_000, 1_000_000_000, "Loc6 dagger")
+add("plasma_cutlass", "Plasma Cutlass", "Rare", 6, 30_000, 4_000_000_000, "Loc6 cutlass")
+add("cyber_katana", "Cyber Katana", "Epic", 6, 80_000, 20_000_000_000, "Loc6 katana")
+add("lightning_greatsword", "Lightning Greatsword", "Legendary", 6, 200_000, 100_000_000_000, "Loc6 greatsword")
+add("overseer_proto_blade", "Overseer Proto-Blade", "Mythic", 6, 500_000, 500_000_000_000, "Loc6 mythic")
+add("dimensional_edge", "Dimensional Edge", "Secret", 6, 800_000, 1_500_000_000_000, "Loc6 secret")
+
+----------------------------------------------------------------------
+-- LOC 7 — Bone Cathedral
+----------------------------------------------------------------------
+add("bone_knife", "Bone Knife", "Common", 7, 50_000, 20_000_000_000, "Loc7 knife")
+add("crypt_rapier", "Crypt Rapier", "Rare", 7, 150_000, 80_000_000_000, "Loc7 rapier")
+add("soul_reaver_scythe", "Soul Reaver Scythe", "Epic", 7, 400_000, 400_000_000_000, "Loc7 scythe")
+add("cathedral_longsword", "Cathedral Longsword", "Legendary", 7, 1_000_000, 2_000_000_000_000, "Loc7 longsword")
+add("bone_overlord_cleaver", "Bone Overlord Cleaver", "Mythic", 7, 2_500_000, 10_000_000_000_000, "Loc7 mythic")
+add("celestial_void_blade", "Celestial Void Blade", "Secret", 7, 4_000_000, 35_000_000_000_000, "Loc7 secret")
+
 ----------------------------------------------------------------------
 -- INCREMENTAL & SPECIAL WEAPONS (Stone, Iron, Gold, Titanium, Emerald, Ruby, Atherite, Celestium, Voidsteel)
 ----------------------------------------------------------------------
@@ -377,13 +425,17 @@ function WeaponConfig.GetEffectiveWeights(tier: string, locationId: number): Dro
 	if not base then
 		return { Common = 100 }
 	end
-	-- Loc2 uses per-mob exact tables in LootService; rarity weights only for Loc1 fallback
+	-- Loc2 uses per-mob exact tables in LootService; rarity weights for Loc1/3+ fallback
+	local prog = WeaponConfig.GetLocationProgression(locationId)
+	local highMult = prog.highRarityMult or 1
+
 	local out: DropWeightTable = {}
 	local total = 0
 	for rarity, w in base do
 		if w > 0 then
-			out[rarity] = w
-			total += w
+			local multiplier = if WeaponConfig.HighRarities[rarity] then highMult else 1
+			out[rarity] = w * multiplier
+			total += out[rarity]
 		end
 	end
 	if total > 0 then

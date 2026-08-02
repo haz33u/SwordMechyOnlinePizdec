@@ -184,7 +184,10 @@ function UpgradeConfig.GetBagCap(profile: any, _kind: string?): number
 	if profile and profile.upgradeLevels then
 		lvl = profile.upgradeLevels.Backpack or 0
 	end
-	return UpgradeConfig.BASE_BAG_SLOTS + lvl * (UpgradeConfig.Defs.Backpack.effectPerLevel or 1)
+	local base = UpgradeConfig.BASE_BAG_SLOTS + lvl * (UpgradeConfig.Defs.Backpack.effectPerLevel or 1)
+	local TalentTreeConfig = require(script.Parent.TalentTreeConfig)
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	return base + (talentStats.bagSlots or 0)
 end
 
 return UpgradeConfig

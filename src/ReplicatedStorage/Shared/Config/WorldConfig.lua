@@ -52,9 +52,9 @@ local WorldConfig = {
 	-- Center-to-center
 	ISLAND_PITCH = 1600, -- 1200 + 400
 
-	-- 2×2 grid for 4 territories
-	GRID_COLUMNS = 2,
-	GRID_ROWS = 2,
+	-- 3×3 grid for up to 9 territories (Loc1–7 active)
+	GRID_COLUMNS = 3,
+	GRID_ROWS = 3,
 
 	GRID_ORIGIN = Vector3.new(0, 0, 0),
 
@@ -139,7 +139,7 @@ local WorldConfig = {
 			name = "Shinobi Lands",
 			theme = "shinobi",
 			unlockPower = 0,
-			unlockRebirth = 4,
+			unlockRebirth = 5,
 			travelCostCoins = 5_000_000,
 			coinMult = 8,
 			powerMult = 12,
@@ -152,7 +152,7 @@ local WorldConfig = {
 			name = "Polar Tundra",
 			theme = "tundra",
 			unlockPower = 0,
-			unlockRebirth = 6,
+			unlockRebirth = 7,
 			travelCostCoins = 50_000_000,
 			coinMult = 18,
 			powerMult = 30,
@@ -165,7 +165,7 @@ local WorldConfig = {
 			name = "Ash Canyons",
 			theme = "canyon",
 			unlockPower = 0,
-			unlockRebirth = 8,
+			unlockRebirth = 10,
 			travelCostCoins = 500_000_000,
 			coinMult = 40,
 			powerMult = 70,
@@ -178,7 +178,7 @@ local WorldConfig = {
 			name = "Neon Docks",
 			theme = "docks",
 			unlockPower = 0,
-			unlockRebirth = 10,
+			unlockRebirth = 13,
 			travelCostCoins = 5_000_000_000,
 			coinMult = 90,
 			powerMult = 150,
@@ -191,7 +191,7 @@ local WorldConfig = {
 			name = "Bone Cathedral",
 			theme = "cathedral",
 			unlockPower = 0,
-			unlockRebirth = 12,
+			unlockRebirth = 17,
 			travelCostCoins = 50_000_000_000,
 			coinMult = 200,
 			powerMult = 350,
@@ -204,7 +204,7 @@ local WorldConfig = {
 			name = "Storm Spire",
 			theme = "spire",
 			unlockPower = 0,
-			unlockRebirth = 14,
+			unlockRebirth = 20,
 			travelCostCoins = 500_000_000_000,
 			coinMult = 450,
 			powerMult = 800,
@@ -217,7 +217,7 @@ local WorldConfig = {
 			name = "Mirror Marshes",
 			theme = "marsh",
 			unlockPower = 0,
-			unlockRebirth = 16,
+			unlockRebirth = 24,
 			travelCostCoins = 5_000_000_000_000,
 			coinMult = 1_000,
 			powerMult = 1_800,
@@ -230,7 +230,7 @@ local WorldConfig = {
 			name = "Obsidian Gate",
 			theme = "gate",
 			unlockPower = 0,
-			unlockRebirth = 18,
+			unlockRebirth = 29,
 			travelCostCoins = 50_000_000_000_000,
 			coinMult = 2_200,
 			powerMult = 4_000,
@@ -341,3 +341,4 @@ function WorldConfig.GetWorldFootprint(): (number, number)
 end
 
 return WorldConfig
+
