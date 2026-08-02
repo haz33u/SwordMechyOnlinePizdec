@@ -56,7 +56,6 @@ local PetModelConfig = {
 		P2_K_E1 = "E-B",
 		P2_K_L1 = "E-C",
 		P2_K_L2 = "E-D",
-		P2_K_M1 = "S-A",
 
 		P3_C1 = "Kirin",
 		P3_C2 = "ShinobiFox",

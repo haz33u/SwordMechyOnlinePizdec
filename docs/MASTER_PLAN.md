@@ -193,8 +193,12 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | P1 | Real dungeon fight + **per-player** gate | AFK timer only | DungeonService |
 | P1 | EquipRelic / UpgradeRelic | no remotes | RelicConfig |
 | P2 | World pads + polish Ferryman / `SetLocation` UX | backend exists; map pads + UI | Place art |
+| P2 | Pet model identity: Nereus/Nereid same look. `PetModels.Waifu`/`E-D`/`S-A` = 3 identical Nereus copies; `Workspace.Nereid` (34-part merfolk) unused. Fix: clone `Workspace.Nereid` → slot `E-D`, point `P2_K_L2` at it (script `tools/install_pet_model_slot.lua`); regenerate proper models after daily gen limit resets. **Dead mapping `P2_K_M1` already removed (2026-08-02).** | generation limit | PetModelConfig |
 | P2 | Loc2–4 content + IconConfig Loc2+ | Loc2 dump in configs; art/markers | Place + FIGMA_PROMPTS |
 | P3 | Leaderboard / full BP economy / Wings | meta | stable core |
+| P3 | `PetModels.F` = 3003 parts (slot for `P1_50_R1`; `Charon` is an identical dup) vs typical 18–216 → perf risk. Decide: remap to a lighter model or optimize. | — | PetModelConfig |
+| P3 | Workspace root has 47 `ProceduralModel`s; 45 verified dups of `PetModels` slots (strong sig: part names + sizes + colors). Safe to delete those 45; **`Nereid` (34p, unique — needed for the P2 fix above) and one extra `KitsuneGod` copy (92p) must NOT be deleted.** | Nereid fix first | — |
+| P3 | Prestige client UI panel — server (`PrestigeService`/`PrestigeConfig`) fully done, no UI. Ascension @ Rebirth 60, Transcendence @ 10 tokens. | — | PrestigeService |
 | P4 | DataStore versioning, anti-cheat, soft launch | skeleton | soft launch |
 
 **Already shipped (do not re-do):** clicks/CPS/rebirth dual-cost · upgrades · weapons drop/enchant/ban · case keys + CaseResult · pet slots (3 F2P → 4 max with paid slot) + paid offhand · Loc1 quests skeleton · reference game lang dump · **INVETAR inventory shell** · **gamepass donate shop + auto unlock** · case open no-dim center result.
