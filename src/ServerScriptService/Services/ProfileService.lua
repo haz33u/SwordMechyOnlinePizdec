@@ -106,6 +106,15 @@ local function defaultProfile()
 		bannedAuraIds = {},
 		talentPoints = 0,
 		unlockedTalents = { C_Core = 1, TheStart = 1 },
+		weaponIndex = {},
+		mobIndex = {},
+		petIndex = {},
+		ascensionTokens = 0,
+		transcendenceShards = 0,
+		ascensionCount = 0,
+		transcendenceCount = 0,
+		dailyStreak = 0,
+		dailyLastClaim = 0,
 	}
 end
 
@@ -116,6 +125,8 @@ function ProfileService.Init()
 
 	Players.PlayerAdded:Connect(function(player)
 		ProfileService.Load(player)
+		local DailyRewardService = require(script.Parent.DailyRewardService)
+		DailyRewardService.OnJoin(player)
 	end)
 	Players.PlayerRemoving:Connect(function(player)
 		ProfileService.Save(player)
@@ -232,6 +243,33 @@ function ProfileService.Load(player: Player)
 	if type(data.boosts) ~= "table" then
 		data.boosts = {}
 	end
+	if type(data.weaponIndex) ~= "table" then
+		data.weaponIndex = {}
+	end
+	if type(data.mobIndex) ~= "table" then
+		data.mobIndex = {}
+	end
+	if type(data.petIndex) ~= "table" then
+		data.petIndex = {}
+	end
+	if type(data.ascensionTokens) ~= "number" then
+		data.ascensionTokens = 0
+	end
+	if type(data.transcendenceShards) ~= "number" then
+		data.transcendenceShards = 0
+	end
+	if type(data.ascensionCount) ~= "number" then
+		data.ascensionCount = data.ascensionTokens or 0
+	end
+	if type(data.transcendenceCount) ~= "number" then
+		data.transcendenceCount = data.transcendenceShards or 0
+	end
+	if type(data.dailyStreak) ~= "number" then
+		data.dailyStreak = 0
+	end
+	if type(data.dailyLastClaim) ~= "number" then
+		data.dailyLastClaim = 0
+	end
 	-- merge new quests into old saves
 	if type(data.quests) ~= "table" then
 		data.quests = {}
@@ -340,6 +378,9 @@ function ProfileService.Load(player: Player)
 	ProfileService._profiles[player.UserId] = data
 	ProfileService.Push(player)
 	ProfileService.ApplyWalkSpeed(player)
+
+	local OfflineFarmService = require(script.Parent.OfflineFarmService)
+	OfflineFarmService.Collect(player, data)
 end
 
 function ProfileService.Save(player: Player)
@@ -347,9 +388,35 @@ function ProfileService.Save(player: Player)
 	if not profile or not ProfileService._store then
 		return
 	end
-	pcall(function()
+	local ok = pcall(function()
 		ProfileService._store:SetAsync("p_" .. player.UserId, profile)
 	end)
+	if ok then
+		pcall(function()
+			ProfileService._store:SetAsync("p_" .. player.UserId .. "_backup", profile)
+		end)
+	end
+end
+
+function ProfileService.SaveAll()
+	for _, player in Players:GetPlayers() do
+		ProfileService.Save(player)
+	end
+end
+
+function ProfileService.RestoreFromBackup(player: Player): boolean
+	if not ProfileService._store then
+		return false
+	end
+	local ok, backup = pcall(function()
+		return ProfileService._store:GetAsync("p_" .. player.UserId .. "_backup")
+	end)
+	if ok and typeof(backup) == "table" then
+		ProfileService._profiles[player.UserId] = backup
+		ProfileService.Push(player)
+		return true
+	end
+	return false
 end
 
 function ProfileService.Get(player: Player): any?
@@ -399,6 +466,24 @@ end
 function ProfileService.UnlockLocation(profile: any, locId: number)
 	if not ProfileService.IsLocationUnlocked(profile, locId) then
 		table.insert(profile.locationsUnlocked, locId)
+	end
+end
+
+function ProfileService.IndexWeapon(profile: any, weaponId: string)
+	if not profile.weaponIndex[weaponId] then
+		profile.weaponIndex[weaponId] = true
+	end
+end
+
+function ProfileService.IndexMob(profile: any, mobId: string)
+	if not profile.mobIndex[mobId] then
+		profile.mobIndex[mobId] = true
+	end
+end
+
+function ProfileService.IndexPet(profile: any, petId: string)
+	if not profile.petIndex[petId] then
+		profile.petIndex[petId] = true
 	end
 end
 

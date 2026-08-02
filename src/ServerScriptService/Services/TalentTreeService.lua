@@ -139,14 +139,14 @@ function TalentTreeService.UnlockNode(player: Player, nodeId: any)
 			})
 			return
 		end
-		if node.reqFrostTier and (profile.frostTier or 0) < node.reqFrostTier then
+		if node.reqFrostTier and (profile.frostCaseTier or 0) < node.reqFrostTier then
 			Remotes.Event("Notify"):FireClient(player, {
 				text = string.format("Requires Case Quester Step %d completed!", node.reqFrostTier),
 				color = "red",
 			})
 			return
 		end
-		if node.reqGrimTier and (profile.grimTier or 0) < node.reqGrimTier then
+		if node.reqGrimTier and (profile.grimKillTier or 0) < node.reqGrimTier then
 			Remotes.Event("Notify"):FireClient(player, {
 				text = string.format("Requires Power Quester Step %d completed!", node.reqGrimTier),
 				color = "red",

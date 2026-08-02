@@ -13,6 +13,14 @@ local GameConfig = {
 	BASE_POWER = 250,
 	BASE_POWER_PER_CLICK = 1,
 	BASE_SWING_COOLDOWN = 0.50, -- seconds
+
+	--[[
+		Converts accumulated lifetimeDamage into TotalPower base.
+		~0.00001 means: 1T lifetime damage → 10M base power.
+		This ties combat wall (5T Loc3 → 150T Loc4 → 3Qi Loc7) to farming pace:
+		player needs ~combatWall lifetime damage to comfortably clear next location.
+	]]
+	DAMAGE_TO_POWER_RATE = 0.0001,
 	MIN_SWING_COOLDOWN = 0.12,
 	--[[
 		Melee reach (studs). Minecraft-like: must stand close.

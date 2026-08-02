@@ -47,11 +47,11 @@ local ProgressConfig = {
 	LocationRebirthReq = {
 		[1] = 0,  -- Location 1: Start (Ashborn)
 		[2] = 3,  -- Location 2: Requires Rebirth 3 (Oathbreaker)
-		[3] = 6,  -- Location 3: Requires Rebirth 6 (Stormbane)
-		[4] = 10, -- Location 4: Requires Rebirth 10 (Starscourge)
-		[5] = 15, -- Location 5: Requires Rebirth 15 (Red Omen)
-		[6] = 20, -- Location 6: Requires Rebirth 20 (Demigod)
-		[7] = 25, -- Location 7: Requires Rebirth 25 (Starfallen)
+		[3] = 5,  -- Location 3: Requires Rebirth 5 (Stormbane)
+		[4] = 7,  -- Location 4: Requires Rebirth 7 (Starscourge)
+		[5] = 10, -- Location 5: Requires Rebirth 10 (Red Omen)
+		[6] = 13, -- Location 6: Requires Rebirth 13 (Demigod)
+		[7] = 17, -- Location 7: Requires Rebirth 17 (Starfallen)
 	} :: { [number]: number },
 	OFFHAND_PAID = true,
 
@@ -100,7 +100,14 @@ function ProgressConfig.ComputePetSlots(profile: any): number
 		slots += talentStats.petSlots
 	end
 
-	return math.clamp(slots, ProgressConfig.START_PET_SLOTS, ProgressConfig.MAX_PET_SLOTS)
+	-- Prestige Ascension / Transcendence pet slot bonuses
+	local PrestigeConfig = require(script.Parent.PrestigeConfig)
+	local prestige = PrestigeConfig.GetTotalBonus(profile)
+	if (prestige.petSlots or 0) > 0 then
+		slots += prestige.petSlots
+	end
+
+	return math.clamp(slots, ProgressConfig.START_PET_SLOTS, ProgressConfig.MAX_PET_SLOTS + (prestige.petSlots or 0))
 end
 
 function ProgressConfig.IsOffhandUnlocked(profile: any): boolean

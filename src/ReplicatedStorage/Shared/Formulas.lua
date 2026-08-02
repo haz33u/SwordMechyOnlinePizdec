@@ -18,6 +18,8 @@ local ProgressConfig = require(script.Parent.Config.ProgressConfig)
 local AnomalyConfig = require(script.Parent.Config.AnomalyConfig)
 local TalentTreeConfig = require(script.Parent.Config.TalentTreeConfig)
 local MasteryConfig = require(script.Parent.Config.MasteryConfig)
+local IndexConfig = require(script.Parent.Config.IndexConfig)
+local PrestigeConfig = require(script.Parent.Config.PrestigeConfig)
 
 local Formulas = {}
 
@@ -138,6 +140,8 @@ function Formulas.GetEnchantPools(profile: any): { [string]: number }
 		crit = 0,
 		coins = 0,
 		luck = 0,
+		lifesteal = 0,
+		bossDamage = 0,
 	}
 	if not profile then
 		return pools
@@ -212,13 +216,16 @@ function Formulas.GetPetCoinPct(profile: any): number
 	return total
 end
 
---- Max equipped relic slots: free 2, +1 if paid relicSlot gamepass.
+--- Max equipped relic slots: free 2, +1 if paid relicSlot gamepass, +talent relicSlots.
 function Formulas.GetMaxRelicSlots(profile: any): number
 	local n = GameConfig.START_RELIC_SLOTS or 2
 	local unlocks = profile and profile.unlocks
 	if unlocks and unlocks.relicSlot then
 		n += (GameConfig.PAID_RELIC_SLOTS or 1)
 	end
+	local TalentTreeConfig = require(Shared.Config.TalentTreeConfig)
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	n += (talentStats.relicSlots or 0)
 	local cap = GameConfig.MAX_RELIC_SLOTS or 3
 	return math.min(n, cap)
 end
@@ -324,7 +331,10 @@ end
 
 function Formulas.GetTotalPower(profile: any, player: Player?): number
 	local weaponPower = Formulas.GetWeaponPower(profile)
-	local base = GameConfig.BASE_POWER + weaponPower + (profile.lifetimePower or 0)
+	-- lifetimeDamage = real accumulated damage → converts into permanent base power.
+	-- lifetimePower stays as a separate click/kill stat for quests and legacy UI.
+	local damagePower = (profile.lifetimeDamage or 0) * (GameConfig.DAMAGE_TO_POWER_RATE or 0.00001)
+	local base = GameConfig.BASE_POWER + weaponPower + damagePower
 	local rebirthMult = RebirthConfig.GetMultAfter(profile.rebirthLevel or 0)
 
 	local petMult = Formulas.GetPetPowerMult(profile) -- pure dump Мощь product/stack
@@ -343,7 +353,9 @@ function Formulas.GetTotalPower(profile: any, player: Player?): number
 
 	local anom = Formulas.GetAnomalyMods()
 	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
-	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct + masteryPowerPct + (talentStats.damagePct or 0)
+	local weaponIndexEntry, weaponIndexLoc = IndexConfig.GetWeaponIndexBonuses(profile and profile.weaponIndex)
+	local prestige = PrestigeConfig.GetTotalBonus(profile)
+	local powerPct = ench.power + auraP + relicP + upgradePowerPct + questPowerPct + boostPowerPct + masteryPowerPct + (talentStats.damagePct or 0) + weaponIndexEntry + weaponIndexLoc + (prestige.damagePct or 0)
 
 	local total = base
 		* rebirthMult
@@ -457,14 +469,24 @@ function Formulas.GetMultiCritChance(profile: any): number
 end
 
 --- Returns damage multiplier factor (1 + damagePct / 100)
-function Formulas.GetDamageMultiplier(profile: any): number
+function Formulas.GetDamageMultiplier(profile: any, isBoss: boolean?): number
 	local ench = Formulas.GetEnchantPools(profile)
 	local _, auraD = Formulas.GetAuraPct(profile)
 	local _, relicD = Formulas.GetRelicPct(profile)
 	local boostD = Formulas.GetBoostPct(profile, "damage")
 	local anom = Formulas.GetAnomalyMods()
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
 	local damagePct = ench.damage + auraD + relicD + boostD + (anom.damagePct or 0)
+	if isBoss then
+		damagePct += (ench.bossDamage or 0) + (talentStats.bossDamage or 0)
+	end
 	return 1 + damagePct / 100
+end
+
+function Formulas.GetLifeSteal(profile: any): number
+	local ench = Formulas.GetEnchantPools(profile)
+	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
+	return ((ench.lifesteal or 0) + (talentStats.lifesteal or 0)) / 100
 end
 
 function Formulas.GetDPS(profile: any, player: Player?): number
@@ -474,9 +496,9 @@ function Formulas.GetDPS(profile: any, player: Player?): number
 end
 
 --- Returns damage, isCrit, isMultiCrit
-function Formulas.GetHitDamage(profile: any, player: Player?): (number, boolean, boolean)
+function Formulas.GetHitDamage(profile: any, player: Player?, isBoss: boolean?): (number, boolean, boolean)
 	local power = Formulas.GetTotalPower(profile, player)
-	local dmgMult = Formulas.GetDamageMultiplier(profile)
+	local dmgMult = Formulas.GetDamageMultiplier(profile, isBoss)
 	local baseDamage = power * dmgMult
 
 	local crit = Formulas.GetCritChance(profile)
@@ -514,10 +536,11 @@ end
 function Formulas.EstimateKill(
 	profile: any,
 	mobHp: number,
-	armorFlat: number?
+	armorFlat: number?,
+	isBoss: boolean?
 ): (number, number, number, number, number)
 	local power = Formulas.GetTotalPower(profile)
-	local dmgMult = Formulas.GetDamageMultiplier(profile)
+	local dmgMult = Formulas.GetDamageMultiplier(profile, isBoss)
 	local baseDamage = power * dmgMult
 	local crit = Formulas.GetCritChance(profile)
 	local multi = Formulas.GetMultiCritChance(profile)
@@ -558,7 +581,9 @@ function Formulas.GetCoinMult(profile: any): number
 	end
 	local boostCoins = Formulas.GetBoostPct(profile, "money")
 	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
-	local base = 1 + (ench.coins + petCoins + auraCoins + relicCoins + boostCoins + (talentStats.coinPct or 0)) / 100
+	local mobIndexEntry, mobIndexLoc = IndexConfig.GetMobIndexBonuses(profile and profile.mobIndex)
+	local prestige = PrestigeConfig.GetTotalBonus(profile)
+	local base = 1 + (ench.coins + petCoins + auraCoins + relicCoins + boostCoins + (talentStats.coinPct or 0) + mobIndexEntry + mobIndexLoc + (prestige.coinPct or 0)) / 100
 	local anom = Formulas.GetAnomalyMods()
 	return base * (anom.coinMult or 1)
 end
@@ -569,7 +594,9 @@ function Formulas.GetLuck(profile: any): number
 	local anom = Formulas.GetAnomalyMods()
 	local questLuck = (profile and profile.questLuckPct or 0) / 100
 	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
-	return lvl * 0.02 + ench.luck / 100 + (anom.luckAdd or 0) + questLuck + (talentStats.luckPct or 0) / 100
+	local petIndexEntry, petIndexLoc = IndexConfig.GetPetIndexBonuses(profile and profile.petIndex)
+	local prestige = PrestigeConfig.GetTotalBonus(profile)
+	return lvl * 0.02 + ench.luck / 100 + (anom.luckAdd or 0) + questLuck + (talentStats.luckPct or 0) / 100 + (petIndexEntry + petIndexLoc) / 100 + (prestige.luckPct or 0) / 100
 end
 
 --- Multiplier on mob respawn delay (<1 = faster).
@@ -612,10 +639,10 @@ end
 function Formulas.EstimateRebirthEta(profile: any, player: Player?): (number, number, number, number)
 	local nextLv = (profile.rebirthLevel or 0) + 1
 	local powerCost, coinCost = RebirthConfig.GetCosts(nextLv)
-	local accPower = (profile and (profile.lifetimeDamage or profile.totalPower or profile.power)) or 0
+	local currentPower = Formulas.GetTotalPower(profile, player)
 	local coins = (profile and profile.coins) or 0
 
-	local remPower = math.max(0, powerCost - accPower)
+	local remPower = math.max(0, powerCost - currentPower)
 	local remCoins = math.max(0, coinCost - coins)
 
 	if remPower <= 0 and remCoins <= 0 then
@@ -690,9 +717,33 @@ function Formulas.Snapshot(profile: any, player: Player?): { [string]: any }
 		offhandUnlocked = ProgressConfig.IsOffhandUnlocked(profile),
 		paidPetSlot = (profile.unlocks and profile.unlocks.paidPetSlot) == true,
 		nextPetSlotHint = ProgressConfig.GetNextPetSlotHint(profile),
+		ascensionTokens = profile.ascensionTokens or 0,
+		transcendenceShards = profile.transcendenceShards or 0,
+		ascensionCount = profile.ascensionCount or 0,
+		transcendenceCount = profile.transcendenceCount or 0,
+		dailyStreak = profile.dailyStreak or 0,
+		dailyLastClaim = profile.dailyLastClaim or 0,
+		dailyClaimable = (os.time() - (profile.dailyLastClaim or 0)) >= 24 * 3600,
 		location = profile.currentLocation,
 		autoClicker = profile.autoClicker == true,
 		autoClickerUnlocked = Formulas.IsAutoClickerUnlocked(profile),
+		lifesteal = Formulas.GetLifeSteal(profile) * 100,
+		enchantDust = profile.enchantDust or 0,
+		weaponIndex = profile.weaponIndex and (function()
+			local count = 0
+			for _ in pairs(profile.weaponIndex) do count += 1 end
+			return count
+		end)() or 0,
+		mobIndex = profile.mobIndex and (function()
+			local count = 0
+			for _ in pairs(profile.mobIndex) do count += 1 end
+			return count
+		end)() or 0,
+		petIndex = profile.petIndex and (function()
+			local count = 0
+			for _ in pairs(profile.petIndex) do count += 1 end
+			return count
+		end)() or 0,
 	}
 end
 

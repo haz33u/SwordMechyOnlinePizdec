@@ -26,8 +26,11 @@ local ClickConfig = {
 	LOC_CPS_CAP = {
 		[1] = 4,
 		[2] = 6,
-		[3] = 6,
-		[4] = 6,
+		[3] = 8,
+		[4] = 10,
+		[5] = 12,
+		[6] = 16,
+		[7] = 20,
 	} :: { [number]: number },
 
 	-- After claiming Sam step N, tier = N. Index 0 = not started (Loc2 base).
@@ -141,6 +144,10 @@ function ClickConfig.GetMaxCPS(profile: any): number
 		return baseCps
 	end
 
+	-- Location-based hard cap (Loc1=4, Loc2+ raises via LOC_CPS_CAP)
+	local locId = profile.currentLocation or 1
+	local locCap = ClickConfig.LOC_CPS_CAP[locId] or ClickConfig.LOC1_CPS_CAP
+
 	local ok, TalentTreeConfig = pcall(function()
 		return require(script.Parent.TalentTreeConfig)
 	end)
@@ -149,9 +156,9 @@ function ClickConfig.GetMaxCPS(profile: any): number
 
 	local totalCps = baseCps + bonusCps
 	if ClickConfig.IsAutoPurchased(profile) then
-		return math.min(ClickConfig.MAX_CPS_PURCHASED, math.max(baseCps, totalCps))
+		return math.min(ClickConfig.MAX_CPS_PURCHASED, locCap, math.max(baseCps, totalCps))
 	end
-	return math.clamp(totalCps, ClickConfig.MIN_CPS, ClickConfig.MAX_CPS_WITHOUT_AUTO)
+	return math.clamp(totalCps, ClickConfig.MIN_CPS, math.min(ClickConfig.MAX_CPS_WITHOUT_AUTO, locCap))
 end
 
 ClickConfig.MAX_CPS = ClickConfig.MAX_CPS_WITHOUT_AUTO

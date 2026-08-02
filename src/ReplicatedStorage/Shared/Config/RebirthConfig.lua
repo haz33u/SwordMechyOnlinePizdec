@@ -31,8 +31,8 @@ local RebirthConfig = {
 		[3] = 2_500_000, -- dump R3
 	} :: { [number]: number },
 
-	-- R4+: geometric from R3
-	GROWTH_AFTER_R3 = 28,
+	-- R4+: geometric from R3 (was 28 — typo that made costs impossible)
+	GROWTH_AFTER_R3 = 2.8,
 
 	COIN_COST = {
 		[1] = 25_000, -- R1 coin cost

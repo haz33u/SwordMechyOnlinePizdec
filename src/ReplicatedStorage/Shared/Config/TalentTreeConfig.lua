@@ -45,6 +45,9 @@ export type TalentNodeDef = {
 		petSlots: number?,
 		relicSlots: number?,
 		maxCps: number?,
+		lifesteal: number?,
+		bossDamage: number?,
+		offlineRate: number?,
 	},
 }
 
@@ -92,7 +95,7 @@ for i = 1, 8 do
 		baseCost = 100 * (4 ^ (i - 1)),
 		costGrowth = 1.35,
 		maxLevel = 50,
-		reqLocation = if i > 3 then math.min(19, i * 2) else nil,
+		reqLocation = if i > 3 then math.min(7, i + 2) else nil,
 		effectsPerLevel = { damagePct = 5 },
 	}
 	prevDmg = id
@@ -337,6 +340,94 @@ for i = 1, 5 do
 	prevPrestigeDmg = id
 end
 
+-- ═══════════════════════════════════════
+-- KEYSTONE NODES (unlocked at specific rebirth ranks / tiers)
+-- ═══════════════════════════════════════
+Nodes["K_SecondWind"] = {
+	id = "K_SecondWind",
+	name = "Second Wind",
+	desc = "+1% Life Steal from all damage dealt",
+	branch = "combat",
+	nodeType = "keystone",
+	hexPos = Vector2.new(-3, 1),
+	icon = "Vamp",
+	parents = { "C_Dmg_3" },
+	costType = "talentPoints",
+	baseCost = 3,
+	costGrowth = 1.0,
+	maxLevel = 1,
+	reqSamTier = 3,
+	effectsPerLevel = { lifesteal = 1 },
+}
+
+Nodes["K_BossSlayer"] = {
+	id = "K_BossSlayer",
+	name = "Boss Slayer",
+	desc = "+30% Damage vs Bosses",
+	branch = "combat",
+	nodeType = "keystone",
+	hexPos = Vector2.new(-6, -1),
+	icon = "Boss",
+	parents = { "C_Crit_3" },
+	costType = "talentPoints",
+	baseCost = 4,
+	costGrowth = 1.0,
+	maxLevel = 1,
+	reqGrimTier = 5,
+	effectsPerLevel = { bossDamage = 30 },
+}
+
+Nodes["K_TreasureHunter"] = {
+	id = "K_TreasureHunter",
+	name = "Treasure Hunter",
+	desc = "+5% Coin gain and +5% Key drop luck",
+	branch = "luck",
+	nodeType = "keystone",
+	hexPos = Vector2.new(3, -2),
+	icon = "Gem",
+	parents = { "L_Luck_3" },
+	costType = "talentPoints",
+	baseCost = 3,
+	costGrowth = 1.0,
+	maxLevel = 1,
+	reqFrostTier = 5,
+	effectsPerLevel = { coinPct = 5, luckPct = 5 },
+}
+
+Nodes["K_AFKMastery"] = {
+	id = "K_AFKMastery",
+	name = "AFK Mastery",
+	desc = "+50% offline farm earnings",
+	branch = "utility",
+	nodeType = "keystone",
+	hexPos = Vector2.new(2, 4),
+	icon = "Moon",
+	parents = { "U_Coins_3" },
+	costType = "talentPoints",
+	baseCost = 3,
+	costGrowth = 1.0,
+	maxLevel = 1,
+	reqGrimTier = 3,
+	effectsPerLevel = { offlineRate = 50 },
+}
+
+Nodes["K_CritMaster"] = {
+	id = "K_CritMaster",
+	name = "Critical Master",
+	desc = "+10% Crit Chance",
+	branch = "combat",
+	nodeType = "keystone",
+	hexPos = Vector2.new(-7, -3),
+	icon = "Eye",
+	parents = { "C_MultiCrit_2" },
+	costType = "talentPoints",
+	baseCost = 5,
+	costGrowth = 1.0,
+	maxLevel = 1,
+	reqSamTier = 8,
+	effectsPerLevel = { critChance = 10 },
+}
+
 TalentTreeConfig.Nodes = Nodes
 
 function TalentTreeConfig.Get(nodeId: string): TalentNodeDef?
@@ -373,6 +464,9 @@ function TalentTreeConfig.ComputeStats(unlockedTalents: { [string]: any }?)
 		petSlots = 0,
 		relicSlots = 0,
 		maxCps = 0,
+		lifesteal = 0,
+		bossDamage = 0,
+		offlineRate = 0,
 	}
 	if not unlockedTalents then
 		return totals
@@ -426,15 +520,20 @@ function TalentTreeConfig.ComputeStats(unlockedTalents: { [string]: any }?)
 			MorePrism = "coinPct",
 			PrismGeneration = "coinPct",
 			FasterPrism = "coinPct",
-			-- Rune speed → clickSpeed
+			-- Rune speed → clickSpeed (pct)
 			RuneSpeed = "clickSpeed",
-			-- Walk speed
+			-- Walk speed (raw add, NOT a multiplier)
 			MoreWalkspeed = "walkSpeed",
 			-- Luck (rune luck, tier luck, minion luck, swords luck)
 			RuneLuck = "luckPct",
 			TierLuck = "luckPct",
 			MinionLuck = "luckPct",
 			SwordsLuck = "luckPct",
+		}
+
+		-- Patterns whose boost(lvl) returns a raw additive value, not a multiplier.
+		local RAW_ADD_PATTERNS = {
+			MoreWalkspeed = true,
 		}
 
 		for nodeId, levelVal in unlockedTalents do
@@ -444,23 +543,23 @@ function TalentTreeConfig.ComputeStats(unlockedTalents: { [string]: any }?)
 				if uiNode and uiNode.boost then
 					-- Find which stat this node maps to
 					local statKey = nil
+					local isRawAdd = false
 					for pattern, key in pairs(STAT_MAP) do
 						if string.find(nodeId, pattern, 1, true) then
 							statKey = key
+							isRawAdd = RAW_ADD_PATTERNS[pattern] == true
 							break
 						end
 					end
 
 					if statKey and totals[statKey] ~= nil then
-						-- boost(lvl) returns a multiplier; convert to pct bonus
 						local ok, boostVal = pcall(uiNode.boost, lvl)
 						if ok and type(boostVal) == "number" and boostVal ~= 0 then
-							-- Multiplier → pct: (1.25 - 1) * 100 = 25%
-							-- Some nodes return raw values, not multipliers
-							if boostVal > 0 and boostVal < 100 then
-								totals[statKey] += (boostVal - 1) * 100
-							else
+							if isRawAdd then
 								totals[statKey] += boostVal
+							else
+								-- Multiplier → pct: (1.25 - 1) * 100 = 25%
+								totals[statKey] += (boostVal - 1) * 100
 							end
 						end
 					end

@@ -83,6 +83,9 @@ function Remotes.InitAll()
 	Remotes.Event("SelectTitle")
 	Remotes.Event("ClaimGroupChest")
 	Remotes.Event("OpenGroupModal")
+	Remotes.Event("ClaimDaily")
+	Remotes.Event("DailyClaimed")
+	Remotes.Event("PromptDevProduct")
 
 	-- server -> client
 	Remotes.Event("ProfileUpdate")

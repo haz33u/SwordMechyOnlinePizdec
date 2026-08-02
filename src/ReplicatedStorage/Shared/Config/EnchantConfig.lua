@@ -1,46 +1,137 @@
 --!strict
 --[[
-	Enchant roulette (skeleton).
-	Roll costs shards-as-coins for now (single soft currency).
+	Named weapon enchant system.
+
+	Each enchant has a family (damage, speed, coins, luck, lifesteal, boss, crit).
+	Weapons can hold up to 3 enchants; duplicates stack by adding value.
+	Rolling costs enchant dust (boss drops) and scales with reroll count.
 ]]
+
+export type EnchantFamily =
+	"sharpness"
+	| "swiftness"
+	| "fortune"
+	| "luck"
+	| "vampirism"
+	| "bossSlayer"
+	| "critEye"
 
 export type EnchantDef = {
 	id: string,
 	name: string,
-	stat: string, -- power | damage | attackSpeed | crit | coins | luck
+	family: EnchantFamily,
+	stat: string,
 	minValue: number,
 	maxValue: number,
 	weight: number,
-	canDebuff: boolean?,
+}
+
+export type EnchantRoll = {
+	id: string,
+	family: EnchantFamily,
+	value: number,
+	quality: string,
 }
 
 local EnchantConfig = {
-	ROLL_COST = 200, -- coins fallback if no dust
-	ROLL_COST_DUST = 1, -- preferred: boss enchant dust
-	TRANSFER_COST = 500,
+	MAX_ENCHANTS_PER_WEAPON = 3,
+	BASE_ROLL_DUST = 5,
+	ROLL_DUST_GROWTH = 1.15,
+	TRANSFER_DUST = 25,
 	TRANSFER_SUCCESS = 0.35,
 
 	Qualities = {
-		{ id = "Tiny", name = "Tiny", mult = 0.55, weight = 40 },
-		{ id = "Normal", name = "Normal", mult = 0.80, weight = 30 },
+		{ id = "Tiny", name = "Tiny", mult = 0.50, weight = 40 },
+		{ id = "Normal", name = "Normal", mult = 0.75, weight = 30 },
 		{ id = "Strong", name = "Strong", mult = 1.00, weight = 18 },
-		{ id = "Huge", name = "Huge", mult = 1.25, weight = 9 },
-		{ id = "Mighty", name = "Mighty", mult = 1.55, weight = 3 },
-	},
+		{ id = "Huge", name = "Huge", mult = 1.30, weight = 9 },
+		{ id = "Mighty", name = "Mighty", mult = 1.70, weight = 3 },
+	} :: { { id: string, name: string, mult: number, weight: number } },
 
 	Enchants = {
-		{ id = "PowerBoost", name = "Power Boost", stat = "power", minValue = 10, maxValue = 120, weight = 25 },
-		{ id = "DamageBoost", name = "Damage Boost", stat = "damage", minValue = 10, maxValue = 100, weight = 25 },
-		{ id = "AttackSpeed", name = "Attack Speed", stat = "attackSpeed", minValue = 10, maxValue = 90, weight = 20 },
-		{ id = "Crit", name = "Crit Chance", stat = "crit", minValue = 5, maxValue = 80, weight = 12 },
-		{ id = "Coins", name = "Coin Boost", stat = "coins", minValue = 5, maxValue = 50, weight = 12 },
-		{ id = "Luck", name = "Luck", stat = "luck", minValue = 2, maxValue = 25, weight = 6 },
-		-- debuff templates applied sometimes as second roll
-		{ id = "Slow", name = "Slow", stat = "attackSpeed", minValue = -50, maxValue = -15, weight = 8, canDebuff = true },
+		{
+			id = "Sharpness",
+			name = "Sharpness",
+			family = "sharpness" :: EnchantFamily,
+			stat = "damage",
+			minValue = 5,
+			maxValue = 25,
+			weight = 25,
+		},
+		{
+			id = "Swiftness",
+			name = "Swiftness",
+			family = "swiftness" :: EnchantFamily,
+			stat = "attackSpeed",
+			minValue = 4,
+			maxValue = 20,
+			weight = 20,
+		},
+		{
+			id = "Fortune",
+			name = "Fortune",
+			family = "fortune" :: EnchantFamily,
+			stat = "coins",
+			minValue = 4,
+			maxValue = 18,
+			weight = 18,
+		},
+		{
+			id = "Luck",
+			name = "Luck",
+			family = "luck" :: EnchantFamily,
+			stat = "luck",
+			minValue = 2,
+			maxValue = 12,
+			weight = 14,
+		},
+		{
+			id = "Vampirism",
+			name = "Vampirism",
+			family = "vampirism" :: EnchantFamily,
+			stat = "lifesteal",
+			minValue = 1,
+			maxValue = 5,
+			weight = 10,
+		},
+		{
+			id = "BossSlayer",
+			name = "Boss Slayer",
+			family = "bossSlayer" :: EnchantFamily,
+			stat = "bossDamage",
+			minValue = 6,
+			maxValue = 30,
+			weight = 8,
+		},
+		{
+			id = "CritEye",
+			name = "Critical Eye",
+			family = "critEye" :: EnchantFamily,
+			stat = "crit",
+			minValue = 2,
+			maxValue = 10,
+			weight = 5,
+		},
 	} :: { EnchantDef },
-
-	MAX_ENCHANTS_PER_WEAPON = 3,
 }
+
+function EnchantConfig.Get(id: string): EnchantDef?
+	for _, e in EnchantConfig.Enchants do
+		if e.id == id then
+			return e
+		end
+	end
+	return nil
+end
+
+function EnchantConfig.GetByFamily(family: string): EnchantDef?
+	for _, e in EnchantConfig.Enchants do
+		if e.family == family then
+			return e
+		end
+	end
+	return nil
+end
 
 local function weightedPick(list: { any }, weightKey: string): any
 	local total = 0
@@ -58,21 +149,23 @@ local function weightedPick(list: { any }, weightKey: string): any
 	return list[#list]
 end
 
-function EnchantConfig.Roll(): { id: string, value: number, quality: string }
+function EnchantConfig.Roll(): EnchantRoll
 	local quality = weightedPick(EnchantConfig.Qualities, "weight")
 	local ench = weightedPick(EnchantConfig.Enchants, "weight")
 	local base = ench.minValue + math.random() * (ench.maxValue - ench.minValue)
-	local value = base * quality.mult
-	-- 12% chance add as debuff if canDebuff type rolled already negative
-	if ench.canDebuff then
-		value = math.min(value, -10)
-	end
-	value = math.floor(value + 0.5)
+	local value = math.floor(base * quality.mult + 0.5)
 	return {
 		id = ench.id,
+		family = ench.family,
 		value = value,
 		quality = quality.id,
 	}
+end
+
+function EnchantConfig.GetRollDustCost(rerollCount: number): number
+	local base = EnchantConfig.BASE_ROLL_DUST
+	local growth = EnchantConfig.ROLL_DUST_GROWTH
+	return math.floor(base * (growth ^ math.max(0, rerollCount)))
 end
 
 return EnchantConfig
