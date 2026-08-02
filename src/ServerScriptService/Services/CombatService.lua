@@ -21,14 +21,35 @@ local MobVisualService = require(script.Parent.MobVisualService)
 local DungeonService = require(script.Parent.DungeonService)
 local MobSpawnMarkerService = require(script.Parent.MobSpawnMarkerService)
 local MasteryService = require(script.Parent.MasteryService)
+local AntiCheatService = require(script.Parent.AntiCheatService)
 
 local CombatService = {}
 CombatService._mobs = {} :: { [string]: any }
 CombatService._lastSwing = {} :: { [number]: number }
 CombatService._autoLock = {} :: { [number]: string }
 
+local DEFAULT_RESPAWN_SECONDS = 5
+
 local function mobUid(): string
 	return ProfileService.NewUid()
+end
+
+local function respawnDelay(def: any): number
+	local seconds = def and def.respawnSeconds
+	if type(seconds) ~= "number" or seconds <= 0 then
+		seconds = DEFAULT_RESPAWN_SECONDS
+	end
+	return seconds
+end
+
+local function broadcastMobs(locationId: number)
+	local payload = CombatService.GetMobsForClient(locationId)
+	for _, player in Players:GetPlayers() do
+		local profile = ProfileService.Get(player)
+		if profile and (profile.currentLocation or 1) == locationId then
+			Remotes.Event("MobsUpdate"):FireClient(player, payload)
+		end
+	end
 end
 
 function CombatService.Init()
@@ -100,6 +121,9 @@ function CombatService.SpawnMob(mobId: string, position: Vector3?, extras: any?)
 		isDebug = def.isDebug == true,
 		locationId = extras and extras.locationId or def.location,
 		zone = extras and extras.zone or def.defaultZone,
+		markerName = extras and extras.markerName or nil,
+		markerId = extras and extras.markerId or extras and extras.markerName or nil,
+		modelName = extras and extras.modelName or nil,
 		visual = def.visual,
 	}
 	CombatService._mobs[id] = entry
@@ -123,6 +147,8 @@ function CombatService.GetMobsForClient(locationId: number?): { any }
 					isDebug = m.isDebug,
 					locationId = m.locationId,
 					zone = m.zone,
+					markerName = m.markerName,
+					modelName = m.modelName,
 					position = { m.position.X, m.position.Y, m.position.Z },
 					visual = m.visual,
 				})
@@ -248,6 +274,12 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 		return
 	end
 
+	AntiCheatService.RecordSwing(player)
+	if not AntiCheatService.ValidateSwingRate(player) then
+		AntiCheatService.Kick(player, "click rate limit exceeded")
+		return
+	end
+
 	-- Tower of God Dungeon Session Check
 	local session = DungeonService._sessions[player.UserId]
 	if session and session.mob then
@@ -314,16 +346,26 @@ function CombatService.Swing(player: Player, targetMobUid: string?, source: any?
 	-- Only record swing cooldown timestamp once a valid hit target is confirmed in range!
 	CombatService._lastSwing[player.UserId] = now
 
-	local damage, isCrit, isMultiCrit = Formulas.GetHitDamage(profile, player)
+	local def = MobConfig.Get(mob.mobId)
+	local damage, isCrit, isMultiCrit = Formulas.GetHitDamage(profile, player, def and def.isBoss)
 	if isAuto then
 		damage *= (ClickConfig.AUTO_DAMAGE_MULT or 1)
 	end
 
-	local def = MobConfig.Get(mob.mobId)
 	local armor = (def and def.armorFlat) or 0
 	damage = math.max(1, damage - armor)
 
 	mob.hp -= damage
+
+	-- Lifesteal: heal a portion of damage dealt
+	local lifeSteal = Formulas.GetLifeSteal(profile)
+	if lifeSteal > 0 then
+		local char = player.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if hum then
+			hum.Health = math.min(hum.MaxHealth, hum.Health + damage * lifeSteal)
+		end
+	end
 	local hitGain = Formulas.GetClickPowerGain(profile, player)
 	profile.lifetimePower = (profile.lifetimePower or 0) + hitGain
 	profile.lifetimeDamage += damage
@@ -365,7 +407,7 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 
 	mob.alive = false
 	MasteryService.OnMobKill(player, def)
-	local spawnDelay = def.respawnSeconds * Formulas.GetAnomalySpawnMult()
+	local spawnDelay = respawnDelay(def)
 	mob.respawnAt = os.clock() + spawnDelay
 	MobVisualService.SetAlive(mob, false)
 
@@ -380,7 +422,9 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 				mob.hp = def.hp * hpM
 				mob.maxHp = def.hp * hpM
 				mob.alive = true
+				mob.respawnAt = 0
 				MobVisualService.SetAlive(mob, true)
+				broadcastMobs(mob.locationId or def.location or 1)
 			end
 		end)
 		ProfileService.Push(player)
@@ -391,6 +435,8 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 	local coins = math.floor(def.coinReward * coinMult)
 	profile.coins += coins
 	profile.lifetimePower += def.powerReward
+
+	ProfileService.IndexMob(profile, mob.mobId)
 
 	QuestService.OnKill(player, profile, mob.mobId, def.isBoss == true)
 	LootService.TryWeaponDrop(player, profile, def)
@@ -408,7 +454,9 @@ function CombatService.OnKill(player: Player, profile: any, mob: any)
 			mob.hp = def.hp * hpM
 			mob.maxHp = def.hp * hpM
 			mob.alive = true
+			mob.respawnAt = 0
 			MobVisualService.SetAlive(mob, true)
+			broadcastMobs(mob.locationId or def.location or 1)
 		end
 	end)
 
@@ -440,6 +488,9 @@ function CombatService.SpawnLocationMobs(locationId: number)
 			CombatService.SpawnMob(pt.mobId, pt.position, {
 				locationId = locationId,
 				zone = pt.zone,
+				markerName = pt.markerName,
+				markerId = pt.markerName,
+				modelName = pt.modelName,
 			})
 		end
 		print(string.format(
@@ -447,6 +498,7 @@ function CombatService.SpawnLocationMobs(locationId: number)
 			locationId,
 			#markers
 		))
+		broadcastMobs(locationId)
 		return
 	end
 
@@ -491,6 +543,7 @@ function CombatService.SpawnLocationMobs(locationId: number)
 		end
 	end
 	print(string.format("[Combat] Loc%d: %d mobs (fallback math)", locationId, count))
+	broadcastMobs(locationId)
 end
 
 function CombatService.DebugSpawnDummy(player: Player)

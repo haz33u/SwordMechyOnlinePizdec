@@ -23,6 +23,8 @@ export type SpawnPoint = {
 	position: Vector3,
 	zone: string,
 	markerName: string,
+	displayName: string?,
+	modelName: string?,
 	marker: BasePart?,
 }
 
@@ -91,8 +93,11 @@ function MobSpawnMarkerService.Collect(locationId: number): { SpawnPoint }
 
 	for _, child in folder:GetDescendants() do
 		if child:IsA("BasePart") then
-			-- Hide green spawn markers in Play mode
+			-- Edit-mode markers are the source of truth; in Play they should not block or be targetable.
 			child.Transparency = 1
+			child.CanCollide = false
+			child.CanTouch = false
+			child.CanQuery = false
 
 			local rawMobId = child:GetAttribute("MobId")
 			if typeof(rawMobId) ~= "string" or rawMobId == "" then
@@ -100,36 +105,30 @@ function MobSpawnMarkerService.Collect(locationId: number): { SpawnPoint }
 			end
 
 			local resolvedId = MobConfig.ResolveId(rawMobId)
-
-			-- Auto-distribute Location 1 camps by position/zone if all markers were set to generic "L1_Goblin"
-			if locationId == 1 and (resolvedId == "L1_Goblin" or rawMobId:lower():find("goblin")) then
-				local zoneAttr = child:GetAttribute("Zone")
-				local pos = child.Position
-				local lowerName = string.lower(child.Name)
-				if zoneAttr == "D" or lowerName:find("scout") or pos.Y > 10 then
-					resolvedId = "L1_GoblinScout"
-				elseif zoneAttr == "B" or (pos.X > -50 and pos.X < 50 and pos.Z > -250 and pos.Z < -100) then
-					resolvedId = "L1_DarkGoblin"
-				elseif zoneAttr == "C" or (pos.X >= 50 or pos.Z <= -250) then
-					resolvedId = "L1_GoblinWarrior"
-				else
-					resolvedId = "L1_Goblin"
-				end
-			end
-
 			local def = MobConfig.Get(resolvedId)
-			if def and (def.location == locationId or locationId == 1) then
+			if def and (def.location == locationId or def.isDebug == true) then
 				local zone = child:GetAttribute("Zone")
 				if typeof(zone) ~= "string" or zone == "" then
 					zone = def.defaultZone
 				end
+				local displayName = child:GetAttribute("DisplayName")
+				local modelName = child:GetAttribute("Model")
 				table.insert(points, {
 					mobId = resolvedId,
 					position = child.Position,
 					zone = zone :: string,
 					markerName = child.Name,
+					displayName = if typeof(displayName) == "string" then displayName else nil,
+					modelName = if typeof(modelName) == "string" and modelName ~= "" then modelName else nil,
 					marker = child,
 				})
+			else
+				warn(string.format(
+					"[MobSpawns] Skip %s: invalid MobId '%s' for Loc%d",
+					child:GetFullName(),
+					tostring(rawMobId),
+					locationId
+				))
 			end
 		end
 	end
@@ -193,6 +192,10 @@ function MobSpawnMarkerService.EnsureDefaultMarkers(locationId: number, spawnTab
 		p:SetAttribute("MobId", mobId)
 		p:SetAttribute("Zone", zone)
 		p:SetAttribute("IsSpawnMarker", true)
+		local def = MobConfig.Get(mobId)
+		if def then
+			p:SetAttribute("DisplayName", def.name)
+		end
 		p.Parent = folder
 		return p
 	end

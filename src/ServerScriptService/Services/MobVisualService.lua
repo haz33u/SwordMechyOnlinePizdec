@@ -15,6 +15,12 @@ MobVisualService._folder = nil :: Folder?
 MobVisualService._models = {} :: { [string]: Model }
 MobVisualService._onClick = nil :: ((Player, string) -> ())?
 
+-- Lift mobs a hair off the floor so feet never z-fight with terrain.
+local GROUND_SKIN = 0.05
+
+-- Defined further down (needs the marker-folder helper); declared here so buildBody can use it.
+local snapModelToGround: (Model, Vector3) -> ()
+
 local TIER_COLOR = {
 	simple = Color3.fromRGB(110, 190, 120),
 	medium = Color3.fromRGB(100, 155, 230),
@@ -175,10 +181,11 @@ local function makeHpHud(parent: BasePart, title: string, tierColor: Color3)
 	hpLbl.Parent = fillTrack
 end
 
-local function tryStudioModel(def: any): Model?
-	local prefName = def.visual and def.visual.preferredModelName
+local function tryStudioModel(def: any, modelName: string?): Model?
+	local prefName = modelName or (def.visual and def.visual.preferredModelName)
 	local searchNames = {
 		prefName,
+		def.visual and def.visual.preferredModelName,
 		def.id,
 		def.name,
 		string.gsub(def.id, "^L%d+_", ""),
@@ -188,15 +195,15 @@ local function tryStudioModel(def: any): Model?
 	local inc = game:GetService("ReplicatedStorage"):FindFirstChild("INCREMENTAL ASSETS")
 	local incMobs = inc and inc:FindFirstChild("MobsFolder")
 	local incMinions = inc and inc:FindFirstChild("MinionModels")
-	local repMinions = game:GetService("ReplicatedStorage"):FindFirstChild("MinionModels")
-	local repPets = game:GetService("ReplicatedStorage"):FindFirstChild("PetModels")
+	local replicatedStorage = game:GetService("ReplicatedStorage")
+	local repMinions = replicatedStorage:FindFirstChild("MinionModels")
+	local repMobTemplates = replicatedStorage:FindFirstChild("MobTemplates")
 	local containers = {
 		repMinions,
 		incMinions,
-		repPets,
 		incMobs,
+		repMobTemplates,
 		Workspace:FindFirstChild("MobTemplates"),
-		game:GetService("ReplicatedStorage"):FindFirstChild("MobTemplates"),
 	}
 
 	for _, container in containers do
@@ -344,17 +351,8 @@ local function buildBody(def: any, position: Vector3): Model
 	model.PrimaryPart = root
 	weldVisual(model, root)
 
-	local bboxCF, bboxSize = model:GetBoundingBox()
-	local _, ry, _ = bboxCF:ToOrientation()
-
-	local rayParam = RaycastParams.new()
-	rayParam.FilterType = Enum.RaycastFilterType.Exclude
-	rayParam.FilterDescendantsInstances = { model, Workspace:FindFirstChild("Mobs") }
-
-	local rayResult = Workspace:Raycast(position + Vector3.new(0, 15, 0), Vector3.new(0, -50, 0), rayParam)
-	local groundY = rayResult and rayResult.Position.Y or position.Y
-
-	model:PivotTo(CFrame.new(position.X, groundY + (bboxSize.Y / 2), position.Z) * CFrame.Angles(0, ry, 0))
+	-- Same grounding path as Studio models: excludes markers, probes deep, keeps feet on the floor.
+	snapModelToGround(model, position)
 
 	-- tier outline feel
 	local hl = Instance.new("Highlight")
@@ -404,13 +402,74 @@ local function buildBody(def: any, position: Vector3): Model
 	model:SetAttribute("Tier", def.tier)
 	model:SetAttribute("IsDebug", isDebug)
 	model:SetAttribute("IsBoss", isBoss)
+	model:SetAttribute("IsLiveCombatMob", true)
 	model:SetAttribute("CurrentHp", def.hp)
 	model:SetAttribute("MaxHp", def.hp)
 
 	return model
 end
 
-local function snapModelToGround(model: Model, targetPos: Vector3)
+--- Spawn markers are real geometry — a mob must never raycast onto its own marker.
+local function collectMarkerFolders(): { Instance }
+	local folders = {}
+	local world = Workspace:FindFirstChild("World")
+	local locations = world and world:FindFirstChild("Locations")
+	if locations then
+		for _, loc in locations:GetChildren() do
+			local f = loc:FindFirstChild("MobSpawns") or loc:FindFirstChild("Mobspawns")
+			if f then
+				table.insert(folders, f)
+			end
+		end
+	end
+	for _, child in Workspace:GetChildren() do
+		if string.find(string.lower(child.Name), "mobspawn") then
+			table.insert(folders, child)
+		end
+	end
+	return folders
+end
+
+--[[
+	Studio templates (MobTemplates) are R6 rigs: unanchored parts + a live Humanoid.
+	Left as-is they are physics-simulated — they settle into the floor, get shoved by
+	players and drift off their marker. Mobs here are static click targets, so freeze them.
+]]
+local function freezeStudioModel(model: Model)
+	local hum = model:FindFirstChildOfClass("Humanoid")
+	if hum then
+		pcall(function()
+			hum.EvaluateStateMachine = false
+		end)
+		hum.WalkSpeed = 0
+		hum.JumpPower = 0
+		hum.AutoRotate = false
+		hum.BreakJointsOnDeath = false
+	end
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = true
+			d.CanCollide = false
+			d.Massless = true
+		end
+	end
+end
+
+--- Cache authored transparency + collision so respawn restores the pose exactly.
+local function rememberPartState(model: Model)
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") then
+			if d:GetAttribute("BaseTransparency") == nil then
+				d:SetAttribute("BaseTransparency", d.Transparency)
+			end
+			if d:GetAttribute("BaseCanCollide") == nil then
+				d:SetAttribute("BaseCanCollide", d.CanCollide)
+			end
+		end
+	end
+end
+
+function snapModelToGround(model: Model, targetPos: Vector3)
 	local root = model.PrimaryPart or model:FindFirstChildWhichIsA("BasePart", true)
 	if not root then return end
 	model.PrimaryPart = root
@@ -422,7 +481,12 @@ local function snapModelToGround(model: Model, targetPos: Vector3)
 	local rayParam = RaycastParams.new()
 	rayParam.FilterType = Enum.RaycastFilterType.Exclude
 
-	local excludeList = { model, Workspace:FindFirstChild("Mobs") }
+	local excludeList = { model, Workspace:FindFirstChild("Mobs"), Workspace:FindFirstChild("Characters") }
+	-- Markers are solid parts sitting AT the spawn point: hitting one returns the marker's
+	-- own top face as "ground", so every mob sank by its full foot offset.
+	for _, f in collectMarkerFolders() do
+		table.insert(excludeList, f)
+	end
 	for _, child in Workspace:GetChildren() do
 		local lower = string.lower(child.Name)
 		if string.find(lower, "tree") or string.find(lower, "decor") or string.find(lower, "fence") or string.find(lower, "prop") then
@@ -431,7 +495,9 @@ local function snapModelToGround(model: Model, targetPos: Vector3)
 	end
 	rayParam.FilterDescendantsInstances = excludeList
 
-	local rayResult = Workspace:Raycast(targetPos + Vector3.new(0, 10, 0), Vector3.new(0, -40, 0), rayParam)
+	-- Start well above and probe deep: markers may sit high over the actual floor.
+	local rayResult = Workspace:Raycast(targetPos + Vector3.new(0, 30, 0), Vector3.new(0, -200, 0), rayParam)
+	-- If nothing was hit, trust the marker's own height rather than dropping the mob.
 	local groundY = rayResult and rayResult.Position.Y or targetPos.Y
 
 	-- Calculate distance from PrimaryPart to actual body feet (ignoring held spears/weapons)
@@ -453,24 +519,30 @@ local function snapModelToGround(model: Model, targetPos: Vector3)
 		end
 	end
 
-	local footOffset = 3.0 -- default R6 height offset
-	if lowestBodyY < math.huge and root.Position.Y > lowestBodyY then
-		footOffset = root.Position.Y - lowestBodyY
-	else
-		footOffset = bboxSize.Y / 2
+	-- Distance from the pivot (what PivotTo positions) down to the feet.
+	local pivotY = model:GetPivot().Position.Y
+	local footOffset = bboxSize.Y / 2
+	if lowestBodyY < math.huge and pivotY > lowestBodyY then
+		footOffset = pivotY - lowestBodyY
 	end
 
-	local isGoblinWarrior = string.find(model.Name, "GoblinWarrior") ~= nil
-	local pitchX = if isGoblinWarrior then math.rad(90) else 0
-
-	local uprightCF = CFrame.new(targetPos.X, groundY + footOffset, targetPos.Z) * CFrame.Angles(pitchX, ry, 0)
+	local uprightCF = CFrame.new(targetPos.X, groundY + footOffset + GROUND_SKIN, targetPos.Z) * CFrame.Angles(0, ry, 0)
 	model:PivotTo(uprightCF)
+	-- Remember the resolved pose so respawn restores it instead of re-sinking to the raw marker.
+	model:SetAttribute("GroundedY", uprightCF.Position.Y)
 end
 
-local function buildPlaceholder(def: any, position: Vector3): Model
-	local studio = tryStudioModel(def)
+local function buildPlaceholder(def: any, position: Vector3, modelName: string?): Model
+	local studio = tryStudioModel(def, modelName)
 	if studio then
+		-- Freeze BEFORE snapping: an unanchored rig would fall out of the pose we just set.
+		freezeStudioModel(studio)
+		if not studio.PrimaryPart then
+			studio.PrimaryPart = studio:FindFirstChild("HumanoidRootPart") :: BasePart?
+				or studio:FindFirstChildWhichIsA("BasePart", true)
+		end
 		snapModelToGround(studio, position)
+		rememberPartState(studio)
 		local root = studio.PrimaryPart
 		if root then
 			if not root:FindFirstChildOfClass("ClickDetector") then
@@ -486,11 +558,14 @@ local function buildPlaceholder(def: any, position: Vector3): Model
 			studio:SetAttribute("Tier", def.tier)
 			studio:SetAttribute("IsDebug", def.isDebug == true)
 			studio:SetAttribute("IsBoss", def.isBoss == true)
+			studio:SetAttribute("IsLiveCombatMob", true)
 			return studio
 		end
 		studio:Destroy()
 	end
-	return buildBody(def, position)
+	local body = buildBody(def, position)
+	rememberPartState(body)
+	return body
 end
 
 function MobVisualService.Init(onClick: (Player, string) -> ())
@@ -507,8 +582,13 @@ function MobVisualService.Spawn(entry: any)
 
 	MobVisualService.Despawn(entry.uid)
 
-	local model = buildPlaceholder(def, entry.position)
+	local model = buildPlaceholder(def, entry.position, entry.modelName)
 	model:SetAttribute("MobUid", entry.uid)
+	model:SetAttribute("MobId", entry.mobId)
+	model:SetAttribute("LocationId", entry.locationId)
+	model:SetAttribute("Zone", entry.zone)
+	model:SetAttribute("MarkerName", entry.markerName)
+	model:SetAttribute("IsLiveCombatMob", true)
 	model.Parent = ensureFolder()
 
 	local root = model.PrimaryPart
@@ -583,13 +663,27 @@ function MobVisualService.SetAlive(entry: any, alive: boolean)
 		return
 	end
 	if alive then
-		-- Restore the authoritative spawn point before revealing the model. This also
-		-- repairs templates that moved or fell while hidden during the respawn delay.
-		snapModelToGround(model, entry.position)
+		-- Restore the authoritative spawn pose before revealing the model, repairing any
+		-- template that moved or fell while hidden during the respawn delay. Prefer the
+		-- height resolved at spawn: re-snapping is fine, but PivotTo(entry.position) alone
+		-- would drop the mob onto the raw marker and re-sink it by its foot offset.
+		if model.PrimaryPart then
+			local groundedY = model:GetAttribute("GroundedY")
+			if typeof(groundedY) == "number" then
+				local _, ry, _ = model:GetPivot():ToOrientation()
+				model:PivotTo(CFrame.new(entry.position.X, groundedY, entry.position.Z) * CFrame.Angles(0, ry, 0))
+			else
+				snapModelToGround(model, entry.position)
+			end
+		else
+			snapModelToGround(model, entry.position)
+		end
 		for _, d in model:GetDescendants() do
 			if d:IsA("BasePart") then
-				d.Transparency = 0
-				d.CanCollide = d.Name == "Root"
+				local base = d:GetAttribute("BaseTransparency")
+				d.Transparency = if typeof(base) == "number" then base else 0
+				local coll = d:GetAttribute("BaseCanCollide")
+				d.CanCollide = if typeof(coll) == "boolean" then coll else (d.Name == "Root")
 			elseif d:IsA("Highlight") then
 				d.Enabled = true
 			end
