@@ -141,11 +141,17 @@ function DevTools.Mount(gui: ScreenGui)
 		addBtn("Spawn Dummy", Color3.fromRGB(70, 70, 90), function()
 			fire("spawnDummy")
 		end)
-		addBtn("Teleport Loc1", Color3.fromRGB(45, 45, 55), function()
-			fire("setLocation", 1)
+		for devLoc = 1, 7 do
+			addBtn("Teleport Loc" .. tostring(devLoc), Color3.fromRGB(45, 45, 55), function()
+				fire("setLocation", devLoc)
+			end)
+		end
+
+		addBtn("Set Rebirth 25", Color3.fromRGB(120, 40, 120), function()
+			fire("setRebirth", 25)
 		end)
-		addBtn("Teleport Loc2", Color3.fromRGB(45, 45, 55), function()
-			fire("setLocation", 2)
+		addBtn("Reset Lifetime", Color3.fromRGB(80, 80, 90), function()
+			fire("resetLifetime")
 		end)
 
 		addBtn("📷 3D PETS INSPECTOR", Color3.fromRGB(0, 160, 220), function()

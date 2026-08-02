@@ -35,10 +35,12 @@ local ALL_SIDE_ITEMS_BACKUP = {
 }
 --]]
 
--- Currently active top-left buttons (Teleport & Skill Tree only)
+-- Currently active top-left buttons (Teleport, Skill Tree, Daily)
 local SIDE_ITEMS = {
 	{ id = "locations", title = "Teleport", icon = "🧭", glowColor = Color3.fromRGB(0, 230, 77), border1 = Color3.fromRGB(102, 255, 140), border2 = Color3.fromRGB(0, 153, 51), rainbow = true },
 	{ id = "character", title = "Skill Tree", icon = "🌳", glowColor = Color3.fromRGB(0, 229, 204), border1 = Color3.fromRGB(102, 255, 240), border2 = Color3.fromRGB(0, 153, 136), rainbow = false },
+	{ id = "daily", title = "Daily", icon = "🔥", glowColor = Color3.fromRGB(255, 140, 60), border1 = Color3.fromRGB(255, 200, 80), border2 = Color3.fromRGB(255, 80, 80), rainbow = true },
+	{ id = "settings", title = "Settings", icon = "⚙️", glowColor = Color3.fromRGB(160, 160, 170), border1 = Color3.fromRGB(200, 200, 210), border2 = Color3.fromRGB(120, 120, 130), rainbow = false },
 }
 
 local LOC = {
@@ -184,10 +186,20 @@ function Hud.Mount(
 		clickBtn.MouseButton1Click:Connect(function()
 			if item.id == "character" then
 				store:OpenPanel("character")
+			elseif item.id == "settings" then
+				openModal("settings", nil)
 			elseif item.id == "weapons" or item.id == "pets" then
 				local s = store :: any
 				s._invTab = item.id
 				store:OpenPanel("weapons")
+			elseif item.id == "daily" then
+				local SharedRemotes = ReplicatedStorage:FindFirstChild("Remotes")
+				if SharedRemotes then
+					local ev = SharedRemotes:FindFirstChild("ClaimDaily")
+					if ev and ev:IsA("RemoteEvent") then
+						ev:FireServer()
+					end
+				end
 			else
 				store:OpenPanel(item.id)
 			end
@@ -195,7 +207,11 @@ function Hud.Mount(
 
 		-- Apply Shimmer Animation if enabled
 		if item.rainbow then
-			RainbowGradient.ApplyShimmer(pill, "emerald", 0.5, 120)
+			if item.id == "daily" then
+				RainbowGradient.ApplyShimmer(pill, "fire", 0.5, 120)
+			else
+				RainbowGradient.ApplyShimmer(pill, "emerald", 0.5, 120)
+			end
 		end
 
 		railBtns[item.id] = pill
@@ -305,6 +321,11 @@ function Hud.Mount(
 		shop = true,
 	}
 
+	-- Legacy UIKit rail stub (preserves old code paths; real rail uses SIDE_ITEMS above)
+	local RAIL: { any } = {}
+	local railPad = Instance.new("UIPadding")
+	railPad.Parent = rail
+
 	local railBtns: { [string]: TextButton } = {}
 	for i, item in ipairs(RAIL) do
 		local b = UIKit.IconBtn({
@@ -364,23 +385,24 @@ function Hud.Mount(
 		RainbowGradient.ApplyShimmer(tpBtn, "emerald", 0.5, 180)
 	end
 
-	local questBadge = UIKit.Label({
-		Name = "QuestBadge",
-		Parent = railBtns.quests,
-		Text = "",
-		Size = UDim2.fromOffset(18, 18),
-		Position = UDim2.new(1, -2, 0, -2),
-		Anchor = Vector2.new(1, 0),
-		Color = T.Text,
-		SizePx = 11,
-		Font = T.Font.Num,
-		X = Enum.TextXAlignment.Center,
-		Z = 20,
-	})
+	local questBadge = Instance.new("TextLabel")
+	questBadge.Name = "QuestBadge"
+	questBadge.Size = UDim2.fromOffset(18, 18)
+	questBadge.Position = UDim2.new(1, -2, 0, -2)
+	questBadge.AnchorPoint = Vector2.new(1, 0)
 	questBadge.BackgroundColor3 = T.Danger
 	questBadge.BackgroundTransparency = 0
+	questBadge.Text = ""
+	questBadge.TextColor3 = T.Text
+	questBadge.TextSize = 11
+	questBadge.Font = Enum.Font.GothamBold
+	questBadge.TextXAlignment = Enum.TextXAlignment.Center
+	questBadge.ZIndex = 20
 	questBadge.Visible = false
-	UIKit.Corner(questBadge, 99)
+	local qCorner = Instance.new("UICorner")
+	qCorner.CornerRadius = UDim.new(1, 0)
+	qCorner.Parent = questBadge
+	questBadge.Parent = rail
 
 	---------------------------------------------------------------- TOP-LEFT BOOSTS
 	local boosts = Instance.new("Frame")
@@ -699,9 +721,11 @@ function Hud.Mount(
 		railList.Padding = UDim.new(0, m.railGap)
 
 		for _, b in railBtns do
-			b.Size = UDim2.fromOffset(m.railBtn, m.railBtn)
-			b.TextSize = math.clamp(math.floor(m.railBtn * 0.34), 12, 18)
-			b.TextColor3 = T.Text
+			if b:IsA("TextButton") then
+				b.Size = UDim2.fromOffset(m.railBtn, m.railBtn)
+				b.TextSize = math.clamp(math.floor(m.railBtn * 0.34), 12, 18)
+				b.TextColor3 = T.Text
+			end
 		end
 
 		boosts.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad)
@@ -884,16 +908,18 @@ function Hud.Mount(
 
 		if not invOpen then
 			for id, b in railBtns do
-				local active = id == panel
-				local g = b:FindFirstChildOfClass("UIGradient")
-				if g then
-					if active then
-						g.Color = ColorSequence.new(T.Accent, T.AccentDeep)
-					else
-						g.Color = ColorSequence.new(T.Surface3, T.Surface2)
+				if b:IsA("TextButton") then
+					local active = id == panel
+					local g = b:FindFirstChildOfClass("UIGradient")
+					if g then
+						if active then
+							g.Color = ColorSequence.new(T.Accent, T.AccentDeep)
+						else
+							g.Color = ColorSequence.new(T.Surface3, T.Surface2)
+						end
 					end
+					b.TextColor3 = T.Text
 				end
-				b.TextColor3 = T.Text
 			end
 		end
 

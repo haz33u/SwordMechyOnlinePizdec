@@ -14,11 +14,11 @@ local PetModelConfig = {
 	TargetExtentMaxFactor = 25,
 
 	-- Behind player (studs, local HRP space: +Z = behind LookVector on Roblox)
-	FollowBack = 4.2,
-	FollowHeight = 2.35,
+	FollowBack = 3.0,
+	FollowHeight = 0.6,
 	FollowSpread = 1.65,
 	LerpAlpha = 0.16,
-	BobAmp = 0.14,
+	BobAmp = 0.12,
 	BobSpeed = 2.2,
 
 	--[[
@@ -57,6 +57,38 @@ local PetModelConfig = {
 		P2_K_L1 = "E-C",
 		P2_K_L2 = "E-D",
 		P2_K_M1 = "S-A",
+
+		P3_C1 = "Kirin",
+		P3_C2 = "ShinobiFox",
+		P3_R1 = "ShadowRaven",
+		P3_E1 = "DragonKin",
+		P3_L1 = "SamuraiTiger",
+		P3_M1 = "KitsuneGod",
+
+		P4_C1 = "FrostBunny",
+		P4_C2 = "IceBear",
+		P4_R1 = "GlacierPenguin",
+		P4_E1 = "TundraWolf",
+		P4_L1 = "PolarDrake",
+		P4_M1 = "YetiKing",
+
+		P5_C1 = "Scarab",
+		P5_R1 = "AnubisGuard",
+		P5_E1 = "Sphinx",
+		P5_L1 = "SunDrake",
+		P5_M1 = "PharaohGod",
+
+		P6_C1 = "CyberCat",
+		P6_R1 = "NeonHawk",
+		P6_E1 = "MechaWolf",
+		P6_L1 = "PlasmaDragon",
+		P6_M1 = "CyberValkyrie",
+
+		P7_C1 = "StarlightSpirit",
+		P7_R1 = "Seraphim",
+		P7_E1 = "SolarPhoenix",
+		P7_L1 = "CelestialDragon",
+		P7_M1 = "ArchangelPrime",
 	} :: { [string]: string },
 
 	-- Placeholder colors by rarity (when mesh missing)

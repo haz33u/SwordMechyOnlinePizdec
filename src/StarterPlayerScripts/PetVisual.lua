@@ -11,6 +11,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local PetConfig = require(Shared.Config.PetConfig)
 local PetModelConfig = require(Shared.Config.PetModelConfig)
+local AuraModelConfig = require(Shared.Config.AuraModelConfig)
+local AuraConfig = require(Shared.Config.AuraConfig)
+
+local Settings = require(script.Parent.Settings)
 
 local PetVisual = {}
 
@@ -20,6 +24,16 @@ local lastSig = ""
 local lastProfile: any = nil
 local renderConn: RBXScriptConnection? = nil
 local charConn: RBXScriptConnection? = nil
+local petsEnabled = true
+
+Settings.OnChange("visualPets", function(enabled: boolean)
+	petsEnabled = enabled
+	if not enabled then
+		PetVisual.ClearWorldPets()
+	elseif lastProfile then
+		PetVisual.Refresh(lastProfile)
+	end
+end)
 
 local function getFolders(): { Folder }
 	local folders = {}
@@ -55,6 +69,77 @@ end
 local function rarityColor(rarity: string): Color3
 	local t = PetModelConfig.RarityColor
 	return (t and t[rarity]) or Color3.fromRGB(160, 160, 170)
+end
+
+local function auraNameForRarity(rarity: string): string
+	local map = {
+		Common = "A_Ice",
+		Uncommon = "A_Leaf",
+		Rare = "A_Dragon",
+		Epic = "A_Blaze",
+		Legendary = "A_Fire",
+		Mythic = "A_Cosmic",
+		Secret = "A_Blackhole",
+		Limited = "A_Heavenly",
+	}
+	return map[rarity] or "A_Light"
+end
+
+local function clearPetAura(model: Model)
+	local existing = model:FindFirstChild("PetAuraVfx")
+	if existing then
+		existing:Destroy()
+	end
+end
+
+local function applyPetAura(model: Model, petId: string)
+	clearPetAura(model)
+	local def = PetConfig.Get(petId)
+	if not def then
+		return
+	end
+	local auraId = auraNameForRarity(def.rarity or "Common")
+	local auraTemplateName = AuraModelConfig.GetModelName(auraId)
+	if not auraTemplateName then
+		return
+	end
+	local auraVfx = ReplicatedStorage:FindFirstChild("AuraVfx")
+	if not auraVfx then
+		return
+	end
+	local template = auraVfx:FindFirstChild(auraTemplateName)
+	if not template or not template:IsA("Model") then
+		return
+	end
+	local clone = template:Clone()
+	clone.Name = "PetAuraVfx"
+	for _, d in clone:GetDescendants() do
+		if d:IsA("BasePart") then
+			d.Anchored = false
+			d.CanCollide = false
+			d.Massless = true
+			d.CanQuery = false
+			d.CanTouch = false
+			d.CastShadow = false
+		elseif d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("ForceField") or d:IsA("Camera") then
+			d:Destroy()
+		end
+	end
+
+	local primary = clone.PrimaryPart or clone:FindFirstChild("RootPart") or clone:FindFirstChild("Circle")
+	local petPrimary = model.PrimaryPart
+	if primary and primary:IsA("BasePart") and petPrimary and petPrimary:IsA("BasePart") then
+		primary.Size = primary.Size * 0.5
+		clone.PrimaryPart = primary
+		local weld = Instance.new("Weld")
+		weld.Part0 = petPrimary
+		weld.Part1 = primary
+		weld.C0 = CFrame.new(0, 0, 0)
+		weld.Parent = primary
+		clone.Parent = model
+	else
+		clone:Destroy()
+	end
 end
 
 local function makePlaceholder(petId: string, def: any?): Model
@@ -181,6 +266,7 @@ end
 local function clearAll()
 	for uid, m in active do
 		if m then
+			clearPetAura(m)
 			m:Destroy()
 		end
 		active[uid] = nil
@@ -290,6 +376,7 @@ local function rebuild(profile: any)
 					-- Roblox CFrame: +Z is behind LookVector (behind the character)
 					model:PivotTo(hrp.CFrame * CFrame.new(0, 2, 3.5))
 				end)
+				applyPetAura(model, petId)
 				active[uid] = model
 			end
 		end
@@ -367,6 +454,10 @@ function stepFollow(dt: number)
 	end
 end
 
+function PetVisual.ClearWorldPets()
+	clearAll()
+end
+
 function PetVisual.Refresh(profile: any?)
 	if not profile then
 		lastProfile = nil
@@ -374,6 +465,10 @@ function PetVisual.Refresh(profile: any?)
 		return
 	end
 	lastProfile = profile
+	if not petsEnabled then
+		clearAll()
+		return
+	end
 	local ok, err = pcall(function()
 		rebuild(profile)
 	end)

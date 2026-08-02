@@ -163,6 +163,7 @@ function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?)
 			level = 1,
 			enchants = {},
 		})
+		ProfileService.IndexPet(profile, petId)
 
 		local def = PetConfig.Get(petId)
 		local name = def and def.name or petId
@@ -348,6 +349,7 @@ function PetService.GrantPet(player: Player, profile: any, petId: string): strin
 		level = 1,
 		enchants = {},
 	})
+	ProfileService.IndexPet(profile, petId)
 	PetService.SyncSlots(profile)
 	profile.petTeam = profile.petTeam or {}
 	if #profile.petTeam < (profile.petSlots or 3) then

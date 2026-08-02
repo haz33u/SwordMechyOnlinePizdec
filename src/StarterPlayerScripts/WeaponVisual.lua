@@ -12,6 +12,8 @@ local RunService = game:GetService("RunService")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local AnimationConfig = require(Shared.Config.AnimationConfig)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
+local AuraConfig = require(Shared.Config.AuraConfig)
+local AuraModelConfig = require(Shared.Config.AuraModelConfig)
 local Rarity = require(script.Parent.Rarity)
 local WeaponModels = require(script.Parent.WeaponModels)
 
@@ -54,6 +56,17 @@ local RARITY_COLOR = {
 	Mythic = Color3.fromRGB(230, 70, 110),
 	Secret = Color3.fromRGB(255, 230, 120),
 	Limited = Color3.fromRGB(255, 80, 200),
+}
+
+local WEAPON_AURA_BY_RARITY = {
+	Common = nil,
+	Uncommon = nil,
+	Rare = "A_Dragon",
+	Epic = "A_Blaze",
+	Legendary = "A_Fire",
+	Mythic = "A_Cosmic",
+	Secret = "A_Blackhole",
+	Limited = "A_Heavenly",
 }
 
 local function ensureFolder(char: Model): Folder
@@ -158,6 +171,7 @@ local function attachVfxToSword(model: Model?, rarity: string?)
 	local halfY = math.max(0.5, root.Size.Y / 2)
 	local attHilt = root:FindFirstChild("VFX_Hilt") :: Attachment?
 	local attTip = root:FindFirstChild("VFX_Tip") :: Attachment?
+	local attMid = root:FindFirstChild("VFX_Mid") :: Attachment?
 
 	if not attHilt then
 		attHilt = Instance.new("Attachment")
@@ -171,6 +185,14 @@ local function attachVfxToSword(model: Model?, rarity: string?)
 		attTip.Position = Vector3.new(0, halfY, 0)
 		attTip.Parent = root
 	end
+	if not attMid then
+		attMid = Instance.new("Attachment")
+		attMid.Name = "VFX_Mid"
+		attMid.Position = Vector3.new(0, 0, 0)
+		attMid.Parent = root
+	end
+
+	local col = RARITY_COLOR[rarity or "Common"] or Color3.fromRGB(200, 200, 200)
 
 	local trail = root:FindFirstChild("SwordTrail") :: Trail?
 	if not trail and attHilt and attTip then
@@ -178,40 +200,100 @@ local function attachVfxToSword(model: Model?, rarity: string?)
 		trail.Name = "SwordTrail"
 		trail.Attachment0 = attHilt
 		trail.Attachment1 = attTip
-		trail.Lifetime = 0.25
-		trail.MinLength = 0.1
+		trail.Lifetime = 0.35
+		trail.MinLength = 0.08
 		trail.FaceCamera = true
-
-		local col = RARITY_COLOR[rarity or "Common"] or Color3.fromRGB(200, 200, 200)
+		trail.WidthScale = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0.6),
+			NumberSequenceKeypoint.new(0.5, 1.0),
+			NumberSequenceKeypoint.new(1, 0.2),
+		})
 		trail.Color = ColorSequence.new({
 			ColorSequenceKeypoint.new(0, col),
+			ColorSequenceKeypoint.new(0.5, col:Lerp(Color3.new(1,1,1), 0.4)),
 			ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)),
 		})
 		trail.Transparency = NumberSequence.new({
-			NumberSequenceKeypoint.new(0, 0.1),
-			NumberSequenceKeypoint.new(0.6, 0.4),
+			NumberSequenceKeypoint.new(0, 0.05),
+			NumberSequenceKeypoint.new(0.5, 0.25),
 			NumberSequenceKeypoint.new(1, 1.0),
 		})
+		trail.LightEmission = 0.9
 		trail.Enabled = false
 		trail.Parent = root
 	end
 
-	-- Idle particle sparks on tip for Rare+ swords
+	-- Blade glow for Rare+
 	local r = rarity or "Common"
 	if r ~= "Common" and r ~= "Uncommon" then
 		local sparks = attTip:FindFirstChild("IdleSparks") :: ParticleEmitter?
-		if not sparks and attTip then
+		if not sparks then
 			sparks = Instance.new("ParticleEmitter")
 			sparks.Name = "IdleSparks"
 			sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
-			sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
-			sparks.Color = ColorSequence.new(RARITY_COLOR[r] or Color3.fromRGB(255, 200, 50))
-			sparks.Lifetime = NumberRange.new(0.4, 0.8)
-			sparks.Rate = 8
-			sparks.Speed = NumberRange.new(0.4, 1.2)
+			sparks.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.45), NumberSequenceKeypoint.new(1, 0) })
+			sparks.Color = ColorSequence.new(col)
+			sparks.Lifetime = NumberRange.new(0.5, 1.0)
+			sparks.Rate = 12
+			sparks.Speed = NumberRange.new(0.3, 1.5)
 			sparks.SpreadAngle = Vector2.new(360, 360)
-			sparks.LightEmission = 0.7
+			sparks.LightEmission = 0.85
 			sparks.Parent = attTip
+		end
+
+		local bladeGlow = attMid:FindFirstChild("BladeGlow") :: ParticleEmitter?
+		if not bladeGlow then
+			bladeGlow = Instance.new("ParticleEmitter")
+			bladeGlow.Name = "BladeGlow"
+			bladeGlow.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+			bladeGlow.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.2), NumberSequenceKeypoint.new(0.5, 0.5), NumberSequenceKeypoint.new(1, 0) })
+			bladeGlow.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, col),
+				ColorSequenceKeypoint.new(1, col:Lerp(Color3.new(1,1,1), 0.5)),
+			})
+			bladeGlow.Lifetime = NumberRange.new(0.4, 0.9)
+			bladeGlow.Rate = 18
+			bladeGlow.Speed = NumberRange.new(0.1, 0.6)
+			bladeGlow.SpreadAngle = Vector2.new(30, 30)
+			bladeGlow.LightEmission = 0.95
+			bladeGlow.Parent = attMid
+		end
+
+		-- Wrap aura for Epic+
+		local auraId = WEAPON_AURA_BY_RARITY[r]
+		if auraId then
+			local auraModelName = AuraModelConfig.GetModelName(auraId)
+			local auraVfx = auraModelName and ReplicatedStorage:FindFirstChild("AuraVfx")
+			local template = auraVfx and auraVfx:FindFirstChild(auraModelName)
+			if template and template:IsA("Model") and not model:FindFirstChild("WeaponAuraVfx") then
+				local clone = template:Clone()
+				clone.Name = "WeaponAuraVfx"
+				for _, d in clone:GetDescendants() do
+					if d:IsA("BasePart") then
+						d.Anchored = false
+						d.CanCollide = false
+						d.Massless = true
+						d.CanQuery = false
+						d.CanTouch = false
+						d.CastShadow = false
+					elseif d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("ForceField") or d:IsA("Camera") then
+						d:Destroy()
+					end
+				end
+				local auraRoot = clone.PrimaryPart or clone:FindFirstChild("RootPart") or clone:FindFirstChild("Circle") or clone:FindFirstChildWhichIsA("BasePart", true)
+				if auraRoot and auraRoot:IsA("BasePart") then
+					clone.PrimaryPart = auraRoot
+					auraRoot.Size = auraRoot.Size * 0.35
+					local weld = Instance.new("Weld")
+					weld.Part0 = root
+					weld.Part1 = auraRoot
+					weld.C0 = CFrame.new(0, 0, 0)
+					weld.Parent = auraRoot
+					clone.Parent = model
+				else
+					clone:Destroy()
+				end
+			end
 		end
 	end
 end

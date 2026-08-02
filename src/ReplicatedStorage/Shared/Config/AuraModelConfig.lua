@@ -65,6 +65,16 @@ local AuraModelConfig = {
 		A_Angel = "ANGEL",
 		A_Wormhole = "Wormhole",
 
+		-- Extracted EVOLVED / CHARACTER auras (not rollable, place-only)
+		A_HinataEVO = "HinataAura",
+		A_ItachiEVO = "ItachiAura",
+		A_Character1 = "CharAura_1",
+		A_Character2 = "CharAura_2",
+		A_Character3 = "CharAura_3",
+		A_Character104699 = "CharAura_104699",
+		A_Character196179 = "CharAura_196179",
+		A_CharacterVampire = "CharAura_Vampire",
+
 		-- legacy aliases
 		A_C1 = "CRYOGEN",
 		A_C2 = "CELESTIALBODY",
@@ -126,6 +136,16 @@ local AuraModelConfig = {
 		A_Heavenly = "back",
 		A_Angel = "back",
 		A_Wormhole = "feet",
+
+		-- Extracted EVOLVED / CHARACTER auras
+		A_HinataEVO = "hrp",
+		A_ItachiEVO = "hrp",
+		A_Character1 = "hrp",
+		A_Character2 = "back",
+		A_Character3 = "hrp",
+		A_Character104699 = "hrp",
+		A_Character196179 = "back",
+		A_CharacterVampire = "hrp",
 
 		-- legacy aliases
 		A_C1 = "hrp",

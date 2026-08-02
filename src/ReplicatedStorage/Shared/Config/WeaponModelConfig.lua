@@ -70,6 +70,27 @@ local WeaponModelConfig = {
 		ice_dragon_fang = "IceDragonFang",
 		polar_sovereign_blade = "PolarSovereignBlade",
 
+		ash_shiv = "AshShiv",
+		magma_maul = "MagmaMaul",
+		obsidian_glaive = "ObsidianGlaive",
+		inferno_blade = "InfernoBlade",
+		volcano_god_sword = "VolcanoGodSword",
+		phoenix_ash_blade = "PhoenixAshBlade",
+
+		neon_dagger = "NeonDagger",
+		plasma_cutlass = "PlasmaCutlass",
+		cyber_katana = "CyberKatana",
+		lightning_greatsword = "LightningGreatsword",
+		overseer_proto_blade = "OverseerProtoBlade",
+		dimensional_edge = "DimensionalEdge",
+
+		bone_knife = "BoneKnife",
+		crypt_rapier = "CryptRapier",
+		soul_reaver_scythe = "SoulReaverScythe",
+		cathedral_longsword = "CathedralLongsword",
+		bone_overlord_cleaver = "BoneOverlordCleaver",
+		celestial_void_blade = "CelestialVoidBlade",
+
 		stone_sword = "Stone Sw.",
 		stone_scythe = "Stone Sy.",
 		stone_spear = "Stone Sp.",
