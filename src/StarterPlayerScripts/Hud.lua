@@ -584,8 +584,9 @@ function Hud.Mount(
 	upgradeBtn.BackgroundTransparency = 1
 	upgradeBtn.BorderSizePixel = 0
 	upgradeBtn.Image = IA.Get("UPRGADEicon")
-	upgradeBtn.ScaleType = Enum.ScaleType.Slice
-	upgradeBtn.SliceCenter = Rect.new(101, 101, 358, 442)
+	-- Fit, not Slice: the brief's SliceCenter insets (101+101) are wider than the
+	-- 190px render box, which makes Roblox mangle/drop the art. Icons are not 9-slice.
+	upgradeBtn.ScaleType = Enum.ScaleType.Fit
 	upgradeBtn.AutoButtonColor = false
 	upgradeBtn.Position = relPos(503, 853)
 	upgradeBtn.Size = relSize(190, 220)
@@ -605,8 +606,7 @@ function Hud.Mount(
 	eBtn.BackgroundTransparency = 1
 	eBtn.BorderSizePixel = 0
 	eBtn.Image = IA.Get("BACKpackICON")
-	eBtn.ScaleType = Enum.ScaleType.Slice
-	eBtn.SliceCenter = Rect.new(116, 116, 411, 479)
+	eBtn.ScaleType = Enum.ScaleType.Fit -- see UpgradeTreeBtn: Slice insets exceed the render box
 	eBtn.AutoButtonColor = false
 	eBtn.Position = relPos(1202, 860)
 	eBtn.Size = relSize(190, 220)

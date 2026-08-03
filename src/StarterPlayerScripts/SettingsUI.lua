@@ -131,6 +131,9 @@ function SettingsUI.Mount(parent: Instance, store: any): any
 	root.AnchorPoint = Vector2.new(0.5, 0.5)
 	root.BackgroundColor3 = T.Glass
 	root.BorderSizePixel = 0
+	-- Hidden by construction: App mounts this then calls Hide(). If anything below
+	-- throws, App's pcall swallows it and the panel would otherwise stay on screen.
+	root.Visible = false
 	root.Parent = parent
 
 	local rc = Instance.new("UICorner")
@@ -160,7 +163,7 @@ function SettingsUI.Mount(parent: Instance, store: any): any
 	close.Text = "X"
 	close.Font = Enum.Font.GothamBold
 	close.TextSize = 18
-	close.TextColor3 = T.TextPrimary
+	close.TextColor3 = T.Text
 	close.Parent = root
 
 	local scroll = Instance.new("ScrollingFrame")

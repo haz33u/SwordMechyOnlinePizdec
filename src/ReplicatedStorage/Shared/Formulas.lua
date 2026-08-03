@@ -223,7 +223,6 @@ function Formulas.GetMaxRelicSlots(profile: any): number
 	if unlocks and unlocks.relicSlot then
 		n += (GameConfig.PAID_RELIC_SLOTS or 1)
 	end
-	local TalentTreeConfig = require(Shared.Config.TalentTreeConfig)
 	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
 	n += (talentStats.relicSlots or 0)
 	local cap = GameConfig.MAX_RELIC_SLOTS or 3

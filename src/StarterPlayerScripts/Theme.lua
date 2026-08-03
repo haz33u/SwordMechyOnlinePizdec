@@ -176,6 +176,7 @@ Theme.Glass = C.Panel
 Theme.Glass2 = C.Surface2
 Theme.Glass3 = C.Surface3
 Theme.Stroke = C.Stroke
+Theme.StrokeLight = C.StrokeLight
 Theme.StrokeA = C.StrokeMuted
 Theme.Text = C.TextPrimary
 Theme.TextSoft = C.TextSecondary
