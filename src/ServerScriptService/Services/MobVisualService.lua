@@ -453,6 +453,13 @@ local function freezeStudioModel(model: Model)
 		hum.JumpPower = 0
 		hum.AutoRotate = false
 		hum.BreakJointsOnDeath = false
+		-- R6 rigs float HipHeight studs above their feet, and a Humanoid whose state
+		-- machine survived the pcall above keeps re-applying that lift after we have
+		-- already positioned the model. Zeroing it makes the parts' own geometry the
+		-- single source of truth for where the feet are.
+		pcall(function()
+			hum.HipHeight = 0
+		end)
 	end
 	for _, d in model:GetDescendants() do
 		if d:IsA("BasePart") then
@@ -475,6 +482,68 @@ local function rememberPartState(model: Model)
 			end
 		end
 	end
+end
+
+--[[
+	True lowest world-Y of the model's body, ignoring held props and decoration.
+
+	Rotated limbs (legs, horns, tilted armour) reach lower than
+	Position.Y - Size.Y/2, which only holds for axis-aligned parts, so project
+	each part's half-extents onto the world Y axis.
+
+	`anchor` is a side effect the callers want: combat mobs are stationary, and
+	unanchored template rigs fall through the floor while SetAlive disables
+	collision during the respawn delay.
+]]
+local NON_BODY_PART_WORDS = {
+	-- held props
+	"spear",
+	"sword",
+	"weapon",
+	"tool",
+	"handle",
+	-- decoration welded at or below floor level; counting these as "feet" would
+	-- shove the whole mob upward until the decoration cleared the ground
+	"telegraph",
+	"aura",
+	"glow",
+	"shadow",
+	"effect",
+}
+
+local function isBodyPart(name: string): boolean
+	local lower = string.lower(name)
+	for _, word in NON_BODY_PART_WORDS do
+		if string.find(lower, word, 1, true) then
+			return false
+		end
+	end
+	return true
+end
+
+local function lowestBodyPoint(model: Model, anchor: boolean): number
+	local lowest = math.huge
+	for _, p in model:GetDescendants() do
+		if p:IsA("BasePart") then
+			if anchor then
+				p.Anchored = true
+			end
+			if isBodyPart(p.Name) then
+				local cf, size = p.CFrame, p.Size
+				local halfHeight = 0.5
+					* (
+						math.abs(cf.XVector.Y) * size.X
+						+ math.abs(cf.YVector.Y) * size.Y
+						+ math.abs(cf.ZVector.Y) * size.Z
+					)
+				local bottomY = p.Position.Y - halfHeight
+				if bottomY < lowest then
+					lowest = bottomY
+				end
+			end
+		end
+	end
+	return lowest
 end
 
 function snapModelToGround(model: Model, targetPos: Vector3)
@@ -502,54 +571,116 @@ function snapModelToGround(model: Model, targetPos: Vector3)
 		end
 	end
 	rayParam.FilterDescendantsInstances = excludeList
+	-- Terrain grass is the floor in Loc1; without this the ray passes straight
+	-- through it and groundY silently falls back to the marker height.
+	rayParam.IgnoreWater = true
+
+	local origin = targetPos + Vector3.new(0, 30, 0)
+	local down = Vector3.new(0, -200, 0)
 
 	-- Start well above and probe deep: markers may sit high over the actual floor.
-	local rayResult = Workspace:Raycast(targetPos + Vector3.new(0, 30, 0), Vector3.new(0, -200, 0), rayParam)
-	-- If nothing was hit, trust the marker's own height rather than dropping the mob.
+	local rayResult = Workspace:Raycast(origin, down, rayParam)
 	local groundY = rayResult and rayResult.Position.Y or targetPos.Y
+	local groundSource = if rayResult
+		then (if rayResult.Instance then rayResult.Instance:GetFullName() else "Terrain")
+		else "marker(no-hit)"
 
-	-- Calculate distance from PrimaryPart to actual body feet (ignoring held spears/weapons)
-	local lowestBodyY = math.huge
-	for _, p in model:GetDescendants() do
-		if p:IsA("BasePart") then
-			-- Combat mobs are stationary. Unanchored templates fall through the floor
-			-- while SetAlive disables collision during the respawn delay.
-			p.Anchored = true
+	--[[
+		Sanity-check the hit against the marker.
 
-			local lowerName = string.lower(p.Name)
-			-- Skip held weapons/spears when finding feet position
-			if not (string.find(lowerName, "spear") or string.find(lowerName, "sword") or string.find(lowerName, "weapon") or string.find(lowerName, "tool") or string.find(lowerName, "handle")) then
-				-- Rotated limbs (legs, horns, tilted armour) reach lower than
-				-- Position.Y - Size.Y/2, which only holds for axis-aligned parts.
-				-- Project the part's half-extents onto the world Y axis so tilted
-				-- geometry reports its true lowest point — otherwise footOffset comes
-				-- out too small and the mob spawns sunk into the floor.
-				local cf, size = p.CFrame, p.Size
-				local halfHeight = 0.5
-					* (
-						math.abs(cf.XVector.Y) * size.X
-						+ math.abs(cf.YVector.Y) * size.Y
-						+ math.abs(cf.ZVector.Y) * size.Z
-					)
-				local bottomY = p.Position.Y - halfHeight
-				if bottomY < lowestBodyY then
-					lowestBodyY = bottomY
-				end
-			end
+		The name filter above drops any Workspace child containing tree/decor/
+		fence/prop. That is meant to skip scenery, but it is a blunt match: a floor
+		authored inside a container named e.g. "Loc1_Props" gets excluded too, the
+		ray sails straight through it, and groundY lands on whatever basement geometry
+		sits far below — burying the mob by tens of studs. That matches the one mob
+		visible only as a face lying flat on the grass.
+
+		Markers are authored at the spawn point, so the real floor is near them. If the
+		hit is implausibly far from the marker, redo the cast with only the genuinely
+		unwanted things excluded (the model itself, other mobs, players, markers).
+	]]
+	local MARKER_TRUST_RANGE = 12
+	if math.abs(groundY - targetPos.Y) > MARKER_TRUST_RANGE then
+		local strictParam = RaycastParams.new()
+		strictParam.FilterType = Enum.RaycastFilterType.Exclude
+		strictParam.IgnoreWater = true
+		local minimal = { model, Workspace:FindFirstChild("Mobs"), Workspace:FindFirstChild("Characters") }
+		for _, f in collectMarkerFolders() do
+			table.insert(minimal, f)
+		end
+		strictParam.FilterDescendantsInstances = minimal
+
+		local strict = Workspace:Raycast(origin, down, strictParam)
+		if strict and math.abs(strict.Position.Y - targetPos.Y) <= MARKER_TRUST_RANGE then
+			groundY = strict.Position.Y
+			groundSource = "strict:" .. (if strict.Instance then strict.Instance:GetFullName() else "Terrain")
+		else
+			-- Both casts disagree with the marker; the marker is the only height an
+			-- author actually placed, so trust it rather than sinking the mob.
+			groundY = targetPos.Y
+			groundSource = "marker(ray-rejected)"
 		end
 	end
 
-	-- Distance from the pivot (what PivotTo positions) down to the feet.
-	local pivotY = model:GetPivot().Position.Y
-	local footOffset = bboxSize.Y / 2
-	if lowestBodyY < math.huge and pivotY > lowestBodyY then
-		footOffset = pivotY - lowestBodyY
+	--[[
+		Place the model, then MEASURE the result and correct the remainder.
+
+		Earlier versions computed a single foot offset up front and trusted it.
+		That is fragile: the offset depends on the pivot matching the body, and it
+		silently breaks for R6 template rigs (HumanoidRootPart floats HipHeight
+		studs above the feet), for models whose bounding box includes HP-bar hosts
+		or attachments, and when grounding runs before the model is parented into
+		the Workspace. Each of those produced a different sink depth, which is why
+		fixing them one at a time never held.
+
+		Measuring after the move removes the guesswork: whatever the pivot-to-feet
+		relationship actually is, the second pass reads the real world position of
+		the lowest body part and shifts by exactly the leftover error. A single
+		correction is mathematically sufficient, since translation moves every part
+		equally; the loop only re-runs to absorb float drift.
+	]]
+	model:PivotTo(CFrame.new(targetPos.X, groundY + bboxSize.Y / 2 + GROUND_SKIN, targetPos.Z) * CFrame.Angles(0, ry, 0))
+
+	local firstErr: number? = nil
+	for _ = 1, 3 do
+		local lowest = lowestBodyPoint(model, true)
+		if lowest >= math.huge then
+			break
+		end
+		local err = (groundY + GROUND_SKIN) - lowest
+		if firstErr == nil then
+			firstErr = err
+		end
+		if math.abs(err) < 0.01 then
+			break
+		end
+		model:PivotTo(model:GetPivot() + Vector3.new(0, err, 0))
 	end
 
-	local uprightCF = CFrame.new(targetPos.X, groundY + footOffset + GROUND_SKIN, targetPos.Z) * CFrame.Angles(0, ry, 0)
-	model:PivotTo(uprightCF)
 	-- Remember the resolved pose so respawn restores it instead of re-sinking to the raw marker.
-	model:SetAttribute("GroundedY", uprightCF.Position.Y)
+	model:SetAttribute("GroundedY", model:GetPivot().Position.Y)
+
+	--[[
+		Leave the diagnosis in the model itself.
+
+		These are exactly the numbers the fix needed and could not be measured
+		live: how far off the naive bounding-box placement was, where the ray
+		thought the floor was, and how far that was from the marker the author
+		placed. If a mob ever looks sunk again, read them off the model in the
+		Explorer instead of guessing at causes.
+	]]
+	model:SetAttribute("GroundY", groundY)
+	model:SetAttribute("GroundSource", groundSource)
+	model:SetAttribute("GroundCorrection", firstErr or 0)
+	if firstErr and math.abs(firstErr) > 6 then
+		warn(string.format(
+			"[MobVisual] %s needed a %.1f stud grounding correction (groundY=%.2f, markerY=%.2f) — check the floor geometry at this marker.",
+			model.Name,
+			firstErr,
+			groundY,
+			targetPos.Y
+		))
+	end
 end
 
 local function buildPlaceholder(def: any, position: Vector3, modelName: string?): Model
@@ -610,6 +741,13 @@ function MobVisualService.Spawn(entry: any)
 	model:SetAttribute("MarkerName", entry.markerName)
 	model:SetAttribute("IsLiveCombatMob", true)
 	model.Parent = ensureFolder()
+
+	-- Re-ground now that the model is actually in the Workspace. buildPlaceholder
+	-- grounds it while still parented to nil, where the downward raycast cannot see
+	-- the world the model is about to occupy and the HP-bar host part does not yet
+	-- exist to skew the bounding box. Re-running here is cheap and makes the final
+	-- pose the authoritative one.
+	snapModelToGround(model, entry.position)
 
 	local root = model.PrimaryPart
 	if root then
