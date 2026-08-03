@@ -104,6 +104,17 @@ local InventoryAssetConfig = {
 	Toggle_Rainbow_OFF = "rbxassetid://111522661732585",
 	Toggle_Rainbow_ON = "rbxassetid://86770309543198",
 
+	-- ── Main player HUD bottom block (MechyForge brief) ────────
+	UPRGADEicon = "rbxassetid://78720714494935", -- left button → honeycomb skill tree
+	BACKpackICON = "rbxassetid://83218024938346", -- right button → inventory
+	MAINVALUEcard = "rbxassetid://95793897807702", -- counter plate (power + coins rows)
+	MAINVALUEcard_1 = "rbxassetid://103080879105084", -- alternate upload of the same plate
+	KATANAicon = "rbxassetid://78423979358823",
+	COINicon_1coin = "rbxassetid://84382053093788",
+	BTN_Green_4 = "rbxassetid://86676993173066", -- AUTO ON plate
+	BTN_Red_1 = "rbxassetid://137735419027661", -- AUTO OFF plate
+	AUTOCLICKERicon_1 = "rbxassetid://83975968501159",
+
 	-- ── Demo / placeholder item cards (grid samples, not catalog) ─
 	PETcard1 = "rbxassetid://81512403260701",
 	PETcard2 = "rbxassetid://102890033531349",

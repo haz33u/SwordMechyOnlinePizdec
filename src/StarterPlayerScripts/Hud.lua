@@ -8,6 +8,7 @@
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local T = require(script.Parent.Theme)
 local UIKit = require(script.Parent.UIKit)
@@ -18,6 +19,7 @@ local Layout = require(script.Parent.Layout)
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Formulas = require(Shared.Formulas)
 local SideMenuConfig = require(Shared.Config.SideMenuConfig)
+local IA = require(Shared.Config.InventoryAssetConfig)
 local RainbowGradient = require(script.Parent.RainbowGradient)
 
 local Hud = {}
@@ -62,11 +64,14 @@ function Hud.Mount(
 	gui: ScreenGui,
 	store: any,
 	openModal: (string, any?) -> (),
-	onManualClick: (() -> ())?
+	onManualClick: (() -> ())?,
+	onOpenTree: (() -> ())?
 )
 	local root = Instance.new("Folder")
 	root.Name = "HUD"
 	root.Parent = gui
+	-- Rebirth moved off the HUD (another menu opens it); Q still works via App binds.
+	local _ = openModal
 
 	---------------------------------------------------------------- SIDE RAIL MENU (Modern Glowing Pills)
 	local rail = Instance.new("Frame")
@@ -481,225 +486,201 @@ function Hud.Mount(
 	anomPad.PaddingRight = UDim.new(0, 8)
 	anomPad.Parent = anomBanner
 
-	---------------------------------------------------------------- BOTTOM-CENTER: 4 separate chips
-	-- SCREEENS / Theme palette (not pure black — matches rail/windows)
-	local MAKE_GOLD = T.Gold -- coin gold
-	local MAKE_GOLD_GLOW = Color3.fromRGB(255, 220, 100)
-	local MAKE_POWER = Color3.fromRGB(255, 120, 90)
-	local MAKE_POWER_GLOW = Color3.fromRGB(255, 160, 120)
-	local MAKE_PANEL = T.Surface2 -- 30,30,36 charcoal (not pure black)
-	local MAKE_SECTION = T.Surface3 -- 40,40,48
-	local MAKE_BD2 = T.StrokeLight
+	---------------------------------------------------------------- BOTTOM-CENTER: MechyForge HUD block
+	-- Layout traced 1:1 from the MechyForge brief on a 1920x1080 canvas.
+	-- Block box = the two art buttons: x 503..1392, y 851..1080 (flush with the
+	-- screen bottom). The AUTO plate sits above y=851, i.e. at a negative scale
+	-- offset inside this frame — intentional, the frame does not clip.
+	local BLOCK_W, BLOCK_H = 889, 229
+	local function relPos(x: number, y: number): UDim2
+		return UDim2.fromScale((x - 503) / BLOCK_W, (y - 851) / BLOCK_H)
+	end
+	local function relSize(w: number, h: number): UDim2
+		return UDim2.fromScale(w / BLOCK_W, h / BLOCK_H)
+	end
 
-	-- Creator Store free Decals (rebirth / backpack)
-	local ICON_REBIRTH = "rbxassetid://18367579979" -- Rebirth Icon
-	local ICON_INVENTORY = "rbxassetid://12878997124" -- Inventory Backpack icon
+	local HOVER_INFO = TweenInfo.new(0.12, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+	local PRESS_INFO = TweenInfo.new(0.06, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
-	local BAL_H = 118
-	local CHIP_H = 104
-	local ICON_SZ = 80
-	local GAP = 14
-	local RB_H = 10
-	local AUTO_H = 42
-	local GAP_BAL_RB = 12
-	local GAP_RB_AUTO = 10
+	-- Soft hover for the two art buttons. Scale only — never UIStroke thickness (MASTER_PLAN §10.12).
+	local function bindBtnHover(btn: ImageButton, peak: number?)
+		local p, s = btn.Position, btn.Size
+		btn.AnchorPoint = Vector2.new(0.5, 0.5)
+		btn.Position = UDim2.fromScale(p.X.Scale + s.X.Scale * 0.5, p.Y.Scale + s.Y.Scale * 0.5)
+		local sc = UIKit.Scale(btn, 1)
+		local top = peak or 1.07
+		btn.MouseEnter:Connect(function()
+			TweenService:Create(sc, HOVER_INFO, { Scale = top }):Play()
+		end)
+		btn.MouseLeave:Connect(function()
+			TweenService:Create(sc, HOVER_INFO, { Scale = 1 }):Play()
+		end)
+		btn.MouseButton1Down:Connect(function()
+			TweenService:Create(sc, PRESS_INFO, { Scale = top * 0.93 }):Play()
+		end)
+		btn.MouseButton1Up:Connect(function()
+			TweenService:Create(sc, HOVER_INFO, { Scale = top }):Play()
+		end)
+	end
 
 	local bal = Instance.new("Frame")
 	bal.Name = "BalanceBar"
 	bal.BackgroundTransparency = 1
 	bal.BorderSizePixel = 0
-	bal.Size = UDim2.fromOffset(620, BAL_H)
-	bal.Position = UDim2.new(0.5, 0, 1, -20)
+	bal.Size = UDim2.fromOffset(BLOCK_W, BLOCK_H)
+	bal.Position = UDim2.new(0.5, 0, 1, -8)
 	bal.AnchorPoint = Vector2.new(0.5, 1)
-	-- Above dungeon banners / floating HUD junk so InvE always clickable
+	-- Above dungeon banners / floating HUD junk so the backpack stays clickable
 	bal.ZIndex = 40
 	bal.Visible = true
 	bal.Parent = root
-	local balList = Instance.new("UIListLayout")
-	balList.FillDirection = Enum.FillDirection.Horizontal
-	balList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-	balList.VerticalAlignment = Enum.VerticalAlignment.Center
-	balList.Padding = UDim.new(0, GAP)
-	balList.SortOrder = Enum.SortOrder.LayoutOrder
-	balList.Parent = bal
+	local balScale = UIKit.Scale(bal, 1)
 
-	local function softNumLabel(parent: Instance, name: string, color: Color3, glow: Color3): TextLabel
+	--- Counter plate: art card + icon on the left + candy number to its right.
+	local function valuePlate(name: string, plateY: number, iconKey: string, iconY: number, gradient: string): TextLabel
+		local plate = Instance.new("ImageLabel")
+		plate.Name = name .. "Plate"
+		plate.BackgroundTransparency = 1
+		plate.BorderSizePixel = 0
+		plate.Image = IA.Get("MAINVALUEcard")
+		plate.ScaleType = Enum.ScaleType.Stretch
+		plate.Position = relPos(686, plateY)
+		plate.Size = relSize(520, 110)
+		plate.ZIndex = 41
+		plate.Parent = bal
+
+		local icon = Instance.new("ImageLabel")
+		icon.Name = "Icon"
+		icon.BackgroundTransparency = 1
+		icon.BorderSizePixel = 0
+		icon.Image = IA.Get(iconKey)
+		icon.ScaleType = Enum.ScaleType.Fit
+		-- icon coords are canvas-absolute; re-base them onto the plate box
+		icon.Position = UDim2.fromScale((730 - 686) / 520, (iconY - plateY) / 110)
+		icon.Size = UDim2.fromScale(75 / 520, 75 / 110)
+		icon.ZIndex = 43
+		icon.Parent = plate
+
 		local lab = Instance.new("TextLabel")
-		lab.Name = name
+		lab.Name = "Value"
 		lab.BackgroundTransparency = 1
-		lab.BorderSizePixel = 0
-		lab.Size = UDim2.new(1, -16, 0, 52)
-		lab.Position = UDim2.new(0, 8, 0, 38)
-		lab.Font = Enum.Font.GothamBold -- normal clean UI font (not pixel/Builder)
-		lab.TextSize = 30
-		lab.TextColor3 = color
-		lab.TextXAlignment = Enum.TextXAlignment.Center
-		lab.TextYAlignment = Enum.TextYAlignment.Center
+		lab.Position = UDim2.fromScale(0.245, 0.18)
+		lab.Size = UDim2.fromScale(0.72, 0.62)
 		lab.Text = "0"
-		lab.ZIndex = 16
-		lab.Parent = parent
-		lab.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-		lab.TextStrokeTransparency = 0.5
-		local st = Instance.new("UIStroke")
-		st.Name = "SoftGlow"
-		st.Color = glow
-		st.Thickness = 1.4
-		st.Transparency = 0.55
-		st.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual
-		st.LineJoinMode = Enum.LineJoinMode.Round
-		st.Parent = lab
+		lab.TextXAlignment = Enum.TextXAlignment.Left
+		lab.TextYAlignment = Enum.TextYAlignment.Center
+		lab.ZIndex = 43
+		lab.Parent = plate
+		UIKit.StyleText(lab, gradient, 3)
+		UIKit.TextConstraint(lab, 14, 46)
 		return lab
 	end
 
-	local function metricChip(name: string, order: number, accent: Color3, glow: Color3): (Frame, TextLabel)
-		-- Solid Theme charcoal (Surface3) — NO UIGradient on same node as text
-		local chip = Instance.new("Frame")
-		chip.Name = name .. "Chip"
-		chip.BackgroundColor3 = MAKE_SECTION -- Surface3 blue-gray charcoal
-		chip.BackgroundTransparency = 0.05
-		chip.BorderSizePixel = 0
-		chip.Size = UDim2.fromOffset(180, CHIP_H)
-		chip.LayoutOrder = order
-		chip.ZIndex = 13
-		chip.Parent = bal
-		UIKit.Corner(chip, 12)
-		UIKit.Stroke(chip, accent, 2, 0.28)
+	local powerLab = valuePlate("Power", 851, "KATANAicon", 864, "red")
+	local coinLab = valuePlate("Coins", 962, "COINicon_1coin", 981, "gold")
 
-		local title = Instance.new("TextLabel")
-		title.Name = "Title"
-		title.BackgroundTransparency = 1
-		title.Size = UDim2.new(1, 0, 0, 22)
-		title.Position = UDim2.fromOffset(0, 10)
-		title.Font = Enum.Font.GothamBold
-		title.TextSize = 14
-		title.TextColor3 = accent
-		title.Text = string.upper(name)
-		title.TextXAlignment = Enum.TextXAlignment.Center
-		title.ZIndex = 15
-		title.Parent = chip
-
-		local lab = softNumLabel(chip, name, accent, glow)
-		lab.ZIndex = 16
-		return chip, lab
-	end
-
-	local function iconChip(
-		name: string,
-		order: number,
-		image: string,
-		fallbackGlyph: string,
-		hint: string,
-		onClick: () -> ()
-	): ImageButton
-		local btn = Instance.new("ImageButton")
-		btn.Name = name
-		btn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
-		btn.BackgroundColor3 = MAKE_SECTION
-		btn.BackgroundTransparency = 0.05
-		btn.BorderSizePixel = 0
-		btn.Image = ""
-		btn.AutoButtonColor = true
-		btn.LayoutOrder = order
-		btn.ZIndex = 13
-		btn.Parent = bal
-		UIKit.Corner(btn, 12)
-		UIKit.Stroke(btn, MAKE_BD2, 1.5, 0.25)
-		-- subtle panel fill (same family as windows)
-		UIKit.Gradient(btn, MAKE_SECTION, MAKE_PANEL, 100)
-
-		-- Always-visible glyph fallback (Decals often fail to load in place)
-		local glyph = Instance.new("TextLabel")
-		glyph.Name = "Glyph"
-		glyph.Active = false
-		glyph.BackgroundTransparency = 1
-		glyph.Size = UDim2.fromOffset(52, 52)
-		glyph.Position = UDim2.new(0.5, 0, 0, 10)
-		glyph.AnchorPoint = Vector2.new(0.5, 0)
-		glyph.Font = Enum.Font.GothamBold
-		glyph.TextSize = 34
-		glyph.Text = fallbackGlyph
-		glyph.TextColor3 = Color3.fromRGB(220, 220, 230)
-		glyph.ZIndex = 14
-		glyph.Parent = btn
-
-		local img = Instance.new("ImageLabel")
-		img.Name = "Icon"
-		img.Active = false
-		img.BackgroundTransparency = 1
-		img.Size = UDim2.fromOffset(52, 52)
-		img.Position = UDim2.new(0.5, 0, 0, 10)
-		img.AnchorPoint = Vector2.new(0.5, 0)
-		img.Image = image
-		img.ScaleType = Enum.ScaleType.Fit
-		img.ZIndex = 15
-		img.Parent = btn
-
-		local hintLab = Instance.new("TextLabel")
-		hintLab.Name = "KeyHint"
-		hintLab.Active = false
-		hintLab.BackgroundTransparency = 1
-		hintLab.Size = UDim2.new(1, 0, 0, 18)
-		hintLab.Position = UDim2.new(0, 0, 1, -22)
-		hintLab.Font = Enum.Font.GothamBold
-		hintLab.TextSize = 14
-		hintLab.TextColor3 = Color3.fromRGB(180, 180, 190)
-		hintLab.Text = hint
-		hintLab.TextXAlignment = Enum.TextXAlignment.Center
-		hintLab.ZIndex = 15
-		hintLab.Parent = btn
-
-		btn.MouseButton1Click:Connect(onClick)
-		return btn
-	end
-
-	local qBtn = iconChip("RebirthQ", 1, ICON_REBIRTH, "♻", "Q", function()
-		openModal("rebirth", nil)
+	local upgradeBtn = Instance.new("ImageButton")
+	upgradeBtn.Name = "UpgradeTreeBtn"
+	upgradeBtn.BackgroundTransparency = 1
+	upgradeBtn.BorderSizePixel = 0
+	upgradeBtn.Image = IA.Get("UPRGADEicon")
+	upgradeBtn.ScaleType = Enum.ScaleType.Slice
+	upgradeBtn.SliceCenter = Rect.new(101, 101, 358, 442)
+	upgradeBtn.AutoButtonColor = false
+	upgradeBtn.Position = relPos(503, 853)
+	upgradeBtn.Size = relSize(190, 220)
+	upgradeBtn.ZIndex = 42
+	upgradeBtn.Parent = bal
+	bindBtnHover(upgradeBtn)
+	upgradeBtn.MouseButton1Click:Connect(function()
+		if onOpenTree then
+			onOpenTree()
+		else
+			store:OpenPanel("character")
+		end
 	end)
-	local coinChip, coinLab = metricChip("Coins", 2, MAKE_GOLD, MAKE_GOLD_GLOW)
-	local powerChip, powerLab = metricChip("Power", 3, MAKE_POWER, MAKE_POWER_GLOW)
-	local eBtn = iconChip("InvE", 4, ICON_INVENTORY, "🎒", "E", function()
-		-- Always open inventory shell (Figma weapons page v1.0)
+
+	local eBtn = Instance.new("ImageButton")
+	eBtn.Name = "InvE"
+	eBtn.BackgroundTransparency = 1
+	eBtn.BorderSizePixel = 0
+	eBtn.Image = IA.Get("BACKpackICON")
+	eBtn.ScaleType = Enum.ScaleType.Slice
+	eBtn.SliceCenter = Rect.new(116, 116, 411, 479)
+	eBtn.AutoButtonColor = false
+	eBtn.Position = relPos(1202, 860)
+	eBtn.Size = relSize(190, 220)
+	eBtn.ZIndex = 42
+	eBtn.Parent = bal
+	bindBtnHover(eBtn)
+	eBtn.MouseButton1Click:Connect(function()
 		local s = store :: any
 		s._invTab = "weapons"
 		store:OpenPanel("weapons")
 	end)
-	-- Pin inventory open chip: never hide / never zero-size
-	eBtn.Visible = true
-	eBtn.Active = true
-	eBtn.ZIndex = 45
-	qBtn.Visible = true
-	qBtn.ZIndex = 45
-	local _ = qBtn
-	local _ = eBtn
-	local _ = coinChip
-	local _ = powerChip
 
+	-- AUTO toggle: one plate whose art swaps between the green (ON) and red (OFF) uploads.
+	local autoChip = Instance.new("ImageButton")
+	autoChip.Name = "AutoChip"
+	autoChip.BackgroundTransparency = 1
+	autoChip.BorderSizePixel = 0
+	autoChip.Image = IA.Get("BTN_Red_1")
+	autoChip.ScaleType = Enum.ScaleType.Stretch
+	autoChip.AutoButtonColor = false
+	autoChip.Position = relPos(800, 758)
+	autoChip.Size = relSize(270, 90)
+	autoChip.ZIndex = 42
+	autoChip.Parent = bal
+	bindBtnHover(autoChip, 1.05)
+	autoChip.MouseButton1Click:Connect(function()
+		Net.ToggleAuto()
+	end)
+
+	local autoIcon = Instance.new("ImageLabel")
+	autoIcon.Name = "Icon"
+	autoIcon.BackgroundTransparency = 1
+	autoIcon.BorderSizePixel = 0
+	autoIcon.Image = IA.Get("AUTOCLICKERicon_1")
+	autoIcon.ScaleType = Enum.ScaleType.Fit
+	autoIcon.Position = UDim2.fromScale((815 - 800) / 270, (771 - 758) / 90)
+	autoIcon.Size = UDim2.fromScale(58 / 270, 62 / 90)
+	autoIcon.ZIndex = 44
+	autoIcon.Parent = autoChip
+
+	local autoStateLab = Instance.new("TextLabel")
+	autoStateLab.Name = "State"
+	autoStateLab.BackgroundTransparency = 1
+	autoStateLab.Position = UDim2.fromScale(0.31, 0.12)
+	autoStateLab.Size = UDim2.fromScale(0.63, 0.44)
+	autoStateLab.Text = "AUTO OFF"
+	autoStateLab.TextXAlignment = Enum.TextXAlignment.Left
+	autoStateLab.ZIndex = 44
+	autoStateLab.Parent = autoChip
+	UIKit.StyleText(autoStateLab, "gray", 2.5)
+	UIKit.TextConstraint(autoStateLab, 10, 26)
+
+	local autoCpsLab = Instance.new("TextLabel")
+	autoCpsLab.Name = "Cps"
+	autoCpsLab.BackgroundTransparency = 1
+	autoCpsLab.Position = UDim2.fromScale(0.31, 0.56)
+	autoCpsLab.Size = UDim2.fromScale(0.63, 0.32)
+	autoCpsLab.Text = "0 CPS"
+	autoCpsLab.TextXAlignment = Enum.TextXAlignment.Left
+	autoCpsLab.ZIndex = 44
+	autoCpsLab.Parent = autoChip
+	UIKit.StyleText(autoCpsLab, "gray", 2)
+	UIKit.TextConstraint(autoCpsLab, 9, 18)
+
+	-- Rebirth progress: not in the brief, kept as a thin rail above the AUTO plate (Q still rebirths).
+	local RB_H = 10
 	local rbHost = Instance.new("Frame")
 	rbHost.Name = "RebirthProg"
 	rbHost.BackgroundTransparency = 1
-	rbHost.Size = UDim2.fromOffset(440, RB_H)
-	rbHost.Position = UDim2.new(0.5, 0, 1, -(20 + BAL_H + GAP_BAL_RB))
-	rbHost.AnchorPoint = Vector2.new(0.5, 1)
-	rbHost.ZIndex = 11
-	rbHost.Parent = root
-	local rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, RB_H)
-
-	local autoChip = UIKit.Button({
-		Name = "AutoChip",
-		Parent = root,
-		Text = "AUTO",
-		Size = UDim2.fromOffset(128, AUTO_H),
-		Position = UDim2.new(0.5, 0, 1, -(20 + BAL_H + GAP_BAL_RB + RB_H + GAP_RB_AUTO)),
-		Anchor = Vector2.new(0.5, 1),
-		Color = T.AutoOff,
-		Color2 = T.AutoOffDeep,
-		SizePx = 18,
-		Compact = true,
-		Z = 12,
-		OnClick = function()
-			Net.ToggleAuto()
-		end,
-	})
+	rbHost.Size = relSize(270, RB_H)
+	rbHost.Position = relPos(800, 758 - RB_H - 8)
+	rbHost.ZIndex = 41
+	rbHost.Parent = bal
+	local _rbTrack, rbFill = UIKit.Bar(rbHost, 0, T.Accent, RB_H)
 
 	local clickAnchor = Instance.new("Frame")
 	clickAnchor.Name = "ClickAnchor"
@@ -731,45 +712,18 @@ function Hud.Mount(
 		boosts.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad)
 		anomBanner.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad + 168)
 
-		local rowW = math.clamp(m.actionW * 1.1, 520, 780)
-		local pad = m.pad
 		local invOpen = store:PeekPanel() == "weapons"
 		bal.Visible = not invOpen
-		bal.Size = UDim2.fromOffset(rowW, BAL_H)
-		-- Bottom-center classic SCREEENS place (same as mount)
-		bal.Position = UDim2.new(0.5, 0, 1, -pad)
+		bal.Position = UDim2.new(0.5, 0, 1, -math.floor(m.pad * 0.6))
 		bal.AnchorPoint = Vector2.new(0.5, 1)
 		bal.ZIndex = 40
-
-		-- scale chips with row width (keep metrics wide + readable)
-		local chipW = math.floor((rowW - GAP * 3 - ICON_SZ * 2) / 2)
-		chipW = math.clamp(chipW, 160, 240)
-		coinChip.Size = UDim2.fromOffset(chipW, CHIP_H)
-		powerChip.Size = UDim2.fromOffset(chipW, CHIP_H)
-		-- Q / E icon chips fixed size (inventory open = InvE)
-		qBtn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
-		eBtn.Size = UDim2.fromOffset(ICON_SZ, CHIP_H)
-		qBtn.Visible = not invOpen
-		eBtn.Visible = not invOpen
 		eBtn.Active = not invOpen
-		eBtn.ZIndex = 45
-		coinLab.Font = Enum.Font.GothamBold
-		powerLab.Font = Enum.Font.GothamBold
-		coinLab.TextSize = 30
-		powerLab.TextSize = 30
 
-		rbHost.Visible = not invOpen
-		rbHost.Size = UDim2.fromOffset(math.min(rowW, 520), RB_H)
-		rbHost.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB))
+		-- The whole block is one art composition: shrink it as a unit on narrow
+		-- viewports instead of re-flowing the plates.
+		local avail = (m.vpX / m.uiScale) - m.railW - m.pad * 3
+		balScale.Scale = math.clamp(avail / BLOCK_W, 0.62, 1)
 
-		autoChip.Visible = not invOpen
-		autoChip.Size = UDim2.fromOffset(math.clamp(math.floor(rowW * 0.28), 120, 168), AUTO_H)
-		autoChip.Position = UDim2.new(0.5, 0, 1, -(pad + BAL_H + GAP_BAL_RB + RB_H + GAP_RB_AUTO))
-		autoChip.TextSize = 18
-		local autoLab = autoChip:FindFirstChild("Label")
-		if autoLab and autoLab:IsA("TextLabel") then
-			autoLab.TextSize = 18
-		end
 		if rail and rail:IsA("GuiObject") then
 			rail.Visible = not invOpen
 		end
@@ -788,11 +742,9 @@ function Hud.Mount(
 			return
 		end
 
-		-- Force Make palette colors every refresh (never black)
+		-- Candy plates own their color (StyleText gradient) — only the text changes here.
 		coinLab.Text = Format.Num(st.coins)
-		coinLab.TextColor3 = MAKE_GOLD
 		powerLab.Text = Format.Num(st.damagePerClick or st.totalPower)
-		powerLab.TextColor3 = MAKE_POWER
 
 		-- rebirth progress (damage toward next R)
 		local pct = st.rebirthProgress
@@ -804,22 +756,13 @@ function Hud.Mount(
 		rbFill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
 
 		local maxCps = Formulas.GetMaxCPS(profile)
+		autoCpsLab.Text = string.format("%d CPS", math.floor(maxCps))
 		if st.autoClicker then
-			autoChip.Text = string.format("AUTO ON (%d CPS)", math.floor(maxCps))
-			local g = autoChip:FindFirstChildOfClass("UIGradient")
-			if g then
-				g.Color = ColorSequence.new(T.AutoOn, T.AutoOnDeep)
-			end
+			autoChip.Image = IA.Get("BTN_Green_4")
+			autoStateLab.Text = "AUTO ON"
 		else
-			autoChip.Text = string.format("AUTO OFF (%d CPS)", math.floor(maxCps))
-			local g = autoChip:FindFirstChildOfClass("UIGradient")
-			if g then
-				g.Color = ColorSequence.new(T.AutoOff, T.AutoOffDeep)
-			end
-		end
-		local alab = autoChip:FindFirstChild("Label")
-		if alab and alab:IsA("TextLabel") then
-			alab.TextColor3 = Color3.new(1, 1, 1)
+			autoChip.Image = IA.Get("BTN_Red_1")
+			autoStateLab.Text = "AUTO OFF"
 		end
 
 		-- boosts: profile.boosts (local potions later) + global anomaly hud
@@ -886,12 +829,6 @@ function Hud.Mount(
 		end
 		if bal and bal:IsA("GuiObject") then
 			bal.Visible = not invOpen
-		end
-		if rbHost and rbHost:IsA("GuiObject") then
-			rbHost.Visible = not invOpen
-		end
-		if autoChip and autoChip:IsA("GuiObject") then
-			autoChip.Visible = not invOpen
 		end
 		if boosts and boosts:IsA("GuiObject") then
 			boosts.Visible = not invOpen

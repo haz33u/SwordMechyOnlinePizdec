@@ -804,12 +804,23 @@ Example server texts (EN):
 | shop | Donate Shop | Standalone also has gamepass grid |
 
 ### 12.6 HUD (`Hud.lua`)
+Bottom block rebuilt 2026-08-03 from the MechyForge brief (canvas 1920×1080, box x 503..1392 / y 851..1080).
+Art keys live in `InventoryAssetConfig`; positions are traced with the local `relPos`/`relSize` helpers, so the whole
+block scales as one composition (`balScale`) instead of re-flowing on narrow viewports.
+
 | Element | EN / meaning |
 |---------|----------------|
 | Rail icons | Open panels / inv tabs |
-| Coins / Power chips | Currency + strength |
-| Q rebirth | Opens rebirth modal |
+| `UpgradeTreeBtn` (`UPRGADEicon`) | Opens the honeycomb upgrade tree — same target as `U` / `K` |
+| `PowerPlate` (`MAINVALUEcard` + `KATANAicon`) | Strength counter, candy `StyleText` red |
+| `CoinsPlate` (`MAINVALUEcard` + `COINicon_1coin`) | Coin counter, candy `StyleText` gold |
+| `InvE` (`BACKpackICON`) | Opens inventory — same target as `E` / `I` |
+| `AutoChip` | Art swaps `BTN_Green_4` (ON) ⇄ `BTN_Red_1` (OFF); two lines: `AUTO ON`/`AUTO OFF` + `N CPS` |
+| `RebirthProg` | Thin bar above the AUTO plate; rebirth itself has **no HUD button** (opened from another menu, `Q` still bound) |
 | Boosts row | Top-left (backend boosts still TODO) |
+
+**Agent rule:** the two art buttons and the AUTO plate get hover via the local `bindBtnHover` — soft `UIScale` only,
+never animate `UIStroke` thickness (§10.12). Key hints (`Q`/`E` glyph labels) were removed on purpose — do not re-add.
 
 ### 12.7 Case opening (`CaseOpening.lua`)
 | UI | EN |

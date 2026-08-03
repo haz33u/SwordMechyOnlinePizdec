@@ -230,6 +230,18 @@ function App.Start()
 		return ok
 	end
 
+	-- Honeycomb upgrade tree (U / K, and the HUD upgrade button).
+	-- Resolved lazily: UpgradeTreeUI mounts after the HUD.
+	local function openUpgradeTree()
+		if upgradeTreeApi then
+			upgradeTreeApi.Toggle()
+		elseif talentTreeApi then
+			talentTreeApi.Toggle()
+		else
+			store:OpenPanel("character")
+		end
+	end
+
 	step("Toast", function()
 		toastApi = Toast.Mount(gui)
 	end)
@@ -244,7 +256,7 @@ function App.Start()
 			end)
 			local st = store:PeekStats()
 			burstClick(st and (st.damagePerClick or st.totalPower) or 1, false, "manual")
-		end)
+		end, openUpgradeTree)
 		if clickPop and hudApi and hudApi.GetClickButton then
 			clickPop:SetAnchor(hudApi.GetClickButton())
 		end
@@ -600,13 +612,7 @@ function App.Start()
 		elseif input.KeyCode == Enum.KeyCode.B then
 			openInvTab("shop")
 		elseif input.KeyCode == Enum.KeyCode.U or input.KeyCode == Enum.KeyCode.K then
-			if upgradeTreeApi then
-				upgradeTreeApi.Toggle()
-			elseif talentTreeApi then
-				talentTreeApi.Toggle()
-			else
-				store:OpenPanel("character")
-			end
+			openUpgradeTree()
 		elseif input.KeyCode == Enum.KeyCode.Escape then
 			if caseApi and caseApi.IsOpen() then
 				caseApi.Close()
