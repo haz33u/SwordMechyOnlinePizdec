@@ -183,6 +183,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 
 | Priority | Missing in code | Why | Depends on |
 |----------|-----------------|-----|------------|
+| **P0 BUG** | **Mobs still spawn sunk into the ground** (Loc1 goblins waist-deep; one mob fully buried, only its face above grass). Two fix attempts (`f8999ba` rotated-part half-extents, earlier marker exclusion) did NOT resolve it — root cause is still unmeasured. Needs live Studio numbers, not another blind patch. See prompt in `docs/prompts/mob-grounding-diagnosis.md`. | Blocks playtest; mobs unclickable/unreadable | Studio MCP connection |
 | **P1 NEXT** | **Figma Character Upgrade UI** → live window | First UI test slice; upgrade buy already server-side | Figma export + `Windows`/`UpgradeConfig` |
 | P1 | Figma **Main Inventory** port (full shell polish) | INVETAR skeleton exists; match Figma layout/tokens | Character Upgrade pass |
 | P1 | Figma **Battle Pass** shell + XP track | No BP yet; design-first then data | inventory UI pattern |
