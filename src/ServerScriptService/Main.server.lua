@@ -94,6 +94,7 @@ local PurchaseService = require(Services.PurchaseService)
 local DailyRewardService = require(Services.DailyRewardService)
 local ShutdownService = require(Services.ShutdownService)
 local DebugService = require(Services.DebugService)
+local StrayPetModelService = require(Services.StrayPetModelService)
 
 print("[SwordMasters]", GameConfig.VERSION, "backend boot...")
 
@@ -130,6 +131,9 @@ PurchaseService.Init()
 DailyRewardService.Init()
 ShutdownService.Init()
 DebugService.Init()
+-- Before mobs spawn: clear leftover generator output from the Workspace root so
+-- players never see unowned pet models standing around the map.
+StrayPetModelService.Init()
 
 -- Ensure Studio spawn markers exist for all active locations, then spawn mobs.
 -- Markers are created only when the folder is empty; existing Art placements are never overwritten.
