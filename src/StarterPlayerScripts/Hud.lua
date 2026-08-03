@@ -755,8 +755,10 @@ function Hud.Mount(
 		end
 		rbFill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
 
-		local maxCps = Formulas.GetMaxCPS(profile)
-		autoCpsLab.Text = string.format("%d CPS", math.floor(maxCps))
+		-- Live CPS, same source the Profile tab uses (Formulas.Snapshot -> stats.cps).
+		-- st.maxCps is only the cap; showing it here made the readout look stale.
+		local liveCps = st.cps or 0
+		autoCpsLab.Text = string.format("%.1f CPS", liveCps)
 		if st.autoClicker then
 			autoChip.Image = IA.Get("BTN_Green_4")
 			autoStateLab.Text = "AUTO ON"

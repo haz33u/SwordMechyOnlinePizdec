@@ -99,6 +99,20 @@ function UpgradeTreeUI.Mount(parentGui: ScreenGui, store: any)
 	currentGui = parentGui
 	storeRef = store
 
+	-- Full-screen dimmer behind the tree, mirroring the Modals.lua "Dim" pattern
+	-- (there is no shared backdrop component to import). Click outside = close.
+	local backdrop = Instance.new("TextButton")
+	backdrop.Name = "TreeDim"
+	backdrop.Size = UDim2.fromScale(1, 1)
+	backdrop.BackgroundColor3 = Color3.new(0, 0, 0)
+	backdrop.BackgroundTransparency = 0.5
+	backdrop.BorderSizePixel = 0
+	backdrop.Text = ""
+	backdrop.AutoButtonColor = false
+	backdrop.Visible = false
+	backdrop.ZIndex = 59
+	backdrop.Parent = parentGui
+
 	-- Outer Fullscreen Container
 	local modalFrame = Instance.new("Frame")
 	modalFrame.Name = "UITreeFrame"
@@ -145,6 +159,12 @@ function UpgradeTreeUI.Mount(parentGui: ScreenGui, store: any)
 
 	closeBtn.MouseButton1Click:Connect(function()
 		modalFrame.Visible = false
+		backdrop.Visible = false
+	end)
+
+	backdrop.MouseButton1Click:Connect(function()
+		modalFrame.Visible = false
+		backdrop.Visible = false
 	end)
 
 	-- Hover Tooltip Window
@@ -436,19 +456,25 @@ function UpgradeTreeUI.Mount(parentGui: ScreenGui, store: any)
 	return {
 		Toggle = function()
 			if frame then
-				frame.Visible = not frame.Visible
-				if frame.Visible then renderTree() end
+				local show = not frame.Visible
+				frame.Visible = show
+				backdrop.Visible = show
+				if show then
+					renderTree()
+				end
 			end
 		end,
 		Show = function()
 			if frame then
 				frame.Visible = true
+				backdrop.Visible = true
 				renderTree()
 			end
 		end,
 		Hide = function()
 			if frame then
 				frame.Visible = false
+				backdrop.Visible = false
 			end
 		end,
 	}

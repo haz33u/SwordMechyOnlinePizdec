@@ -523,15 +523,15 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			return
 		end
 		-- Every equipped item gets a rim; higher tiers just burn brighter.
-		local halo, rim, spread = 0.62, 0.34, 0.055
+		local rim, spread = 0.34, 0.055
 		if rar == "Legendary" then
-			halo, rim, spread = 0.54, 0.26, 0.065
+			rim, spread = 0.26, 0.065
 		elseif rar == "Mythic" then
-			halo, rim, spread = 0.48, 0.22, 0.072
+			rim, spread = 0.22, 0.072
 		elseif rar == "Secret" then
-			halo, rim, spread = 0.42, 0.18, 0.078
+			rim, spread = 0.18, 0.078
 		elseif rar == "Limited" then
-			halo, rim, spread = 0.36, 0.14, 0.085
+			rim, spread = 0.14, 0.085
 		end
 		local col = Rarity.Of(rar)
 		local function under(name: string, scale: number, trans: number, zOff: number): Frame
@@ -553,10 +553,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			c.Parent = f
 			return f
 		end
-		-- Soft bloom behind the card…
-		under("GlowOuter", 1 + spread * 2, halo, 0)
-		-- …plus a crisp rounded contour. Transparent fill so the slot art stays readable.
-		-- Stroke thickness is static: never tweened (MASTER_PLAN §10.12).
+		-- Rim only: a crisp rounded contour, transparent fill so the slot art stays
+		-- readable. The soft "GlowOuter" bloom that used to sit under this was the
+		-- extra glow on the Equipped panel — removed. Stroke thickness is static:
+		-- never tweened (MASTER_PLAN §10.12).
 		local inner = under("GlowInner", 1 + spread, 1, 1)
 		UIKit.Stroke(inner, col, 2.5, rim)
 	end
@@ -1309,8 +1309,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				icon.Image = GamePassConfig.ThumbUrl(def.gamePassId, 150)
 				icon.ScaleType = Enum.ScaleType.Fit
 				icon.AnchorPoint = Vector2.new(0.5, 0.5)
-				icon.Position = UDim2.fromScale(0.22, 0.52)
-				icon.Size = UDim2.fromScale(0.38, 0.78)
+				-- Nudged right and shrunk: at 0.22/0.38 the icon spanned x 0.03..0.41
+				-- and poked past the plate's left icon-stack area (§8.5).
+				icon.Position = UDim2.fromScale(0.25, 0.52)
+				icon.Size = UDim2.fromScale(0.32, 0.66)
 				icon.ZIndex = 6
 				icon.Parent = plate
 
@@ -1351,7 +1353,8 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 				chip.Name = "PriceChip"
 				chip.AutoButtonColor = not owned
 				chip.AnchorPoint = Vector2.new(0.5, 0.5)
-				chip.Position = UDim2.fromScale(0.68, 0.79)
+				-- Small upward nudge (was 0.79) — chip sat a touch low on the card.
+				chip.Position = UDim2.fromScale(0.68, 0.75)
 				chip.Size = UDim2.fromScale(0.46, 0.26)
 				chip.BackgroundColor3 = if owned then Color3.fromRGB(70, 60, 100) else Color3.fromRGB(120, 70, 220)
 				chip.BackgroundTransparency = 0.05
