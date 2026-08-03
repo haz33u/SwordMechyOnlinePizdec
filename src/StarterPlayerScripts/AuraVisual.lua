@@ -18,8 +18,22 @@ local player = Players.LocalPlayer
 local activeModel: Model? = nil
 local activeUid: string? = nil
 local lastProfile: any = nil
-local spinConn: RBXScriptConnection? = nil
+--- Every per-frame connection the current aura owns. An aura can drive more than
+--- one (orbiting orbs + ring spin), so a single handle would orphan the others on
+--- re-equip and leak a RenderStepped loop per equip.
+local spinConns: { RBXScriptConnection } = {}
 local charConn: RBXScriptConnection? = nil
+
+local function addSpinConn(conn: RBXScriptConnection)
+	table.insert(spinConns, conn)
+end
+
+local function clearSpinConns()
+	for _, conn in ipairs(spinConns) do
+		conn:Disconnect()
+	end
+	table.clear(spinConns)
+end
 
 local function getFolder(): Folder?
 	local f = ReplicatedStorage:FindFirstChild(AuraModelConfig.FolderName or "AuraVfx")
@@ -471,10 +485,7 @@ local function applyAuraHighlight(char: Model, rarity: string?)
 end
 
 local function clear()
-	if spinConn then
-		spinConn:Disconnect()
-		spinConn = nil
-	end
+	clearSpinConns()
 	if activeModel then
 		activeModel:Destroy()
 		activeModel = nil
@@ -530,7 +541,7 @@ local function attachToCharacter(char: Model, model: Model, auraId: string)
 	weld.Parent = root
 
 	-- Keep offset via AlignOrientation-less trick: re-apply Motor6D-like CFrame every frame for feet/back spin
-	spinConn = RunService.RenderStepped:Connect(function()
+	addSpinConn(RunService.RenderStepped:Connect(function()
 		if not model.Parent or not hrp.Parent then
 			return
 		end
@@ -548,7 +559,7 @@ local function attachToCharacter(char: Model, model: Model, auraId: string)
 				end
 			end
 		end
-	end)
+	end))
 	if mode == "feet" or mode == "hrp" then
 		weld:Destroy()
 		local a0 = Instance.new("Attachment")
@@ -580,11 +591,8 @@ local function attachToCharacter(char: Model, model: Model, auraId: string)
 
 	-- Slow spin for rings via rotating attachment offset
 	if mode == "feet" or mode == "hrp" then
-		if spinConn then
-			spinConn:Disconnect()
-		end
 		local a0 = hrp:FindFirstChild("AuraA0")
-		spinConn = RunService.RenderStepped:Connect(function()
+		addSpinConn(RunService.RenderStepped:Connect(function()
 			if not a0 or not a0.Parent then
 				return
 			end
@@ -592,7 +600,7 @@ local function attachToCharacter(char: Model, model: Model, auraId: string)
 			local base = AuraModelConfig.GetOffset(auraId)
 			;(a0 :: Attachment).Position = base + Vector3.new(0, math.sin(t * 2) * 0.06, 0)
 			;(a0 :: Attachment).Orientation = Vector3.new(0, (t * 40) % 360, 0)
-		end)
+		end))
 	end
 end
 

@@ -355,13 +355,21 @@ local function buildBody(def: any, position: Vector3): Model
 	snapModelToGround(model, position)
 
 	-- tier outline feel
-	local hl = Instance.new("Highlight")
-	hl.Name = "TierGlow"
-	hl.FillTransparency = isBoss and 0.75 or 0.88
-	hl.OutlineTransparency = 0.25
-	hl.FillColor = color
-	hl.OutlineColor = isBoss and Color3.fromRGB(255, 80, 80) or (isDebug and Color3.fromRGB(255, 200, 60) or color)
-	hl.Parent = model
+	--
+	-- Roblox renders only ~31 Highlights at a time and each one costs a full-screen
+	-- outline pass. Loc1 alone spawns 30 mobs, so highlighting every mob both tanks
+	-- FPS and blows the cap (past it, which mobs glow is arbitrary). Bosses and debug
+	-- mobs — the ones the glow is actually a readability cue for — keep it; regular
+	-- mobs rely on tier-coloured bodies and the HP bar instead.
+	if isBoss or isDebug then
+		local hl = Instance.new("Highlight")
+		hl.Name = "TierGlow"
+		hl.FillTransparency = isBoss and 0.75 or 0.88
+		hl.OutlineTransparency = 0.25
+		hl.FillColor = color
+		hl.OutlineColor = isBoss and Color3.fromRGB(255, 80, 80) or Color3.fromRGB(255, 200, 60)
+		hl.Parent = model
+	end
 
 	if isBoss or isDebug then
 		local light = Instance.new("PointLight")
@@ -511,7 +519,19 @@ function snapModelToGround(model: Model, targetPos: Vector3)
 			local lowerName = string.lower(p.Name)
 			-- Skip held weapons/spears when finding feet position
 			if not (string.find(lowerName, "spear") or string.find(lowerName, "sword") or string.find(lowerName, "weapon") or string.find(lowerName, "tool") or string.find(lowerName, "handle")) then
-				local bottomY = p.Position.Y - (p.Size.Y / 2)
+				-- Rotated limbs (legs, horns, tilted armour) reach lower than
+				-- Position.Y - Size.Y/2, which only holds for axis-aligned parts.
+				-- Project the part's half-extents onto the world Y axis so tilted
+				-- geometry reports its true lowest point — otherwise footOffset comes
+				-- out too small and the mob spawns sunk into the floor.
+				local cf, size = p.CFrame, p.Size
+				local halfHeight = 0.5
+					* (
+						math.abs(cf.XVector.Y) * size.X
+						+ math.abs(cf.YVector.Y) * size.Y
+						+ math.abs(cf.ZVector.Y) * size.Z
+					)
+				local bottomY = p.Position.Y - halfHeight
 				if bottomY < lowestBodyY then
 					lowestBodyY = bottomY
 				end
