@@ -4,6 +4,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local PetConfig = require(Shared.Config.PetConfig)
 local CaseConfig = require(Shared.Config.CaseConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local NumberFormat = require(Shared.NumberFormat)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 
@@ -134,7 +135,7 @@ function PetService.OpenCase(player: Player, poolIdArg: any?, countArg: any?, op
 	end
 	if needCoins then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = "Need " .. tostring(coinCost) .. " coins for pet case",
+			text = string.format("Need %s coins for pet case", NumberFormat.Num(coinCost)),
 			color = "red",
 		})
 		fireCaseFail(player, "need_coins", keyCost, coinCost)
@@ -277,7 +278,7 @@ function PetService.Feed(player: Player, petUid: any)
 	local cost = math.floor(PetConfig.FEED_BASE_COST * (PetConfig.FEED_GROWTH ^ (lv - 1)))
 	if (profile.coins or 0) < cost then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = "Not enough coins (" .. tostring(cost) .. ")",
+			text = string.format("Not enough coins (%s needed)", NumberFormat.Num(cost)),
 			color = "red",
 		})
 		return

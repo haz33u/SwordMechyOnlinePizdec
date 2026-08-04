@@ -13,6 +13,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local TalentTreeConfig = require(Shared.Config.TalentTreeConfig)
+local NumberFormat = require(Shared.NumberFormat)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 
@@ -180,7 +181,7 @@ function TalentTreeService.UnlockNode(player: Player, nodeId: any)
 		local coins = profile.coins or 0
 		if coins < cost then
 			Remotes.Event("Notify"):FireClient(player, {
-				text = string.format("Need %d coins (have %d)", cost, coins),
+				text = string.format("Need %s coins (have %s)", NumberFormat.Num(cost), NumberFormat.Num(coins)),
 				color = "red",
 			})
 			return

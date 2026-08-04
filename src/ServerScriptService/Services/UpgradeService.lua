@@ -42,8 +42,12 @@ function UpgradeService.Buy(player: Player, upgradeId: string)
 	end
 
 	local cost = UpgradeConfig.GetCost(upgradeId, cur + 1)
-	if profile.coins < cost then
-		Remotes.Event("Notify"):FireClient(player, { text = "Not enough coins (" .. cost .. ")", color = "red" })
+	local NumberFormat = require(Shared.NumberFormat)
+	if (profile.coins or 0) < cost then
+		Remotes.Event("Notify"):FireClient(player, {
+			text = string.format("Not enough coins (%s needed)", NumberFormat.Num(cost)),
+			color = "red",
+		})
 		return
 	end
 

@@ -1333,14 +1333,36 @@ function Windows.Mount(gui: ScreenGui, store: any, openModal: (string, any?) -> 
 				Color = T.Text,
 				Z = 34,
 			})
+			local reqText = ""
+			if not unlocked then
+				if needRb > 0 then
+					reqText = "Need R" .. tostring(needRb)
+				end
+				if travelCost > 0 then
+					if reqText ~= "" then
+						reqText = reqText .. " · "
+					end
+					reqText = reqText .. Format.Num(travelCost) .. " coins"
+				end
+			end
+
 			UIKit.Label({
 				Parent = card,
 				Text = (meta.blurb or meta.theme or ""):sub(1, 64),
-				Size = UDim2.new(1, -px(16), 0, px(32)),
-				Position = UDim2.fromOffset(px(8), px(110)),
+				Size = UDim2.new(1, -px(16), 0, px(24)),
+				Position = UDim2.fromOffset(px(8), px(108)),
 				SizePx = px(11),
 				Color = T.TextMuted,
 				Wrap = true,
+				Z = 34,
+			})
+			UIKit.Label({
+				Parent = card,
+				Text = reqText,
+				Size = UDim2.new(1, -px(16), 0, px(16)),
+				Position = UDim2.fromOffset(px(8), px(132)),
+				SizePx = px(11),
+				Color = rbOk and T.Gold or T.Danger,
 				Z = 34,
 			})
 

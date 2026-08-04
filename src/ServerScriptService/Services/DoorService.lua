@@ -93,8 +93,9 @@ local function onTouch(part: BasePart, other: BasePart)
 		end
 		local travelCost = loc.travelCostCoins or 0
 		if travelCost > 0 and (profile.coins or 0) < travelCost then
+			local NumberFormat = require(Shared.NumberFormat)
 			Remotes.Event("Notify"):FireClient(player, {
-				text = string.format("%s locked — need %s coins", loc.name, tostring(travelCost)),
+				text = string.format("%s locked — need %s coins", loc.name, NumberFormat.Num(travelCost)),
 				color = "red",
 			})
 			return

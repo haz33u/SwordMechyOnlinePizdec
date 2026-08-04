@@ -55,15 +55,18 @@ function WorldService.FindSpawnPart(locationId: number): BasePart?
 end
 
 function WorldService.GetSpawnCFrame(locationId: number): CFrame?
-	local spawnLocation = Workspace:FindFirstChildWhichIsA("SpawnLocation", true)
-	if spawnLocation then
-		return spawnLocation.CFrame + Vector3.new(0, 3.5, 0)
-	end
+	-- Prefer the artist-placed PlayerSpawn part for this location
 	local part = WorldService.FindSpawnPart(locationId)
 	if part then
 		return part.CFrame + Vector3.new(0, 3, 0)
 	end
-	return nil
+	-- Fallback to any SpawnLocation in the place
+	local spawnLocation = Workspace:FindFirstChildWhichIsA("SpawnLocation", true)
+	if spawnLocation then
+		return spawnLocation.CFrame + Vector3.new(0, 3.5, 0)
+	end
+	-- Final fallback to math origin for this location
+	return WorldConfig.GetSpawnCFrame(locationId)
 end
 
 function WorldService.TeleportToLocation(player: Player, locationId: number): boolean
@@ -83,11 +86,22 @@ function WorldService.TeleportToCFrame(player: Player, cf: CFrame): boolean
 	if not hrp then
 		return false
 	end
+	-- Anchor and zero velocity to avoid flinging or falling through unstreamed geometry
 	pcall(function()
 		hrp.AssemblyLinearVelocity = Vector3.zero
 		hrp.AssemblyAngularVelocity = Vector3.zero
 	end)
+	-- Move the whole character rig, then teleport the root part again for reliability
 	char:PivotTo(cf)
+	task.defer(function()
+		if hrp and hrp.Parent then
+			hrp.CFrame = cf
+			local hum = char:FindFirstChildOfClass("Humanoid")
+			if hum then
+				hum:ChangeState(Enum.HumanoidStateType.GettingUp)
+			end
+		end
+	end)
 	return true
 end
 

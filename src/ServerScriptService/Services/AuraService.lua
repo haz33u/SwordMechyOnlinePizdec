@@ -3,6 +3,7 @@
 local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local AuraConfig = require(Shared.Config.AuraConfig)
 local CaseConfig = require(Shared.Config.CaseConfig)
+local NumberFormat = require(Shared.NumberFormat)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 
@@ -81,7 +82,7 @@ function AuraService.Open(player: Player, countArg: any?)
 	end
 	if coinCost > 0 and coins < coinCost then
 		Remotes.Event("Notify"):FireClient(player, {
-			text = "Need " .. tostring(coinCost) .. " coins",
+			text = string.format("Need %s coins", NumberFormat.Num(coinCost)),
 			color = "red",
 		})
 		fireCaseFail(player, "need_coins", keyCost, coinCost)

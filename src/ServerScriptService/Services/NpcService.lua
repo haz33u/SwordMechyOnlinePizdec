@@ -301,8 +301,8 @@ function NpcService.PurgeNpcBillboardsAndSkyLabels()
 			local pName = if p then string.lower(p.Name) else ""
 			local pParentName = if p and p.Parent then string.lower(p.Parent.Name) else ""
 
-			-- Remove billboards from Quest Master, Smith, Ferryman, NPCs
-			if string.find(pName, "quest") or string.find(pName, "smith") or string.find(pName, "ferryman") or string.find(pParentName, "quest") or string.find(pParentName, "smith") or string.find(pParentName, "ferryman") then
+			-- Remove billboards from Quest Master, Smith, NPCs (no Ferryman)
+			if string.find(pName, "quest") or string.find(pName, "smith") or string.find(pParentName, "quest") or string.find(pParentName, "smith") then
 				desc:Destroy()
 			else
 				local titleLab = desc:FindFirstChildWhichIsA("TextLabel", true)

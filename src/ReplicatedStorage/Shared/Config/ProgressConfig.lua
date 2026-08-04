@@ -46,12 +46,15 @@ local ProgressConfig = {
 	----------------------------------------------------------------------
 	LocationRebirthReq = {
 		[1] = 0,  -- Location 1: Start (Ashborn)
-		[2] = 3,  -- Location 2: Requires Rebirth 3 (Oathbreaker)
-		[3] = 5,  -- Location 3: Requires Rebirth 5 (Stormbane)
-		[4] = 7,  -- Location 4: Requires Rebirth 7 (Starscourge)
-		[5] = 10, -- Location 5: Requires Rebirth 10 (Red Omen)
-		[6] = 13, -- Location 6: Requires Rebirth 13 (Demigod)
-		[7] = 17, -- Location 7: Requires Rebirth 17 (Starfallen)
+		[2] = 2,  -- Location 2: Requires Rebirth 2 (Bloodsworn)
+		[3] = 4,  -- Location 3: Requires Rebirth 4 (Gravecaller)
+		[4] = 6,  -- Location 4: Requires Rebirth 6 (Stormbane)
+		[5] = 8,  -- Location 5: Requires Rebirth 8 (Cinder Lord)
+		[6] = 10, -- Location 6: Requires Rebirth 10 (Starscourge)
+		[7] = 12, -- Location 7: Requires Rebirth 12 (Voidmarked)
+		[8] = 14, -- Location 8: Requires Rebirth 14 (Godsbane)
+		[9] = 16, -- Location 9: Requires Rebirth 16 (Blight Monarch)
+		[10] = 18, -- Location 10: Requires Rebirth 18 (Scarlet Oath)
 	} :: { [number]: number },
 	OFFHAND_PAID = true,
 

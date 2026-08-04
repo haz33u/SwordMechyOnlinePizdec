@@ -286,12 +286,13 @@ function RebirthConfig.GetProgress(power: number, coins: number, level: number):
 end
 
 function RebirthConfig.CanAfford(power: number, coins: number, level: number): (boolean, string?)
+	local NumberFormat = require(script.Parent.NumberFormat)
 	local powerCost, coinCost = RebirthConfig.GetCosts(level)
 	if power < powerCost then
-		return false, string.format("Need %s Power (have %s)", tostring(powerCost), tostring(math.floor(power)))
+		return false, string.format("Need %s Power (have %s)", NumberFormat.Num(powerCost), NumberFormat.Num(math.floor(power)))
 	end
 	if coinCost > 0 and coins < coinCost then
-		return false, string.format("Need %s coins (have %s)", tostring(coinCost), tostring(math.floor(coins)))
+		return false, string.format("Need %s coins (have %s)", NumberFormat.Num(coinCost), NumberFormat.Num(math.floor(coins)))
 	end
 	return true, nil
 end

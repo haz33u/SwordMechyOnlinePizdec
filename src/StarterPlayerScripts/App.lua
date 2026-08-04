@@ -32,6 +32,7 @@ local LootVFX = require(script.Parent.LootVFX)
 local PlayerNameplate = require(script.Parent.PlayerNameplate)
 local SettingsUI = require(script.Parent.SettingsUI)
 local Settings = require(script.Parent.Settings)
+local Format = require(script.Parent.Format)
 local T = require(script.Parent.Theme)
 
 local App = {}
@@ -178,9 +179,9 @@ function App.Start()
 				local ok, reason, cost = caseApi.Begin(payload)
 				if ok == false and toastApi then
 					if reason == "need_keys" then
-						toastApi.Show("Need " .. tostring(cost) .. " key(s)", "red")
+						toastApi.Show("Need " .. Format.Num(cost) .. " key(s)", "red")
 					elseif reason == "need_coins" then
-						toastApi.Show("Need " .. tostring(cost) .. " coins", "red")
+						toastApi.Show("Need " .. Format.Num(cost) .. " coins", "red")
 					elseif reason == "busy" then
 						toastApi.Show("Case already opening…", "yellow")
 					end

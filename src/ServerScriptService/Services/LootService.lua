@@ -16,6 +16,7 @@ local Formulas = require(Shared.Formulas)
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local CaseConfig = require(Shared.Config.CaseConfig)
 local IconConfig = require(Shared.Config.IconConfig)
+local NumberFormat = require(Shared.NumberFormat)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 
@@ -240,7 +241,7 @@ function LootService.TryBossDust(player: Player, profile: any, mobDef: any)
 	amount = math.max(1, math.floor(amount * Formulas.GetAnomalyDustMult() + 0.5))
 	profile.enchantDust = (profile.enchantDust or 0) + amount
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Enchant dust +%d (total %d)", amount, profile.enchantDust),
+		text = string.format("Enchant dust +%s (total %s)", NumberFormat.Num(amount), NumberFormat.Num(profile.enchantDust)),
 		color = "purple",
 	})
 end
@@ -264,7 +265,7 @@ function LootService.TryCaseKeys(player: Player, profile: any, mobDef: any)
 		profile.petKeys = (profile.petKeys or 0) + amount
 		granted = true
 		Remotes.Event("Notify"):FireClient(player, {
-			text = string.format("Pet key +%d (total %d)", amount, profile.petKeys),
+			text = string.format("Pet key +%s (total %s)", NumberFormat.Num(amount), NumberFormat.Num(profile.petKeys)),
 			color = "pink",
 		})
 	end
@@ -275,7 +276,7 @@ function LootService.TryCaseKeys(player: Player, profile: any, mobDef: any)
 		profile.auraKeys = (profile.auraKeys or 0) + amount
 		granted = true
 		Remotes.Event("Notify"):FireClient(player, {
-			text = string.format("Aura key +%d (total %d)", amount, profile.auraKeys),
+			text = string.format("Aura key +%s (total %s)", NumberFormat.Num(amount), NumberFormat.Num(profile.auraKeys)),
 			color = "blue",
 		})
 	end

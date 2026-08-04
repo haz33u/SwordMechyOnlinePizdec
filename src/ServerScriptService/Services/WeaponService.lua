@@ -4,6 +4,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local WeaponConfig = require(Shared.Config.WeaponConfig)
 local EnchantConfig = require(Shared.Config.EnchantConfig)
 local ProgressConfig = require(Shared.Config.ProgressConfig)
+local NumberFormat = require(Shared.NumberFormat)
 local Remotes = require(Shared.Remotes)
 local ProfileService = require(script.Parent.ProfileService)
 
@@ -167,7 +168,7 @@ function WeaponService.Enchant(player: Player, weaponUid: string)
 		profile.coins -= coinCost
 	else
 		Remotes.Event("Notify"):FireClient(player, {
-			text = string.format("Need enchant dust (%d) or %d coins", dustCost, coinCost),
+			text = string.format("Need enchant dust (%s) or %s coins", NumberFormat.Num(dustCost), NumberFormat.Num(coinCost)),
 			color = "red",
 		})
 		return
