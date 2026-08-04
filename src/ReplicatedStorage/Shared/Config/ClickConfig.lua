@@ -2,21 +2,40 @@
 --[[
 	CLICKS = core earning loop.
 
-	WITHOUT purchased auto-clicker:
-	  - Absolute max CPS = 20
-	  - Loc1 hard cap = 4
-	  - Loc2+: Sam Click Mastery quest raises cap 6 → 20 (see SAM_CPS_BY_TIER)
-	WITH purchased auto-clicker:
-	  - MAX_CPS_PURCHASED (50)
+	WITHOUT the autoClicker gamepass:
+	  - No auto-clicking at all (enforced server-side in CombatService)
+	  - Max CPS = flat F2P_MAX_CPS (10). Talent-Tree maxCps bonuses do NOT apply;
+	    this deliberately replaces MASTER_PLAN §6.5's 4→8 progression.
+	WITH the gamepass:
+	  - Base 4 + Talent-Tree bonuses, ceilinged by MAX_CPS_PURCHASED and the
+	    per-location LOC_CPS_CAP.
 
 	Sam quest uses Click Credit so display amounts can reach 2B without multi-year grind.
+	NOTE: SAM_CPS_BY_TIER / GetSamCpsCap now only feed quest notification text
+	(QuestService.lua:181) — they do not raise the cap.
 ]]
 
 local ClickConfig = {
 	MIN_CPS = 1.0,
 
 	MAX_CPS_WITHOUT_AUTO = 20,
+
+	--[[
+		>>> PAID TIER CPS CAP — TUNE HERE <<<
+		The gamepass tier's ceiling. Conceptually "unlimited": at 50 CPS the swing
+		cooldown floor is 0.02s, far past what a client can drive, so in practice
+		only the per-location LOC_CPS_CAP binds for paying players. This is the number
+		to change when tuning the paid tier — see GetMaxCPS below for how it applies.
+	]]
 	MAX_CPS_PURCHASED = 50,
+
+	--[[
+		F2P (no gamepass) cap: a flat 10 CPS.
+		Deliberately REPLACES MASTER_PLAN §6.5's 4→8 Talent-Tree CPS progression —
+		product decision, not a bug. Talent maxCps bonuses no longer raise the free
+		cap; the flat value is the whole story for players without the pass.
+	]]
+	F2P_MAX_CPS = 10,
 
 	--[[
 		Loc1 only until Sam / Loc2.
@@ -89,7 +108,12 @@ local ClickConfig = {
 		[21] = 2000,
 	} :: { [number]: number },
 
-	AUTO_UNLOCKED_BY_DEFAULT = true,
+	--[[
+		Auto-clicker is gamepass-gated (MASTER_PLAN §6.5). This was flipped to true in
+		ca6c706 to hand everyone a free auto-clicker, which short-circuited
+		IsAutoPurchased and made the ownership check below dead code. Reverted.
+	]]
+	AUTO_UNLOCKED_BY_DEFAULT = false,
 	AUTO_UNLOCK_REBIRTH = 999,
 	AUTO_UNLOCK_QUEST = nil :: string?,
 
@@ -137,11 +161,18 @@ function ClickConfig.GetSamClickCredit(profile: any): number
 	return ClickConfig.SAM_CREDIT_BY_TIER[tier] or 1
 end
 
---- Max CPS for this profile (Base = 4 CPS + Talent Tree bonuses)
+--- Max CPS for this profile. Paid tier = talent-scaled up to MAX_CPS_PURCHASED;
+--- free tier = flat F2P_MAX_CPS (see the constant for why talents don't apply).
 function ClickConfig.GetMaxCPS(profile: any): number
 	local baseCps = 4.0 -- Base CPS cap is 4 clicks per second for everyone
 	if not profile then
 		return baseCps
+	end
+
+	if not ClickConfig.IsAutoPurchased(profile) then
+		-- Flat free-tier cap: no talent bonuses, no per-location scaling. This
+		-- deliberately replaces §6.5's 4→8 Talent-Tree progression.
+		return ClickConfig.F2P_MAX_CPS
 	end
 
 	-- Location-based hard cap (Loc1=4, Loc2+ raises via LOC_CPS_CAP)
@@ -154,11 +185,9 @@ function ClickConfig.GetMaxCPS(profile: any): number
 	local talentStats = if ok and TalentTreeConfig then TalentTreeConfig.ComputeStats(profile.unlockedTalents) else nil
 	local bonusCps = (talentStats and talentStats.maxCps) or 0
 
+	-- Paid tier ceiling — MAX_CPS_PURCHASED is the value to tune (see its comment).
 	local totalCps = baseCps + bonusCps
-	if ClickConfig.IsAutoPurchased(profile) then
-		return math.min(ClickConfig.MAX_CPS_PURCHASED, locCap, math.max(baseCps, totalCps))
-	end
-	return math.clamp(totalCps, ClickConfig.MIN_CPS, math.min(ClickConfig.MAX_CPS_WITHOUT_AUTO, locCap))
+	return math.min(ClickConfig.MAX_CPS_PURCHASED, locCap, math.max(baseCps, totalCps))
 end
 
 ClickConfig.MAX_CPS = ClickConfig.MAX_CPS_WITHOUT_AUTO
