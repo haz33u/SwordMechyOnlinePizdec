@@ -49,9 +49,10 @@ This is what a player names the pet by: *"the one with the pearl crown"*.
 
 Different silhouettes — impossible to confuse even in shadow.
 
-**Nereid needs no generation.** `Workspace.Nereid` is already a unique 34-part
-merfolk model matching this description. Install it with
-`tools/install_pet_model_slot.lua`.
+**Nereid needed no generation, and is now done.** `Workspace.Nereid` was already
+a unique 34-part merfolk matching this description, so it was installed into slot
+`E-D` on 2026-08-03 by `tools/fix_pet_models.lua`. The 216-part Nereus copy that
+occupied the slot is in `ServerStorage.RetiredPetModels`.
 
 ## Hard constraints
 
@@ -69,14 +70,17 @@ merfolk model matching this description. Install it with
 
 ## Order of work
 
-1. Run `tools/audit_pet_models.lua` from the Studio command bar → exact list of
-   which pets look alike, which have no model, which blow the part budget.
-2. Install `Workspace.Nereid` → slot `E-D` (`tools/install_pet_model_slot.lua`).
-   Costs zero generations.
-3. Fill in the four axes for each remaining pet the audit flagged.
-4. Generate, one pet at a time, into its `PetModels` slot.
-5. Re-run the audit. "Models to generate: 0" and no part-budget entries is the
+1. Run `tools/audit_pet_models.lua` (Studio command bar, or
+   `node tools/mcp_exec.js tools/audit_pet_models.lua`) → exact list of which
+   pets look alike, which have no model, which blow the part budget.
+2. Fill in the four axes for each pet the audit flagged.
+3. Generate, one pet at a time, into its `PetModels` slot.
+4. Re-run the audit. "Models to generate: 0" and no part-budget entries is the
    definition of pets being finished.
+
+**Status 2026-08-03: "Models to generate: 0".** Every pet is visually unique and
+has a model. One part-budget entry remains — slot `F` (Charon), which is not a
+pet at all but a 290-model imported asset pack; see MASTER_PLAN P3.
 
 ## Rename the Loc1–Loc2 slots
 

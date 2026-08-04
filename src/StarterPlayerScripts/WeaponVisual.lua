@@ -512,6 +512,13 @@ end
 local mcWarnedNoShoulder = false
 
 --- R15 shoulder motors (Right / Left). R6: "Right Shoulder" under Torso.
+local function isIgnoredMotorContainer(inst: Instance): boolean
+	-- Our own visuals folders (pets/weapon models) may contain Motor6D joints from rigged models.
+	-- They are not character rig joints, so skip them when resolving shoulder/waist motors.
+	local n = inst.Name
+	return n == "SM_PetVisuals" or n == "SM_WeaponVisuals" or inst:IsA("Tool") or inst:IsA("HopperBin")
+end
+
 local function findShoulder(char: Model, side: string): Motor6D?
 	local isLeft = side == "left"
 	local paths = if isLeft
@@ -541,6 +548,9 @@ local function findShoulder(char: Model, side: string): Motor6D?
 	local arm = if isLeft then "LeftUpperArm" else "RightUpperArm"
 	local arm6 = if isLeft then "Left Arm" else "Right Arm"
 	for _, d in char:GetDescendants() do
+		if isIgnoredMotorContainer(d) then
+			continue
+		end
 		if d:IsA("Motor6D") then
 			local n = string.lower(d.Name)
 			if n == want or n == wantSp then
@@ -572,6 +582,9 @@ local function findWaist(char: Model): Motor6D?
 		end
 	end
 	for _, d in char:GetDescendants() do
+		if isIgnoredMotorContainer(d) then
+			continue
+		end
 		if d:IsA("Motor6D") and string.lower(d.Name) == "waist" then
 			return d
 		end
@@ -632,6 +645,9 @@ local function warnNoShoulder(char: Model)
 	mcWarnedNoShoulder = true
 	local motors = {}
 	for _, d in char:GetDescendants() do
+		if isIgnoredMotorContainer(d) then
+			continue
+		end
 		if d:IsA("Motor6D") then
 			table.insert(motors, d:GetFullName())
 		end

@@ -7,6 +7,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local PetConfig = require(Shared.Config.PetConfig)
@@ -24,7 +25,10 @@ local lastSig = ""
 local lastProfile: any = nil
 local renderConn: RBXScriptConnection? = nil
 local charConn: RBXScriptConnection? = nil
+local camConn: RBXScriptConnection? = nil
 local petsEnabled = true
+local camCulling = true
+local maxCamDistance = 80
 
 Settings.OnChange("visualPets", function(enabled: boolean)
 	petsEnabled = enabled
@@ -60,7 +64,14 @@ local function sanitizeParts(root: Instance)
 			d.Massless = true
 			d.Anchored = true
 			d.CastShadow = true
-		elseif d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("ForceField") then
+		elseif d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("ForceField") or d:IsA("Camera") then
+			d:Destroy()
+		elseif d:IsA("Motor6D") or d:IsA("Humanoid") or d:IsA("Animator") or d:IsA("AnimationController") then
+			-- Pet models are anchored cosmetics: rig motors/humanoid only interfere with
+			-- character rig lookups (e.g. WeaponVisual) and add no value here.
+			d:Destroy()
+		elseif d.Name == "HumanoidRootPart" and d:IsA("BasePart") then
+			-- Remove the rig root so it cannot be mistaken for a character joint.
 			d:Destroy()
 		end
 	end
@@ -211,6 +222,16 @@ local function clonePetModel(petId: string): Model?
 		if template and template:IsA("Model") then
 			local clone = template:Clone()
 			clone.Name = "Pet_" .. petId
+			-- Pets are cosmetic follow-ons: never simulate physics or cast shadows from far away.
+			pcall(function()
+				clone:SetAttribute("PetFollowModel", true)
+				if (clone :: any).ModelStreamingMode then
+					(clone :: any).ModelStreamingMode = Enum.ModelStreamingMode.NonStreaming
+				end
+				if (clone :: any).LevelOfDetail then
+					(clone :: any).LevelOfDetail = Enum.ModelLevelOfDetail.Disabled
+				end
+			end)
 			sanitizeParts(clone)
 			local handle = clone.PrimaryPart
 			if not handle then
@@ -299,8 +320,45 @@ local function ensureFolderOnChar(char: Model): Folder
 	end
 	local nf = Instance.new("Folder")
 	nf.Name = "SM_PetVisuals"
+	-- Parent under character so pets move with the player but never sit in Workspace root.
 	nf.Parent = char
 	return nf
+end
+
+local function getCamera(): Camera?
+	local camera = Workspace.CurrentCamera
+	if camera and camera:IsA("Camera") then
+		return camera
+	end
+	return nil
+end
+
+local function isVisibleToCamera(): boolean
+	if not camCulling then
+		return true
+	end
+	local camera = getCamera()
+	local char = player.Character
+	local hrp = char and char:FindFirstChild("HumanoidRootPart")
+	if not camera or not hrp or not hrp:IsA("BasePart") then
+		return true
+	end
+	local dist = (camera.CFrame.Position - hrp.Position).Magnitude
+	return dist <= maxCamDistance
+end
+
+local function setPetsVisible(visible: boolean)
+	for _, m in active do
+		if m.Parent then
+			for _, part in m:GetDescendants() do
+				if part:IsA("BasePart") then
+					pcall(function()
+						part.LocalTransparencyModifier = visible and 0 or 1
+					end)
+				end
+			end
+		end
+	end
 end
 
 local function rebuild(profile: any)
@@ -358,8 +416,17 @@ local function rebuild(profile: any)
 	for uid, petId in want do
 		local existing = active[uid]
 		if existing and existing.Parent then
+			-- Pets must always live under the character's SM_PetVisuals folder.
+			-- If something has pulled them out (Studio edits, parenting bugs), put them back.
 			if existing.Parent ~= folder then
-				existing.Parent = folder
+				if existing.Parent == Workspace or existing.Parent:IsDescendantOf(Workspace) and not existing.Parent:IsDescendantOf(char) then
+					pcall(function()
+						existing:Destroy()
+					end)
+					active[uid] = nil
+				else
+					existing.Parent = folder
+				end
 			end
 		else
 			if existing then
@@ -407,11 +474,30 @@ function stepFollow(dt: number)
 		return
 	end
 
+	local cameraVisible = isVisibleToCamera()
+
 	-- stable order from attributes + name
 	local list: { { uid: string, model: Model } } = {}
 	for uid, m in active do
 		if m.Parent then
-			table.insert(list, { uid = uid, model = m })
+			-- Cull pet models when the camera is far from the character. They are purely
+			-- cosmetic follow-ons, so skipping updates and hiding them saves frames.
+			local folder = char:FindFirstChild("SM_PetVisuals")
+			if folder and m.Parent ~= folder then
+				pcall(function()
+					m.Parent = folder
+				end)
+			end
+			for _, part in m:GetDescendants() do
+				if part:IsA("BasePart") then
+					pcall(function()
+						part.LocalTransparencyModifier = cameraVisible and 0 or 1
+					end)
+				end
+			end
+			if cameraVisible then
+				table.insert(list, { uid = uid, model = m })
+			end
 		end
 	end
 	table.sort(list, function(a, b)
@@ -483,6 +569,11 @@ function PetVisual.Init()
 	end
 	renderConn = RunService.RenderStepped:Connect(stepFollow)
 
+	-- Reveal pets immediately when the camera snaps back to the character.
+	camConn = Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+		setPetsVisible(true)
+	end)
+
 	local function onChar(_char: Model)
 		task.defer(function()
 			lastSig = ""
@@ -514,6 +605,10 @@ function PetVisual.Destroy()
 	if charConn then
 		charConn:Disconnect()
 		charConn = nil
+	end
+	if camConn then
+		camConn:Disconnect()
+		camConn = nil
 	end
 	clearAll()
 end

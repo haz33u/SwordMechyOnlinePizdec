@@ -163,6 +163,9 @@ function App.Start()
 	local clickPop: any = nil
 	local onCombatFx: any = nil
 	local settingsApi: any = nil
+	local weaponIndexApi: any = nil
+	local petIndexApi: any = nil
+	local mobIndexApi: any = nil
 
 	local function openModal(kind: string, payload: any?)
 		if kind == "casePreview" then
@@ -316,7 +319,15 @@ function App.Start()
 	end)
 	step("MobIndexUI", function()
 		local MobIndexUI = require(script.Parent.MobIndexUI)
-		MobIndexUI.Mount(gui, store)
+		mobIndexApi = MobIndexUI.Mount(gui, store)
+	end)
+	step("WeaponIndexUI", function()
+		local WeaponIndexUI = require(script.Parent.WeaponIndexUI)
+		weaponIndexApi = WeaponIndexUI.Mount(gui, store)
+	end)
+	step("PetIndexUI", function()
+		local PetIndexUI = require(script.Parent.PetIndexUI)
+		petIndexApi = PetIndexUI.Mount(gui, store)
 	end)
 	step("SettingsUI", function()
 		settingsApi = SettingsUI.Mount(gui, store)
@@ -613,6 +624,18 @@ function App.Start()
 			openInvTab("shop")
 		elseif input.KeyCode == Enum.KeyCode.U or input.KeyCode == Enum.KeyCode.K then
 			openUpgradeTree()
+		elseif input.KeyCode == Enum.KeyCode.F1 then
+			if mobIndexApi then
+				mobIndexApi.Toggle()
+			end
+		elseif input.KeyCode == Enum.KeyCode.F2 then
+			if weaponIndexApi then
+				weaponIndexApi.Toggle()
+			end
+		elseif input.KeyCode == Enum.KeyCode.F3 then
+			if petIndexApi then
+				petIndexApi.Toggle()
+			end
 		elseif input.KeyCode == Enum.KeyCode.Escape then
 			if caseApi and caseApi.IsOpen() then
 				caseApi.Close()
@@ -632,6 +655,24 @@ function App.Start()
 	end)
 
 	print("[GameUI] mounted ScreenGui.GameUI | children=", #gui:GetChildren())
+end
+
+function App.ToggleWeaponIndex()
+	if weaponIndexApi then
+		weaponIndexApi.Toggle()
+	end
+end
+
+function App.TogglePetIndex()
+	if petIndexApi then
+		petIndexApi.Toggle()
+	end
+end
+
+function App.ToggleMobIndex()
+	if mobIndexApi then
+		mobIndexApi.Toggle()
+	end
 end
 
 return App

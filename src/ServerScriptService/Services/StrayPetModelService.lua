@@ -35,11 +35,10 @@ local StrayPetModelService = {}
 	Map authors reuse pet-ish names for scenery and NPCs. Rather than guess, keep
 	an explicit allowlist and log anything it saves, so the list stays honest.
 
-	"Nereid" is here on purpose: it is a unique 34-part merfolk model that has NOT
-	yet been installed into PetModels (slot E-D, pet P2_K_L2 — see
-	docs/PET_GENERATION_BRIEF.md). Play-mode deletions do not persist to the saved
-	place, so losing it would not be permanent, but it would vanish mid-session and
-	confuse anyone inspecting it. Remove this entry once it is installed.
+	"Nereid" used to be exempt here because it was the only copy of a unique
+	34-part merfolk that no PetModels slot held yet. It is now installed as
+	PetModels.E-D (pet P2_K_L2), so the Workspace copy is an ordinary leftover
+	and is swept like any other.
 ]]
 local KEEP_NAMES: { [string]: boolean } = {
 	NPCs = true,
@@ -48,7 +47,6 @@ local KEEP_NAMES: { [string]: boolean } = {
 	MobSpawns = true,
 	Terrain = true,
 	Camera = true,
-	Nereid = true,
 }
 
 --- Slot names that PetModelConfig actually maps a pet to.

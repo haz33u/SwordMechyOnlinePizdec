@@ -12,11 +12,15 @@ local Remotes = require(Shared.Remotes)
 local GameConfig = require(Shared.Config.GameConfig)
 local Formulas = require(Shared.Formulas)
 
--- Kill free-model / toolbox scripts in Workspace (ChestServer, PoseTexture, Robux kits...).
+-- Kill free-model / toolbox scripts in Workspace and UI (Constant, cTextureManager, Credits popup, etc.).
 -- They often run *before* Main; still disable+destroy so they don't re-fire on respawn/stream.
 pcall(function()
 	local Workspace = game:GetService("Workspace")
-	local BAD_NAMES = {
+	local StarterGui = game:GetService("StarterGui")
+	local StarterPlayer = game:GetService("StarterPlayer")
+	local Players = game:GetService("Players")
+
+	local BAD_SCRIPT_NAMES = {
 		ChestServer = true,
 		ChestClient = true,
 		ChestRemotes = true,
@@ -24,12 +28,24 @@ pcall(function()
 		TextureConfiguration = true,
 		LightConfig = true,
 		AuraChest = true,
+		Constant = true,
+		cTextureManager = true,
+		CoreTextureSystem = true,
+		HttpEnabled = true,
+		AntiIpLogger = true,
+		IpLogger = true,
 	}
+	local BAD_GUI_NAMES = {
+		Credits = true,
+		Error501 = true,
+		Error = true,
+	}
+
 	local function isBadScript(inst: Instance): boolean
 		if not inst:IsA("LuaSourceContainer") then
 			return false
 		end
-		if BAD_NAMES[inst.Name] then
+		if BAD_SCRIPT_NAMES[inst.Name] then
 			return true
 		end
 		-- Free-model Robux kits spam MarketplaceService 403
@@ -43,20 +59,46 @@ pcall(function()
 		end
 		return false
 	end
+
+	local function isBadGui(inst: Instance): boolean
+		if not (inst:IsA("ScreenGui") or inst:IsA("BillboardGui") or inst:IsA("SurfaceGui")) then
+			return false
+		end
+		return BAD_GUI_NAMES[inst.Name] == true
+	end
+
 	local function kill(inst: Instance)
-		if not isBadScript(inst) then
-			return
+		if isBadScript(inst) then
+			if inst:IsA("BaseScript") then
+				(inst :: BaseScript).Disabled = true
+			end
+			inst:Destroy()
+		elseif isBadGui(inst) then
+			inst:Destroy()
 		end
-		if inst:IsA("BaseScript") then
-			(inst :: BaseScript).Disabled = true
+	end
+
+	local function scrub(root: Instance)
+		for _, desc in root:GetDescendants() do
+			kill(desc)
 		end
-		inst:Destroy()
+		root.DescendantAdded:Connect(kill)
 	end
-	for _, desc in Workspace:GetDescendants() do
-		kill(desc)
+
+	scrub(Workspace)
+	scrub(StarterGui)
+	scrub(StarterPlayer)
+
+	for _, plr in Players:GetPlayers() do
+		if plr:FindFirstChild("PlayerGui") then
+			scrub(plr.PlayerGui)
+		end
 	end
-	Workspace.DescendantAdded:Connect(function(desc)
-		kill(desc)
+	Players.PlayerAdded:Connect(function(plr)
+		local pg = plr:WaitForChild("PlayerGui", 10)
+		if pg then
+			scrub(pg)
+		end
 	end)
 end)
 
