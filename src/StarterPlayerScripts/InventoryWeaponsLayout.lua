@@ -851,9 +851,104 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	end
 
 	-- Relics + Aura (same size, even row)
+	local equippedRelicUids: { [number]: string } = {}
+	for i, uid in ipairs(profile.equippedRelics or {}) do
+		equippedRelicUids[i] = tostring(uid)
+	end
+	local relicByUid: { [string]: any } = {}
+	for _, r in ipairs(profile.relics or {}) do
+		relicByUid[tostring(r.uid)] = r
+	end
+	local maxRelicSlots = 3
+	pcall(function()
+		local Formulas = require(Shared.Formulas)
+		maxRelicSlots = Formulas.GetMaxRelicSlots(profile)
+	end)
 	for i = 1, 3 do
 		local wrap, plate = makeEquipSlot("RELICcard" .. i, "RELICcard" .. i, B["RELICcard" .. i], 26 + i)
-		bindEquipHover(wrap, plate, false, nil, function() end)
+		local uid = equippedRelicUids[i]
+		local r = if uid then relicByUid[uid] else nil
+		if r then
+			local def = RelicConfig.Get(r.id)
+			local rar = (def and def.rarity) or "Common"
+			local stars = r.stars or 0
+			local ih = iconHost(plate, 0.7)
+			local gl = Instance.new("TextLabel")
+			gl.BackgroundTransparency = 1
+			gl.Size = UDim2.fromScale(1, 0.7)
+			gl.Position = UDim2.fromScale(0.5, 0.35)
+			gl.AnchorPoint = Vector2.new(0.5, 0.5)
+			gl.Text = "◆"
+			gl.TextScaled = true
+			gl.TextColor3 = Color3.fromRGB(220, 200, 255)
+			gl.Font = Enum.Font.GothamBold
+			gl.ZIndex = plate.ZIndex + 1
+			gl.Parent = ih
+			local starLab = Instance.new("TextLabel")
+			starLab.Name = "Stars"
+			starLab.BackgroundTransparency = 1
+			starLab.Size = UDim2.fromScale(1, 0.3)
+			starLab.Position = UDim2.fromScale(0.5, 0.82)
+			starLab.AnchorPoint = Vector2.new(0.5, 0.5)
+			starLab.Text = string.rep("★", stars)
+			starLab.TextScaled = true
+			starLab.TextColor3 = Color3.fromRGB(255, 215, 100)
+			starLab.Font = Enum.Font.GothamBold
+			starLab.ZIndex = plate.ZIndex + 1
+			starLab.Parent = ih
+			applyEquipRarityGlow(wrap, rar)
+			bindEquipHover(wrap, plate, true, rar, function()
+				local p, d, c = RelicConfig.EffectiveStats(def, stars)
+				local lines = string.format("POWER: +%.0f%%  DAMAGE: +%.0f%%", p, d)
+				if (c or 0) > 0 then
+					lines = lines .. string.format("  COINS: +%.0f%%", c)
+				end
+				showGearTip(
+					(def and def.name) or tostring(r.id),
+					rar,
+					"Equipped Relic",
+					lines,
+					nil,
+					nil,
+					false
+				)
+			end)
+			plate.MouseButton1Click:Connect(function()
+				Net.UnequipRelic(r.uid)
+				args.onRefresh()
+			end)
+		else
+			if i <= maxRelicSlots then
+				local lock = Instance.new("TextLabel")
+				lock.Name = "Empty"
+				lock.BackgroundTransparency = 1
+				lock.Size = UDim2.fromScale(0.8, 0.3)
+				lock.Position = UDim2.fromScale(0.5, 0.5)
+				lock.AnchorPoint = Vector2.new(0.5, 0.5)
+				lock.Text = "EMPTY"
+				lock.TextScaled = true
+				lock.TextColor3 = Color3.fromRGB(120, 120, 130)
+				lock.Font = Enum.Font.GothamBold
+				lock.ZIndex = plate.ZIndex + 1
+				lock.Parent = plate
+			else
+				local lock = Instance.new("TextLabel")
+				lock.Name = "Locked"
+				lock.BackgroundTransparency = 1
+				lock.Size = UDim2.fromScale(0.8, 0.4)
+				lock.Position = UDim2.fromScale(0.5, 0.5)
+				lock.AnchorPoint = Vector2.new(0.5, 0.5)
+				lock.Text = "🔒"
+				lock.TextScaled = true
+				lock.TextColor3 = Color3.fromRGB(120, 120, 130)
+				lock.Font = Enum.Font.GothamBold
+				lock.ZIndex = plate.ZIndex + 1
+				lock.Parent = plate
+				bindEquipHover(wrap, plate, true, nil, function()
+					showGearTip("Locked Relic Slot", nil, "Buy 3rd slot in Shop", nil, nil, nil, false)
+				end)
+			end
+		end
 	end
 	do
 		local wrap, plate = makeEquipSlot("AURAcard", "RELICcard1", B.AURAcard, 7)
@@ -1654,6 +1749,10 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 	---------------------------------------------------------------- RELICS
 	elseif invTab == "relics" then
 		local relics = profile.relics or {}
+		local equippedSet: { [string]: boolean } = {}
+		for _, uid in ipairs(profile.equippedRelics or {}) do
+			equippedSet[tostring(uid)] = true
+		end
 		for i, r in ipairs(relics) do
 			local btn = Instance.new("ImageButton")
 			btn.Name = "R_" .. tostring(r.uid or i)
@@ -1662,25 +1761,87 @@ function InventoryWeaponsLayout.Render(parent: Frame, args: RenderArgs)
 			btn.ZIndex = 5
 			local def = RelicConfig.Get(r.id)
 			local rar = (def and def.rarity) or r.rarity or "Common"
+			local stars = r.stars or 0
+			local isEquipped = equippedSet[tostring(r.uid)] == true
 			btn.Image = InventoryAssetConfig.GetSlotFrame(rar)
 			btn.ScaleType = Enum.ScaleType.Stretch
 			applyRarityGlow(btn, rar, i)
 			local ih = makeIconHost(btn)
 			local gl = Instance.new("TextLabel")
+			gl.Name = "Glyph"
 			gl.BackgroundTransparency = 1
-			gl.Size = UDim2.fromScale(1, 1)
+			gl.Size = UDim2.fromScale(1, 0.7)
+			gl.Position = UDim2.fromScale(0.5, 0.35)
+			gl.AnchorPoint = Vector2.new(0.5, 0.5)
 			gl.Text = "◆"
 			gl.TextScaled = true
 			gl.TextColor3 = Color3.fromRGB(220, 200, 255)
 			gl.Font = Enum.Font.GothamBold
 			gl.ZIndex = 5
 			gl.Parent = ih
+			local starLab = Instance.new("TextLabel")
+			starLab.Name = "Stars"
+			starLab.BackgroundTransparency = 1
+			starLab.Size = UDim2.fromScale(1, 0.3)
+			starLab.Position = UDim2.fromScale(0.5, 0.82)
+			starLab.AnchorPoint = Vector2.new(0.5, 0.5)
+			starLab.Text = string.rep("★", stars)
+			starLab.TextScaled = true
+			starLab.TextColor3 = Color3.fromRGB(255, 215, 100)
+			starLab.Font = Enum.Font.GothamBold
+			starLab.ZIndex = 6
+			starLab.Parent = ih
+			if isEquipped then
+				local mark = Instance.new("Frame")
+				mark.Name = "EquippedMark"
+				mark.Size = UDim2.fromOffset(10, 10)
+				mark.Position = UDim2.fromOffset(6, 6)
+				mark.BackgroundColor3 = Rarity.Of(rar)
+				mark.BorderSizePixel = 0
+				mark.ZIndex = 6
+				mark.Parent = btn
+				UIKit.Corner(mark, 99)
+			end
 			bindWrapHover(btn.Parent :: Frame, btn, function()
-				showGearTip((def and def.name) or tostring(r.id), rar, "Relic", nil, nil, nil, false)
+				local p, d, c = RelicConfig.EffectiveStats(def, stars)
+				local statLine = string.format("POWER: +%.0f%%  DAMAGE: +%.0f%%", p, d)
+				if (c or 0) > 0 then
+					statLine = statLine .. string.format("  COINS: +%.0f%%", c)
+				end
+				local lines: { any } = {
+					{ (def and def.name) or tostring(r.id), "purple", 22 },
+					{ rar, "gray", 16 },
+					{ if isEquipped then "Equipped Relic" else "In Bag", "gold", 16 },
+					{ statLine, "purple", 16 },
+				}
+				if def and stars < RelicConfig.MAX_STARS then
+					local cost = RelicConfig.StarUpgradeCost(def, stars)
+					table.insert(lines, { string.format("MMB to Upgrade: %s coins", Format.Num(cost)), "gold", 16 })
+				elseif def then
+					table.insert(lines, { "MAX STARS", "gold", 16 })
+				end
+				showLines(lines, Vector2.new(300, 180))
 			end, hideTip)
 			btn.MouseButton1Click:Connect(function()
-				Net.EquipRelic(r.uid)
+				if isEquipped then
+					Net.UnequipRelic(r.uid)
+				else
+					Net.EquipRelic(r.uid)
+				end
 				args.onRefresh()
+			end)
+			btn.InputBegan:Connect(function(input)
+				if input.UserInputType ~= Enum.UserInputType.MouseButton3 then
+					return
+				end
+				local ctrl = UserInputService:IsKeyDown(Enum.KeyCode.LeftControl)
+					or UserInputService:IsKeyDown(Enum.KeyCode.RightControl)
+				if ctrl then
+					lockedUids[tostring(r.uid)] = not lockedUids[tostring(r.uid)]
+				else
+					Net.UpgradeRelic(r.uid)
+					args.onRefresh()
+				end
 			end)
 		end
 

@@ -388,8 +388,8 @@ local function makeProcedural(auraId: string, def: any?): Model
 	local mainLight = Instance.new("PointLight")
 	mainLight.Name = "AuraLight"
 	mainLight.Color = theme.mainColor
-	mainLight.Range = 14
-	mainLight.Brightness = 2.0
+	mainLight.Range = 10
+	mainLight.Brightness = 1.2
 	mainLight.Parent = root
 
 	return m
@@ -553,8 +553,8 @@ local function attachToCharacter(char: Model, model: Model, auraId: string)
 			for i, orb in ipairs(children) do
 				if orb:IsA("BasePart") then
 					local angle = (i / math.max(1, num)) * math.pi * 2 + (now * 2.2)
-					local radius = 2.4
-					local bob = math.sin(now * 3 + i) * 0.3
+					local radius = 1.6
+					local bob = math.sin(now * 3 + i) * 0.2
 					orb.CFrame = hrp.CFrame * CFrame.new(math.cos(angle) * radius, 0.4 + bob, math.sin(angle) * radius)
 				end
 			end

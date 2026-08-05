@@ -284,7 +284,7 @@ local function attachVfxToSword(model: Model?, rarity: string?)
 				local auraRoot = clone.PrimaryPart or clone:FindFirstChild("RootPart") or clone:FindFirstChild("Circle") or clone:FindFirstChildWhichIsA("BasePart", true)
 				if auraRoot and auraRoot:IsA("BasePart") then
 					clone.PrimaryPart = auraRoot
-					auraRoot.Size = auraRoot.Size * 0.35
+					auraRoot.Size = auraRoot.Size * 0.25
 					local weld = Instance.new("Weld")
 					weld.Part0 = root
 					weld.Part1 = auraRoot

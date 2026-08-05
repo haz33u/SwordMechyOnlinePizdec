@@ -291,12 +291,15 @@ function DungeonService.OnFloorCleared(player: Player, floor: number)
 		profile.enchantDust = (profile.enchantDust or 0) + dustGrant
 	end
 
-	-- Relic milestone
+	-- Relic milestone — source scales with tower depth
 	local relicGrantedName = nil
+	local relicSource = nil
 	if floor % 10 == 0 then
-		local relicId = RelicConfig.ResolveId(RelicConfig.Roll("medium"))
+		local source = if floor <= 20 then "easy" elseif floor <= 50 then "medium" else "hard"
+		relicSource = source
+		local relicId = RelicConfig.ResolveId(RelicConfig.Roll(source))
 		local ruid = ProfileService.NewUid()
-		table.insert(profile.relics, { uid = ruid, id = relicId, stars = 0 })
+		table.insert(profile.relics, { uid = ruid, id = relicId, stars = 0, source = source })
 		RelicService.TryAutoEquip(profile, ruid)
 		local rdef = RelicConfig.Get(relicId)
 		relicGrantedName = if rdef then rdef.name else relicId
@@ -311,7 +314,10 @@ function DungeonService.OnFloorCleared(player: Player, floor: number)
 
 	local extraMsg = ""
 	if dustGrant > 0 then extraMsg ..= string.format(" +%d Dust", dustGrant) end
-	if relicGrantedName then extraMsg ..= string.format(" +Relic: %s", relicGrantedName) end
+	if relicGrantedName then
+		local srcLabel = if relicSource == "easy" then "Easy" elseif relicSource == "medium" then "Medium" else "Hard"
+		extraMsg ..= string.format(" +Relic: %s (%s Dungeon)", relicGrantedName, srcLabel)
+	end
 
 	Remotes.Event("Notify"):FireClient(player, {
 		text = string.format("✓ Floor %d Cleared! +%d coins%s", floor, coinsGained, extraMsg),
