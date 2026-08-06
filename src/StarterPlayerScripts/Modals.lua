@@ -177,17 +177,26 @@ function Modals.Mount(gui: ScreenGui, store: any)
 			fill.Size = UDim2.new(math.clamp(pct :: number, 0, 1), 0, 1, 0)
 			etaLabel.Visible = false
 
-			if pct >= 1 then
+			if (stats.rebirthLevel or 0) >= 60 then
+				title.Text = "ASCENSION (PRESTIGE)"
+				body.Text = "You have reached MAX Rebirth 60!\n\nAscension will reset your Rebirth level to 0 and grant +1 Ascension Token (+10% Damage, +5% Coins, +1 Pet Slot permanently).\n\nSwords, pets, auras, relics, and locations are PRESERVED."
+				primary.Text = "ASCEND NOW!"
+				primaryConn = primary.MouseButton1Click:Connect(function()
+					Net.Event("RequestAscension"):FireServer()
+					store:CloseModal()
+				end)
+			elseif pct >= 1 then
 				primary.Text = "Rebirth Now!"
+				primaryConn = primary.MouseButton1Click:Connect(function()
+					Net.Rebirth()
+					store:CloseModal()
+				end)
 			else
 				primary.Text = "Rebirth"
+				primaryConn = primary.MouseButton1Click:Connect(function()
+					Net.Rebirth()
+				end)
 			end
-			primaryConn = primary.MouseButton1Click:Connect(function()
-				Net.Rebirth()
-				if pct >= 1 then
-					store:CloseModal()
-				end
-			end)
 		elseif m.kind == "sell" then
 			local w = m.payload
 			title.Text = "Sell weapon?"
