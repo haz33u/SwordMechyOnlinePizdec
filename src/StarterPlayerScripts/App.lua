@@ -30,6 +30,7 @@ local PetVisual = require(script.Parent.PetVisual)
 local AuraVisual = require(script.Parent.AuraVisual)
 local LootVFX = require(script.Parent.LootVFX)
 local PlayerNameplate = require(script.Parent.PlayerNameplate)
+local LoadingScreen = require(script.Parent.LoadingScreen)
 local SettingsUI = require(script.Parent.SettingsUI)
 local Settings = require(script.Parent.Settings)
 local Format = require(script.Parent.Format)
@@ -246,6 +247,11 @@ function App.Start()
 		end
 	end
 
+	local loadingApi: any = nil
+	step("LoadingScreen", function()
+		loadingApi = LoadingScreen.Mount(gui)
+	end)
+
 	step("Toast", function()
 		toastApi = Toast.Mount(gui)
 	end)
@@ -333,6 +339,16 @@ function App.Start()
 	step("SettingsUI", function()
 		settingsApi = SettingsUI.Mount(gui, store)
 		settingsApi.Hide()
+	end)
+
+	-- Preload assets & fade out loading screen
+	task.spawn(function()
+		if loadingApi then
+			LoadingScreen.PreloadAssets(function(pct, msg)
+				loadingApi.StepProgress(pct, msg)
+			end)
+			loadingApi.Finish()
+		end
 	end)
 
 	-- Ferryman NPC → open world travel panel (async: never block App.Start)
