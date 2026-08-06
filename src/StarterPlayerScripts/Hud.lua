@@ -42,7 +42,6 @@ local SIDE_ITEMS = {
 	{ id = "locations", title = "Teleport", icon = "🧭", glowColor = Color3.fromRGB(0, 230, 77), border1 = Color3.fromRGB(102, 255, 140), border2 = Color3.fromRGB(0, 153, 51), rainbow = true },
 	{ id = "character", title = "Skill Tree", icon = "🌳", glowColor = Color3.fromRGB(0, 229, 204), border1 = Color3.fromRGB(102, 255, 240), border2 = Color3.fromRGB(0, 153, 136), rainbow = false },
 	{ id = "daily", title = "Daily", icon = "🔥", glowColor = Color3.fromRGB(255, 140, 60), border1 = Color3.fromRGB(255, 200, 80), border2 = Color3.fromRGB(255, 80, 80), rainbow = true },
-	{ id = "settings", title = "Settings", icon = "⚙️", glowColor = Color3.fromRGB(160, 160, 170), border1 = Color3.fromRGB(200, 200, 210), border2 = Color3.fromRGB(120, 120, 130), rainbow = false },
 }
 
 local LOC = {
