@@ -592,10 +592,11 @@ function Formulas.GetLuck(profile: any): number
 	local lvl = Formulas.GetUpgradeLevel(profile, "Luck")
 	local anom = Formulas.GetAnomalyMods()
 	local questLuck = (profile and profile.questLuckPct or 0) / 100
+	local boostLuck = Formulas.GetBoostPct(profile, "luck") / 100
 	local talentStats = TalentTreeConfig.ComputeStats(profile and profile.unlockedTalents)
 	local petIndexEntry, petIndexLoc = IndexConfig.GetPetIndexBonuses(profile and profile.petIndex)
 	local prestige = PrestigeConfig.GetTotalBonus(profile)
-	return lvl * 0.02 + ench.luck / 100 + (anom.luckAdd or 0) + questLuck + (talentStats.luckPct or 0) / 100 + (petIndexEntry + petIndexLoc) / 100 + (prestige.luckPct or 0) / 100
+	return lvl * 0.02 + ench.luck / 100 + (anom.luckAdd or 0) + questLuck + boostLuck + (talentStats.luckPct or 0) / 100 + (petIndexEntry + petIndexLoc) / 100 + (prestige.luckPct or 0) / 100
 end
 
 --- Multiplier on mob respawn delay (<1 = faster).

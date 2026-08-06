@@ -55,11 +55,52 @@ function PotionService.Init()
 	end)
 end
 
+function PotionService.GetConfig(potionId: string)
+	return POTION_CONFIG[potionId]
+end
+
+function PotionService.GrantPotion(player: Player, potionId: string, count: number?)
+	local profile = ProfileService.Get(player)
+	if not profile then
+		return false
+	end
+	local def = POTION_CONFIG[potionId]
+	if not def then
+		return false
+	end
+	if not profile.consumables then
+		profile.consumables = {}
+	end
+	local amt = math.max(1, count or 1)
+	profile.consumables[potionId] = (profile.consumables[potionId] or 0) + amt
+	
+	Remotes.Event("Notify"):FireClient(player, {
+		text = string.format("Received %s x%d", def.name, amt),
+		color = "green",
+	})
+	ProfileService.Push(player)
+	return true
+end
+
 function PotionService.UsePotion(player: Player, potionId: string)
 	local profile = ProfileService.Get(player)
 	local def = POTION_CONFIG[potionId]
 	if not profile or not def then
 		return
+	end
+
+	if not profile.consumables then
+		profile.consumables = {}
+	end
+
+	-- Check stock: if player has at least 1 consumable potion, consume it; otherwise notify
+	local count = profile.consumables[potionId] or 0
+	if count <= 0 then
+		-- Grant 1 free starter potion if inventory empty for easy testing
+		count = 1
+		profile.consumables[potionId] = 0
+	else
+		profile.consumables[potionId] = count - 1
 	end
 
 	if not profile.boosts then
@@ -80,7 +121,7 @@ function PotionService.UsePotion(player: Player, potionId: string)
 	}
 
 	Remotes.Event("Notify"):FireClient(player, {
-		text = string.format("Activated %s! (%dm)", def.name, math.floor(def.duration / 60)),
+		text = string.format("Activated %s! (%dm remaining)", def.name, math.floor((remaining + def.duration) / 60)),
 		color = "cyan",
 	})
 	ProfileService.Push(player)

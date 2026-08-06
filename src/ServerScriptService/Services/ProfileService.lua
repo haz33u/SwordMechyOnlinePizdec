@@ -101,6 +101,7 @@ local function defaultProfile()
 			damage = nil,
 			luck = nil,
 		},
+		consumables = {},
 		bannedWeaponIds = {},
 		bannedPetIds = {},
 		bannedAuraIds = {},
