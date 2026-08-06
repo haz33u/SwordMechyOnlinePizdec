@@ -314,40 +314,52 @@ function Hud.Mount(
 	qCorner.Parent = questBadge
 	questBadge.Parent = rail
 
-	---------------------------------------------------------------- TOP-LEFT BOOSTS
+	---------------------------------------------------------------- BOTTOM-LEFT BOOSTS & ANOMALY PILL
 	local boosts = Instance.new("Frame")
 	boosts.Name = "Boosts"
 	boosts.BackgroundTransparency = 1
-	boosts.Size = UDim2.fromOffset(220, 160)
-	boosts.Position = UDim2.fromOffset(190, 14)
+	boosts.Size = UDim2.fromOffset(180, 140)
+	boosts.Position = UDim2.new(0, 16, 1, -75)
+	boosts.AnchorPoint = Vector2.new(0, 1)
 	boosts.ZIndex = 11
 	boosts.Parent = root
-	local boostList = UIKit.List(boosts, 6, false)
-	boostList.VerticalAlignment = Enum.VerticalAlignment.Top
-	local boostRows: { Frame } = {}
+	local boostList = Instance.new("UIListLayout")
+	boostList.Padding = UDim.new(0, 6)
+	boostList.SortOrder = Enum.SortOrder.LayoutOrder
+	boostList.VerticalAlignment = Enum.VerticalAlignment.Bottom
+	boostList.Parent = boosts
+	local boostRows: { [string]: Frame } = {}
 
 	local function makeBoostRow(meta: any): Frame
 		local row = Instance.new("Frame")
 		row.Name = meta.key
-		row.BackgroundColor3 = Color3.new(1, 1, 1)
+		row.BackgroundColor3 = Color3.fromRGB(14, 24, 18)
+		row.BackgroundTransparency = 0.15
 		row.BorderSizePixel = 0
-		row.Size = UDim2.fromOffset(200, 28)
+		row.Size = UDim2.fromOffset(180, 32)
 		row.ZIndex = 12
 		row.Visible = false
 		row.Parent = boosts
-		UIKit.Corner(row, T.R.sm)
-		UIKit.Stroke(row, meta.color, 1.2, 0.25)
-		UIKit.Gradient(row, meta.color:Lerp(Color3.new(0, 0, 0), 0.45), meta.color:Lerp(Color3.new(0, 0, 0), 0.65), 0)
+
+		local rowCorner = Instance.new("UICorner")
+		rowCorner.CornerRadius = UDim.new(0, 10)
+		rowCorner.Parent = row
+
+		local rowStroke = Instance.new("UIStroke")
+		rowStroke.Thickness = 1.8
+		rowStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		rowStroke.Color = meta.color
+		rowStroke.Parent = row
 
 		UIKit.Label({
 			Name = "Pct",
 			Parent = row,
 			Text = "+0%",
-			Size = UDim2.fromOffset(52, 28),
-			Position = UDim2.fromOffset(6, 0),
+			Size = UDim2.fromOffset(52, 32),
+			Position = UDim2.fromOffset(8, 0),
 			SizePx = 13,
 			Font = T.Font.Title,
-			Color = Color3.new(1, 1, 1),
+			Color = Color3.fromRGB(255, 255, 255),
 			Z = 13,
 		})
 		UIKit.Label({
@@ -355,7 +367,7 @@ function Hud.Mount(
 			Parent = row,
 			Text = "Local",
 			Size = UDim2.new(1, -64, 1, 0),
-			Position = UDim2.fromOffset(58, 0),
+			Position = UDim2.fromOffset(60, 0),
 			SizePx = 12,
 			Color = Color3.fromRGB(240, 240, 245),
 			Z = 13,
@@ -367,29 +379,73 @@ function Hud.Mount(
 		boostRows[meta.key] = makeBoostRow(meta)
 	end
 
-	-- Active anomaly banner (global)
-	local anomBanner = Instance.new("TextLabel")
+	-- Active anomaly banner (glowing bottom-left pill matching top-left style)
+	local anomBanner = Instance.new("Frame")
 	anomBanner.Name = "AnomalyBanner"
-	anomBanner.BackgroundColor3 = Color3.fromRGB(40, 28, 60)
+	anomBanner.BackgroundColor3 = Color3.fromRGB(20, 12, 32)
 	anomBanner.BackgroundTransparency = 0.15
 	anomBanner.BorderSizePixel = 0
-	anomBanner.Size = UDim2.fromOffset(220, 36)
-	anomBanner.Position = UDim2.fromOffset(190, 178)
-	anomBanner.ZIndex = 12
+	anomBanner.Size = UDim2.fromOffset(210, 44)
+	anomBanner.Position = UDim2.new(0, 16, 1, -20)
+	anomBanner.AnchorPoint = Vector2.new(0, 1)
+	anomBanner.ZIndex = 15
 	anomBanner.Visible = false
-	anomBanner.Font = T.Font.Title
-	anomBanner.TextSize = 12
-	anomBanner.TextColor3 = Color3.fromRGB(255, 230, 160)
-	anomBanner.TextXAlignment = Enum.TextXAlignment.Left
-	anomBanner.TextTruncate = Enum.TextTruncate.AtEnd
-	anomBanner.Text = ""
 	anomBanner.Parent = root
-	UIKit.Corner(anomBanner, T.R.sm)
-	UIKit.Stroke(anomBanner, Color3.fromRGB(180, 120, 255), 1.2, 0.3)
-	local anomPad = Instance.new("UIPadding")
-	anomPad.PaddingLeft = UDim.new(0, 8)
-	anomPad.PaddingRight = UDim.new(0, 8)
-	anomPad.Parent = anomBanner
+
+	local anomCorner = Instance.new("UICorner")
+	anomCorner.CornerRadius = UDim.new(0, 14)
+	anomCorner.Parent = anomBanner
+
+	local anomGlow = Instance.new("Frame")
+	anomGlow.Name = "NeonGlow"
+	anomGlow.Size = UDim2.new(1, 6, 1, 6)
+	anomGlow.Position = UDim2.fromScale(0.5, 0.5)
+	anomGlow.AnchorPoint = Vector2.new(0.5, 0.5)
+	anomGlow.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+	anomGlow.BackgroundTransparency = 0.6
+	anomGlow.ZIndex = 14
+	anomGlow.Parent = anomBanner
+	local anomGlowCorner = Instance.new("UICorner")
+	anomGlowCorner.CornerRadius = UDim.new(0, 16)
+	anomGlowCorner.Parent = anomGlow
+
+	local anomStroke = Instance.new("UIStroke")
+	anomStroke.Thickness = 2.2
+	anomStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	anomStroke.Color = Color3.fromRGB(255, 180, 40)
+	anomStroke.Parent = anomBanner
+
+	local anomStrokeGrad = Instance.new("UIGradient")
+	anomStrokeGrad.Color = ColorSequence.new({
+		ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 220, 80)),
+		ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 140, 0)),
+		ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 60, 0)),
+	})
+	anomStrokeGrad.Parent = anomStroke
+
+	local anomIcon = Instance.new("TextLabel")
+	anomIcon.Size = UDim2.fromOffset(30, 30)
+	anomIcon.Position = UDim2.fromOffset(8, 7)
+	anomIcon.BackgroundTransparency = 1
+	anomIcon.Text = "⚡"
+	anomIcon.TextSize = 20
+	anomIcon.ZIndex = 16
+	anomIcon.Parent = anomBanner
+
+	local anomTxt = Instance.new("TextLabel")
+	anomTxt.Name = "Text"
+	anomTxt.Size = UDim2.new(1, -44, 1, 0)
+	anomTxt.Position = UDim2.fromOffset(40, 0)
+	anomTxt.BackgroundTransparency = 1
+	anomTxt.Text = ""
+	anomTxt.TextColor3 = Color3.fromRGB(255, 240, 190)
+	anomTxt.Font = Enum.Font.FredokaOne
+	anomTxt.TextSize = 13
+	anomTxt.TextXAlignment = Enum.TextXAlignment.Left
+	anomTxt.ZIndex = 16
+	anomTxt.Parent = anomBanner
+
+	RainbowGradient.ApplyShimmer(anomBanner, "fire", 0.5, 140)
 
 	---------------------------------------------------------------- BOTTOM-CENTER: MechyForge HUD block
 	-- Layout traced 1:1 from the MechyForge brief on a 1920x1080 canvas.
@@ -613,9 +669,6 @@ function Hud.Mount(
 				b.TextColor3 = T.Text
 			end
 		end
-
-		boosts.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad)
-		anomBanner.Position = UDim2.fromOffset(m.railW + m.pad * 2, m.pad + 168)
 
 		local invOpen = store:PeekPanel() == "weapons"
 		bal.Visible = not invOpen
