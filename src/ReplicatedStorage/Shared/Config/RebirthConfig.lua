@@ -159,7 +159,8 @@ function RebirthConfig.GetCoinCost(level: number): number
 	if fixed ~= nil then
 		return fixed
 	end
-	return 0
+	local base = RebirthConfig.COIN_COST[3] or 750_000
+	return math.floor(base * (2.4 ^ (level - 3)))
 end
 
 function RebirthConfig.GetCost(level: number): number
