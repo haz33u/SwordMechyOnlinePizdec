@@ -271,12 +271,12 @@ for i = 1, 8 do
 	local isKeystone = (i == 4 or i == 8)
 	Nodes[id] = {
 		id = id,
-		name = if i == 4 then "RELIC MASTERY I" elseif i == 8 then "RELIC MASTERY II" else ("Golden Pouch " .. i),
-		desc = if i == 4 then "+1 Relic Slot & +25% Coins [Power Quester Step 8]" elseif i == 8 then "+1 Relic Slot & +100% Coins [Power Quester Step 15]" else "+5% Coins per level",
+		name = if i == 4 then "RELIC MASTERY" elseif i == 8 then "GOLDEN EMPEROR" else ("Golden Pouch " .. i),
+		desc = if i == 4 then "+1 Relic Slot & +25% Coins [Power Quester Step 8]" elseif i == 8 then "+100% Coins [Power Quester Step 15]" else "+5% Coins per level",
 		branch = "utility",
 		nodeType = if isKeystone then "keystone" elseif i % 3 == 0 then "major" else "minor",
 		hexPos = Vector2.new(q, r),
-		icon = if isKeystone then "🔮" else "💰",
+		icon = if i == 4 then "🔮" elseif i == 8 then "👑" else "💰",
 		parents = { prevCoins },
 		costType = "coins",
 		baseCost = 100 * (4 ^ (i - 1)),
@@ -284,8 +284,8 @@ for i = 1, 8 do
 		maxLevel = if isKeystone then 1 else 50,
 		reqGrimTier = if i == 4 then 8 elseif i == 8 then 15 else nil,
 		effectsPerLevel = {
-			coinPct = if isKeystone then 25 else 5,
-			relicSlots = if isKeystone then 1 else nil,
+			coinPct = if i == 4 then 25 elseif i == 8 then 100 else 5,
+			relicSlots = if i == 4 then 1 else nil,
 		},
 	}
 	prevCoins = id

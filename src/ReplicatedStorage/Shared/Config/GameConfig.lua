@@ -43,10 +43,10 @@ local GameConfig = {
 	MAX_PETS_OWNED = 32, -- bag base; +Backpack upgrade (see UpgradeConfig.BASE_BAG_SLOTS)
 	START_WEAPON_BAG = 32,
 	START_ITEM_BAG = 32,
-	-- Relic slots: 1 free start, +1 from Talent U_Coins_4, +1 from Talent U_Coins_8, +1 from Paid Pass / Prestige (max 4).
-	START_RELIC_SLOTS = 1,
+	-- Relic slots: 0 start, 1 unlocked via Skill Tree (U_Coins_4), 1 Paid Pass slot (max 2 total).
+	START_RELIC_SLOTS = 0,
 	PAID_RELIC_SLOTS = 1,
-	MAX_RELIC_SLOTS = 4,
+	MAX_RELIC_SLOTS = 2,
 
 	-- soft currency name
 	COIN_NAME = "Coins",
