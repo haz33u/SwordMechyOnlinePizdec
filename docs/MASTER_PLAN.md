@@ -192,7 +192,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | P1 | Enchant polish / TransferEnchant | config ready; not wired | dust |
 | P1 | Boss → Loc2 unlock UX | soft gate polish | quests |
 | P1 | Real dungeon fight + **per-player** gate | AFK timer only | DungeonService |
-| P1 | EquipRelic / UpgradeRelic | no remotes | RelicConfig |
+| P1 | ~~EquipRelic / UpgradeRelic~~ **DONE (f8338e2)** | Relic UI, equipped cards RELICcard1..3, MMB upgrade, Ctrl+MMB lock wired | RelicConfig |
 | P2 | World pads + polish Ferryman / `SetLocation` UX | backend exists; map pads + UI | Place art |
 | P2 | ~~**Pets → 100% unique.**~~ **DONE 2026-08-03 — audit reports `Models to generate: 0`.** Root cause of look-alikes: every pet maps to a *different* slot name, so no code check can catch it — the duplicates lived in the CONTENT of differently-named slots (`Waifu`/`E-D`/`S-A` = one 216-part Nereus). The only real duplicate was Nereid vs Nereus; `Workspace.Nereid` (34p merfolk) was installed into slot `E-D` for `P2_K_L2` via `tools/fix_pet_models.lua` — **zero generations used**. The old 216-part `E-D` is in `ServerStorage.RetiredPetModels`, not deleted. Nothing is missing a model. Re-verify any time with `tools/audit_pet_models.lua`; new pets must follow `docs/PET_GENERATION_BRIEF.md` (4 axes: silhouette / rarity-locked palette / material / one signature detail; ≤250 parts). **Dead mapping `P2_K_M1` removed (2026-08-02).** | — | PetModelConfig |
 | P2 | Loc2–4 content + IconConfig Loc2+ | Loc2 dump in configs; art/markers | Place + FIGMA_PROMPTS |
