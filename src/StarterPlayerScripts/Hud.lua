@@ -220,100 +220,6 @@ function Hud.Mount(
 
 		railBtns[item.id] = pill
 	end
-	---------------------------------------------------------------- DUNGEON QUICK TELEPORT BUTTON
-	local dungBanner = Instance.new("Frame")
-	dungBanner.Name = "DungeonQuickTeleport"
-	dungBanner.Size = UDim2.fromOffset(210, 48)
-	dungBanner.Position = UDim2.new(0, 96, 1, -80)
-	dungBanner.BackgroundColor3 = Color3.fromRGB(30, 20, 45)
-	dungBanner.BackgroundTransparency = 0.15
-	dungBanner.ZIndex = 15
-	dungBanner.Parent = root
-
-	local dungCorner = Instance.new("UICorner")
-	dungCorner.CornerRadius = UDim.new(0, 10)
-	dungCorner.Parent = dungBanner
-
-	local dungStroke = Instance.new("UIStroke")
-	dungStroke.Color = Color3.fromRGB(180, 40, 255)
-	dungStroke.Thickness = 2
-	dungStroke.Parent = dungBanner
-
-	local dungIcon = Instance.new("TextLabel")
-	dungIcon.Size = UDim2.fromOffset(36, 36)
-	dungIcon.Position = UDim2.fromOffset(6, 6)
-	dungIcon.BackgroundTransparency = 1
-	dungIcon.Text = "🏰"
-	dungIcon.TextSize = 22
-	dungIcon.Parent = dungBanner
-
-	local dungTxt = Instance.new("TextLabel")
-	dungTxt.Size = UDim2.new(1, -50, 1, 0)
-	dungTxt.Position = UDim2.fromOffset(46, 0)
-	dungTxt.BackgroundTransparency = 1
-	dungTxt.Text = "DUNGEON READY!\nClick to Teleport [E]"
-	dungTxt.TextColor3 = Color3.fromRGB(245, 220, 255)
-	dungTxt.Font = Enum.Font.Arcade
-	dungTxt.TextSize = 12
-	dungTxt.TextXAlignment = Enum.TextXAlignment.Left
-	dungTxt.Parent = dungBanner
-
-	local dungBtn = Instance.new("TextButton")
-	dungBtn.Size = UDim2.fromScale(1, 1)
-	dungBtn.BackgroundTransparency = 1
-	dungBtn.Text = ""
-	dungBtn.ZIndex = 20
-	dungBtn.Parent = dungBanner
-
-	dungBtn.MouseButton1Click:Connect(function()
-		store:OpenPanel("dungeons")
-	end)
-
-	---------------------------------------------------------------- EXIT DUNGEON BUTTON
-	local dungExitBanner = Instance.new("Frame")
-	dungExitBanner.Name = "DungeonExitButton"
-	dungExitBanner.Size = UDim2.fromOffset(160, 48)
-	dungExitBanner.Position = UDim2.new(0, 314, 1, -80)
-	dungExitBanner.BackgroundColor3 = Color3.fromRGB(80, 20, 30)
-	dungExitBanner.BackgroundTransparency = 0.15
-	dungExitBanner.ZIndex = 15
-	dungExitBanner.Parent = root
-
-	local dungExitCorner = Instance.new("UICorner")
-	dungExitCorner.CornerRadius = UDim.new(0, 10)
-	dungExitCorner.Parent = dungExitBanner
-
-	local dungExitStroke = Instance.new("UIStroke")
-	dungExitStroke.Color = Color3.fromRGB(255, 60, 80)
-	dungExitStroke.Thickness = 2
-	dungExitStroke.Parent = dungExitBanner
-
-	local dungExitTxt = Instance.new("TextLabel")
-	dungExitTxt.Size = UDim2.fromScale(1, 1)
-	dungExitTxt.BackgroundTransparency = 1
-	dungExitTxt.Text = "🚪 EXIT DUNGEON"
-	dungExitTxt.TextColor3 = Color3.fromRGB(255, 220, 220)
-	dungExitTxt.Font = Enum.Font.Arcade
-	dungExitTxt.TextSize = 13
-	dungExitTxt.Parent = dungExitBanner
-
-	local dungExitBtn = Instance.new("TextButton")
-	dungExitBtn.Size = UDim2.fromScale(1, 1)
-	dungExitBtn.BackgroundTransparency = 1
-	dungExitBtn.Text = ""
-	dungExitBtn.ZIndex = 20
-	dungExitBtn.Parent = dungExitBanner
-
-	dungExitBtn.MouseButton1Click:Connect(function()
-		local SharedRemotes = ReplicatedStorage:FindFirstChild("Remotes")
-		if SharedRemotes then
-			local exitEv = SharedRemotes:FindFirstChild("ExitDungeon")
-			if exitEv and exitEv:IsA("RemoteEvent") then
-				exitEv:FireServer()
-			end
-		end
-	end)
-
 	-- Inventory shell tabs (INVETAR): open weapons panel with tab
 	-- "character" / UP = dedicated Character Upgrade window (not inventory profile)
 	local INV_TABS = {
@@ -413,7 +319,7 @@ function Hud.Mount(
 	boosts.Name = "Boosts"
 	boosts.BackgroundTransparency = 1
 	boosts.Size = UDim2.fromOffset(220, 160)
-	boosts.Position = UDim2.fromOffset(90, 14)
+	boosts.Position = UDim2.fromOffset(190, 14)
 	boosts.ZIndex = 11
 	boosts.Parent = root
 	local boostList = UIKit.List(boosts, 6, false)
@@ -468,7 +374,7 @@ function Hud.Mount(
 	anomBanner.BackgroundTransparency = 0.15
 	anomBanner.BorderSizePixel = 0
 	anomBanner.Size = UDim2.fromOffset(220, 36)
-	anomBanner.Position = UDim2.fromOffset(90, 178)
+	anomBanner.Position = UDim2.fromOffset(190, 178)
 	anomBanner.ZIndex = 12
 	anomBanner.Visible = false
 	anomBanner.Font = T.Font.Title
@@ -833,12 +739,6 @@ function Hud.Mount(
 		end
 		if boosts and boosts:IsA("GuiObject") then
 			boosts.Visible = not invOpen
-		end
-		if dungBanner and dungBanner:IsA("GuiObject") then
-			dungBanner.Visible = not invOpen
-		end
-		if dungExitBanner and dungExitBanner:IsA("GuiObject") then
-			dungExitBanner.Visible = not invOpen
 		end
 		if anomBanner and anomBanner:IsA("GuiObject") and invOpen then
 			anomBanner.Visible = false
