@@ -64,7 +64,7 @@ local function sanitizeParts(root: Instance)
 			d.Massless = true
 			d.Anchored = true
 			d.CastShadow = true
-		elseif d:IsA("BaseScript") or d:IsA("Sound") or d:IsA("ForceField") or d:IsA("Camera") then
+		elseif d:IsA("LuaSourceContainer") or d:IsA("Sound") or d:IsA("ForceField") or d:IsA("Camera") then
 			d:Destroy()
 		elseif d:IsA("Motor6D") or d:IsA("Humanoid") or d:IsA("Animator") or d:IsA("AnimationController") then
 			-- Pet models are anchored cosmetics: rig motors/humanoid only interfere with

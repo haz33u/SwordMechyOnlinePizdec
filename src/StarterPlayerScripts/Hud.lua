@@ -763,7 +763,10 @@ function Hud.Mount(
 			local m = math.floor(left / 60)
 			local s = left % 60
 			anomBanner.Visible = true
-			anomBanner.Text = string.format("⚡ %s  %d:%02d", anom.name, m, s)
+			local txtLab = anomBanner:FindFirstChild("Text")
+			if txtLab and txtLab:IsA("TextLabel") then
+				txtLab.Text = string.format("%s  %d:%02d", anom.name, m, s)
+			end
 		else
 			anomBanner.Visible = false
 		end
