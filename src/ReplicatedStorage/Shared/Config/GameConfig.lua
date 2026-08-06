@@ -20,7 +20,7 @@ local GameConfig = {
 		This ties combat wall (5T Loc3 → 150T Loc4 → 3Qi Loc7) to farming pace:
 		player needs ~combatWall lifetime damage to comfortably clear next location.
 	]]
-	DAMAGE_TO_POWER_RATE = 0.0001,
+	DAMAGE_TO_POWER_RATE = 0, -- lifetimeDamage is pure stat tracker, does not auto-inflate base power
 	MIN_SWING_COOLDOWN = 0.12,
 	--[[
 		Melee reach (studs). Minecraft-like: must stand close.
