@@ -1,13 +1,14 @@
 --!strict
 --[[
-	Low-Poly 3D Weapon Generator for Location 2 (Pirate Shore).
-	Run this script in Roblox Studio Command Bar to generate all Location 2 weapons
-	and place them directly into ReplicatedStorage.WeaponModels!
+	High-Detail 3D Weapon Generator for Location 2 (Pirate Shore / Maritime Theme).
+	Run this script in Roblox Studio Command Bar (or via tools/mcp_exec.js) to generate
+	all Location 2 weapons into ReplicatedStorage.WeaponModels!
 
-	Each generated model adheres strictly to docs/WEAPON_HOLD.md:
-	  - PrimaryPart named "Handle"
-	  - SM_Hilt Attachment baked on handle pommel
-	  - Low-poly cartoon aesthetic (smooth colors, neon accents, clean geometry)
+	Design Standard:
+	  - Smooth cylindrical handles with leather/cloth wrapping rings & brass pommels.
+	  - Multipart curved guards, basket hilts, skull/gem sockets, and trident prongs.
+	  - Multi-layered blades with fullers, beveled edges, and glowing sea-blue/gold accents.
+	  - PrimaryPart named "Handle" with baked "SM_Hilt" attachment.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,291 +19,318 @@ if not WeaponModelsFolder then
 	WeaponModelsFolder.Parent = ReplicatedStorage
 end
 
-local function makePart(name: string, size: Vector3, color: Color3, material: Enum.Material, cframe: CFrame, parent: Instance): Part
+local function color(r: number, g: number, b: number): Color3
+	return Color3.fromRGB(r, g, b)
+end
+
+local PAL = {
+	darkWood = color(50, 32, 18),
+	richWood = color(85, 55, 30),
+	brass = color(210, 160, 50),
+	gold = color(245, 195, 40),
+	darkIron = color(45, 50, 58),
+	steel = color(160, 175, 190),
+	brightSteel = color(220, 230, 240),
+	coralRed = color(220, 60, 50),
+	seaBlue = color(40, 160, 220),
+	krakenPurple = color(140, 40, 210),
+	glowCyan = color(60, 240, 255),
+	glowSea = color(30, 220, 160),
+	bone = color(225, 215, 190),
+}
+
+local function makePart(parent: Instance, name: string, size: Vector3, cf: CFrame, col: Color3, mat: Enum.Material?, shiny: number?): Part
 	local p = Instance.new("Part")
 	p.Name = name
 	p.Size = size
-	p.Color = color
-	p.Material = material or Enum.Material.SmoothPlastic
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.CFrame = cf
 	p.Anchored = false
 	p.CanCollide = false
-	p.CFrame = cframe
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.Color = col
+	p.Material = mat or Enum.Material.SmoothPlastic
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	if shiny then
+		p.Reflectance = shiny
+	end
 	p.Parent = parent
 	return p
 end
 
-local function makeWedge(name: string, size: Vector3, color: Color3, material: Enum.Material, cframe: CFrame, parent: Instance): WedgePart
+local function makeCyl(parent: Instance, name: string, height: number, radius: number, cf: CFrame, col: Color3, mat: Enum.Material?): Part
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Shape = Enum.PartType.Cylinder
+	p.Size = Vector3.new(height, radius * 2, radius * 2)
+	p.CFrame = cf * CFrame.Angles(0, 0, math.rad(90))
+	p.Anchored = false
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.Color = col
+	p.Material = mat or Enum.Material.SmoothPlastic
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = parent
+	return p
+end
+
+local function makeWedge(parent: Instance, name: string, size: Vector3, cf: CFrame, col: Color3, mat: Enum.Material?): WedgePart
 	local p = Instance.new("WedgePart")
 	p.Name = name
 	p.Size = size
-	p.Color = color
-	p.Material = material or Enum.Material.SmoothPlastic
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.CFrame = cf
 	p.Anchored = false
 	p.CanCollide = false
-	p.CFrame = cframe
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.Color = col
+	p.Material = mat or Enum.Material.SmoothPlastic
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
 	p.Parent = parent
 	return p
 end
 
-local function makeWeld(part0: BasePart, part1: BasePart): WeldConstraint
-	local w = Instance.new("WeldConstraint")
-	w.Part0 = part0
-	w.Part1 = part1
-	w.Parent = part0
-	return w
-end
-
-local function bakeHilt(model: Model, handle: BasePart, hiltOffsetFromBottom: number)
-	model.PrimaryPart = handle
-	local hilt = handle:FindFirstChild("SM_Hilt") or Instance.new("Attachment")
-	hilt.Name = "SM_Hilt"
-	hilt.CFrame = CFrame.new(0, -handle.Size.Y / 2 + hiltOffsetFromBottom, 0) * CFrame.Angles(0, 0, 0)
-	hilt.Parent = handle
-end
-
---------------------------------------------------------------------------------
--- WEAPON BUILDERS
---------------------------------------------------------------------------------
-
--- 1. Pirate Hook (pirate_hook)
-local function buildPirateHook(): Model
-	local m = Instance.new("Model")
-	m.Name = "PirateHook"
-
-	local handle = makePart("Handle", Vector3.new(0.4, 1.2, 0.4), Color3.fromRGB(80, 45, 20), Enum.Material.Wood, CFrame.new(0, 0.6, 0), m)
-	local guard = makePart("Guard", Vector3.new(0.85, 0.22, 0.85), Color3.fromRGB(180, 140, 60), Enum.Material.Metal, CFrame.new(0, 1.2, 0), m)
-	makeWeld(handle, guard)
-
-	-- Hook shank + curved tip (wedge parts)
-	local shank = makePart("Shank", Vector3.new(0.22, 1.2, 0.35), Color3.fromRGB(200, 210, 220), Enum.Material.Metal, CFrame.new(0, 1.85, 0), m)
-	makeWeld(handle, shank)
-
-	local hookCurve = makeWedge("HookCurve", Vector3.new(0.22, 1.0, 0.7), Color3.fromRGB(210, 220, 230), Enum.Material.Metal, CFrame.new(0, 2.35, 0.35) * CFrame.Angles(math.rad(20), 0, 0), m)
-	makeWeld(handle, hookCurve)
-
-	local tip = makePart("HookTip", Vector3.new(0.18, 0.35, 0.18), Color3.fromRGB(230, 240, 250), Enum.Material.Metal, CFrame.new(0, 2.85, 0.65), m)
-	makeWeld(handle, tip)
-
-	bakeHilt(m, handle, 0.2)
-	return m
-end
-
--- 2. Pirate Hammer (pirate_hammer)
-local function buildPirateHammer(): Model
-	local m = Instance.new("Model")
-	m.Name = "PirateHammer"
-
-	local shaft = makePart("Handle", Vector3.new(0.35, 3.8, 0.35), Color3.fromRGB(70, 40, 20), Enum.Material.Wood, CFrame.new(0, 1.9, 0), m)
-
-	-- Center block + two striking faces so it doesn't look like a single flat box
-	local core = makePart("HammerCore", Vector3.new(1.1, 0.9, 1.1), Color3.fromRGB(110, 115, 120), Enum.Material.Metal, CFrame.new(0, 3.4, 0), m)
-	makeWeld(shaft, core)
-
-	local faceF = makePart("FaceFront", Vector3.new(0.95, 0.7, 0.35), Color3.fromRGB(90, 95, 100), Enum.Material.Metal, CFrame.new(0, 3.4, 0.72), m)
-	makeWeld(shaft, faceF)
-	local faceB = makePart("FaceBack", Vector3.new(0.95, 0.7, 0.35), Color3.fromRGB(90, 95, 100), Enum.Material.Metal, CFrame.new(0, 3.4, -0.72), m)
-	makeWeld(shaft, faceB)
-	local faceL = makePart("FaceLeft", Vector3.new(0.35, 0.7, 0.95), Color3.fromRGB(90, 95, 100), Enum.Material.Metal, CFrame.new(0.72, 3.4, 0), m)
-	makeWeld(shaft, faceL)
-	local faceR = makePart("FaceRight", Vector3.new(0.35, 0.7, 0.95), Color3.fromRGB(90, 95, 100), Enum.Material.Metal, CFrame.new(-0.72, 3.4, 0), m)
-	makeWeld(shaft, faceR)
-
-	local goldBand = makePart("GoldBand", Vector3.new(1.25, 0.18, 1.25), Color3.fromRGB(230, 180, 40), Enum.Material.Metal, CFrame.new(0, 3.75, 0), m)
-	makeWeld(shaft, goldBand)
-
-	bakeHilt(m, shaft, 0.3)
-	return m
-end
-
--- 3. Pirate Saber (pirate_saber)
-local function buildPirateSaber(): Model
-	local m = Instance.new("Model")
-	m.Name = "PirateSaber"
-
-	local handle = makePart("Handle", Vector3.new(0.32, 1.2, 0.32), Color3.fromRGB(40, 30, 25), Enum.Material.Leather, CFrame.new(0, 0.6, 0), m)
-	local pommel = makePart("Pommel", Vector3.new(0.5, 0.25, 0.5), Color3.fromRGB(210, 170, 50), Enum.Material.Metal, CFrame.new(0, 0.12, 0), m)
-	makeWeld(handle, pommel)
-
-	-- D-guard + basket bars
-	local basket = makePart("BasketGuard", Vector3.new(1.0, 0.3, 1.0), Color3.fromRGB(210, 170, 50), Enum.Material.Metal, CFrame.new(0, 1.2, 0), m)
-	makeWeld(handle, basket)
-	for _, ang in ipairs({0, 45, 90, 135}) do
-		local bar = makePart("BasketBar", Vector3.new(0.08, 0.08, 1.05), Color3.fromRGB(210, 170, 50), Enum.Material.Metal, CFrame.new(0, 1.2, 0) * CFrame.Angles(0, math.rad(ang), 0), m)
-		makeWeld(handle, bar)
+local function weldAll(model: Model, handle: BasePart)
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d ~= handle then
+			local w = Instance.new("WeldConstraint")
+			w.Part0 = handle
+			w.Part1 = d
+			w.Parent = d
+			d.Anchored = false
+		end
 	end
-
-	-- Curved blade: base + tapered wedge tip
-	local blade = makePart("Blade", Vector3.new(0.2, 2.4, 0.45), Color3.fromRGB(210, 220, 230), Enum.Material.Metal, CFrame.new(0, 2.5, 0.05), m)
-	makeWeld(handle, blade)
-	local tip = makeWedge("BladeTip", Vector3.new(0.18, 1.0, 0.38), Color3.fromRGB(220, 230, 240), Enum.Material.Metal, CFrame.new(0, 4.0, 0.05) * CFrame.Angles(0, 0, math.rad(5)), m)
-	makeWeld(handle, tip)
-	local fuller = makePart("Fuller", Vector3.new(0.08, 1.8, 0.05), Color3.fromRGB(180, 190, 200), Enum.Material.Metal, CFrame.new(0, 2.9, 0.24), m)
-	makeWeld(handle, fuller)
-
-	bakeHilt(m, handle, 0.2)
-	return m
+	handle.Anchored = false
 end
 
--- 4. Golden Plated Sword (golden_plated_sword)
-local function buildGoldenPlatedSword(): Model
-	local m = Instance.new("Model")
-	m.Name = "GoldenPlatedSword"
+local function finishWeapon(model: Model, handle: BasePart, hiltYOffset: number)
+	handle.Name = "Handle"
+	model.PrimaryPart = handle
 
-	local handle = makePart("Handle", Vector3.new(0.32, 1.2, 0.32), Color3.fromRGB(20, 20, 25), Enum.Material.Leather, CFrame.new(0, 0.6, 0), m)
-	local pommel = makePart("Pommel", Vector3.new(0.55, 0.25, 0.55), Color3.fromRGB(245, 195, 40), Enum.Material.Metal, CFrame.new(0, 0.12, 0), m)
-	makeWeld(handle, pommel)
-
-	local crossguard = makePart("Crossguard", Vector3.new(1.5, 0.28, 0.45), Color3.fromRGB(245, 195, 40), Enum.Material.Metal, CFrame.new(0, 1.25, 0), m)
-	makeWeld(handle, crossguard)
-	local crossTipL = makePart("CrossTipL", Vector3.new(0.2, 0.2, 0.45), Color3.fromRGB(255, 220, 60), Enum.Material.Neon, CFrame.new(0.85, 1.25, 0), m)
-	makeWeld(handle, crossTipL)
-	local crossTipR = makePart("CrossTipR", Vector3.new(0.2, 0.2, 0.45), Color3.fromRGB(255, 220, 60), Enum.Material.Neon, CFrame.new(-0.85, 1.25, 0), m)
-	makeWeld(handle, crossTipR)
-
-	local gem = makePart("Gem", Vector3.new(0.35, 0.35, 0.35), Color3.fromRGB(239, 68, 68), Enum.Material.Neon, CFrame.new(0, 1.25, 0), m)
-	makeWeld(handle, gem)
-
-	local blade = makePart("Blade", Vector3.new(0.22, 2.8, 0.45), Color3.fromRGB(255, 215, 70), Enum.Material.Metal, CFrame.new(0, 2.85, 0), m)
-	makeWeld(handle, blade)
-	local tip = makeWedge("BladeTip", Vector3.new(0.2, 0.9, 0.4), Color3.fromRGB(255, 230, 90), Enum.Material.Metal, CFrame.new(0, 4.1, 0), m)
-	makeWeld(handle, tip)
-	local fuller = makePart("Fuller", Vector3.new(0.08, 2.0, 0.06), Color3.fromRGB(230, 180, 40), Enum.Material.Neon, CFrame.new(0, 3.0, 0.23), m)
-	makeWeld(handle, fuller)
-
-	bakeHilt(m, handle, 0.2)
-	return m
-end
-
--- 5. Captain Axe (captain_axe)
-local function buildCaptainAxe(): Model
-	local m = Instance.new("Model")
-	m.Name = "CaptainAxe"
-
-	local shaft = makePart("Handle", Vector3.new(0.35, 4.2, 0.35), Color3.fromRGB(60, 35, 15), Enum.Material.Wood, CFrame.new(0, 2.1, 0), m)
-	local pommel = makePart("Pommel", Vector3.new(0.55, 0.2, 0.55), Color3.fromRGB(180, 140, 60), Enum.Material.Metal, CFrame.new(0, 0.1, 0), m)
-	makeWeld(shaft, pommel)
-
-	-- Axe head built from multiple parts for a solid silhouette
-	local headCore = makePart("AxeHeadCore", Vector3.new(0.4, 1.4, 1.6), Color3.fromRGB(130, 135, 140), Enum.Material.Metal, CFrame.new(0, 3.6, 0), m)
-	makeWeld(shaft, headCore)
-	local bladeL = makeWedge("AxeBladeL", Vector3.new(0.15, 1.5, 1.0), Color3.fromRGB(180, 190, 200), Enum.Material.Metal, CFrame.new(0, 3.6, 0.85) * CFrame.Angles(0, math.rad(90), 0), m)
-	makeWeld(shaft, bladeL)
-	local bladeR = makeWedge("AxeBladeR", Vector3.new(0.15, 1.5, 1.0), Color3.fromRGB(180, 190, 200), Enum.Material.Metal, CFrame.new(0, 3.6, -0.85) * CFrame.Angles(0, -math.rad(90), 0), m)
-	makeWeld(shaft, bladeR)
-
-	-- Skull emblem with eye sockets
-	local skull = makePart("SkullEmblem", Vector3.new(0.6, 0.55, 0.55), Color3.fromRGB(240, 240, 240), Enum.Material.SmoothPlastic, CFrame.new(0, 3.6, 0), m)
-	makeWeld(shaft, skull)
-	local eyeL = makePart("EyeL", Vector3.new(0.12, 0.12, 0.08), Color3.fromRGB(30, 30, 30), Enum.Material.SmoothPlastic, CFrame.new(0.12, 3.65, 0.25), m)
-	makeWeld(shaft, eyeL)
-	local eyeR = makePart("EyeR", Vector3.new(0.12, 0.12, 0.08), Color3.fromRGB(30, 30, 30), Enum.Material.SmoothPlastic, CFrame.new(-0.12, 3.65, 0.25), m)
-	makeWeld(shaft, eyeR)
-
-	bakeHilt(m, shaft, 0.3)
-	return m
-end
-
--- 6. Element Blade (element_blade)
-local function buildElementBlade(): Model
-	local m = Instance.new("Model")
-	m.Name = "ElementBlade"
-
-	local handle = makePart("Handle", Vector3.new(0.32, 1.2, 0.32), Color3.fromRGB(20, 30, 40), Enum.Material.SmoothPlastic, CFrame.new(0, 0.6, 0), m)
-	local guard = makePart("Guard", Vector3.new(1.35, 0.32, 0.45), Color3.fromRGB(16, 185, 129), Enum.Material.Neon, CFrame.new(0, 1.25, 0), m)
-	makeWeld(handle, guard)
-	local guardGem = makePart("GuardGem", Vector3.new(0.35, 0.35, 0.35), Color3.fromRGB(52, 211, 153), Enum.Material.Neon, CFrame.new(0, 1.25, 0), m)
-	makeWeld(handle, guardGem)
-
-	-- Layered elemental blade
-	local core = makePart("BladeCore", Vector3.new(0.18, 2.8, 0.35), Color3.fromRGB(20, 40, 60), Enum.Material.SmoothPlastic, CFrame.new(0, 2.8, 0), m)
-	makeWeld(handle, core)
-	local blade = makePart("Blade", Vector3.new(0.22, 2.9, 0.42), Color3.fromRGB(56, 189, 248), Enum.Material.Neon, CFrame.new(0, 2.85, 0), m)
-	makeWeld(handle, blade)
-	local tip = makeWedge("BladeTip", Vector3.new(0.2, 0.9, 0.35), Color3.fromRGB(120, 220, 255), Enum.Material.Neon, CFrame.new(0, 4.05, 0), m)
-	makeWeld(handle, tip)
-	local edge = makePart("Edge", Vector3.new(0.06, 2.4, 0.08), Color3.fromRGB(220, 250, 255), Enum.Material.Neon, CFrame.new(0, 2.95, 0.22), m)
-	makeWeld(handle, edge)
-
-	bakeHilt(m, handle, 0.2)
-	return m
-end
-
--- 7. Emerald Blade (emerald_blade)
-local function buildEmeraldBlade(): Model
-	local m = Instance.new("Model")
-	m.Name = "EmeraldBlade"
-
-	local handle = makePart("Handle", Vector3.new(0.32, 1.2, 0.32), Color3.fromRGB(15, 25, 20), Enum.Material.Leather, CFrame.new(0, 0.6, 0), m)
-	local pommel = makePart("Pommel", Vector3.new(0.5, 0.22, 0.5), Color3.fromRGB(16, 185, 129), Enum.Material.Metal, CFrame.new(0, 0.11, 0), m)
-	makeWeld(handle, pommel)
-
-	local guard = makePart("Guard", Vector3.new(1.45, 0.3, 0.48), Color3.fromRGB(16, 185, 129), Enum.Material.Metal, CFrame.new(0, 1.25, 0), m)
-	makeWeld(handle, guard)
-	local guardGem = makePart("GuardGem", Vector3.new(0.35, 0.35, 0.35), Color3.fromRGB(52, 211, 153), Enum.Material.Neon, CFrame.new(0, 1.25, 0), m)
-	makeWeld(handle, guardGem)
-
-	local blade = makePart("Blade", Vector3.new(0.24, 2.9, 0.48), Color3.fromRGB(52, 211, 153), Enum.Material.Glass, CFrame.new(0, 2.9, 0), m)
-	makeWeld(handle, blade)
-	local tip = makeWedge("BladeTip", Vector3.new(0.22, 0.95, 0.42), Color3.fromRGB(110, 245, 190), Enum.Material.Glass, CFrame.new(0, 4.1, 0), m)
-	makeWeld(handle, tip)
-	local facetL = makePart("FacetL", Vector3.new(0.12, 2.0, 0.08), Color3.fromRGB(30, 160, 110), Enum.Material.Glass, CFrame.new(0.1, 3.0, 0.22) * CFrame.Angles(0, math.rad(15), 0), m)
-	makeWeld(handle, facetL)
-	local facetR = makePart("FacetR", Vector3.new(0.12, 2.0, 0.08), Color3.fromRGB(30, 160, 110), Enum.Material.Glass, CFrame.new(-0.1, 3.0, 0.22) * CFrame.Angles(0, -math.rad(15), 0), m)
-	makeWeld(handle, facetR)
-
-	bakeHilt(m, handle, 0.2)
-	return m
-end
-
--- 8. Sea Dagger (sea_dagger)
-local function buildSeaDagger(): Model
-	local m = Instance.new("Model")
-	m.Name = "SeaDagger"
-
-	local handle = makePart("Handle", Vector3.new(0.28, 0.9, 0.28), Color3.fromRGB(240, 230, 220), Enum.Material.SmoothPlastic, CFrame.new(0, 0.45, 0), m)
-	local pommel = makePart("Pommel", Vector3.new(0.4, 0.18, 0.4), Color3.fromRGB(244, 114, 182), Enum.Material.SmoothPlastic, CFrame.new(0, 0.09, 0), m)
-	makeWeld(handle, pommel)
-
-	local guard = makePart("Guard", Vector3.new(0.9, 0.22, 0.35), Color3.fromRGB(244, 114, 182), Enum.Material.SmoothPlastic, CFrame.new(0, 0.95, 0), m)
-	makeWeld(handle, guard)
-
-	local blade = makePart("Blade", Vector3.new(0.18, 1.7, 0.38), Color3.fromRGB(14, 165, 233), Enum.Material.Neon, CFrame.new(0, 1.85, 0), m)
-	makeWeld(handle, blade)
-	local tip = makeWedge("BladeTip", Vector3.new(0.16, 0.6, 0.32), Color3.fromRGB(120, 220, 255), Enum.Material.Neon, CFrame.new(0, 2.75, 0), m)
-	makeWeld(handle, tip)
-	local ridge = makePart("Ridge", Vector3.new(0.06, 1.2, 0.06), Color3.fromRGB(220, 250, 255), Enum.Material.Neon, CFrame.new(0, 2.0, 0.19), m)
-	makeWeld(handle, ridge)
-
-	bakeHilt(m, handle, 0.15)
-	return m
-end
-
---------------------------------------------------------------------------------
--- EXECUTE GENERATION
---------------------------------------------------------------------------------
-local builders = {
-	buildPirateHook,
-	buildPirateHammer,
-	buildPirateSaber,
-	buildGoldenPlatedSword,
-	buildCaptainAxe,
-	buildElementBlade,
-	buildEmeraldBlade,
-	buildSeaDagger,
-}
-
-print("[WeaponGenerator] Generating Location 2 Low-Poly 3D Weapons...")
-for _, b in ipairs(builders) do
-	local model = b()
 	local existing = WeaponModelsFolder:FindFirstChild(model.Name)
 	if existing then
 		existing:Destroy()
 	end
+
+	weldAll(model, handle)
+
+	local hilt = Instance.new("Attachment")
+	hilt.Name = "SM_Hilt"
+	hilt.CFrame = CFrame.new(0, -handle.Size.Y / 2 + hiltYOffset, 0)
+	hilt.Parent = handle
+
 	model.Parent = WeaponModelsFolder
-	print(" -> Created 3D Weapon Model: " .. model.Name)
+	print("Generated Loc2 Weapon:", model.Name)
 end
-print("[WeaponGenerator] Location 2 Weapons successfully built into ReplicatedStorage.WeaponModels!")
+
+--------------------------------------------------------------------------------
+-- LOC 2 WEAPON BUILDERS
+--------------------------------------------------------------------------------
+
+-- 1. Pirate Hook (PirateHook)
+local function buildPirateHook(): Model
+	local m = Instance.new("Model")
+	m.Name = "PirateHook"
+
+	local handle = makeCyl(m, "HandleCore", 1.2, 0.22, CFrame.new(0, 0.6, 0), PAL.darkWood, Enum.Material.Wood)
+	makeCyl(m, "GripWrap1", 0.3, 0.24, CFrame.new(0, 0.45, 0), PAL.coralRed, Enum.Material.Fabric)
+	makeCyl(m, "GripWrap2", 0.3, 0.24, CFrame.new(0, 0.75, 0), PAL.coralRed, Enum.Material.Fabric)
+	makeCyl(m, "Pommel", 0.18, 0.28, CFrame.new(0, 0.08, 0), PAL.brass, Enum.Material.Metal)
+
+	-- Brass Cup Guard
+	local cup = makeCyl(m, "GuardCup", 0.25, 0.55, CFrame.new(0, 1.2, 0), PAL.brass, Enum.Material.Metal)
+	makeCyl(m, "GuardRim", 0.1, 0.6, CFrame.new(0, 1.3, 0), PAL.gold, Enum.Material.Metal)
+
+	-- Curved Hook Shank & Barbs
+	local baseShank = makeCyl(m, "ShankBase", 0.8, 0.18, CFrame.new(0, 1.6, 0), PAL.steel, Enum.Material.Metal)
+	local hookMid = makeWedge(m, "HookMid", Vector3.new(0.2, 1.1, 0.6), CFrame.new(0, 2.2, 0.25) * CFrame.Angles(math.rad(25), 0, 0), PAL.brightSteel, Enum.Material.Metal)
+	local hookTip = makeWedge(m, "HookTip", Vector3.new(0.18, 0.8, 0.5), CFrame.new(0, 2.8, 0.6) * CFrame.Angles(math.rad(130), 0, 0), PAL.brightSteel, Enum.Material.Metal)
+	makePart(m, "Barb", Vector3.new(0.1, 0.3, 0.15), CFrame.new(0, 2.5, 0.75) * CFrame.Angles(math.rad(45), 0, 0), PAL.coralRed, Enum.Material.SmoothPlastic)
+
+	finishWeapon(m, handle, 0.15)
+	return m
+end
+
+-- 2. Pirate Hammer / Anchor Hammer (PirateHammer)
+local function buildPirateHammer(): Model
+	local m = Instance.new("Model")
+	m.Name = "PirateHammer"
+
+	local handle = makeCyl(m, "Shaft", 3.8, 0.18, CFrame.new(0, 1.9, 0), PAL.richWood, Enum.Material.Wood)
+	makeCyl(m, "GripBand1", 0.4, 0.2, CFrame.new(0, 0.6, 0), PAL.coralRed, Enum.Material.Fabric)
+	makeCyl(m, "GripBand2", 0.4, 0.2, CFrame.new(0, 1.2, 0), PAL.coralRed, Enum.Material.Fabric)
+	makeCyl(m, "PommelCap", 0.2, 0.26, CFrame.new(0, 0.1, 0), PAL.brass, Enum.Material.Metal)
+
+	-- Heavy Iron Anchor Head
+	local headBlock = makePart(m, "HeadBlock", Vector3.new(0.6, 0.9, 0.6), CFrame.new(0, 3.4, 0), PAL.darkIron, Enum.Material.Metal)
+	local anchorRing = makeCyl(m, "AnchorRing", 0.15, 0.45, CFrame.new(0, 3.95, 0), PAL.brass, Enum.Material.Metal)
+
+	-- Flukes (Anchor Arms)
+	local leftArm = makeWedge(m, "LeftFluke", Vector3.new(0.35, 1.2, 0.8), CFrame.new(-0.6, 3.2, 0) * CFrame.Angles(0, 0, math.rad(55)), PAL.steel, Enum.Material.Metal)
+	local rightArm = makeWedge(m, "RightFluke", Vector3.new(0.35, 1.2, 0.8), CFrame.new(0.6, 3.2, 0) * CFrame.Angles(0, 0, math.rad(-55)), PAL.steel, Enum.Material.Metal)
+
+	-- Barnacle / Gem Highlight
+	makePart(m, "GemCore", Vector3.new(0.25, 0.25, 0.65), CFrame.new(0, 3.4, 0), PAL.glowCyan, Enum.Material.Neon)
+
+	finishWeapon(m, handle, 0.2)
+	return m
+end
+
+-- 3. Pirate Cutlass (Cutlass)
+local function buildCutlass(): Model
+	local m = Instance.new("Model")
+	m.Name = "Cutlass"
+
+	local handle = makeCyl(m, "HandleCore", 1.1, 0.16, CFrame.new(0, 0.55, 0), PAL.darkWood, Enum.Material.Wood)
+	makeCyl(m, "Pommel", 0.2, 0.25, CFrame.new(0, 0.08, 0), PAL.brass, Enum.Material.Metal)
+
+	-- Curved Guard D-Ring
+	local guardPlate = makeCyl(m, "GuardPlate", 0.12, 0.55, CFrame.new(0, 1.1, 0), PAL.brass, Enum.Material.Metal)
+	local dRing = makePart(m, "DRing", Vector3.new(0.12, 1.1, 0.45), CFrame.new(0, 0.55, 0.25), PAL.brass, Enum.Material.Metal)
+
+	-- Broad Curved Cutlass Blade
+	local bladeBase = makePart(m, "BladeBase", Vector3.new(0.12, 2.2, 0.45), CFrame.new(0, 2.2, 0), PAL.steel, Enum.Material.Metal, 0.2)
+	local bladeCurve = makeWedge(m, "BladeCurve", Vector3.new(0.12, 1.2, 0.6), CFrame.new(0, 3.4, 0.08) * CFrame.Angles(math.rad(8), 0, 0), PAL.brightSteel, Enum.Material.Metal, 0.3)
+	local tipWedge = makeWedge(m, "BladeTip", Vector3.new(0.1, 0.8, 0.5), CFrame.new(0, 4.0, 0.25) * CFrame.Angles(math.rad(-15), 0, 0), PAL.brightSteel, Enum.Material.Metal, 0.3)
+
+	-- Fuller Grooves
+	makePart(m, "Fuller", Vector3.new(0.14, 2.0, 0.1), CFrame.new(0, 2.3, -0.05), PAL.darkIron, Enum.Material.Metal)
+
+	finishWeapon(m, handle, 0.15)
+	return m
+end
+
+-- 4. Corsair Sabre (CorsairSabre)
+local function buildCorsairSabre(): Model
+	local m = Instance.new("Model")
+	m.Name = "CorsairSabre"
+
+	local handle = makeCyl(m, "HandleCore", 1.2, 0.15, CFrame.new(0, 0.6, 0), PAL.richWood, Enum.Material.Wood)
+	makeCyl(m, "GripRing1", 0.1, 0.17, CFrame.new(0, 0.4, 0), PAL.gold, Enum.Material.Metal)
+	makeCyl(m, "GripRing2", 0.1, 0.17, CFrame.new(0, 0.8, 0), PAL.gold, Enum.Material.Metal)
+	makeCyl(m, "PommelGem", 0.22, 0.24, CFrame.new(0, 0.08, 0), PAL.coralRed, Enum.Material.Neon)
+
+	-- Ornate Shell Guard
+	local guardCross = makePart(m, "GuardCross", Vector3.new(0.7, 0.12, 0.7), CFrame.new(0, 1.2, 0), PAL.gold, Enum.Material.Metal)
+	local shellBow = makeWedge(m, "ShellBow", Vector3.new(0.5, 0.9, 0.4), CFrame.new(0, 0.75, 0.2) * CFrame.Angles(math.rad(180), 0, 0), PAL.brass, Enum.Material.Metal)
+
+	-- Slender Curved Sabre Blade
+	local bladeLower = makePart(m, "BladeLower", Vector3.new(0.1, 2.4, 0.35), CFrame.new(0, 2.4, 0), PAL.brightSteel, Enum.Material.Metal, 0.3)
+	local bladeUpper = makeWedge(m, "BladeUpper", Vector3.new(0.08, 1.6, 0.45), CFrame.new(0, 4.0, 0.08) * CFrame.Angles(math.rad(10), 0, 0), PAL.brightSteel, Enum.Material.Metal, 0.4)
+	makePart(m, "SabreGlow", Vector3.new(0.12, 2.0, 0.06), CFrame.new(0, 2.5, 0.05), PAL.glowSea, Enum.Material.Neon)
+
+	finishWeapon(m, handle, 0.15)
+	return m
+end
+
+-- 5. Sea Trident (SeaTrident)
+local function buildSeaTrident(): Model
+	local m = Instance.new("Model")
+	m.Name = "SeaTrident"
+
+	local shaft = makeCyl(m, "LongShaft", 4.2, 0.16, CFrame.new(0, 2.1, 0), PAL.darkIron, Enum.Material.Metal)
+	makeCyl(m, "ShaftGrip1", 0.5, 0.18, CFrame.new(0, 1.0, 0), PAL.seaBlue, Enum.Material.Fabric)
+	makeCyl(m, "ShaftGrip2", 0.5, 0.18, CFrame.new(0, 2.0, 0), PAL.seaBlue, Enum.Material.Fabric)
+	makeCyl(m, "BottomSpear", 0.5, 0.2, CFrame.new(0, 0.1, 0), PAL.brass, Enum.Material.Metal)
+
+	-- Trident Crown Base
+	local crownBase = makePart(m, "CrownBase", Vector3.new(0.9, 0.4, 0.3), CFrame.new(0, 4.2, 0), PAL.brass, Enum.Material.Metal)
+	local gemCenter = makePart(m, "TridentGem", Vector3.new(0.3, 0.3, 0.35), CFrame.new(0, 4.2, 0), PAL.glowCyan, Enum.Material.Neon)
+
+	-- 3 Prongs (Center long, Left & Right curved)
+	local centerProng = makePart(m, "CenterProng", Vector3.new(0.12, 1.8, 0.22), CFrame.new(0, 5.1, 0), PAL.brightSteel, Enum.Material.Metal, 0.4)
+	local centerTip = makeWedge(m, "CenterTip", Vector3.new(0.1, 0.6, 0.2), CFrame.new(0, 6.1, 0), PAL.glowCyan, Enum.Material.Neon)
+
+	local leftProng = makeWedge(m, "LeftProng", Vector3.new(0.1, 1.4, 0.3), CFrame.new(-0.45, 4.9, 0) * CFrame.Angles(0, 0, math.rad(-12)), PAL.brightSteel, Enum.Material.Metal, 0.3)
+	local rightProng = makeWedge(m, "RightProng", Vector3.new(0.1, 1.4, 0.3), CFrame.new(0.45, 4.9, 0) * CFrame.Angles(0, 0, math.rad(12)), PAL.brightSteel, Enum.Material.Metal, 0.3)
+
+	finishWeapon(m, shaft, 0.2)
+	return m
+end
+
+-- 6. Cannon Blade (Cannonblade)
+local function buildCannonblade(): Model
+	local m = Instance.new("Model")
+	m.Name = "Cannonblade"
+
+	local handle = makeCyl(m, "HandleCore", 1.3, 0.18, CFrame.new(0, 0.65, 0), PAL.darkWood, Enum.Material.Wood)
+	makeCyl(m, "Pommel", 0.22, 0.28, CFrame.new(0, 0.1, 0), PAL.darkIron, Enum.Material.Metal)
+
+	-- Cannon Barrel Hilt Assembly
+	local cannonBarrel = makeCyl(m, "CannonBarrel", 1.8, 0.35, CFrame.new(0, 2.0, 0), PAL.darkIron, Enum.Material.Metal)
+	local muzzleRing = makeCyl(m, "MuzzleRing", 0.15, 0.4, CFrame.new(0, 2.85, 0), PAL.brass, Enum.Material.Metal)
+	makePart(m, "FusableGlow", Vector3.new(0.12, 0.12, 0.4), CFrame.new(0, 1.4, -0.3), PAL.coralRed, Enum.Material.Neon)
+
+	-- Blade Mounted on Top of Barrel
+	local bladeSpine = makePart(m, "BladeSpine", Vector3.new(0.14, 2.6, 0.5), CFrame.new(0, 3.4, 0.1), PAL.steel, Enum.Material.Metal, 0.2)
+	local bladeTip = makeWedge(m, "BladeTip", Vector3.new(0.12, 1.0, 0.5), CFrame.new(0, 4.8, 0.1), PAL.brightSteel, Enum.Material.Metal, 0.3)
+
+	finishWeapon(m, handle, 0.2)
+	return m
+end
+
+-- 7. Kraken Blade (KrakenBlade)
+local function buildKrakenBlade(): Model
+	local m = Instance.new("Model")
+	m.Name = "KrakenBlade"
+
+	local handle = makeCyl(m, "HandleCore", 1.3, 0.18, CFrame.new(0, 0.65, 0), PAL.darkIron, Enum.Material.Metal)
+	makeCyl(m, "KrakenEyePommel", 0.28, 0.28, CFrame.new(0, 0.1, 0), PAL.glowCyan, Enum.Material.Neon)
+
+	-- Tentacle Curved Guard
+	local tentacle1 = makeWedge(m, "Tentacle1", Vector3.new(0.25, 1.0, 0.6), CFrame.new(-0.35, 1.3, 0) * CFrame.Angles(0, 0, math.rad(-35)), PAL.krakenPurple, Enum.Material.SmoothPlastic)
+	local tentacle2 = makeWedge(m, "Tentacle2", Vector3.new(0.25, 1.0, 0.6), CFrame.new(0.35, 1.3, 0) * CFrame.Angles(0, 0, math.rad(35)), PAL.krakenPurple, Enum.Material.SmoothPlastic)
+
+	-- Organic Jagged Kraken Blade
+	local bladeCore = makePart(m, "BladeCore", Vector3.new(0.16, 2.8, 0.55), CFrame.new(0, 2.7, 0), PAL.darkIron, Enum.Material.Metal)
+	local biolumVein = makePart(m, "BiolumVein", Vector3.new(0.18, 2.4, 0.15), CFrame.new(0, 2.7, 0), PAL.glowCyan, Enum.Material.Neon)
+
+	local edgeTooth1 = makeWedge(m, "Tooth1", Vector3.new(0.1, 0.6, 0.3), CFrame.new(0, 2.2, 0.35) * CFrame.Angles(math.rad(20), 0, 0), PAL.brightSteel, Enum.Material.Metal)
+	local edgeTooth2 = makeWedge(m, "Tooth2", Vector3.new(0.1, 0.6, 0.3), CFrame.new(0, 3.0, 0.35) * CFrame.Angles(math.rad(20), 0, 0), PAL.brightSteel, Enum.Material.Metal)
+	local tipWedge = makeWedge(m, "KrakenTip", Vector3.new(0.12, 1.1, 0.55), CFrame.new(0, 4.4, 0.05), PAL.brightSteel, Enum.Material.Metal, 0.4)
+
+	finishWeapon(m, handle, 0.2)
+	return m
+end
+
+-- 8. Pirate Captain Rapier (PirateCaptainRapier)
+local function buildPirateCaptainRapier(): Model
+	local m = Instance.new("Model")
+	m.Name = "PirateCaptainRapier"
+
+	local handle = makeCyl(m, "HandleCore", 1.2, 0.14, CFrame.new(0, 0.6, 0), PAL.richWood, Enum.Material.Wood)
+	makeCyl(m, "CrownPommel", 0.25, 0.26, CFrame.new(0, 0.08, 0), PAL.gold, Enum.Material.Metal)
+
+	-- Full Gold Swept-Hilt Basket Guard
+	local basketCore = makeCyl(m, "BasketCore", 0.2, 0.7, CFrame.new(0, 1.2, 0), PAL.gold, Enum.Material.Metal)
+	local basketSide1 = makePart(m, "BasketSide1", Vector3.new(0.65, 0.8, 0.45), CFrame.new(0, 0.8, 0.15), PAL.brass, Enum.Material.Metal)
+	local rubygem = makePart(m, "CaptainRuby", Vector3.new(0.2, 0.2, 0.25), CFrame.new(0, 1.25, 0.36), PAL.coralRed, Enum.Material.Neon)
+
+	-- Needle-Sharp Rapier Blade
+	local bladeBase = makeCyl(m, "RapierBlade", 3.4, 0.08, CFrame.new(0, 2.9, 0), PAL.brightSteel, Enum.Material.Metal)
+	local needleTip = makeWedge(m, "NeedleTip", Vector3.new(0.08, 0.8, 0.08), CFrame.new(0, 4.8, 0), PAL.brightSteel, Enum.Material.Metal, 0.5)
+
+	finishWeapon(m, handle, 0.15)
+	return m
+end
+
+--------------------------------------------------------------------------------
+-- RUN ALL BUILDERS
+--------------------------------------------------------------------------------
+print("========== BUILDING LOCATION 2 PIRATE WEAPONS ==========")
+buildPirateHook()
+buildPirateHammer()
+buildCutlass()
+buildCorsairSabre()
+buildSeaTrident()
+buildCannonblade()
+buildKrakenBlade()
+buildPirateCaptainRapier()
+print("========== LOCATION 2 WEAPONS BUILT SUCCESSFULLY ==========")

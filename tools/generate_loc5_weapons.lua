@@ -1,13 +1,13 @@
 --!strict
 --[[
-	Low-Poly 3D Weapon Generator for Location 5 (Ash Canyons).
-	Run this script in Roblox Studio Command Bar to generate all Location 5 weapons
-	and place them directly into ReplicatedStorage.WeaponModels!
+	High-Detail 3D Weapon Generator for Location 5 (Ash Canyons / Volcanic & Magma Theme).
+	Run this script in Roblox Studio Command Bar (or via tools/mcp_exec.js) to generate
+	all Location 5 weapons into ReplicatedStorage.WeaponModels!
 
-	Each generated model adheres strictly to docs/WEAPON_HOLD.md:
-	  - PrimaryPart named "Handle"
-	  - SM_Hilt Attachment baked on handle pommel
-	  - Low-poly volcanic aesthetic (obsidian, magma, ash, phoenix embers)
+	Design Standard:
+	  - Volcanic stone, obsidian glass, and basalt rock textures with neon lava veins.
+	  - Multi-layered serrated blades, glowing magma cores, and phoenix ember wing guards.
+	  - PrimaryPart named "Handle" with baked "SM_Hilt" attachment.
 ]]
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -18,230 +18,261 @@ if not WeaponModelsFolder then
 	WeaponModelsFolder.Parent = ReplicatedStorage
 end
 
-local function makePart(name: string, size: Vector3, color: Color3, material: Enum.Material, cframe: CFrame, parent: Instance): Part
+local function color(r: number, g: number, b: number): Color3
+	return Color3.fromRGB(r, g, b)
+end
+
+local PAL = {
+	ashGrey = color(60, 60, 65),
+	darkObsidian = color(22, 22, 26),
+	basalt = color(40, 38, 42),
+	moltenOrange = color(255, 110, 10),
+	magmaRed = color(230, 40, 20),
+	brightLava = color(255, 170, 30),
+	amberGlow = color(255, 200, 50),
+	phoenixGold = color(245, 195, 40),
+	phoenixCrimson = color(220, 30, 60),
+	steelDark = color(80, 85, 95),
+}
+
+local function makePart(parent: Instance, name: string, size: Vector3, cf: CFrame, col: Color3, mat: Enum.Material?, shiny: number?): Part
 	local p = Instance.new("Part")
 	p.Name = name
 	p.Size = size
-	p.Color = color
-	p.Material = material or Enum.Material.SmoothPlastic
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.CFrame = cf
 	p.Anchored = false
 	p.CanCollide = false
-	p.CFrame = cframe
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.Color = col
+	p.Material = mat or Enum.Material.SmoothPlastic
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	if shiny then
+		p.Reflectance = shiny
+	end
 	p.Parent = parent
 	return p
 end
 
-local function makeWedge(name: string, size: Vector3, color: Color3, material: Enum.Material, cframe: CFrame, parent: Instance): WedgePart
+local function makeCyl(parent: Instance, name: string, height: number, radius: number, cf: CFrame, col: Color3, mat: Enum.Material?): Part
+	local p = Instance.new("Part")
+	p.Name = name
+	p.Shape = Enum.PartType.Cylinder
+	p.Size = Vector3.new(height, radius * 2, radius * 2)
+	p.CFrame = cf * CFrame.Angles(0, 0, math.rad(90))
+	p.Anchored = false
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.Color = col
+	p.Material = mat or Enum.Material.SmoothPlastic
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Parent = parent
+	return p
+end
+
+local function makeWedge(parent: Instance, name: string, size: Vector3, cf: CFrame, col: Color3, mat: Enum.Material?): WedgePart
 	local p = Instance.new("WedgePart")
 	p.Name = name
 	p.Size = size
-	p.Color = color
-	p.Material = material or Enum.Material.SmoothPlastic
-	p.TopSurface = Enum.SurfaceType.Smooth
-	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.CFrame = cf
 	p.Anchored = false
 	p.CanCollide = false
-	p.CFrame = cframe
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Massless = true
+	p.Color = col
+	p.Material = mat or Enum.Material.SmoothPlastic
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
 	p.Parent = parent
 	return p
 end
 
-local function makeWeld(part0: BasePart, part1: BasePart): WeldConstraint
-	local w = Instance.new("WeldConstraint")
-	w.Part0 = part0
-	w.Part1 = part1
-	w.Parent = part0
-	return w
+local function weldAll(model: Model, handle: BasePart)
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and d ~= handle then
+			local w = Instance.new("WeldConstraint")
+			w.Part0 = handle
+			w.Part1 = d
+			w.Parent = d
+			d.Anchored = false
+		end
+	end
+	handle.Anchored = false
 end
 
-local function bakeHilt(model: Model, handle: BasePart, hiltOffsetFromBottom: number)
+local function finishWeapon(model: Model, handle: BasePart, hiltYOffset: number)
+	handle.Name = "Handle"
 	model.PrimaryPart = handle
-	local hilt = handle:FindFirstChild("SM_Hilt") or Instance.new("Attachment")
-	hilt.Name = "SM_Hilt"
-	hilt.CFrame = CFrame.new(0, -handle.Size.Y / 2 + hiltOffsetFromBottom, 0) * CFrame.Angles(0, 0, 0)
-	hilt.Parent = handle
-end
 
---------------------------------------------------------------------------------
--- WEAPON BUILDERS
---------------------------------------------------------------------------------
-
--- 1. Ash Shiv (ash_shiv)
-local function buildAshShiv(): Model
-	local m = Instance.new("Model")
-	m.Name = "AshShiv"
-
-	local handle = makePart("Handle", Vector3.new(0.25, 0.85, 0.25), Color3.fromRGB(50, 40, 40), Enum.Material.Wood, CFrame.new(0, 0.42, 0), m)
-	local wrap = makePart("Wrap", Vector3.new(0.32, 0.4, 0.32), Color3.fromRGB(120, 80, 50), Enum.Material.Leather, CFrame.new(0, 0.55, 0), m)
-	makeWeld(handle, wrap)
-
-	local blade = makePart("Blade", Vector3.new(0.2, 1.6, 0.35), Color3.fromRGB(80, 80, 80), Enum.Material.Metal, CFrame.new(0, 1.5, 0), m)
-	makeWeld(handle, blade)
-	local tip = makeWedge("BladeTip", Vector3.new(0.18, 0.55, 0.3), Color3.fromRGB(120, 120, 120), Enum.Material.Metal, CFrame.new(0, 2.25, 0), m)
-	makeWeld(handle, tip)
-	local ashEdge = makePart("AshEdge", Vector3.new(0.06, 1.2, 0.06), Color3.fromRGB(200, 200, 200), Enum.Material.SmoothPlastic, CFrame.new(0, 1.6, 0.18), m)
-	makeWeld(handle, ashEdge)
-
-	bakeHilt(m, handle, 0.15)
-	return m
-end
-
--- 2. Magma Maul (magma_maul)
-local function buildMagmaMaul(): Model
-	local m = Instance.new("Model")
-	m.Name = "MagmaMaul"
-
-	local shaft = makePart("Handle", Vector3.new(0.38, 3.6, 0.38), Color3.fromRGB(30, 25, 25), Enum.Material.Rock, CFrame.new(0, 1.8, 0), m)
-
-	local core = makePart("HeadCore", Vector3.new(1.2, 1.2, 1.2), Color3.fromRGB(40, 35, 35), Enum.Material.Rock, CFrame.new(0, 3.6, 0), m)
-	makeWeld(shaft, core)
-
-	local magma1 = makePart("Magma1", Vector3.new(1.0, 0.8, 1.0), Color3.fromRGB(255, 100, 20), Enum.Material.Neon, CFrame.new(0, 3.6, 0), m)
-	makeWeld(shaft, magma1)
-	local magma2 = makePart("Magma2", Vector3.new(0.7, 0.7, 0.7), Color3.fromRGB(255, 160, 40), Enum.Material.Neon, CFrame.new(0.25, 3.8, 0.25), m)
-	makeWeld(shaft, magma2)
-	local magma3 = makePart("Magma3", Vector3.new(0.7, 0.7, 0.7), Color3.fromRGB(255, 160, 40), Enum.Material.Neon, CFrame.new(-0.25, 3.4, -0.25), m)
-	makeWeld(shaft, magma3)
-
-	local spike1 = makePart("Spike1", Vector3.new(0.25, 0.9, 0.25), Color3.fromRGB(50, 45, 45), Enum.Material.Rock, CFrame.new(0, 4.1, 0) * CFrame.Angles(math.rad(10), 0, 0), m)
-	makeWeld(shaft, spike1)
-	local spike2 = makePart("Spike2", Vector3.new(0.25, 0.9, 0.25), Color3.fromRGB(50, 45, 45), Enum.Material.Rock, CFrame.new(0.5, 3.7, 0) * CFrame.Angles(0, 0, math.rad(10)), m)
-	makeWeld(shaft, spike2)
-	local spike3 = makePart("Spike3", Vector3.new(0.25, 0.9, 0.25), Color3.fromRGB(50, 45, 45), Enum.Material.Rock, CFrame.new(-0.5, 3.7, 0) * CFrame.Angles(0, 0, -math.rad(10)), m)
-	makeWeld(shaft, spike3)
-
-	bakeHilt(m, shaft, 0.3)
-	return m
-end
-
--- 3. Obsidian Glaive (obsidian_glaive)
-local function buildObsidianGlaive(): Model
-	local m = Instance.new("Model")
-	m.Name = "ObsidianGlaive"
-
-	local handle = makePart("Handle", Vector3.new(0.32, 3.0, 0.32), Color3.fromRGB(25, 20, 25), Enum.Material.Rock, CFrame.new(0, 1.5, 0), m)
-	local wrap = makePart("Wrap", Vector3.new(0.4, 0.9, 0.4), Color3.fromRGB(60, 45, 45), Enum.Material.Leather, CFrame.new(0, 0.8, 0), m)
-	makeWeld(handle, wrap)
-
-	-- Long curved obsidian blade
-	local blade = makeWedge("Blade", Vector3.new(0.28, 3.2, 1.0), Color3.fromRGB(15, 10, 20), Enum.Material.Glass, CFrame.new(0, 3.6, 0.4) * CFrame.Angles(math.rad(15), 0, 0), m)
-	makeWeld(handle, blade)
-	local edge = makeWedge("Edge", Vector3.new(0.12, 3.0, 0.85), Color3.fromRGB(60, 50, 90), Enum.Material.Neon, CFrame.new(0, 3.6, 0.45) * CFrame.Angles(math.rad(15), 0, 0), m)
-	makeWeld(handle, edge)
-	local guard = makePart("Guard", Vector3.new(0.8, 0.18, 0.8), Color3.fromRGB(80, 60, 80), Enum.Material.Metal, CFrame.new(0, 3.0, 0), m)
-	makeWeld(handle, guard)
-
-	bakeHilt(m, handle, 0.25)
-	return m
-end
-
--- 4. Inferno Blade (inferno_blade)
-local function buildInfernoBlade(): Model
-	local m = Instance.new("Model")
-	m.Name = "InfernoBlade"
-
-	local handle = makePart("Handle", Vector3.new(0.34, 1.2, 0.34), Color3.fromRGB(25, 15, 15), Enum.Material.Leather, CFrame.new(0, 0.6, 0), m)
-	local pommel = makePart("Pommel", Vector3.new(0.5, 0.22, 0.5), Color3.fromRGB(120, 40, 20), Enum.Material.Metal, CFrame.new(0, 0.11, 0), m)
-	makeWeld(handle, pommel)
-
-	local guard = makePart("Guard", Vector3.new(1.4, 0.28, 0.45), Color3.fromRGB(180, 50, 20), Enum.Material.Metal, CFrame.new(0, 1.25, 0), m)
-	makeWeld(handle, guard)
-	local guardGem = makePart("GuardGem", Vector3.new(0.38, 0.38, 0.38), Color3.fromRGB(255, 80, 20), Enum.Material.Neon, CFrame.new(0, 1.25, 0), m)
-	makeWeld(handle, guardGem)
-
-	local blade = makePart("Blade", Vector3.new(0.24, 3.0, 0.48), Color3.fromRGB(40, 15, 15), Enum.Material.Metal, CFrame.new(0, 2.95, 0), m)
-	makeWeld(handle, blade)
-	local flame = makePart("Flame", Vector3.new(0.2, 2.8, 0.4), Color3.fromRGB(255, 90, 20), Enum.Material.Neon, CFrame.new(0, 2.95, 0), m)
-	makeWeld(handle, flame)
-	local tip = makeWedge("BladeTip", Vector3.new(0.22, 1.0, 0.42), Color3.fromRGB(255, 160, 50), Enum.Material.Neon, CFrame.new(0, 4.15, 0), m)
-	makeWeld(handle, tip)
-	local edge = makePart("Edge", Vector3.new(0.08, 2.4, 0.08), Color3.fromRGB(255, 200, 80), Enum.Material.Neon, CFrame.new(0, 3.0, 0.24), m)
-	makeWeld(handle, edge)
-
-	bakeHilt(m, handle, 0.2)
-	return m
-end
-
--- 5. Volcano God Sword (volcano_god_sword)
-local function buildVolcanoGodSword(): Model
-	local m = Instance.new("Model")
-	m.Name = "VolcanoGodSword"
-
-	local handle = makePart("Handle", Vector3.new(0.36, 1.3, 0.36), Color3.fromRGB(20, 15, 15), Enum.Material.Rock, CFrame.new(0, 0.65, 0), m)
-	local pommel = makePart("Pommel", Vector3.new(0.55, 0.25, 0.55), Color3.fromRGB(255, 90, 20), Enum.Material.Neon, CFrame.new(0, 0.12, 0), m)
-	makeWeld(handle, pommel)
-
-	local guard = makePart("Guard", Vector3.new(1.6, 0.35, 0.55), Color3.fromRGB(60, 40, 40), Enum.Material.Rock, CFrame.new(0, 1.3, 0), m)
-	makeWeld(handle, guard)
-	local guardCore = makePart("GuardCore", Vector3.new(0.45, 0.45, 0.45), Color3.fromRGB(255, 100, 20), Enum.Material.Neon, CFrame.new(0, 1.3, 0), m)
-	makeWeld(handle, guardCore)
-	local guardWingL = makePart("GuardWingL", Vector3.new(0.4, 0.18, 0.9), Color3.fromRGB(180, 60, 20), Enum.Material.Neon, CFrame.new(0.5, 1.3, 0) * CFrame.Angles(0, math.rad(25), 0), m)
-	makeWeld(handle, guardWingL)
-	local guardWingR = makePart("GuardWingR", Vector3.new(0.4, 0.18, 0.9), Color3.fromRGB(180, 60, 20), Enum.Material.Neon, CFrame.new(-0.5, 1.3, 0) * CFrame.Angles(0, -math.rad(25), 0), m)
-	makeWeld(handle, guardWingR)
-
-	local blade = makePart("Blade", Vector3.new(0.28, 3.4, 0.55), Color3.fromRGB(35, 25, 25), Enum.Material.Rock, CFrame.new(0, 3.15, 0), m)
-	makeWeld(handle, blade)
-	local lava = makePart("Lava", Vector3.new(0.18, 3.0, 0.42), Color3.fromRGB(255, 80, 20), Enum.Material.Neon, CFrame.new(0, 3.15, 0), m)
-	makeWeld(handle, lava)
-	local tip = makeWedge("BladeTip", Vector3.new(0.25, 1.1, 0.48), Color3.fromRGB(255, 180, 60), Enum.Material.Neon, CFrame.new(0, 4.55, 0), m)
-	makeWeld(handle, tip)
-
-	bakeHilt(m, handle, 0.2)
-	return m
-end
-
--- 6. Phoenix Ash Blade (phoenix_ash_blade)
-local function buildPhoenixAshBlade(): Model
-	local m = Instance.new("Model")
-	m.Name = "PhoenixAshBlade"
-
-	local handle = makePart("Handle", Vector3.new(0.34, 1.2, 0.34), Color3.fromRGB(20, 15, 15), Enum.Material.Leather, CFrame.new(0, 0.6, 0), m)
-	local pommel = makePart("Pommel", Vector3.new(0.5, 0.22, 0.5), Color3.fromRGB(255, 120, 40), Enum.Material.Neon, CFrame.new(0, 0.11, 0), m)
-	makeWeld(handle, pommel)
-
-	local guard = makePart("Guard", Vector3.new(1.45, 0.3, 0.48), Color3.fromRGB(200, 80, 30), Enum.Material.Metal, CFrame.new(0, 1.25, 0), m)
-	makeWeld(handle, guard)
-	local featherL = makePart("FeatherL", Vector3.new(0.35, 0.08, 0.8), Color3.fromRGB(255, 120, 50), Enum.Material.Neon, CFrame.new(0.55, 1.3, 0) * CFrame.Angles(0, math.rad(35), 0), m)
-	makeWeld(handle, featherL)
-	local featherR = makePart("FeatherR", Vector3.new(0.35, 0.08, 0.8), Color3.fromRGB(255, 120, 50), Enum.Material.Neon, CFrame.new(-0.55, 1.3, 0) * CFrame.Angles(0, -math.rad(35), 0), m)
-	makeWeld(handle, featherR)
-
-	local blade = makePart("Blade", Vector3.new(0.24, 3.2, 0.48), Color3.fromRGB(40, 20, 20), Enum.Material.Metal, CFrame.new(0, 3.0, 0), m)
-	makeWeld(handle, blade)
-	local ashFire = makePart("AshFire", Vector3.new(0.18, 3.0, 0.4), Color3.fromRGB(255, 100, 40), Enum.Material.Neon, CFrame.new(0, 3.0, 0), m)
-	makeWeld(handle, ashFire)
-	local tip = makeWedge("BladeTip", Vector3.new(0.22, 1.0, 0.42), Color3.fromRGB(255, 220, 100), Enum.Material.Neon, CFrame.new(0, 4.3, 0), m)
-	makeWeld(handle, tip)
-	local crest = makePart("Crest", Vector3.new(0.3, 0.08, 0.5), Color3.fromRGB(255, 200, 80), Enum.Material.Neon, CFrame.new(0, 3.8, 0.22), m)
-	makeWeld(handle, crest)
-
-	bakeHilt(m, handle, 0.2)
-	return m
-end
-
---------------------------------------------------------------------------------
--- EXECUTE GENERATION
---------------------------------------------------------------------------------
-local builders = {
-	buildAshShiv,
-	buildMagmaMaul,
-	buildObsidianGlaive,
-	buildInfernoBlade,
-	buildVolcanoGodSword,
-	buildPhoenixAshBlade,
-}
-
-print("[WeaponGenerator] Generating Location 5 Volcanic 3D Weapons...")
-for _, b in ipairs(builders) do
-	local model = b()
 	local existing = WeaponModelsFolder:FindFirstChild(model.Name)
 	if existing then
 		existing:Destroy()
 	end
+
+	weldAll(model, handle)
+
+	local hilt = Instance.new("Attachment")
+	hilt.Name = "SM_Hilt"
+	hilt.CFrame = CFrame.new(0, -handle.Size.Y / 2 + hiltYOffset, 0)
+	hilt.Parent = handle
+
 	model.Parent = WeaponModelsFolder
-	print(" -> Created 3D Weapon Model: " .. model.Name)
+	print("Generated Loc5 Weapon:", model.Name)
 end
-print("[WeaponGenerator] Location 5 Weapons successfully built into ReplicatedStorage.WeaponModels!")
+
+--------------------------------------------------------------------------------
+-- LOC 5 WEAPON BUILDERS
+--------------------------------------------------------------------------------
+
+-- 1. Ash Shiv (AshShiv)
+local function buildAshShiv(): Model
+	local m = Instance.new("Model")
+	m.Name = "AshShiv"
+
+	local handle = makeCyl(m, "HandleCore", 0.95, 0.14, CFrame.new(0, 0.48, 0), PAL.basalt, Enum.Material.Slate)
+	makeCyl(m, "GripWrap", 0.45, 0.16, CFrame.new(0, 0.5, 0), PAL.ashGrey, Enum.Material.Fabric)
+	makeCyl(m, "Pommel", 0.16, 0.2, CFrame.new(0, 0.08, 0), PAL.darkObsidian, Enum.Material.Glass)
+
+	-- Serrated Ash Dagger Blade
+	local guard = makePart(m, "Guard", Vector3.new(0.45, 0.12, 0.3), CFrame.new(0, 1.0, 0), PAL.basalt, Enum.Material.Slate)
+	local bladeBody = makePart(m, "BladeBody", Vector3.new(0.12, 1.6, 0.38), CFrame.new(0, 1.8, 0), PAL.darkObsidian, Enum.Material.Glass, 0.3)
+	local emberLine = makePart(m, "EmberLine", Vector3.new(0.14, 1.4, 0.08), CFrame.new(0, 1.8, 0.05), PAL.moltenOrange, Enum.Material.Neon)
+	local tipWedge = makeWedge(m, "ShivTip", Vector3.new(0.1, 0.6, 0.35), CFrame.new(0, 2.7, 0), PAL.darkObsidian, Enum.Material.Glass, 0.4)
+
+	finishWeapon(m, handle, 0.12)
+	return m
+end
+
+-- 2. Magma Maul (MagmaMaul)
+local function buildMagmaMaul(): Model
+	local m = Instance.new("Model")
+	m.Name = "MagmaMaul"
+
+	local shaft = makeCyl(m, "Shaft", 3.8, 0.18, CFrame.new(0, 1.9, 0), PAL.basalt, Enum.Material.Slate)
+	makeCyl(m, "ShaftRing1", 0.3, 0.22, CFrame.new(0, 0.8, 0), PAL.magmaRed, Enum.Material.Neon)
+	makeCyl(m, "ShaftRing2", 0.3, 0.22, CFrame.new(0, 1.8, 0), PAL.magmaRed, Enum.Material.Neon)
+	makeCyl(m, "PommelSpike", 0.3, 0.24, CFrame.new(0, 0.1, 0), PAL.darkObsidian, Enum.Material.Glass)
+
+	-- Massive Volcanic Spiked Head with Glowing Magma Core
+	local headCore = makePart(m, "HeadCore", Vector3.new(0.9, 1.1, 0.9), CFrame.new(0, 3.5, 0), PAL.darkObsidian, Enum.Material.Glass)
+	makePart(m, "MagmaHeart", Vector3.new(1.02, 0.9, 1.02), CFrame.new(0, 3.5, 0), PAL.moltenOrange, Enum.Material.Neon)
+
+	-- 4 Spiked Basalt Plates
+	makeWedge(m, "SpikeFront", Vector3.new(0.4, 0.8, 0.6), CFrame.new(0, 3.5, 0.75) * CFrame.Angles(math.rad(90), 0, 0), PAL.basalt, Enum.Material.Slate)
+	makeWedge(m, "SpikeBack", Vector3.new(0.4, 0.8, 0.6), CFrame.new(0, 3.5, -0.75) * CFrame.Angles(math.rad(-90), 0, 0), PAL.basalt, Enum.Material.Slate)
+	makeWedge(m, "SpikeLeft", Vector3.new(0.6, 0.8, 0.4), CFrame.new(-0.75, 3.5, 0) * CFrame.Angles(0, 0, math.rad(90)), PAL.basalt, Enum.Material.Slate)
+	makeWedge(m, "SpikeRight", Vector3.new(0.6, 0.8, 0.4), CFrame.new(0.75, 3.5, 0) * CFrame.Angles(0, 0, math.rad(-90)), PAL.basalt, Enum.Material.Slate)
+
+	finishWeapon(m, shaft, 0.2)
+	return m
+end
+
+-- 3. Obsidian Glaive (ObsidianGlaive)
+local function buildObsidianGlaive(): Model
+	local m = Instance.new("Model")
+	m.Name = "ObsidianGlaive"
+
+	local shaft = makeCyl(m, "GlaiveShaft", 4.4, 0.16, CFrame.new(0, 2.2, 0), PAL.darkObsidian, Enum.Material.Glass)
+	makeCyl(m, "MidGrip", 0.8, 0.18, CFrame.new(0, 1.8, 0), PAL.ashGrey, Enum.Material.Fabric)
+	makeCyl(m, "CounterWeight", 0.4, 0.22, CFrame.new(0, 0.2, 0), PAL.basalt, Enum.Material.Slate)
+	makePart(m, "BottomGlow", Vector3.new(0.2, 0.2, 0.2), CFrame.new(0, 0.05, 0), PAL.moltenOrange, Enum.Material.Neon)
+
+	-- Curved Naginata-Style Obsidian Blade with Lava Channel
+	local socket = makePart(m, "BladeSocket", Vector3.new(0.35, 0.6, 0.35), CFrame.new(0, 4.4, 0), PAL.basalt, Enum.Material.Slate)
+	local bladeSpine = makePart(m, "BladeSpine", Vector3.new(0.14, 2.8, 0.45), CFrame.new(0, 5.7, 0.08), PAL.darkObsidian, Enum.Material.Glass, 0.4)
+	local lavaVein = makePart(m, "LavaVein", Vector3.new(0.16, 2.4, 0.1), CFrame.new(0, 5.6, 0.05), PAL.brightLava, Enum.Material.Neon)
+
+	local curvedTip = makeWedge(m, "CurvedTip", Vector3.new(0.12, 1.4, 0.6), CFrame.new(0, 7.2, 0.2) * CFrame.Angles(math.rad(15), 0, 0), PAL.darkObsidian, Enum.Material.Glass, 0.5)
+
+	finishWeapon(m, shaft, 0.2)
+	return m
+end
+
+-- 4. Inferno Blade (InfernoBlade)
+local function buildInfernoBlade(): Model
+	local m = Instance.new("Model")
+	m.Name = "InfernoBlade"
+
+	local handle = makeCyl(m, "HandleCore", 1.2, 0.16, CFrame.new(0, 0.6, 0), PAL.basalt, Enum.Material.Slate)
+	makeCyl(m, "PommelGem", 0.24, 0.26, CFrame.new(0, 0.08, 0), PAL.magmaRed, Enum.Material.Neon)
+
+	-- Winged Lava Guard
+	local guardCenter = makePart(m, "GuardCenter", Vector3.new(0.4, 0.2, 0.4), CFrame.new(0, 1.2, 0), PAL.darkObsidian, Enum.Material.Glass)
+	local leftWing = makeWedge(m, "LeftWing", Vector3.new(0.2, 0.9, 0.5), CFrame.new(-0.4, 1.3, 0) * CFrame.Angles(0, 0, math.rad(-40)), PAL.moltenOrange, Enum.Material.Neon)
+	local rightWing = makeWedge(m, "RightWing", Vector3.new(0.2, 0.9, 0.5), CFrame.new(0.4, 1.3, 0) * CFrame.Angles(0, 0, math.rad(40)), PAL.moltenOrange, Enum.Material.Neon)
+
+	-- Double-Edged Flaming Blade Body
+	local bladeBase = makePart(m, "BladeBase", Vector3.new(0.14, 2.6, 0.55), CFrame.new(0, 2.6, 0), PAL.darkObsidian, Enum.Material.Glass, 0.3)
+	local coreFire = makePart(m, "CoreFire", Vector3.new(0.16, 2.3, 0.2), CFrame.new(0, 2.6, 0), PAL.brightLava, Enum.Material.Neon)
+	local bladeTip = makeWedge(m, "BladeTip", Vector3.new(0.12, 1.0, 0.55), CFrame.new(0, 4.3, 0), PAL.darkObsidian, Enum.Material.Glass, 0.4)
+
+	finishWeapon(m, handle, 0.15)
+	return m
+end
+
+-- 5. Volcano God Sword (VolcanoGodSword)
+local function buildVolcanoGodSword(): Model
+	local m = Instance.new("Model")
+	m.Name = "VolcanoGodSword"
+
+	local handle = makeCyl(m, "HandleCore", 1.5, 0.2, CFrame.new(0, 0.75, 0), PAL.basalt, Enum.Material.Slate)
+	makeCyl(m, "GripGlow1", 0.3, 0.22, CFrame.new(0, 0.5, 0), PAL.magmaRed, Enum.Material.Neon)
+	makeCyl(m, "GripGlow2", 0.3, 0.22, CFrame.new(0, 1.0, 0), PAL.magmaRed, Enum.Material.Neon)
+	makeCyl(m, "GodPommel", 0.35, 0.32, CFrame.new(0, 0.1, 0), PAL.darkObsidian, Enum.Material.Glass)
+
+	-- Massive Volcanic Crossguard
+	local guardMain = makePart(m, "GuardMain", Vector3.new(1.4, 0.3, 0.5), CFrame.new(0, 1.5, 0), PAL.basalt, Enum.Material.Slate)
+	local eyeCore = makePart(m, "VolcanoEye", Vector3.new(0.35, 0.35, 0.52), CFrame.new(0, 1.5, 0), PAL.amberGlow, Enum.Material.Neon)
+
+	-- Colossal Greatsword Blade with Cracked Basalt Armor Plates
+	local bladeCore = makePart(m, "BladeCore", Vector3.new(0.18, 3.4, 0.8), CFrame.new(0, 3.3, 0), PAL.brightLava, Enum.Material.Neon)
+	local armorLeft = makePart(m, "ArmorLeft", Vector3.new(0.08, 3.0, 0.3), CFrame.new(-0.25, 3.3, 0), PAL.darkObsidian, Enum.Material.Glass)
+	local armorRight = makePart(m, "ArmorRight", Vector3.new(0.08, 3.0, 0.3), CFrame.new(0.25, 3.3, 0), PAL.darkObsidian, Enum.Material.Glass)
+
+	local godTip = makeWedge(m, "GodTip", Vector3.new(0.16, 1.2, 0.8), CFrame.new(0, 5.4, 0), PAL.darkObsidian, Enum.Material.Glass, 0.4)
+
+	finishWeapon(m, handle, 0.2)
+	return m
+end
+
+-- 6. Phoenix Ash Blade (PhoenixAshBlade)
+local function buildPhoenixAshBlade(): Model
+	local m = Instance.new("Model")
+	m.Name = "PhoenixAshBlade"
+
+	local handle = makeCyl(m, "HandleCore", 1.3, 0.16, CFrame.new(0, 0.65, 0), PAL.phoenixGold, Enum.Material.Metal)
+	makeCyl(m, "GripWrap", 0.6, 0.18, CFrame.new(0, 0.65, 0), PAL.ashGrey, Enum.Material.Fabric)
+	makeCyl(m, "PhoenixEggPommel", 0.26, 0.28, CFrame.new(0, 0.1, 0), PAL.amberGlow, Enum.Material.Neon)
+
+	-- Majestic Phoenix Wing Guard
+	local guardCore = makePart(m, "GuardCore", Vector3.new(0.4, 0.2, 0.4), CFrame.new(0, 1.3, 0), PAL.phoenixGold, Enum.Material.Metal)
+	local wingL = makeWedge(m, "PhoenixWingL", Vector3.new(0.22, 1.2, 0.65), CFrame.new(-0.45, 1.4, 0) * CFrame.Angles(0, 0, math.rad(-45)), PAL.phoenixCrimson, Enum.Material.Neon)
+	local wingR = makeWedge(m, "PhoenixWingR", Vector3.new(0.22, 1.2, 0.65), CFrame.new(0.45, 1.4, 0) * CFrame.Angles(0, 0, math.rad(45)), PAL.phoenixCrimson, Enum.Material.Neon)
+
+	-- Radiant Phoenix Feather Blade
+	local bladeCore = makePart(m, "BladeCore", Vector3.new(0.14, 3.0, 0.6), CFrame.new(0, 2.9, 0), PAL.phoenixGold, Enum.Material.Metal, 0.4)
+	local featherGlow = makePart(m, "FeatherGlow", Vector3.new(0.16, 2.6, 0.25), CFrame.new(0, 2.9, 0), PAL.amberGlow, Enum.Material.Neon)
+
+	local featherTip = makeWedge(m, "PhoenixTip", Vector3.new(0.12, 1.2, 0.6), CFrame.new(0, 4.8, 0), PAL.phoenixGold, Enum.Material.Metal, 0.5)
+
+	finishWeapon(m, handle, 0.18)
+	return m
+end
+
+--------------------------------------------------------------------------------
+-- RUN ALL BUILDERS
+--------------------------------------------------------------------------------
+print("========== BUILDING LOCATION 5 VOLCANIC WEAPONS ==========")
+buildAshShiv()
+buildMagmaMaul()
+buildObsidianGlaive()
+buildInfernoBlade()
+buildVolcanoGodSword()
+buildPhoenixAshBlade()
+print("========== LOCATION 5 WEAPONS BUILT SUCCESSFULLY ==========")
