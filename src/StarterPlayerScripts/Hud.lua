@@ -336,7 +336,7 @@ function Hud.Mount(
 		row.BackgroundColor3 = Color3.fromRGB(14, 24, 18)
 		row.BackgroundTransparency = 0.15
 		row.BorderSizePixel = 0
-		row.Size = UDim2.fromOffset(180, 32)
+		row.Size = UDim2.fromOffset(210, 32)
 		row.ZIndex = 12
 		row.Visible = false
 		row.Parent = boosts
@@ -351,27 +351,29 @@ function Hud.Mount(
 		rowStroke.Color = meta.color
 		rowStroke.Parent = row
 
-		UIKit.Label({
-			Name = "Pct",
-			Parent = row,
-			Text = "+0%",
-			Size = UDim2.fromOffset(52, 32),
-			Position = UDim2.fromOffset(8, 0),
-			SizePx = 13,
-			Font = T.Font.Title,
-			Color = Color3.fromRGB(255, 255, 255),
-			Z = 13,
-		})
-		UIKit.Label({
-			Name = "Scope",
-			Parent = row,
-			Text = "Local",
-			Size = UDim2.new(1, -64, 1, 0),
-			Position = UDim2.fromOffset(60, 0),
-			SizePx = 12,
-			Color = Color3.fromRGB(240, 240, 245),
-			Z = 13,
-		})
+		local iconLab = Instance.new("TextLabel")
+		iconLab.Name = "Icon"
+		iconLab.Size = UDim2.fromOffset(26, 32)
+		iconLab.Position = UDim2.fromOffset(6, 0)
+		iconLab.BackgroundTransparency = 1
+		iconLab.Text = meta.icon
+		iconLab.TextSize = 16
+		iconLab.ZIndex = 13
+		iconLab.Parent = row
+
+		local infoLab = Instance.new("TextLabel")
+		infoLab.Name = "Info"
+		infoLab.Size = UDim2.new(1, -36, 1, 0)
+		infoLab.Position = UDim2.fromOffset(32, 0)
+		infoLab.BackgroundTransparency = 1
+		infoLab.Text = ""
+		infoLab.Font = T.Font.Title
+		infoLab.TextSize = 12
+		infoLab.TextColor3 = Color3.fromRGB(240, 240, 250)
+		infoLab.TextXAlignment = Enum.TextXAlignment.Left
+		infoLab.ZIndex = 13
+		infoLab.Parent = row
+
 		return row
 	end
 
@@ -737,21 +739,20 @@ function Hud.Mount(
 			local totalPct = localPct + globalPct
 			if totalPct ~= 0 then
 				row.Visible = true
-				local pctLab = row:FindFirstChild("Pct")
-				local scopeLab = row:FindFirstChild("Scope")
-				if pctLab and pctLab:IsA("TextLabel") then
+				local infoLab = row:FindFirstChild("Info")
+				if infoLab and infoLab:IsA("TextLabel") then
 					local sign = if totalPct >= 0 then "+" else ""
-					pctLab.Text = string.format("%s%d%%", sign, math.floor(totalPct * 100 + (if totalPct >= 0 then 0.5 else -0.5)))
-				end
-				if scopeLab and scopeLab:IsA("TextLabel") then
+					local pctStr = string.format("%s%d%%", sign, math.floor(totalPct * 100 + (if totalPct >= 0 then 0.5 else -0.5)))
+					local scopeStr = "Global"
 					if globalPct ~= 0 and localPct ~= 0 then
-						scopeLab.Text = "Both"
+						scopeStr = "Both"
 					elseif globalPct ~= 0 then
-						scopeLab.Text = "Global"
+						scopeStr = "Global"
 					else
 						local sc = tostring((type(b) == "table" and b.scope) or "local")
-						scopeLab.Text = (sc == "global" or sc == "Global") and "Global" or "Local"
+						scopeStr = (sc == "global" or sc == "Global") and "Global" or "Local"
 					end
+					infoLab.Text = string.format("%s %s (%s)", pctStr, meta.name, scopeStr)
 				end
 			else
 				row.Visible = false

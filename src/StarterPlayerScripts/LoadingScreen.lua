@@ -34,7 +34,18 @@ local TIPS = {
 	"Tip: Complete daily quests to earn free rewards and gems!",
 }
 
-function LoadingScreen.Mount(gui: ScreenGui): { StepProgress: (number, string) -> (), Finish: () -> () }
+function LoadingScreen.Mount(_gui: ScreenGui?): { StepProgress: (number, string) -> (), Finish: () -> () }
+	local player = Players.LocalPlayer
+	local playerGui = player:WaitForChild("PlayerGui")
+
+	local loadingGui = Instance.new("ScreenGui")
+	loadingGui.Name = "LoadingScreenGui"
+	loadingGui.IgnoreGuiInset = true
+	loadingGui.DisplayOrder = 999999
+	loadingGui.ResetOnSpawn = false
+	loadingGui.Enabled = true
+	loadingGui.Parent = playerGui
+
 	local root = Instance.new("Frame")
 	root.Name = "LoadingScreenRoot"
 	root.Size = UDim2.fromScale(1, 1)
@@ -42,7 +53,7 @@ function LoadingScreen.Mount(gui: ScreenGui): { StepProgress: (number, string) -
 	root.BackgroundColor3 = Color3.fromRGB(12, 10, 18)
 	root.BorderSizePixel = 0
 	root.ZIndex = 1000
-	root.Parent = gui
+	root.Parent = loadingGui
 
 	-- Dark vignette gradient backdrop
 	local bgGrad = Instance.new("UIGradient")
@@ -229,7 +240,7 @@ function LoadingScreen.Mount(gui: ScreenGui): { StepProgress: (number, string) -
 		local bgTw = TweenService:Create(root, fadeInfo, { BackgroundTransparency = 1 })
 		bgTw:Play()
 		bgTw.Completed:Connect(function()
-			root:Destroy()
+			loadingGui:Destroy()
 		end)
 	end
 

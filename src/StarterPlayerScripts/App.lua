@@ -132,7 +132,7 @@ function App.Start()
 	local gui = Instance.new("ScreenGui")
 	gui.Name = "GameUI"
 	gui.ResetOnSpawn = false
-	gui.IgnoreGuiInset = false
+	gui.IgnoreGuiInset = true
 	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 	gui.DisplayOrder = 50
 	gui.Enabled = true
