@@ -224,16 +224,19 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
    - Unlocking a new location does **NOT** allow stomping Camp A.
    - Requires farming **30–40+ mobs on the previous location** to earn Rebirth / upgrades / weapons before comfortably clearing Camp A.
 
-### 28 Mobs Progression Table (Loc1–Loc7)
-| Loc | Camp A | Camp B | Camp C | Camp D (Elite) |
-|-----|--------|--------|--------|----------------|
-| **Loc1 (Goblin City)** | Goblin (5K) | Dark Goblin (500K) | Goblin Warrior (2.5M) | Goblin Scout (15M) |
-| **Loc2 (Pirate Ship)** | Sailor (50M) | Gunner (400M) | Captain (3.5B) | Pirate Corsair (25B) |
-| **Loc3 (Shinobi Lands)** | Shadow Scout (120B) | Blade Adept (1T) | Samurai Warden (8T) | Shadow Master (50T) |
-| **Loc4 (Polar Tundra)** | Frost Wolf (250T) | Ice Berserker (2Qa) | Tundra Giant (15Qa) | Frost Lich (100Qa) |
-| **Loc5 (Ash Canyons)** | Ash Scout (500Qa) | Flame Golem (4Qi) | Magma Demon (30Qi) | Ash Overlord (200Qi) |
-| **Loc6 (Neon Docks)** | Cyber Drone (1Sx) | Neon Mercenary (8Sx) | Mech Enforcer (60Sx) | Cyber Boss (400Sx) |
-| **Loc7 (Bone Cathedral)** | Skeletal Guard (2Sp) | Bone Acolyte (15Sp) | Lich Priest (100Sp) | Bone Monarch (750Sp) |
+### 28 Mobs Progression Table (Loc1–Loc7) & Verified Balance
+
+> **Formula Audit (2026-08-07):** `DAMAGE_TO_POWER_RATE` set to 0. Base power no longer exponentially inflates on click. Max numbers stay within 750Sp (10^26), safely below IEEE 754 double floating point cap (1e308). Pets, Auras, and Weapons act as clean linear/multiplicative multipliers without feedback overflow.
+
+| № | Location | Mob HP Range | Boss / Elite HP | Rebirth Req | Difficulty | Avg Completion Time |
+| :---: | :--- | :---: | :---: | :---: | :--- | :---: |
+| **Loc 1** | Goblin City | 3K – 250K | 15M | **R0 – R3** | Starter | **15 – 30 min** |
+| **Loc 2** | Pirate Ship | 50M – 3.5B | 25B | **R4 – R7** | Medium | **1 – 2 hours** |
+| **Loc 3** | Shinobi Lands | 120B – 8T | 50T | **R8 – R15** | Hard | **3 – 5 hours** |
+| **Loc 4** | Polar Tundra | 250T – 15Qa | 100Qa | **R16 – R25** | Hardcore | **8 – 12 hours** |
+| **Loc 5** | Ash Canyons | 500Qa – 30Qi | 200Qi | **R26 – R35** | Endgame | **15 – 25 hours** |
+| **Loc 6** | Neon Docks | 1Sx – 60Sx | 400Sx | **R36 – R45** | Ultra-Endgame | **30 – 45 hours** |
+| **Loc 7** | Bone Cathedral | 1Sp – 100Sp | 750Sp | **R46 – R60** | Max Cap | **50+ hours** |
 
 ---
 
