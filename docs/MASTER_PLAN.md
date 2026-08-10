@@ -155,11 +155,27 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 
 ---
 
+## 5.5 Общий прогресс разработки (Оценка ~71%) 📊
+
+> **Текущая готовность проекта:** **~71%** (Бэкенд и логика близки к финалу, арт и визуальное наполнение локаций — в процессе).
+
+| Направление | Готовность | Что готово / Что осталось |
+|-------------|:----------:|---------------------------|
+| **Core Loop & Backend** | **85%** | Клики, баланс силы, Rebirth, Престиж/Ascension (R60), профили, лут, PotionService stock, автокликер. |
+| **Баланс & Конфиги (Loc1–Loc7)** | **95%** | Таблицы 28 мобов Loc1–Loc7 полностью сбалансированы, формула без экспоненциальной инфляции (`DAMAGE_TO_POWER_RATE=0`). |
+| **UI & HUD & Preloader** | **70%** | AAA Loading Screen, HUD (Arcade шрифты, чипы, бусты), Донат-магазин. *Остался спринт Figma (Upgrade → Inv → BP).* |
+| **Петы, Ауры, Реликвии, Зелья** | **75%** | 100% уникальные модели петов, следование `PetVisual`, реликвии, бусты зелий. |
+| **Визуал локаций & 3D Карта (Place)** | **35%** | **Loc1 (Goblin City)** — 100% готова. Loc2–Loc6 — заготовки/маркеры. **Loc7 (Bone Cathedral) — 0% (визуально карта еще не построена).** |
+| **Мета-системы (BP, Данжи, Квесты)** | **45%** | Квесты Loc1 skeleton, AFK-данж, прелоадер. Осталось: полноценный бой в данже, BP прогрессия. |
+
+---
+
 ## 6. Чего нет / слабо ⚠️
 
 | Тема | Статус |
 |------|--------|
-| Loc2–4 мобы/контент | stubs |
+| **Loc 7 (Bone Cathedral) визуальная карта** | **НЕ СДЕЛАНА внешне** — конфиги и баланс мобов R46–R60 готовы (1Sp–750Sp HP), 3D-остров/карта в Place отсутствует |
+| Loc2–6 визуальное наполнение карты | заготовки / stubs |
 | Реальные 3D модели мечей | **9 Loc1** meshes + **`SM_Hilt`** / BladeRoll (`docs/WEAPON_HOLD.md`); Loc2 still empty |
 | Иконки weapons | Loc1 IconConfig Decals; pipeline `docs/ICON_UPLOAD.md`. Loc2 empty → fallback |
 | Character Upgrade icons | ✅ `UpgradeIconConfig` + **§8.1** (strength/bag/speed/crit/multicrit/coin/close/**shop**) |
@@ -196,6 +212,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | P2 | World pads + polish Ferryman / `SetLocation` UX | backend exists; map pads + UI | Place art |
 | P2 | ~~**Pets → 100% unique.**~~ **DONE 2026-08-03 — audit reports `Models to generate: 0`.** Root cause of look-alikes: every pet maps to a *different* slot name, so no code check can catch it — the duplicates lived in the CONTENT of differently-named slots (`Waifu`/`E-D`/`S-A` = one 216-part Nereus). The only real duplicate was Nereid vs Nereus; `Workspace.Nereid` (34p merfolk) was installed into slot `E-D` for `P2_K_L2` via `tools/fix_pet_models.lua` — **zero generations used**. The old 216-part `E-D` is in `ServerStorage.RetiredPetModels`, not deleted. Nothing is missing a model. Re-verify any time with `tools/audit_pet_models.lua`; new pets must follow `docs/PET_GENERATION_BRIEF.md` (4 axes: silhouette / rarity-locked palette / material / one signature detail; ≤250 parts). **Dead mapping `P2_K_M1` removed (2026-08-02).** | — | PetModelConfig |
 | P2 | Loc2–4 content + IconConfig Loc2+ | Loc2 dump in configs; art/markers | Place + FIGMA_PROMPTS |
+| P2 | **Loc7 (Bone Cathedral) visual map & environment build** | Balance/mobs for R46–R60 (1Sp–750Sp) ready in configs; 3D map/islands & spawner markers in Place pending | Place art / Team Create |
 | P3 | Leaderboard / full BP economy / Wings | meta | stable core |
 | P3 | ~~**`PetModels.F` heavy pack**~~ **DONE 2026-08-06 via MCP** — Slot `F` (Charon) replaced with 11-part `Skull Reaper`. | — | PetModelConfig |
 | P3 | ~~**12 unused `PetModels` slots**~~ **DONE 2026-08-06 via MCP** — Moved to `ServerStorage.RetiredPetModels`. Replicated parts dropped from 10,055 to 3,766 (saved 6.3k parts). Audit verdict: 0 models missing/over budget. | — | — |
