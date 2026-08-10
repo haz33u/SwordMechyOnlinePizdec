@@ -83,6 +83,24 @@ function AntiCheatService.ValidateHitDistance(player: Player, mobPos: Vector3, i
 	return (mobPos - hrp.Position).Magnitude <= maxRange
 end
 
+function AntiCheatService.ValidateAutoClickerPermission(player: Player, profile: any): boolean
+	if not profile then
+		return false
+	end
+	return Formulas.IsAutoClickerUnlocked(profile)
+end
+
+function AntiCheatService.SanitizeString(val: any, maxLen: number?): string?
+	if type(val) ~= "string" then
+		return nil
+	end
+	local limit = maxLen or 128
+	if #val > limit then
+		return string.sub(val, 1, limit)
+	end
+	return val
+end
+
 function AntiCheatService.CheckMovement(player: Player)
 	local char = player.Character
 	local hrp = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?

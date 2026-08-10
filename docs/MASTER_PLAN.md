@@ -161,12 +161,12 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 
 | Направление | Готовность | Что готово / Что осталось |
 |-------------|:----------:|---------------------------|
-| **Core Loop & Backend** | **85%** | **Готово:** Клики, сила, Rebirth, Ascension (R60), профили, лут, PotionService stock, автокликер.<br>**Осталось (~15%):** Интерактивный бой в данжах (`DungeonService`), перенос заточников (`TransferEnchant`), серверный античит (CPS/дистанция), продакшн-защита DataStore. |
+| **Core Loop & Backend** | **95%** | **Готово:** Клики, сила, Rebirth, Ascension (R60), профили, лут, PotionService stock, автокликер, `TransferEnchant` ремоуты/хелперы, серверный античит (CPS/дистанция), версионирование и ретраи DataStore.<br>**Отложено в будущее обновление:** Полноценный боя в данжах (`DungeonService`). |
 | **Баланс & Конфиги (Loc1–Loc7)** | **95%** | Таблицы 28 мобов Loc1–Loc7 полностью сбалансированы, формула без экспоненциальной инфляции (`DAMAGE_TO_POWER_RATE=0`). |
 | **UI & HUD & Preloader** | **70%** | AAA Loading Screen, HUD (Arcade шрифты, чипы, бусты), Донат-магазин. *Остался спринт Figma (Upgrade → Inv → BP).* |
 | **Петы, Ауры, Реликвии, Зелья** | **75%** | 100% уникальные модели петов, следование `PetVisual`, реликвии, бусты зелий. |
 | **Визуал локаций & 3D Карта (Place)** | **85%** | **Loc 1–6 (Goblin City … Neon Docks)** — визуально полностью готовы и оформлены.<br>⚠️ **Loc 7 (Bone Cathedral) — 0% (единственная карта, не сделанная внешне в Place).** |
-| **Мета-системы (BP, Данжи, Квесты)** | **45%** | Квесты Loc1 skeleton, AFK-данж, прелоадер. Осталось: полноценный бой в данже, BP прогрессия. |
+| **Мета-системы (BP, Данжи, Квесты)** | **45%** | Квесты Loc1 skeleton, AFK-данж, прелоадер. Осталось: BP прогрессия (данжи отложены на будущее обновление). |
 
 ---
 
@@ -176,7 +176,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 |------|--------|
 | **Loc 7 (Bone Cathedral) визуальная карта** | **ЕДИНСТВЕННАЯ НЕ СДЕЛАННАЯ ВНЕШНЕ** — конфиги и баланс мобов R46–R60 готовы (1Sp–750Sp HP), 3D-остров/карта в Place отсутствует |
 | **Loc 1–6 визуальное наполнение** | ✅ **Сделаны хорошо** (Goblin City, Pirate Ship, Shinobi Lands, Polar Tundra, Ash Canyons, Neon Docks) |
-| **Core Loop / Backend (остаток ~15%)** | 1. Бой в данжах (`DungeonService` вместо AFK)<br>2. Перенос заточников (`TransferEnchant`)<br>3. Серверный античит (CPS / клики / дистанция)<br>4. Продакшн-версионирование и автосохранения DataStore |
+| **Core Loop / Backend** | ✅ **ГОТОВО**: `TransferEnchant`, серверный античит (CPS/дистанция), версионирование DataStore & retry-логика. *(Интерактивный данж отложен на будущее обновление)* |
 | Реальные 3D модели мечей | **9 Loc1** meshes + **`SM_Hilt`** / BladeRoll (`docs/WEAPON_HOLD.md`); Loc2 still empty |
 | Иконки weapons | Loc1 IconConfig Decals; pipeline `docs/ICON_UPLOAD.md`. Loc2 empty → fallback |
 | Character Upgrade icons | ✅ `UpgradeIconConfig` + **§8.1** (strength/bag/speed/crit/multicrit/coin/close/**shop**) |

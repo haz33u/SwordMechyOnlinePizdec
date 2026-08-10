@@ -72,6 +72,18 @@ function Net.EnchantWeapon(uid: string)
 	Net.Event("EnchantWeapon"):FireServer(uid)
 end
 
+function Net.RollEnchant(weaponUid: string)
+	Net.Event("RollEnchant"):FireServer(weaponUid)
+end
+
+function Net.ApplyEnchant(weaponUid: string)
+	Net.Event("ApplyEnchant"):FireServer(weaponUid)
+end
+
+function Net.TransferEnchant(fromUid: string, toUid: string, enchantIndex: number)
+	Net.Event("TransferEnchant"):FireServer(fromUid, toUid, enchantIndex)
+end
+
 function Net.UsePotion(potionId: string)
 	Net.Event("UsePotion"):FireServer(potionId)
 end

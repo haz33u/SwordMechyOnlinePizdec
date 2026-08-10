@@ -19,6 +19,7 @@ local Formulas = require(Shared.Formulas)
 
 local ProfileService = {}
 ProfileService._profiles = {} :: { [number]: any }
+ProfileService._loaded = {} :: { [number]: boolean }
 ProfileService._store = nil :: DataStore?
 
 local function uid(): string
@@ -33,6 +34,7 @@ local function defaultProfile()
 	end
 
 	return {
+		schemaVersion = 1,
 		coins = 0,
 		enchantDust = 0, -- boss drop → weapon enchant
 		petKeys = 0, -- OpenPetCase
@@ -132,6 +134,7 @@ function ProfileService.Init()
 	Players.PlayerRemoving:Connect(function(player)
 		ProfileService.Save(player)
 		ProfileService._profiles[player.UserId] = nil
+		ProfileService._loaded[player.UserId] = nil
 	end)
 	for _, p in Players:GetPlayers() do
 		task.spawn(ProfileService.Load, p)
@@ -381,6 +384,7 @@ function ProfileService.Load(player: Player)
 	end
 
 	ProfileService._profiles[player.UserId] = data
+	ProfileService._loaded[player.UserId] = true
 	ProfileService.Push(player)
 	ProfileService.ApplyWalkSpeed(player)
 
@@ -393,13 +397,27 @@ function ProfileService.Save(player: Player)
 	if not profile or not ProfileService._store then
 		return
 	end
-	local ok = pcall(function()
-		ProfileService._store:SetAsync("p_" .. player.UserId, profile)
-	end)
+	if not ProfileService._loaded[player.UserId] then
+		warn(string.format("[ProfileService] Skipping save for %s — profile was not loaded safely", player.Name))
+		return
+	end
+	local key = "p_" .. player.UserId
+	local ok = false
+	for attempt = 1, 3 do
+		ok = pcall(function()
+			ProfileService._store:SetAsync(key, profile)
+		end)
+		if ok then
+			break
+		end
+		task.wait(1)
+	end
 	if ok then
 		pcall(function()
-			ProfileService._store:SetAsync("p_" .. player.UserId .. "_backup", profile)
+			ProfileService._store:SetAsync(key .. "_backup", profile)
 		end)
+	else
+		warn(string.format("[ProfileService] Failed to save profile for %s after 3 attempts", player.Name))
 	end
 end
 
