@@ -43,7 +43,7 @@ local WeaponModelConfig = {
 		wooden_mace = "WoodenRootWarMace",
 		double_edged_sword = "TwinleafBroadsword",
 		forest_spirit_staff = "ForestSpiritStaff",
-		ardite = "Gold Sw.",
+		ardite = "AmberheartGreatsword",
 		forest_sword = "Emerald Sw.",
 		forest_shadow = "Ruby Sw.",
 
