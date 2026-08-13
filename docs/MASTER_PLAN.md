@@ -9,6 +9,11 @@
 > Loc1+Loc2 dump balance applied in configs (see DUMP_CATALOG).  
 > **LOCALE LOCK: English only** for every player-facing string (UI labels, buttons, Notify toasts, case result, configs shown to player). Comments in code may be RU/EN; **never ship RU text to players.**  
 > **AI handoff:** local `CONTEXT_MEPC.md` (gitignored) — copy to other agents; not in repo.  
+> **3D Weapon Model Generation Sprint (Roblox Studio AI):**  
+> - **Loc 1 (Goblin City):** 9/9 Complete (100%) — `TrainingClubSword`, `BattleWornLongsword`, `TribalBoneDagger`, `WoodenRootWarMace`, `TwinleafBroadsword`, `ForestSpiritStaff`, `AmberheartGreatsword`, `CanopyFangBlade`, `UmbralBoughBroadsword`  
+> - **Loc 2 (Crystal Mine):** 5/8 Complete (62.5%) — `MiningPickaxeSword`, `StoneBreakerHammer`, `IronDiggerSaber`, `GoldenMineBroadsword`, `MinerOverseerAxe` mapped & pushed in git.  
+> - **Next in Queue (Tomorrow):** Sword #15 (`element_blade` → `CrystalShardSword` [Epic]), followed by #16 (`emerald_blade`), #17 (`sea_dagger`).  
+> - **Note:** Paused at Sword #15 due to daily Roblox Studio generation limit; resumes tomorrow!  
 > **Next UI sprint:** Figma → game. **Start test:** Character Upgrade only, then Main Inventory, then Battle Pass.  
 > **Worlds:** stay **one Roblox place**, multiple islands + teleport pads (see §13). Not Minecraft Realms / multi-universe by default.
 
