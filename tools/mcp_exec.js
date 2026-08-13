@@ -52,8 +52,18 @@ end
 return table.concat(__out, "\\n")
 `;
 
+/*
+ * roblox-mcp-wrapper.js is not installed on every machine. mcp.bat is — Roblox
+ * itself writes it next to StudioMCP.exe — and it speaks the same stdio JSON-RPC.
+ * Prefer the wrapper when present so existing setups keep working, else fall back.
+ */
 const wrapper = path.join(process.env.LOCALAPPDATA, 'Roblox', 'roblox-mcp-wrapper.js');
-const proc = spawn(process.execPath, [wrapper], { stdio: ['pipe', 'pipe', 'inherit'] });
+const proc = fs.existsSync(wrapper)
+    ? spawn(process.execPath, [wrapper], { stdio: ['pipe', 'pipe', 'inherit'] })
+    : spawn(path.join(process.env.LOCALAPPDATA, 'Roblox', 'mcp.bat'), [], {
+        stdio: ['pipe', 'pipe', 'inherit'],
+        shell: true,
+    });
 
 let buf = '';
 const pending = new Map();
