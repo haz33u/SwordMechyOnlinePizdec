@@ -38,7 +38,7 @@ local WeaponModelConfig = {
 	-- Until Place has DF_* models, keep free Toolbox names as runtime fallback via LegacyModelNames.
 	ModelByWeaponId = {
 		starter_weapon = "TrainingClubSword",
-		old_sword = "Stone Sy.",
+		old_sword = "BattleWornLongsword",
 		bone_dagger = "Stone Sp.",
 		wooden_mace = "Stone Ha.",
 		double_edged_sword = "Iron Sw.",
