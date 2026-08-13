@@ -47,7 +47,7 @@ local WeaponModelConfig = {
 		forest_sword = "CanopyFangBlade",
 		forest_shadow = "UmbralBoughBroadsword",
 
-		pirate_hook = "PirateHook",
+		pirate_hook = "MiningPickaxeSword",
 		pirate_hammer = "PirateHammer",
 		pirate_saber = "PirateSaber",
 		golden_plated_sword = "GoldenPlatedSword",
