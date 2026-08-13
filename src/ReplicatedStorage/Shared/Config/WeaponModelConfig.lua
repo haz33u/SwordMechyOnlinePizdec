@@ -49,7 +49,7 @@ local WeaponModelConfig = {
 
 		pirate_hook = "MiningPickaxeSword",
 		pirate_hammer = "StoneBreakerHammer",
-		pirate_saber = "PirateSaber",
+		pirate_saber = "IronDiggerSaber",
 		golden_plated_sword = "GoldenPlatedSword",
 		captain_axe = "CaptainAxe",
 		element_blade = "ElementBlade",
