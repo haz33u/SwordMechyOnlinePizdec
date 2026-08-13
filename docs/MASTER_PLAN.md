@@ -165,7 +165,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 | **Баланс & Конфиги (Loc1–Loc7)** | **95%** | Таблицы 28 мобов Loc1–Loc7 полностью сбалансированы, формула без экспоненциальной инфляции (`DAMAGE_TO_POWER_RATE=0`). |
 | **UI & HUD & Preloader** | **70%** | AAA Loading Screen, HUD (Arcade шрифты, чипы, бусты), Донат-магазин. *Остался спринт Figma (Upgrade → Inv → BP).* |
 | **Петы, Ауры, Реликвии, Зелья** | **75%** | 100% уникальные модели петов, следование `PetVisual`, реликвии, бусты зелий. |
-| **Визуал локаций & 3D Карта (Place)** | **85%** | **Loc 1–6 (Goblin City … Neon Docks)** — визуально полностью готовы и оформлены.<br>⚠️ **Loc 7 (Bone Cathedral) — 0% (единственная карта, не сделанная внешне в Place).** |
+| **Визуал локаций & 3D Карта (Place)** | **100%** | **Loc 1–7** визуально синхронизированы в Place:<br>1. Goblin City (Гоблины)<br>2. Crystal Mine (Шахта)<br>3. Desert Outpost (Пустыня)<br>4. Winter Tundra (Зимняя)<br>5. Candy Land (Конфетная)<br>6. Water Haven (Водная)<br>7. Hell Gate (Адская / Ад) |
 | **Мета-системы (BP, Данжи, Квесты)** | **45%** | Квесты Loc1 skeleton, AFK-данж, прелоадер. Осталось: BP прогрессия (данжи отложены на будущее обновление). |
 
 ---
@@ -174,8 +174,7 @@ LMB / mobile tap (anywhere not on GUI) → Swing (CPS rate limit) → damage mob
 
 | Тема | Статус |
 |------|--------|
-| **Loc 7 (Bone Cathedral) визуальная карта** | **ЕДИНСТВЕННАЯ НЕ СДЕЛАННАЯ ВНЕШНЕ** — конфиги и баланс мобов R46–R60 готовы (1Sp–750Sp HP), 3D-остров/карта в Place отсутствует |
-| **Loc 1–6 визуальное наполнение** | ✅ **Сделаны хорошо** (Goblin City, Pirate Ship, Shinobi Lands, Polar Tundra, Ash Canyons, Neon Docks) |
+| **Loc 1–7 визуальное наполнение** | ✅ **Сделаны отлично (1:1 по скринам)**: 1. Goblin · 2. Mine · 3. Desert · 4. Winter · 5. Candy · 6. Water · 7. Hell |
 | **Core Loop / Backend** | ✅ **ГОТОВО**: `TransferEnchant`, серверный античит (CPS/дистанция), версионирование DataStore & retry-логика. *(Интерактивный данж отложен на будущее обновление)* |
 | Реальные 3D модели мечей | **9 Loc1** meshes + **`SM_Hilt`** / BladeRoll (`docs/WEAPON_HOLD.md`); Loc2 still empty |
 | Иконки weapons | Loc1 IconConfig Decals; pipeline `docs/ICON_UPLOAD.md`. Loc2 empty → fallback |
