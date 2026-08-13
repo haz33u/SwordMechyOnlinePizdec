@@ -37,7 +37,7 @@ local WeaponModelConfig = {
 	-- Loc1 Dark Forest meshes (import FBX from art/meshes/loc1_dark_forest into Place).
 	-- Until Place has DF_* models, keep free Toolbox names as runtime fallback via LegacyModelNames.
 	ModelByWeaponId = {
-		starter_weapon = "Stone Sw.",
+		starter_weapon = "TrainingClubSword",
 		old_sword = "Stone Sy.",
 		bone_dagger = "Stone Sp.",
 		wooden_mace = "Stone Ha.",
