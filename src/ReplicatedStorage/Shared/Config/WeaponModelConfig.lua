@@ -44,7 +44,7 @@ local WeaponModelConfig = {
 		double_edged_sword = "TwinleafBroadsword",
 		forest_spirit_staff = "ForestSpiritStaff",
 		ardite = "AmberheartGreatsword",
-		forest_sword = "Emerald Sw.",
+		forest_sword = "CanopyFangBlade",
 		forest_shadow = "Ruby Sw.",
 
 		pirate_hook = "PirateHook",
