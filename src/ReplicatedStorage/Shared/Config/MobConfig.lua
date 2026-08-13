@@ -157,14 +157,12 @@ local MobConfig = {
 			visual = { preferredModelName = "Supreme Shadow Lord", color = "#145A32", scale = 2.0, shape = "humanoid" },
 			description = "Loc1 boss at end of path. Dump HP 1.2M / coins 25K.",
 		},
-		]]
-
-		----------------------------------------------------------------------
-		-- LOC 2 — dump «Мобы» exact HP/coins + drop %
+				----------------------------------------------------------------------
+		-- LOC 2 — Crystal Mine (Theme: mine)
 		----------------------------------------------------------------------
 		L2_Sailor = {
 			id = "L2_Sailor",
-			name = "Sailor",
+			name = "Cave Miner",
 			location = 2,
 			tier = "simple",
 			defaultZone = "A",
@@ -181,12 +179,12 @@ local MobConfig = {
 				golden_plated_sword = 2.004,
 			},
 			respawnSeconds = 4,
-			visual = { preferredModelName = "L2_Sailor", color = "#5DADE2", scale = 1.0, shape = "humanoid" },
+			visual = { preferredModelName = "L2_Sailor", color = "#85929E", scale = 1.0, shape = "humanoid" },
 			description = "Dump: 9M HP / 750K coins",
 		},
 		L2_Gunner = {
 			id = "L2_Gunner",
-			name = "Gunner",
+			name = "Crystal Crawler",
 			location = 2,
 			tier = "medium",
 			defaultZone = "B",
@@ -205,12 +203,12 @@ local MobConfig = {
 				element_blade = 0.456,
 			},
 			respawnSeconds = 8,
-			visual = { preferredModelName = "L2_Gunner", color = "#2874A6", scale = 1.15, shape = "humanoid" },
+			visual = { preferredModelName = "L2_Gunner", color = "#A569BD", scale = 1.15, shape = "humanoid" },
 			description = "Dump: 70.64M HP / 5.77M coins",
 		},
 		L2_Captain = {
 			id = "L2_Captain",
-			name = "Captain",
+			name = "Mine Overseer",
 			location = 2,
 			tier = "hard",
 			defaultZone = "C",
@@ -231,16 +229,16 @@ local MobConfig = {
 				sea_dagger = 0.1,
 			},
 			respawnSeconds = 15,
-			visual = { preferredModelName = "L2_Captain", color = "#1A5276", scale = 1.4, shape = "humanoid" },
+			visual = { preferredModelName = "L2_Captain", color = "#34495E", scale = 1.4, shape = "humanoid" },
 			description = "Dump: 4.75B HP / 46.4M coins",
 		},
 
 		----------------------------------------------------------------------
-		-- LOC 2 final boss (Pirate Corsair) - last guy for Loc2
+		-- LOC 2 final boss (Crystal Golem)
 		----------------------------------------------------------------------
 		L2_Corsair = {
 			id = "L2_Corsair",
-			name = "Pirate Corsair",
+			name = "Crystal Golem Boss",
 			location = 2,
 			tier = "boss",
 			defaultZone = "Boss",
@@ -260,17 +258,16 @@ local MobConfig = {
 				corsair_cutlass = 0.5,
 			},
 			respawnSeconds = 20,
-			visual = { preferredModelName = "L2_Corsair", color = "#8B4513", scale = 1.6, shape = "humanoid" },
+			visual = { preferredModelName = "L2_Corsair", color = "#BB8FCE", scale = 1.6, shape = "humanoid" },
 			description = "Loc2 final boss ~25B HP",
 		},
 
 		----------------------------------------------------------------------
-		-- LOC 3 — first T (trillion) scale after Loc2 B-peak
-		-- Approx playtest; tune TTK in Studio (±×2–3 OK)
+		-- LOC 3 — Desert Outpost (Theme: desert)
 		----------------------------------------------------------------------
 		L3_Scout = {
 			id = "L3_Scout",
-			name = "Shadow Scout",
+			name = "Desert Scorpion",
 			location = 3,
 			tier = "simple",
 			defaultZone = "A",
@@ -281,12 +278,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 4,
-			visual = { preferredModelName = "L3_Scout", color = "#5D6D7E", scale = 1.0, shape = "humanoid" },
-			description = "Loc3 T1 ~80B HP (after Loc2 max 4.75B).",
+			visual = { preferredModelName = "L3_Scout", color = "#F4D03F", scale = 1.0, shape = "quad" },
+			description = "Loc3 T1 ~80B HP.",
 		},
 		L3_Adept = {
 			id = "L3_Adept",
-			name = "Blade Adept",
+			name = "Sand Nomad",
 			location = 3,
 			tier = "medium",
 			defaultZone = "B",
@@ -297,28 +294,28 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 6,
-			visual = { preferredModelName = "L3_Adept", color = "#7D3C98", scale = 1.15, shape = "humanoid" },
+			visual = { preferredModelName = "L3_Adept", color = "#D4AC0D", scale = 1.15, shape = "humanoid" },
 			description = "Loc3 T2 ~400B HP.",
 		},
 		L3_Warden = {
 			id = "L3_Warden",
-			name = "Temple Warden",
+			name = "Dune Warden",
 			location = 3,
 			tier = "hard",
 			defaultZone = "C",
-			hp = 2_500_000_000_000, -- 2.5T  ← first T on open hard
+			hp = 2_500_000_000_000, -- 2.5T
 			powerReward = 400_000,
 			coinReward = 200_000_000,
 			weaponDropChance = 1,
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 10,
-			visual = { preferredModelName = "L3_Warden", color = "#1A5276", scale = 1.3, shape = "humanoid" },
-			description = "Loc3 T3 ~2.5T HP — UI shows T.",
+			visual = { preferredModelName = "L3_Warden", color = "#B7950B", scale = 1.3, shape = "humanoid" },
+			description = "Loc3 T3 ~2.5T HP.",
 		},
 		L3_Elite = {
 			id = "L3_Elite",
-			name = "Silent Elite",
+			name = "Desert Bandit Chief",
 			location = 3,
 			tier = "elite",
 			defaultZone = "D",
@@ -329,12 +326,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 14,
-			visual = { preferredModelName = "L3_Elite", color = "#922B21", scale = 1.4, shape = "humanoid" },
+			visual = { preferredModelName = "L3_Elite", color = "#78281F", scale = 1.4, shape = "humanoid" },
 			description = "Loc3 T4 ~15T HP.",
 		},
 		L3_Boss = {
 			id = "L3_Boss",
-			name = "Shogun Shade",
+			name = "Sunfire Shogun Boss",
 			location = 3,
 			tier = "boss",
 			defaultZone = "Boss",
@@ -347,7 +344,7 @@ local MobConfig = {
 			respawnSeconds = 600,
 			isBoss = true,
 			armorFlat = 0,
-			visual = { preferredModelName = "L3_Boss", color = "#4A235A", scale = 2.0, shape = "humanoid" },
+			visual = { preferredModelName = "L3_Boss", color = "#E67E22", scale = 2.0, shape = "humanoid" },
 			description = "Loc3 boss ~50T HP.",
 		},
 
@@ -422,11 +419,11 @@ local MobConfig = {
 		},
 
 		----------------------------------------------------------------------
-		-- LOC 5 — Ash Canyons (4 mobs + boss)
+		-- LOC 5 — Candy Land (Theme: candy)
 		----------------------------------------------------------------------
 		L5_CinderWolf = {
 			id = "L5_CinderWolf",
-			name = "Cinder Wolf",
+			name = "Gummy Bear",
 			location = 5,
 			tier = "simple",
 			defaultZone = "A",
@@ -437,12 +434,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 4,
-			visual = { preferredModelName = "L5_CinderWolf", color = "#E67E22", scale = 1.3, shape = "quad" },
+			visual = { preferredModelName = "L5_CinderWolf", color = "#FF69B4", scale = 1.3, shape = "quad" },
 			description = "Loc5 T1 ~60T HP.",
 		},
 		L5_MagmaScout = {
 			id = "L5_MagmaScout",
-			name = "Magma Scout",
+			name = "Lollipop Guard",
 			location = 5,
 			tier = "medium",
 			defaultZone = "B",
@@ -453,12 +450,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 5,
-			visual = { preferredModelName = "L5_MagmaScout", color = "#D35400", scale = 1.15, shape = "humanoid" },
+			visual = { preferredModelName = "L5_MagmaScout", color = "#FF1493", scale = 1.15, shape = "humanoid" },
 			description = "Loc5 T2 ~300T HP.",
 		},
 		L5_AshBrute = {
 			id = "L5_AshBrute",
-			name = "Ash Brute",
+			name = "Cupcake Brute",
 			location = 5,
 			tier = "hard",
 			defaultZone = "C",
@@ -469,12 +466,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 7,
-			visual = { preferredModelName = "L5_AshBrute", color = "#6E2C00", scale = 1.5, shape = "humanoid" },
+			visual = { preferredModelName = "L5_AshBrute", color = "#DA70D6", scale = 1.5, shape = "humanoid" },
 			description = "Loc5 T3 ~2Qa HP.",
 		},
 		L5_EmberLord = {
 			id = "L5_EmberLord",
-			name = "Ember Lord",
+			name = "Candy Knight",
 			location = 5,
 			tier = "elite",
 			defaultZone = "D",
@@ -485,12 +482,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 10,
-			visual = { preferredModelName = "L5_EmberLord", color = "#922B21", scale = 1.4, shape = "humanoid" },
+			visual = { preferredModelName = "L5_EmberLord", color = "#C71585", scale = 1.4, shape = "humanoid" },
 			description = "Loc5 T4 ~12Qa HP.",
 		},
 		L5_VolcanoKingBoss = {
 			id = "L5_VolcanoKingBoss",
-			name = "Volcano King",
+			name = "King Gummy Boss",
 			location = 5,
 			tier = "boss",
 			defaultZone = "Boss",
@@ -503,16 +500,16 @@ local MobConfig = {
 			respawnSeconds = 600,
 			isBoss = true,
 			armorFlat = 0,
-			visual = { preferredModelName = "L5_VolcanoKingBoss", color = "#C0392B", scale = 2.2, shape = "humanoid" },
+			visual = { preferredModelName = "L5_VolcanoKingBoss", color = "#FF007F", scale = 2.2, shape = "humanoid" },
 			description = "Loc5 Boss ~40Qa HP.",
 		},
 
 		----------------------------------------------------------------------
-		-- LOC 6 — Neon Docks (4 mobs + boss)
+		-- LOC 6 — Water Haven (Theme: water)
 		----------------------------------------------------------------------
 		L6_DockRat = {
 			id = "L6_DockRat",
-			name = "Dock Rat",
+			name = "Water Nymph",
 			location = 6,
 			tier = "simple",
 			defaultZone = "A",
@@ -523,12 +520,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 4,
-			visual = { preferredModelName = "L6_DockRat", color = "#2ECC71", scale = 1.1, shape = "quad" },
+			visual = { preferredModelName = "L6_DockRat", color = "#1ABC9C", scale = 1.1, shape = "quad" },
 			description = "Loc6 T1 ~1.5Qa HP.",
 		},
 		L6_NeonThug = {
 			id = "L6_NeonThug",
-			name = "Neon Thug",
+			name = "Ocean Pirate",
 			location = 6,
 			tier = "medium",
 			defaultZone = "B",
@@ -539,12 +536,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 5,
-			visual = { preferredModelName = "L6_NeonThug", color = "#9B59B6", scale = 1.2, shape = "humanoid" },
+			visual = { preferredModelName = "L6_NeonThug", color = "#3498DB", scale = 1.2, shape = "humanoid" },
 			description = "Loc6 T2 ~8Qa HP.",
 		},
 		L6_CyberSamurai = {
 			id = "L6_CyberSamurai",
-			name = "Cyber Samurai",
+			name = "Tide Warden",
 			location = 6,
 			tier = "hard",
 			defaultZone = "C",
@@ -555,12 +552,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 7,
-			visual = { preferredModelName = "L6_CyberSamurai", color = "#00BCD4", scale = 1.35, shape = "humanoid" },
+			visual = { preferredModelName = "L6_CyberSamurai", color = "#2980B9", scale = 1.35, shape = "humanoid" },
 			description = "Loc6 T3 ~50Qa HP.",
 		},
 		L6_NeonBoss = {
 			id = "L6_NeonBoss",
-			name = "Neon Syndicate",
+			name = "Sea Serpent",
 			location = 6,
 			tier = "elite",
 			defaultZone = "D",
@@ -571,12 +568,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 10,
-			visual = { preferredModelName = "L6_NeonBoss", color = "#F1C40F", scale = 1.45, shape = "humanoid" },
+			visual = { preferredModelName = "L6_NeonBoss", color = "#16A085", scale = 1.45, shape = "humanoid" },
 			description = "Loc6 T4 ~300Qa HP.",
 		},
 		L6_DockOverseerBoss = {
 			id = "L6_DockOverseerBoss",
-			name = "Dock Overseer",
+			name = "Ocean Leviathan Boss",
 			location = 6,
 			tier = "boss",
 			defaultZone = "Boss",
@@ -589,16 +586,16 @@ local MobConfig = {
 			respawnSeconds = 600,
 			isBoss = true,
 			armorFlat = 0,
-			visual = { preferredModelName = "L6_DockOverseerBoss", color = "#E91E63", scale = 2.3, shape = "humanoid" },
+			visual = { preferredModelName = "L6_DockOverseerBoss", color = "#1B4F72", scale = 2.3, shape = "humanoid" },
 			description = "Loc6 Boss ~1Qi HP.",
 		},
 
 		----------------------------------------------------------------------
-		-- LOC 7 — Bone Cathedral (4 mobs + boss)
+		-- LOC 7 — Hell Gate (Theme: hell)
 		----------------------------------------------------------------------
 		L7_BoneImp = {
 			id = "L7_BoneImp",
-			name = "Bone Imp",
+			name = "Hell Imp",
 			location = 7,
 			tier = "simple",
 			defaultZone = "A",
@@ -609,12 +606,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 4,
-			visual = { preferredModelName = "L7_BoneImp", color = "#BDC3C7", scale = 1.1, shape = "humanoid" },
+			visual = { preferredModelName = "L7_BoneImp", color = "#E74C3C", scale = 1.1, shape = "humanoid" },
 			description = "Loc7 T1 ~40Qa HP.",
 		},
 		L7_CryptGuard = {
 			id = "L7_CryptGuard",
-			name = "Crypt Guard",
+			name = "Demon Guard",
 			location = 7,
 			tier = "medium",
 			defaultZone = "B",
@@ -625,12 +622,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 5,
-			visual = { preferredModelName = "L7_CryptGuard", color = "#7F8C8D", scale = 1.25, shape = "humanoid" },
+			visual = { preferredModelName = "L7_CryptGuard", color = "#C0392B", scale = 1.25, shape = "humanoid" },
 			description = "Loc7 T2 ~200Qa HP.",
 		},
 		L7_SoulReaper = {
 			id = "L7_SoulReaper",
-			name = "Soul Reaper",
+			name = "Infernal Reaper",
 			location = 7,
 			tier = "hard",
 			defaultZone = "C",
@@ -641,12 +638,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 7,
-			visual = { preferredModelName = "L7_SoulReaper", color = "#8E44AD", scale = 1.4, shape = "humanoid" },
+			visual = { preferredModelName = "L7_SoulReaper", color = "#900C3F", scale = 1.4, shape = "humanoid" },
 			description = "Loc7 T3 ~1.2Qi HP.",
 		},
 		L7_CathedralWraith = {
 			id = "L7_CathedralWraith",
-			name = "Cathedral Wraith",
+			name = "Hell Wraith",
 			location = 7,
 			tier = "elite",
 			defaultZone = "D",
@@ -657,12 +654,12 @@ local MobConfig = {
 			weaponDropScale = 1,
 			weaponPool = {},
 			respawnSeconds = 10,
-			visual = { preferredModelName = "L7_CathedralWraith", color = "#5B2C6F", scale = 1.5, shape = "humanoid" },
+			visual = { preferredModelName = "L7_CathedralWraith", color = "#581845", scale = 1.5, shape = "humanoid" },
 			description = "Loc7 T4 ~8Qi HP.",
 		},
 		L7_BoneOverlordBoss = {
 			id = "L7_BoneOverlordBoss",
-			name = "Bone Overlord",
+			name = "Demon Overlord Boss",
 			location = 7,
 			tier = "boss",
 			defaultZone = "Boss",
@@ -675,7 +672,7 @@ local MobConfig = {
 			respawnSeconds = 600,
 			isBoss = true,
 			armorFlat = 0,
-			visual = { preferredModelName = "L7_BoneOverlordBoss", color = "#17202A", scale = 2.4, shape = "humanoid" },
+			visual = { preferredModelName = "L7_BoneOverlordBoss", color = "#641E16", scale = 2.4, shape = "humanoid" },
 			description = "Loc7 Boss ~25Qi HP.",
 		},
 	} :: { [string]: MobDef },

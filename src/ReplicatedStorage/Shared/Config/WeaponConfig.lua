@@ -234,66 +234,66 @@ add("forest_sword", "Forest Sword", "Mythic", 1, 8_000, 1000, "Blade of the deep
 add("forest_shadow", "Forest Shadow", "Secret", 1, 15_000, 1500, "A whisper made steel. Strength 15K.")
 
 ----------------------------------------------------------------------
--- LOC 2 — dump names
+-- LOC 2 — Crystal Mine (Theme: mine)
 ----------------------------------------------------------------------
-add("pirate_hook", "Pirate Hook", "Common", 2, 50, 50_000, "Dump strength 50")
-add("pirate_hammer", "Pirate Hammer", "Common", 2, 100, 100_000, "Dump strength 100")
-add("pirate_saber", "Pirate Saber", "Common", 2, 150, 250_000, "Dump strength 150")
-add("golden_plated_sword", "Golden-plated Sword", "Rare", 2, 300, 500_000, "Dump strength 300")
-add("captain_axe", "Captain Axe", "Rare", 2, 500, 1_000_000, "Dump strength 500")
-add("element_blade", "Element Blade", "Epic", 2, 800, 25_000_000, "Dump strength 800")
-add("emerald_blade", "Emerald Blade", "Epic", 2, 1500, 50_000_000, "Dump strength 1.5K")
-add("sea_dagger", "Sea Dagger", "Legendary", 2, 4250, 120_000_000, "Dump strength 4.25K")
+add("pirate_hook", "Miner Pickaxe", "Common", 2, 50, 50_000, "Sturdy pickaxe for mining crystal veins.")
+add("pirate_hammer", "Stone Breaker", "Common", 2, 100, 100_000, "Heavy hammer that crushes cavern ore.")
+add("pirate_saber", "Iron Digger Blade", "Common", 2, 150, 250_000, "Forged iron blade for mine guards.")
+add("golden_plated_sword", "Golden Mine Blade", "Rare", 2, 300, 500_000, "Golden plated sword from deep shafts.")
+add("captain_axe", "Miner Heavy Axe", "Rare", 2, 500, 1_000_000, "Heavy axe used by mine overseers.")
+add("element_blade", "Crystal Shard Sword", "Epic", 2, 800, 25_000_000, "Glowing crystal blade with earth magic.")
+add("emerald_blade", "Emerald Crystal Blade", "Epic", 2, 1500, 50_000_000, "Carved from pure emerald ore.")
+add("sea_dagger", "Crystal Core Dagger", "Legendary", 2, 4250, 120_000_000, "Pulsing dagger forged in the mine core.")
 
 ----------------------------------------------------------------------
--- LOC 3 — Shinobi Lands
+-- LOC 3 — Desert Outpost (Theme: desert)
 ----------------------------------------------------------------------
-add("shinobi_katana", "Shinobi Katana", "Common", 3, 80, 2_500_000, "Loc3 Katana")
-add("shadow_kunai", "Shadow Kunai", "Rare", 3, 250, 10_000_000, "Loc3 Kunai")
-add("dragon_tanto", "Dragon Tanto", "Epic", 3, 600, 50_000_000, "Loc3 Tanto")
-add("muramasa_blade", "Muramasa Blade", "Legendary", 3, 1_500, 250_000_000, "Loc3 Katana")
-add("samurai_god_katana", "Samurai God Katana", "Mythic", 3, 4_000, 750_000_000, "Loc3 Mythic")
-add("shadow_shogun_blade", "Shadow Shogun Blade", "Secret", 3, 6_000, 1_500_000_000, "Loc3 Secret")
+add("shinobi_katana", "Sand Scimitar", "Common", 3, 80, 2_500_000, "Curved scimitar forged for desert heat.")
+add("shadow_kunai", "Desert Dagger", "Rare", 3, 250, 10_000_000, "Sharp blade that strikes like a scorpion.")
+add("dragon_tanto", "Dune Khopesh", "Epic", 3, 600, 50_000_000, "Ancient sickle-sword buried in the dunes.")
+add("muramasa_blade", "Oasis Glaive", "Legendary", 3, 1_500, 250_000_000, "Glaive tempered in desert springs.")
+add("samurai_god_katana", "Sunfire Scimitar", "Mythic", 3, 4_000, 750_000_000, "Blazing scimitar imbued with sunfire.")
+add("shadow_shogun_blade", "Desert Emperor Blade", "Secret", 3, 6_000, 1_500_000_000, "Relic of the ancient desert empire.")
 
 ----------------------------------------------------------------------
--- LOC 4 — Polar Tundra
+-- LOC 4 — Winter Tundra (Theme: winter)
 ----------------------------------------------------------------------
-add("ice_dagger", "Ice Dagger", "Common", 4, 400, 5_000_000, "Loc4 dagger")
-add("frost_cleaver", "Frost Cleaver", "Rare", 4, 1_200, 20_000_000, "Loc4 cleaver")
-add("glacier_scythe", "Glacier Scythe", "Epic", 4, 3_000, 100_000_000, "Loc4 scythe")
-add("blizzard_sword", "Blizzard Sword", "Legendary", 4, 8_000, 500_000_000, "Loc4 sword")
-add("ice_dragon_fang", "Ice Dragon Fang", "Mythic", 4, 20_000, 2_000_000_000, "Loc4 mythic")
-add("polar_sovereign_blade", "Polar Sovereign Blade", "Secret", 4, 30_000, 5_000_000_000, "Loc4 secret")
+add("ice_dagger", "Ice Dagger", "Common", 4, 400, 5_000_000, "Frostbitten dagger forged of solid ice.")
+add("frost_cleaver", "Frost Cleaver", "Rare", 4, 1_200, 20_000_000, "Heavy cleaver coated in permafrost.")
+add("glacier_scythe", "Glacier Scythe", "Epic", 4, 3_000, 100_000_000, "Scythe that reaps frozen souls.")
+add("blizzard_sword", "Blizzard Sword", "Legendary", 4, 8_000, 500_000_000, "Blade that summons howling blizzards.")
+add("ice_dragon_fang", "Ice Dragon Fang", "Mythic", 4, 20_000, 2_000_000_000, "Fang carved from the glacier dragon.")
+add("polar_sovereign_blade", "Polar Sovereign Blade", "Secret", 4, 30_000, 5_000_000_000, "Sovereign sword of the arctic throne.")
 
 ----------------------------------------------------------------------
--- LOC 5 — Ash Canyons
+-- LOC 5 — Candy Land (Theme: candy)
 ----------------------------------------------------------------------
-add("ash_shiv", "Ash Shiv", "Common", 5, 2_000, 50_000_000, "Loc5 shiv")
-add("magma_maul", "Magma Maul", "Rare", 5, 6_000, 200_000_000, "Loc5 maul")
-add("obsidian_glaive", "Obsidian Glaive", "Epic", 5, 15_000, 1_000_000_000, "Loc5 glaive")
-add("inferno_blade", "Inferno Blade", "Legendary", 5, 40_000, 5_000_000_000, "Loc5 blade")
-add("volcano_god_sword", "Volcano God Sword", "Mythic", 5, 100_000, 25_000_000_000, "Loc5 mythic")
-add("phoenix_ash_blade", "Phoenix Ash Blade", "Secret", 5, 150_000, 80_000_000_000, "Loc5 secret")
+add("ash_shiv", "Candy Cane Dagger", "Common", 5, 2_000, 50_000_000, "Sharp candy cane blade.")
+add("magma_maul", "Lollipop Hammer", "Rare", 5, 6_000, 200_000_000, "Giant lollipop that smashes enemies.")
+add("obsidian_glaive", "Sugar Slash Blade", "Epic", 5, 15_000, 1_000_000_000, "Crystallized sugar blade.")
+add("inferno_blade", "Cupcake Sword", "Legendary", 5, 40_000, 5_000_000_000, "Sweet yet deadly cupcake sword.")
+add("volcano_god_sword", "Gummy Bear Greatsword", "Mythic", 5, 100_000, 25_000_000_000, "Massive gummy sword of power.")
+add("phoenix_ash_blade", "Sweet Sovereign Edge", "Secret", 5, 150_000, 80_000_000_000, "Masterpiece of the Candy Kingdom.")
 
 ----------------------------------------------------------------------
--- LOC 6 — Neon Docks
+-- LOC 6 — Water Haven (Theme: water)
 ----------------------------------------------------------------------
-add("neon_dagger", "Neon Dagger", "Common", 6, 10_000, 1_000_000_000, "Loc6 dagger")
-add("plasma_cutlass", "Plasma Cutlass", "Rare", 6, 30_000, 4_000_000_000, "Loc6 cutlass")
-add("cyber_katana", "Cyber Katana", "Epic", 6, 80_000, 20_000_000_000, "Loc6 katana")
-add("lightning_greatsword", "Lightning Greatsword", "Legendary", 6, 200_000, 100_000_000_000, "Loc6 greatsword")
-add("overseer_proto_blade", "Overseer Proto-Blade", "Mythic", 6, 500_000, 500_000_000_000, "Loc6 mythic")
-add("dimensional_edge", "Dimensional Edge", "Secret", 6, 800_000, 1_500_000_000_000, "Loc6 secret")
+add("neon_dagger", "Coral Dagger", "Common", 6, 10_000, 1_000_000_000, "Sharp dagger carved from ocean coral.")
+add("plasma_cutlass", "Pirate Cutlass", "Rare", 6, 30_000, 4_000_000_000, "Classic pirate cutlass of the high seas.")
+add("cyber_katana", "Tide Blade", "Epic", 6, 80_000, 20_000_000_000, "Blade that flows like ocean tides.")
+add("lightning_greatsword", "Ocean Trident", "Legendary", 6, 200_000, 100_000_000_000, "Three-pronged trident of ocean lords.")
+add("overseer_proto_blade", "Deep Sea Saber", "Mythic", 6, 500_000, 500_000_000_000, "Forged in the abyss of the deep sea.")
+add("dimensional_edge", "Leviathan Edge", "Secret", 6, 800_000, 1_500_000_000_000, "Power of the leviathan in steel.")
 
 ----------------------------------------------------------------------
--- LOC 7 — Bone Cathedral
+-- LOC 7 — Hell Gate (Theme: hell)
 ----------------------------------------------------------------------
-add("bone_knife", "Bone Knife", "Common", 7, 50_000, 20_000_000_000, "Loc7 knife")
-add("crypt_rapier", "Crypt Rapier", "Rare", 7, 150_000, 80_000_000_000, "Loc7 rapier")
-add("soul_reaver_scythe", "Soul Reaver Scythe", "Epic", 7, 400_000, 400_000_000_000, "Loc7 scythe")
-add("cathedral_longsword", "Cathedral Longsword", "Legendary", 7, 1_000_000, 2_000_000_000_000, "Loc7 longsword")
-add("bone_overlord_cleaver", "Bone Overlord Cleaver", "Mythic", 7, 2_500_000, 10_000_000_000_000, "Loc7 mythic")
-add("celestial_void_blade", "Celestial Void Blade", "Secret", 7, 4_000_000, 35_000_000_000_000, "Loc7 secret")
+add("bone_knife", "Demon Dagger", "Common", 7, 50_000, 20_000_000_000, "Dagger forged in nether flames.")
+add("crypt_rapier", "Infernal Rapier", "Rare", 7, 150_000, 80_000_000_000, "Rapier that burns with hellfire.")
+add("soul_reaver_scythe", "Hellfire Scythe", "Epic", 7, 400_000, 400_000_000_000, "Fiery scythe of nether demons.")
+add("cathedral_longsword", "Nether Longsword", "Legendary", 7, 1_000_000, 2_000_000_000_000, "Dark longsword of demon lords.")
+add("bone_overlord_cleaver", "Demon Overlord Cleaver", "Mythic", 7, 2_500_000, 10_000_000_000_000, "Cleaver of the Hell Overlord.")
+add("celestial_void_blade", "Hell Sovereign Void Blade", "Secret", 7, 4_000_000, 35_000_000_000_000, "Supreme void sword of infernal realm.")
 
 ----------------------------------------------------------------------
 -- INCREMENTAL & SPECIAL WEAPONS (Stone, Iron, Gold, Titanium, Emerald, Ruby, Atherite, Celestium, Voidsteel)
